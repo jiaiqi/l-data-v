@@ -38,6 +38,7 @@
       v-if="pageItem.com_type === 'chart'"
       :ref="pageItem.com_type"
       :pageItem="pageItem"
+      :index="layout.i"
     ></basic-chart>
   </div>
 </template>
@@ -63,6 +64,9 @@ export default {
   },
   props: {
     pageItem: {
+      type: Object,
+    },
+    layout:{
       type: Object,
     },
   },

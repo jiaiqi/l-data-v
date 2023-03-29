@@ -60,8 +60,8 @@
         <grid-layout
           ref="gridlayout"
           :layout.sync="layout"
-          :col-num="40"
-          :row-height="20"
+          :col-num="containerWidth"
+          :row-height="1"
           :preventCollision="true"
           :responsive="false"
           :is-draggable="true"
@@ -103,7 +103,7 @@
                 alt=""
                 style="display: inline-block; width: 100%"
               /> -->
-              <page-item ref="pageItem" :page-item="item.data"></page-item>
+              <page-item ref="pageItem" :page-item="item.data" :layout="item"></page-item>
 
               <!-- <span>{{ item.data.com_type_name }}</span>
               <span>{{ item.data.com_type }}</span> -->
@@ -113,7 +113,7 @@
               v-else
               @click.stop="changeDesign(item.i)"
             >
-              <page-item ref="pageItem" :page-item="item.data"></page-item>
+              <page-item ref="pageItem" :page-item="item.data" :layout="item"></page-item>
             </div>
             <!-- <div
               v-else
@@ -156,6 +156,7 @@ export default {
   },
   data() {
     return {
+      containerWidth: 800,
       colNum: 40,
       pgNo: "",
       pageId: "",
@@ -254,8 +255,20 @@ export default {
       this.curDesign = "";
     };
     // window.onresize = () => {
-    //   this.initColNum();
+    //   this.containerWidth = document.getElementById("content").offsetWidth;
+    //   // this.initColNum();
     // };
+  },
+  computed: {
+    initWH() {
+      let containerWidth = this.containerWidth || 800;
+      return {
+        w:300,
+        h:150
+        // w: containerWidth / 4,
+        // h: containerWidth / 8,
+      };
+    },
   },
   methods: {
     initColNum() {
@@ -752,6 +765,7 @@ export default {
       this.rowheight = domstyleHeight - 10;
       this.designLeft = domContainer.offsetLeft + 250;
       this.designTop = domContainer.offsetTop + 70;
+      // this.containerWidth = document.getElementById("content").offsetWidth;
     },
     //鼠标移动
     moveMousemove() {
@@ -929,8 +943,8 @@ export default {
           y: 0,
           // x: (this.layout.length * 2) % (this.colNum || 12),
           // y: this.layout.length + (this.colNum || 12), // puts it at the bottom
-          w: 10,
-          h: 5,
+          w: this.initWH.w,
+          h: this.initWH.h,
           i: "drop",
           data: o,
         });
@@ -957,8 +971,10 @@ export default {
             "drop",
             new_pos.x,
             new_pos.y,
-            5,
-            10
+            // 5,
+            // 10
+            this.initWH.h,
+            this.initWH.w
           );
           DragPos.i = String(index);
           DragPos.x = this.layout[index].x;
@@ -970,8 +986,10 @@ export default {
             "drop",
             new_pos.x,
             new_pos.y,
-            5,
-            10
+            // 5,
+            // 10
+            this.initWH.h,
+            this.initWH.w
           );
           this.layout = this.layout.filter((obj) => obj.i !== "drop");
         }
@@ -996,16 +1014,20 @@ export default {
           "drop",
           DragPos.x,
           DragPos.y,
-          10,
-          5
+          // 10,
+          // 5
+          this.initWH.w,
+          this.initWH.h
         );
         this.layout = this.layout.filter((obj) => obj.i !== "drop");
         // UNCOMMENT below if you want to add a grid-item
         let obj = {
           x: DragPos.x,
           y: DragPos.y,
-          w: 10,
-          h: 5,
+          // w: 10,
+          // h: 5,
+          w: this.initWH.w,
+          h: this.initWH.h,
           i: DragPos.i,
           data: o,
           isLeftBarItem: true,
@@ -1016,8 +1038,10 @@ export default {
           DragPos.i,
           DragPos.x,
           DragPos.y,
-          10,
-          5
+          // 10,
+          // 5
+                  this.initWH.w,
+          this.initWH.h
         );
         try {
           this.$refs.gridlayout.$children[

@@ -2,8 +2,14 @@
 import * as echarts from "echarts";
 import { onMounted, ref } from "vue";
 const props = defineProps({
+  pageItem: {
+    type: Object,
+  },
   chartOption: {
     type: Object,
+  },
+  index: {
+    type: [Number, String],
   },
 });
 
@@ -38,10 +44,9 @@ const setChartOption = (chartOption, chart) => {
 
 onMounted(() => {
   // 基于准备好的dom，初始化echarts实例
-  myChart = echarts.init(document.getElementById("main"));
+  myChart = echarts.init(document.getElementById(props.index));
   setChartOption(props.chartOption, myChart);
 });
-
 
 const onResize = () => {
   myChart.resize();
@@ -52,10 +57,9 @@ defineExpose({
 });
 </script>
 
-
 <template>
   <!-- 为 ECharts 准备一个定义了宽高的 DOM -->
-  <div id="main" style="width: 100%; height: 100%"></div>
+  <div :id="index" style="width: 100%; height: 100%"></div>
 </template>
 
 <style lang="scss" scoped></style>
