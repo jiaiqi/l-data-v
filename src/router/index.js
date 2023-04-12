@@ -21,6 +21,11 @@ const router = new VueRouter({
       // which is lazy-loaded when the route is visited.
       component: () => import("../views/preview.vue"),
     },
+    {
+      path: "/player",
+      name: "player",
+      component: () => import("../views/video-player.vue"),
+    },
     // {
     //   path: '/about',
     //   name: 'about',

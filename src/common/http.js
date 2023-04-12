@@ -73,12 +73,12 @@ $axios.interceptors.response.use(
           // }
         } else if (response.data.resultCode == "0000") {
           if (sessionStorage.getItem("need_login_flag") != "need_login") {
-            alert(response.data.resultMessage);
+            // alert(response.data.resultMessage);
           }
         } else {
           if (response.data.resultCode !== "9998") {
             if (sessionStorage.getItem("need_login_flag") != "need_login") {
-              alert(response.data.resultMessage);
+              // alert(response.data.resultMessage);
             }
           }
         }

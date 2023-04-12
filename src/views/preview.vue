@@ -524,7 +524,7 @@ export default {
             y: item.pos_y,
             w: item.row_span,
             h: item.col_span,
-            i: new Date().getTime(), // item.seq - 1
+            i: item.id + new Date().getTime(), // item.seq - 1
             // i: index, // item.seq - 1
             layout_no: item.layout_no,
             data,

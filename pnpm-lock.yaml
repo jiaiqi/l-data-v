@@ -7,6 +7,7 @@ specifiers:
   dayjs: ^1.11.7
   echarts: ^5.4.2
   element-ui: ^2.15.13
+  ezuikit-js: ^7.6.3
   lodash: ^4.17.21
   moment: ^2.29.4
   pinia: ^2.0.16
@@ -23,6 +24,7 @@ dependencies:
   dayjs: 1.11.7
   echarts: 5.4.2
   element-ui: 2.15.13_vue@2.7.14
+  ezuikit-js: 7.6.3
   lodash: 4.17.21
   moment: 2.29.4
   pinia: 2.0.33_vue@2.7.14
@@ -744,6 +746,10 @@ packages:
       esbuild-windows-64: 0.15.18
       esbuild-windows-arm64: 0.15.18
     dev: true
+
+  /ezuikit-js/7.6.3:
+    resolution: {integrity: sha512-WVRvIuiAErYHdNSv/EKGmz5pEooNRHRVRvib2gpnSBN/g0/7lEcFllQcwuB9y9YMhuD/C1IYMTiX09XNHZDHlg==}
+    dev: false
 
   /fill-range/7.0.1:
     resolution: {integrity: sha512-qOo9F+dMUmC2Lcb4BbVvnKJxTPjCm+RRpe4gDuGrzkL7mEVl/djYSu2OdQ2Pa302N4oqkSg9ir6jaLWJ2USVpQ==}

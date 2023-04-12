@@ -5,7 +5,7 @@
 				v-if="(index + 1) <= Number(pageItem.video_card_json.card_layout_json.cols_num)">
 				<div class="video-item" @click="toVideoPlayer(col)">
 					<img class="video-bg" :src="col.url || defPic">
-					<img class="play-btn" v-if="item.showPlayImg" src="@/assets/img/video-play-btn.png">
+					<img class="play-btn" v-if="col.showPlayImg" src="@/assets/img/video-play-btn.png">
 				</div>
 				<div class="video-title">{{ col[pageItem.video_card_json.col_label] }}</div>
 			</el-col>
@@ -73,7 +73,6 @@ export default {
 				if (this.pageItem.video_card_json.card_layout_json.cols_num) {
 					colsNum = Number(this.pageItem.video_card_json.card_layout_json.cols_num)
 				}
-
 				for (let i = 0; i < rowsNum; i++) {
 					this.videoList[i] = []
 					let count = 0
@@ -167,20 +166,21 @@ export default {
 		},
 		toVideoPage(o) {
 			if (!o.url) return
-
-			let id = 'wxf2b3a0262975d8c2'
-			let accessToken = this.accessToken
-			wx.openEmbeddedMiniProgram({
-				appId: id,
-				path: '/pages/live/live?accessToken=' + accessToken + '&deviceSerial=' + o.dev_sn + '&channelNo=' + o.channel,
-				success: res => {
-					// 打开成功
-					console.log("打开成功", res);
-				},
-				fail: err => {
-					console.log(err);
-				}
-			})
+			const url = `/player?deviceSerial=${o.dev_sn}&channelNo=${o.channel}&verify_code=${o.verify_code}`
+			this.$router.push(url)
+			// let id = 'wxf2b3a0262975d8c2'
+			// let accessToken = this.accessToken
+			// wx.openEmbeddedMiniProgram({
+			// 	appId: id,
+			// 	path: '/pages/live/live?accessToken=' + accessToken + '&deviceSerial=' + o.dev_sn + '&channelNo=' + o.channel,
+			// 	success: res => {
+			// 		// 打开成功
+			// 		console.log("打开成功", res);
+			// 	},
+			// 	fail: err => {
+			// 		console.log(err);
+			// 	}
+			// })
 			// uni.navigateToMiniProgram({
 			// 	appId: id,
 			// 	path: 'pages/live/live?accessToken=' + accessToken + '&deviceSerial=' + o.dev_sn +
@@ -196,6 +196,10 @@ export default {
 		},
 		toVideoPlayer(o) {
 			if (!o.url) return
+			const url = `/player?deviceSerial=${o.dev_sn}&channelNo=${o.channel}&verify_code=${o.verify_code}`
+			this.$router.push({
+				path:url
+			})
 			// uni.navigateTo({
 			// 	url: `/views/public/video/video?deviceSerial=${o.dev_sn}&channelNo=${o.channel}&verify_code=${o.verify_code}`
 			// })
@@ -214,6 +218,7 @@ export default {
 			position: relative;
 
 			.video-bg {
+				width: 100%;
 				height: 104px;
 			}
 

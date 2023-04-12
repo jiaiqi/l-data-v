@@ -11,6 +11,7 @@
     "dayjs": "^1.11.7",
     "echarts": "^5.4.2",
     "element-ui": "^2.15.13",
+    "ezuikit-js": "^7.6.3",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "pinia": "^2.0.16",
