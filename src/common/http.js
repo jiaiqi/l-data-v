@@ -2,7 +2,7 @@ import axios from "axios";
 
 sessionStorage.setItem(
   "bx_auth_ticket",
-  "xabxdzkj-05174f40-2081-4b9c-b055-5114f2d64662"
+  "xabxdzkj-0aa6865c-9c07-4b80-a25b-73984e52684c"
 );
 const baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
 
@@ -95,3 +95,23 @@ $axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const $select = async (req, app) => {
+  app = app || req.srvApp || req.mapp;
+  if (app) {
+    const url = `/${app}/select/${req.serviceName}`;
+    const res = await $axios.post(url, req);
+    if (res?.data?.state === "SUCCESS") {
+      return {
+        msg: res?.data?.resultMessage,
+        ok: true,
+        data: res.data?.data || [],
+      };
+    } else {
+      return {
+        msg: res?.data?.resultMessage,
+        ok: false,
+      };
+    }
+  }
+};

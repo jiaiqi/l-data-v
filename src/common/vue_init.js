@@ -1,6 +1,7 @@
 import Vue from "vue";
 
 function init() {
+
   let backendIpAddr = null;
   if (window.top.pathConfig && window.top.pathConfig.gateway) {
     // 如果外层有就用外层的路径配置
@@ -24,7 +25,7 @@ function init() {
       // back_server_port: "8080",
       // 外网
       back_server_protocol: "https",
-      back_server_ip: "wx.100xsys.cn",    // 240 139.129.128.155:5021   零售   http://192.168.0.155:8106
+      back_server_ip: "wx.100xsys.cn", // 240 139.129.128.155:5021   零售   http://192.168.0.155:8106
       back_server_port: "",
       // back_server_ip: "192.168.0.192",  // 199
       // back_server_ip: "192.168.0.155",    // 240 139.129.128.155:5021

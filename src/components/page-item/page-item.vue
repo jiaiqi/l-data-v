@@ -34,12 +34,18 @@
       :ref="pageItem.com_type"
       :pageItem="pageItem"
     ></map-card>
-    <basic-chart
+    <!-- <basic-chart
       v-if="pageItem.com_type === 'chart'"
       :ref="pageItem.com_type"
       :pageItem="pageItem"
       :index="layout.i"
-    ></basic-chart>
+    ></basic-chart> -->
+    <page-item-chart
+      v-if="pageItem.com_type === 'chart'"
+      :ref="pageItem.com_type"
+      :pageItem="pageItem"
+      :index="layout.i"
+    ></page-item-chart>
   </div>
 </template>
 
@@ -52,6 +58,7 @@ import userList from "./user-list.vue";
 import noticeBar from "./notice-bar.vue";
 import mapCard from "./map-card.vue";
 import basicChart from "./chart-basic.vue";
+import pageItemChart from "./chart/page-item-chart.vue";
 export default {
   components: {
     videoCard,
@@ -61,12 +68,13 @@ export default {
     noticeBar,
     mapCard,
     basicChart,
+    pageItemChart,
   },
   props: {
     pageItem: {
       type: Object,
     },
-    layout:{
+    layout: {
       type: Object,
     },
   },
@@ -75,13 +83,17 @@ export default {
   },
   methods: {
     onResize(i) {
-      if (i && i === this.pageItem.timestamp) {
-        this.$refs[this.pageItem.com_type].onResize?.()
-      }
+      console.log(this.$refs);
+      this.$refs[this.pageItem.com_type].onResize?.();
     },
     stylefn(style) {
       if (style) {
-        return formatStyleData(style);
+        let res = formatStyleData(style);
+        if (this.layout?.h&&this.layout?.w) {
+          res.height = "100%";
+          res.width = "100%";
+        }
+        return res;
       }
     },
   },

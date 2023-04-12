@@ -1,6 +1,6 @@
 <script setup>
 import * as echarts from "echarts";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 const props = defineProps({
   pageItem: {
     type: Object,
@@ -11,16 +11,23 @@ const props = defineProps({
   index: {
     type: [Number, String],
   },
+  canvasId: {
+    type: String,
+    default: () => {
+      return "ec-canvas" + new Date().getTime();
+    },
+  },
 });
+const chartOption = props.chartOption;
 
 let myChart = null;
 
 const setChartOption = (chartOption, chart) => {
   // 指定图表的配置项和数据
   const option = {
-    title: {
-      text: "ECharts 入门示例",
-    },
+    // title: {
+    //   text: "ECharts 入门示例",
+    // },
     tooltip: {},
     legend: {
       data: ["销量"],
@@ -44,13 +51,21 @@ const setChartOption = (chartOption, chart) => {
 
 onMounted(() => {
   // 基于准备好的dom，初始化echarts实例
-  myChart = echarts.init(document.getElementById(props.index));
+  myChart = echarts.init(document.getElementById(props.canvasId));
   setChartOption(props.chartOption, myChart);
   setTimeout(() => {
-  myChart.resize();
-    
-  }, 500);
+    myChart.resize();
+  }, 100);
 });
+
+watch(
+  () => props.chartOption,
+  () => {
+    if (props.chartOption) {
+      setChartOption(props.chartOption, myChart);
+    }
+  }
+);
 
 const onResize = () => {
   myChart.resize();
@@ -63,7 +78,7 @@ defineExpose({
 
 <template>
   <!-- 为 ECharts 准备一个定义了宽高的 DOM -->
-  <div :id="index" style="width: 100%; height: 100%"></div>
+  <div :id="canvasId" style="width: 100%; height: 100%"></div>
 </template>
 
 <style lang="scss" scoped></style>

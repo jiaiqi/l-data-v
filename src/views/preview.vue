@@ -1,59 +1,5 @@
 <template>
-  <div
-    class="customhome-container"
-    @dragenter="dragDefFn($event)"
-    @dragover="dragDefFn($event)"
-  >
-    <!-- <div class="customhome-header">
-      <div>head</div>
-    </div> -->
-    <div class="cushome-sidebar">
-      <div
-        v-for="pageItem in comList"
-        :key="pageItem.id"
-        @drag="drag(pageItem)"
-        @dragend="dragend(pageItem)"
-        class="com-item margin"
-        draggable="true"
-        unselectable="on"
-      >
-        <img
-          :src="getImagePath(pageItem.example)"
-          alt=""
-          style="display: inline-block; width: 100%"
-        />
-        <span>{{ pageItem.com_type_name }}</span>
-        <span>{{ pageItem.com_type }}</span>
-      </div>
-    </div>
-    <div class="cushome-right">
-      <el-input
-        size="small"
-        v-model="pageName"
-        clearable
-        placeholder="请输入页面名称"
-      ></el-input>
-      <el-input
-        size="small"
-        v-model="pageTitle"
-        clearable
-        placeholder="请输入页面标题"
-        style="margin-top: 10px"
-      ></el-input>
-      <el-button
-        size="mini"
-        type="primary"
-        style="float: right; margin-top: 10px"
-        @click="clickSave"
-        >保存</el-button
-      >
-      <el-button
-        size="mini"
-        style="float: right; margin: 10px 10px 0 0"
-        @click="clearFn"
-        >清空画布</el-button
-      >
-    </div>
+  <div class="page-wrap">
     <div class="cushome-content" id="content">
       <div class="custom-design" id="custom-design">
         <!-- <div class="custom-design" id="custom-design" :style="stylefn(styleJson)"> -->
@@ -64,8 +10,8 @@
           :row-height="1"
           :preventCollision="true"
           :responsive="true"
-          :is-draggable="true"
-          :is-resizable="true"
+          :is-draggable="false"
+          :is-resizable="false"
           :is-mirrored="false"
           :vertical-compact="false"
           :margin="[0, 0]"
@@ -90,39 +36,11 @@
             class="gridItem"
             :style="layoutJson ? stylefn(layoutJson.style_json) : ''"
           >
-            <span class="remove" @click.stop="removeItem(item.i)"
-              ><i class="el-icon-close"></i
-            ></span>
-            <div
-              v-if="item.isLeftBarItem"
-              class="com-item dashed"
-              @click.stop="changeDesign(item.i)"
-            >
-              <!-- <img
-                :src="getImagePath(item.data.example)"
-                alt=""
-                style="display: inline-block; width: 100%"
-              /> -->
-              <page-item
-                ref="pageItem"
-                :page-item="item.data"
-                :layout="item"
-              ></page-item>
-
-              <!-- <span>{{ item.data.com_type_name }}</span>
-              <span>{{ item.data.com_type }}</span> -->
-            </div>
-            <div
-              class="com-item dashe"
-              v-else
-              @click.stop="changeDesign(item.i)"
-            >
-              <page-item
-                ref="pageItem"
-                :page-item="item.data"
-                :layout="item"
-              ></page-item>
-            </div>
+            <page-item
+              ref="pageItem"
+              :page-item="item.data"
+              :layout="item"
+            ></page-item>
             <!-- <div
               v-else
               class="com-item dashed"
@@ -138,13 +56,6 @@
         </grid-layout>
       </div>
     </div>
-
-    <!-- 移动组件 start -->
-    <div class="moveCon d-flex" v-if="moveShow" :style="moveStyle">
-      <i class="rowIcon el-icon-folder-remove"></i>
-      <div class="item-name">{{ moveData.title }}</div>
-    </div>
-    <!-- 移动组件 end -->
   </div>
 </template>
 
@@ -257,7 +168,7 @@ export default {
       false
     );
 
-    this.initDesign();
+    // this.initDesign();
     this.moveMousemove();
     this.moveMouseup();
     window.onclick = () => {
@@ -339,7 +250,7 @@ export default {
               dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss") +
               "-" +
               i,
-            seq: i+1,
+            seq: i,
             pos_x: item.x,
             pos_y: item.y,
             col_span: item.h,
@@ -373,8 +284,8 @@ export default {
             page_layout_no: layoutNo.layout_no,
             com_type: item.data.com_type,
             page_no: pageNo.page_no,
-            com_seq: i+1,
-            layout_seq: i+1,
+            com_seq: i,
+            layout_seq: i,
           });
         });
         this.saveService("add", addObj);
@@ -435,7 +346,7 @@ export default {
                 dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss") +
                 "-" +
                 i,
-              seq: i+1,
+              seq: i,
               pos_x: item.x,
               pos_y: item.y,
               col_span: item.h,
@@ -486,8 +397,8 @@ export default {
               page_layout_no: this.layoutObj.layout_no,
               com_type: item.data.com_type,
               page_no: this.pgNo,
-              com_seq: i+1,
-              layout_seq: i+1,
+              com_seq: i,
+              layout_seq: i,
             });
           }
         });
@@ -605,17 +516,15 @@ export default {
 
         this.layoutJson = data.layout_json_data;
         console.log(data.layout_json_data);
-        this.comJson = this.comJson.sort((a,b)=>a.layout_seq-b.layout_seq)
-        this.layoutJson.parts_json =  this.layoutJson.parts_json.sort((a,b)=>a.seq-b.seq)
+
         this.layoutJson.parts_json.forEach((item, index) => {
-          // const data = this.comJson.find(e=>);
           const data = this.comJson[index];
           let obj = {
             x: item.pos_x,
             y: item.pos_y,
             w: item.row_span,
             h: item.col_span,
-            i: item.id||new Date().getTime(), // item.seq - 1
+            i: new Date().getTime(), // item.seq - 1
             // i: index, // item.seq - 1
             layout_no: item.layout_no,
             data,
@@ -1070,6 +979,24 @@ export default {
   // },
 };
 </script>
+<style lang="scss" scoped>
+.page-wrap {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  .cushome-content,
+  .custom-design {
+    width: 100%;
+    height: 100%;
+    .vue-grid-layout {
+      margin: 0;
+      padding: 0;
+      height: 100% !important;
+      width: 100%;
+    }
+  }
+}
+</style>
 
 <style lang="scss" scoped>
 .com-item {
@@ -1095,7 +1022,9 @@ export default {
   height: 100%;
   background: #f1f3f2;
   user-select: none;
-
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
   .cushome-sidebar {
     width: 240px;
     position: fixed;
@@ -1125,11 +1054,11 @@ export default {
     right: 240px;
     left: 240px;
     overflow: auto;
-    padding: 20px;
+    // padding: 20px;
     background: #f1f3f2;
     .custom-design {
       height: 100%;
-      width: 800px;
+      //   width: 800px;
       margin: 0 auto;
       background: #fff;
 
