@@ -1,151 +1,58 @@
 <template>
-  <div
-    class="customhome-container"
-    @dragenter="dragDefFn($event)"
-    @dragover="dragDefFn($event)"
-  >
-    <!-- <div class="customhome-header">
-      <div>head</div>
-    </div> -->
-    <div class="cushome-sidebar">
-      <div
-        v-for="pageItem in comList"
-        :key="pageItem.id"
-        @drag="drag(pageItem)"
-        @dragend="dragend(pageItem)"
-        class="com-item margin"
-        draggable="true"
-        unselectable="on"
+  <div class="cushome-content" id="content" :class="{ editable: editable }" :style="stylefn(styleJson)" >
+    <div class="custom-design" id="custom-design">
+      <!-- <div class="custom-design" id="custom-design" :style="stylefn(styleJson)"> -->
+      <grid-layout
+        ref="gridlayout"
+        :layout.sync="layout"
+        :col-num="containerWidth"
+        :row-height="1"
+        :preventCollision="true"
+        :responsive="true"
+        :is-draggable="editable"
+        :is-resizable="editable"
+        :is-mirrored="false"
+        :vertical-compact="false"
+        :margin="[0, 0]"
+        :use-css-transforms="true"
+        @layout-updated="layoutUpdatedEvent"
       >
-        <img
-          :src="getImagePath(pageItem.example)"
-          alt=""
-          style="display: inline-block; width: 100%"
-        />
-        <span>{{ pageItem.com_type_name }}</span>
-        <span>{{ pageItem.com_type }}</span>
-      </div>
-    </div>
-    <div class="cushome-right">
-      <el-input
-        size="small"
-        v-model="pageName"
-        clearable
-        placeholder="请输入页面名称"
-      ></el-input>
-      <el-input
-        size="small"
-        v-model="pageTitle"
-        clearable
-        placeholder="请输入页面标题"
-        style="margin-top: 10px"
-      ></el-input>
-      <el-button
-        size="mini"
-        type="primary"
-        style="float: right; margin-top: 10px"
-        @click="clickSave"
-        >保存</el-button
-      >
-      <el-button
-        size="mini"
-        style="float: right; margin: 10px 10px 0 0"
-        @click="clearFn"
-        >清空画布</el-button
-      >
-    </div>
-    <div class="cushome-content" id="content" :style="bjStyles">
-      <div class="custom-design" id="custom-design" :style="stylefn(styleJson)" >
-        <!-- <div class="custom-design" id="custom-design" :style="stylefn(styleJson)"> -->
-        <grid-layout
-          ref="gridlayout"
-          :layout.sync="layout"
-          :col-num="containerWidth"
-          :row-height="1"
-          :preventCollision="true"
-          :responsive="true"
-          :is-draggable="true"
-          :is-resizable="true"
-          :is-mirrored="false"
-          :vertical-compact="false"
-          :margin="[0, 0]"
-          :use-css-transforms="true"
-          @layout-updated="layoutUpdatedEvent"
+        <div
+          class="grid-container"
+          id="grid-container"
+          :style="bjStyles"
+          v-if="editable"
+        ></div>
+        <grid-item
+          v-for="item in layout"
+          :x="item.x"
+          :y="item.y"
+          :w="item.w"
+          :h="item.h"
+          :i="item.i"
+          :key="item.i"
+          @moved="movedEvent"
+          @resized="resizedEvent"
+          class="gridItem"
+          :style="layoutJson ? stylefn(layoutJson.style_json) : ''"
         >
-          <!-- <div
-            class="grid-container"
-            id="grid-container"
-            :style="bjStyles"
-          ></div> -->
-          <grid-item
-            v-for="item in layout"
-            :x="item.x"
-            :y="item.y"
-            :w="item.w"
-            :h="item.h"
-            :i="item.i"
-            :key="item.i"
-            @moved="movedEvent"
-            @resized="resizedEvent"
-            class="gridItem"
-            :style="layoutJson ? stylefn(layoutJson.style_json) : ''"
+          <span class="remove" @click.stop="removeItem(item.i)" v-if="editable"
+            ><i class="el-icon-close"></i
+          ></span>
+          <div
+            class="com-item dashed"
+            @click.stop="changeDesign(item.i)"
           >
-            <span class="remove" @click.stop="removeItem(item.i)"
-              ><i class="el-icon-close"></i
-            ></span>
-            <div
-              v-if="item.isLeftBarItem"
-              class="com-item dashed"
-              @click.stop="changeDesign(item.i)"
-            >
-              <!-- <img
-                :src="getImagePath(item.data.example)"
-                alt=""
-                style="display: inline-block; width: 100%"
-              /> -->
-              <page-item
-                ref="pageItem"
-                :page-item="item.data"
-                :layout="item"
-              ></page-item>
-
-              <!-- <span>{{ item.data.com_type_name }}</span>
-              <span>{{ item.data.com_type }}</span> -->
-            </div>
-            <div
-              class="com-item dashe"
-              v-else
-              @click.stop.prevent.capture="changeDesign(item.i)"
-            >
-              <page-item
-                ref="pageItem"
-                :page-item="item.data"
-                :layout="item"
-                @click.stop=""
-              ></page-item>
-            </div>
-            <!-- <div
-              v-else
-              class="com-item dashed"
-              @click.stop="changeDesign(item.i)"
-            >
-              <img
-                :src="getImagePath(item.data.example)"
-                alt=""
-                style="display: inline-block; width: 100%"
-              />
-            </div> -->
-          </grid-item>
-        </grid-layout>
-      </div>
+            <page-item
+              ref="pageItem"
+              :page-item="item.data"
+              :layout="item"
+            ></page-item>
+          </div>
+          
+        </grid-item>
+      </grid-layout>
     </div>
-
-    <!-- 移动组件 start -->
-    <div class="moveCon d-flex" v-if="moveShow" :style="moveStyle">
-      <i class="rowIcon el-icon-folder-remove"></i>
-      <div class="item-name">{{ moveData.title }}</div>
-    </div>
-    <!-- 移动组件 end -->
   </div>
 </template>
 
@@ -163,6 +70,22 @@ export default {
     GridLayout,
     GridItem,
     PageItem,
+  },
+  props: {
+    editable: {
+      type: Boolean,
+      default: true,
+    },
+    outLayout: {
+      type: Array,
+    },
+  },
+  watch: {
+    outLayout: {
+      handler(newValue, oldValue) {
+        // this.layout = newValue;
+      },
+    },
   },
   data() {
     return {
@@ -242,7 +165,6 @@ export default {
   },
   created() {
     this.getComList();
-
     if (this.$route.query.pageNo) {
       this.pgNo = this.$route.query.pageNo;
       this.initPage();
@@ -340,7 +262,7 @@ export default {
               dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss") +
               "-" +
               i,
-            seq: i+1,
+            seq: i + 1,
             pos_x: item.x,
             pos_y: item.y,
             col_span: item.h,
@@ -374,8 +296,8 @@ export default {
             page_layout_no: layoutNo.layout_no,
             com_type: item.data.com_type,
             page_no: pageNo.page_no,
-            com_seq: i+1,
-            layout_seq: i+1,
+            com_seq: i + 1,
+            layout_seq: i + 1,
           });
         });
         this.saveService("add", addObj);
@@ -436,7 +358,7 @@ export default {
                 dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss") +
                 "-" +
                 i,
-              seq: i+1,
+              seq: i + 1,
               pos_x: item.x,
               pos_y: item.y,
               col_span: item.h,
@@ -487,8 +409,8 @@ export default {
               page_layout_no: this.layoutObj.layout_no,
               com_type: item.data.com_type,
               page_no: this.pgNo,
-              com_seq: i+1,
-              layout_seq: i+1,
+              com_seq: i + 1,
+              layout_seq: i + 1,
             });
           }
         });
@@ -606,8 +528,10 @@ export default {
 
         this.layoutJson = data.layout_json_data;
         console.log(data.layout_json_data);
-        this.comJson = this.comJson.sort((a,b)=>a.layout_seq-b.layout_seq)
-        this.layoutJson.parts_json =  this.layoutJson.parts_json.sort((a,b)=>a.seq-b.seq)
+        this.comJson = this.comJson.sort((a, b) => a.layout_seq - b.layout_seq);
+        this.layoutJson.parts_json = this.layoutJson.parts_json.sort(
+          (a, b) => a.seq - b.seq
+        );
         this.layoutJson.parts_json.forEach((item, index) => {
           // const data = this.comJson.find(e=>);
           const data = this.comJson[index];
@@ -616,7 +540,7 @@ export default {
             y: item.pos_y,
             w: item.row_span,
             h: item.col_span,
-            i: item.id||new Date().getTime(), // item.seq - 1
+            i: item.id || new Date().getTime(), // item.seq - 1
             // i: index, // item.seq - 1
             layout_no: item.layout_no,
             data,
@@ -626,6 +550,7 @@ export default {
 
           this.layout.push(obj);
         });
+        this.$emit("update:outLayout", this.layout);
         this.strLayout = JSON.stringify(this.layout);
       } else {
         this.$message.info("无数据！");
@@ -1061,14 +986,6 @@ export default {
       return res;
     },
   },
-  // beforeRouteLeave(to, from, next) {
-  //   const answer = window.confirm("当前页面数据未保存，确定要离开？");
-  //   if (answer) {
-  //     next();
-  //   } else {
-  //     next(false);
-  //   }
-  // },
 };
 </script>
 
@@ -1091,144 +1008,146 @@ export default {
   }
 }
 
-.customhome-container {
-  width: 100%;
-  height: 100%;
+// .customhome-container {
+//   width: 100%;
+//   height: 100%;
+//   background: #f1f3f2;
+//   user-select: none;
+
+.cushome-sidebar {
+  width: 240px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: #fff;
+  overflow: auto;
+  box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.08);
+}
+
+.cushome-right {
+  width: 240px;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  overflow: auto;
+  padding: 20px;
+}
+
+.cushome-content {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  overflow: auto;
   background: #f1f3f2;
-  user-select: none;
-
-  .cushome-sidebar {
-    width: 240px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    background: #fff;
-    overflow: auto;
-    box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.08);
-  }
-
-  .cushome-right {
-    width: 240px;
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    background: #fff;
-    overflow: auto;
+  &.editable {
     padding: 20px;
-  }
-
-  .cushome-content {
-    position: fixed;
-    top: 0;
-    bottom: 0;
     right: 240px;
     left: 240px;
-    overflow: auto;
-    padding: 20px;
-    background: #f1f3f2;
-    .custom-design {
-      height: 100%;
-      // width: 800px;
-      // width: 100%;
-      // min-width: 800px;
-      width: 1920px;
-      height: 1080px;
-      overflow-y: hidden;
-      // transform: scale(0.8);
-      margin: 0 auto;
-      // background: #fff;
+  }
+  .custom-design {
+    height: 100%;
+    // width: 800px;
+    // width: 100%;
+    // min-width: 800px;
+    width: 1920px;
+    height: 1080px;
+    overflow-y: hidden;
+    // transform: scale(0.8);
+    margin: 0 auto;
+    // background: #fff;
 
-      .grid-container {
-        height: 100%;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        position: absolute;
+    .grid-container {
+      height: 100%;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      position: absolute;
+    }
+
+    .design-conbox {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      border: 1px dashed transparent;
+
+      &.activeBorder {
+        border: 1px dashed #197f54;
       }
 
-      .design-conbox {
+      .design-title {
         width: 100%;
-        height: 100%;
-        background: #fff;
-        border: 1px dashed transparent;
+        height: 56px;
+        padding: 0 32px;
+        justify-content: space-between;
+        align-items: center;
 
-        &.activeBorder {
-          border: 1px dashed #197f54;
-        }
-
-        .design-title {
-          width: 100%;
-          height: 56px;
-          padding: 0 32px;
-          justify-content: space-between;
+        .row-tit {
+          height: 100%;
           align-items: center;
 
-          .row-tit {
-            height: 100%;
-            align-items: center;
-
-            .line {
-              width: 4px;
-              height: 16px;
-              border-radius: 3px;
-              margin-right: 12px;
-              background: #197f54;
-            }
-
-            .tit-text {
-              height: 100%;
-              line-height: 56px;
-              font-size: 16px;
-              font-weight: 400;
-              color: #304265;
-              cursor: default;
-            }
+          .line {
+            width: 4px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 12px;
+            background: #197f54;
           }
 
-          .closeIcon {
-            font-size: 20px;
-            cursor: pointer;
+          .tit-text {
+            height: 100%;
+            line-height: 56px;
+            font-size: 16px;
+            font-weight: 400;
+            color: #304265;
+            cursor: default;
           }
         }
 
-        .design-content {
-          width: 100%;
-          height: calc(100% - 56px);
-          padding: 0 31px 16px;
+        .closeIcon {
+          font-size: 20px;
+          cursor: pointer;
         }
       }
-    }
-  }
 
-  .moveCon {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 208px;
-    height: 40px;
-    background: #edf5f2;
-    border-radius: 4px;
-    margin-bottom: 12px;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    padding-left: 16px;
-    opacity: 0.5;
-
-    .rowIcon {
-      font-size: 20px;
-    }
-
-    .item-name {
-      font-size: 14px;
-      color: #303133;
-      margin-left: 10px;
+      .design-content {
+        width: 100%;
+        height: calc(100% - 56px);
+        padding: 0 31px 16px;
+      }
     }
   }
 }
+
+.moveCon {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 208px;
+  height: 40px;
+  background: #edf5f2;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  padding-left: 16px;
+  opacity: 0.5;
+
+  .rowIcon {
+    font-size: 20px;
+  }
+
+  .item-name {
+    font-size: 14px;
+    color: #303133;
+    margin-left: 10px;
+  }
+}
+// }
 </style>
 <style lang="scss" scoped>
 .custom-design .vue-grid-layout {
@@ -1259,7 +1178,7 @@ export default {
 }
 
 .gridItem {
-  // border: 1px solid #fff;
+//   border: 1px solid #fff;
   // background-color: rgba(255,255,255,1);
   overflow: hidden;
 }

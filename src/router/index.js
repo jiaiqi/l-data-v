@@ -19,12 +19,12 @@ const router = new VueRouter({
       // route level code-splitting
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
-      component: () => import("../views/preview.vue"),
+      component: () => import("@/views/preview.vue"),
     },
     {
       path: "/player",
       name: "player",
-      component: () => import("../views/video-player.vue"),
+      component: () => import("@/views/video-player.vue"),
     },
     // {
     //   path: '/about',

@@ -1,9 +1,15 @@
 <template>
   <div class="page-wrap">
+    <page-editor
+      :outLayout.sync="layout"
+      :layoutJson="layoutJson"
+      :editable="false"
+    ></page-editor>
+
     <div class="cushome-content" id="content">
       <div class="custom-design" id="custom-design">
         <!-- <div class="custom-design" id="custom-design" :style="stylefn(styleJson)"> -->
-        <grid-layout
+        <!-- <grid-layout
           ref="gridlayout"
           :layout.sync="layout"
           :col-num="containerWidth"
@@ -41,38 +47,33 @@
               :page-item="item.data"
               :layout="item"
             ></page-item>
-            <!-- <div
-              v-else
-              class="com-item dashed"
-              @click.stop="changeDesign(item.i)"
-            >
-              <img
-                :src="getImagePath(item.data.example)"
-                alt=""
-                style="display: inline-block; width: 100%"
-              />
-            </div> -->
           </grid-item>
-        </grid-layout>
+        </grid-layout> -->
       </div>
     </div>
   </div>
 </template>
+<!-- <script setup>
+import pageEditor from "@/components/page-editor/index.vue";
+</script> -->
 
 <script>
 import dayjs from "dayjs";
 import { GridLayout, GridItem } from "vue-grid-layout";
 import PageItem from "@/components/page-item/page-item.vue";
+import pageEditor from "@/components/page-editor/index.vue";
+
 import { formatStyleData } from "@/common/common.js";
 import { $axios } from "@/common/http.js";
+
 let mouseXY = { x: null, y: null };
 let DragPos = { x: null, y: null, w: 1, h: 1, i: null };
-
 export default {
   components: {
     GridLayout,
     GridItem,
     PageItem,
+    pageEditor,
   },
   data() {
     return {
@@ -191,6 +192,9 @@ export default {
     },
   },
   methods: {
+    // onLayoutChange(e) {
+    //   this.layout = e;
+    // },
     initColNum() {
       let containerWidth =
         document.getElementById("grid-container").offsetWidth;
