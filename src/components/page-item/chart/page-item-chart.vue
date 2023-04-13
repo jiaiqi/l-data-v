@@ -25,7 +25,7 @@ const props = defineProps({
   },
 });
 const { pageItem } = props;
-const timer = null;
+let timer = null;
 const emit = defineEmits(["clickChart"]);
 const clickChart = () => {
   emit("clickChart");
@@ -33,10 +33,10 @@ const clickChart = () => {
 
 onMounted(() => {
   onSrvReq();
-  // if (pageItem?.srv_req_json?.cycle_req_timer) {
-  //   // 定时刷新
-  //   // autoRefreshData();
-  // }
+  if (pageItem?.srv_req_json?.cycle_req_timer) {
+    // 定时刷新
+    autoRefreshData();
+  }
 });
 const option = ref({});
 const ecRun = computed(() => {

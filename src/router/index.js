@@ -5,7 +5,7 @@ import HomeView from "@/views/page-editor/page-editor.vue";
 Vue.use(VueRouter);
 
 const router = new VueRouter({
-  mode: "history",
+  mode: "hash",
   base: import.meta.env.BASE_URL,
   routes: [
     {

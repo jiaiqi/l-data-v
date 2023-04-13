@@ -1,9 +1,5 @@
 import axios from "axios";
 
-sessionStorage.setItem(
-  "bx_auth_ticket",
-  "xabxdzkj-0aa6865c-9c07-4b80-a25b-73984e52684c"
-);
 const baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
 
 export const $axios = axios.create({
@@ -15,8 +11,10 @@ export const $axios = axios.create({
 $axios.interceptors.request.use(
   function (config) {
     // 在发送请求之前做些什么
-    // request.headers.set('bx_auth_ticket', sessionStorage.getItem("bx_auth_ticket"))
     let bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
+    if (!bx_auth_ticket) {
+      bx_auth_ticket = "xabxdzkj-dd2cb0bf-6aff-4d3f-b151-1f639800fdf5";
+    }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
   },
