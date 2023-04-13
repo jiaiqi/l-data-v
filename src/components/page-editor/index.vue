@@ -1,6 +1,6 @@
 <template>
-  <div class="cushome-content" id="content" :class="{ editable: editable }" :style="stylefn(styleJson)" >
-    <div class="custom-design" id="custom-design">
+  <div class="cushome-content" id="content" :class="{ editable: editable }">
+    <div class="custom-design" id="custom-design" :style="stylefn(styleJson)">
       <!-- <div class="custom-design" id="custom-design" :style="stylefn(styleJson)"> -->
       <grid-layout
         ref="gridlayout"
@@ -40,7 +40,8 @@
             ><i class="el-icon-close"></i
           ></span>
           <div
-            class="com-item dashed"
+            class="com-item"
+            :class="{ dashed: editable }"
             @click.stop="changeDesign(item.i)"
           >
             <page-item
@@ -49,7 +50,6 @@
               :layout="item"
             ></page-item>
           </div>
-          
         </grid-item>
       </grid-layout>
     </div>
@@ -180,7 +180,7 @@ export default {
       false
     );
 
-    this.initDesign();
+    // this.initDesign();
     this.moveMousemove();
     this.moveMouseup();
     window.onclick = () => {
@@ -992,12 +992,13 @@ export default {
 <style lang="scss" scoped>
 .com-item {
   min-height: 90px;
-  border: 1px solid #197f54;
   cursor: move;
   text-align: center;
   display: grid;
   font-size: 14px;
-
+  // &.border {
+    // border: 1px solid #197f54;
+  // }
   &.margin {
     margin: 20px;
   }
@@ -1178,7 +1179,7 @@ export default {
 }
 
 .gridItem {
-//   border: 1px solid #fff;
+  //   border: 1px solid #fff;
   // background-color: rgba(255,255,255,1);
   overflow: hidden;
 }

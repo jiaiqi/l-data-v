@@ -54,8 +54,8 @@
         >清空画布</el-button
       >
     </div>
-    <div class="cushome-content" id="content" :style="bjStyles">
-      <div class="custom-design" id="custom-design" :style="stylefn(styleJson)" >
+    <div class="cushome-content" id="content" :style="[]">
+      <div class="custom-design" id="custom-design"  :style="[bjStyles,stylefn(styleJson)]" >
         <!-- <div class="custom-design" id="custom-design" :style="stylefn(styleJson)"> -->
         <grid-layout
           ref="gridlayout"

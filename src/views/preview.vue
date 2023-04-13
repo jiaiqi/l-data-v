@@ -1,15 +1,25 @@
 <template>
-  <div class="page-wrap">
+  <div class="page-wrap" id="page-wrap">
+    <div class="page-header">
+      <div class="left"></div>
+      <div class="right" @click="openFullscreen">
+        <span
+          class="iconfont icon-tuichuquanping"
+          v-if="isFullScreen"
+          title="退出全屏"
+        ></span>
+        <span class="iconfont icon-quanping" v-else title="全屏"></span>
+      </div>
+    </div>
     <page-editor
       :outLayout.sync="layout"
       :layoutJson="layoutJson"
       :editable="false"
     ></page-editor>
 
-    <div class="cushome-content" id="content">
+    <!-- <div class="cushome-content" id="content">
       <div class="custom-design" id="custom-design">
-        <!-- <div class="custom-design" id="custom-design" :style="stylefn(styleJson)"> -->
-        <!-- <grid-layout
+        <grid-layout
           ref="gridlayout"
           :layout.sync="layout"
           :col-num="containerWidth"
@@ -48,9 +58,9 @@
               :layout="item"
             ></page-item>
           </grid-item>
-        </grid-layout> -->
+        </grid-layout>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 <!-- <script setup>
@@ -77,6 +87,7 @@ export default {
   },
   data() {
     return {
+      isFullScreen: false,
       containerWidth: 800,
       colNum: 40,
       pgNo: "",
@@ -160,21 +171,27 @@ export default {
     }
   },
   mounted() {
-    document.addEventListener(
-      "dragover",
-      function (e) {
-        mouseXY.x = e.clientX;
-        mouseXY.y = e.clientY;
-      },
-      false
-    );
-
-    // this.initDesign();
-    this.moveMousemove();
-    this.moveMouseup();
-    window.onclick = () => {
-      this.curDesign = "";
+    const self = this;
+    window.onresize = function () {
+      self.resize();
     };
+    setTimeout(() => {
+      this.resize()
+    }, 1000);
+    // document.addEventListener(
+    //   "dragover",
+    //   function (e) {
+    //     mouseXY.x = e.clientX;
+    //     mouseXY.y = e.clientY;
+    //   },
+    //   false
+    // );
+    // // this.initDesign();
+    // this.moveMousemove();
+    // this.moveMouseup();
+    // window.onclick = () => {
+    //   this.curDesign = "";
+    // };
     // window.onresize = () => {
     //   this.containerWidth = document.getElementById("content").offsetWidth;
     //   // this.initColNum();
@@ -192,6 +209,43 @@ export default {
     },
   },
   methods: {
+    resize() {
+      // 自适应缩放
+      let element = document.getElementById('custom-design')
+      let resizeFull = () => {
+        const windowWidth = window.innerWidth;
+        const windowheight = window.innerHeight;
+        if (!window.screen.height || !window.screen.width)
+          return resizeFullBak();
+        let ratioX = windowWidth / window.screen.width;
+        let ratioY = windowheight / window.screen.height;
+        let contentData = this.styleJson;
+
+        let dashboard_width = Number(contentData.width);
+        let dashboard_height = Number(contentData.height);
+        if (window.screen.width / dashboard_width < 1) {
+          ratioX = (ratioX * window.screen.width) / width;
+        }
+        if (window.screen.height / dashboard_height < 1) {
+          ratioY = (ratioY * window.screen.height) / dashboard_height;
+        }
+        document.body.style = `width:${this.styleJson.width};height:${this.styleJson.height};overflow-y:hidden;transform:scale(${ratioX}, ${ratioY});transform-origin: left top; background-size: 100% 100%;`;
+      };
+      let resizeFullBak = () => {
+        let ratioX = windowWidth / document.body.innerWidth;
+        let ratioY = windowheight / document.body.innerHeight;
+        let dashboard_width = Number(contentData.width);
+        let dashboard_height = Number(contentData.height);
+        if (window.screen.width / dashboard_width < 1) {
+          ratiox = (ratio * window.screen.width) / dashboard_width;
+        }
+        if (window.screen.height / dashboard_height < 1) {
+          ratiox = (ratio * window.screen.height) / dashboard_height;
+        }
+        document.body.style = `width:${this.styleJson.width};height:${this.styleJson.height};transform: scale(${ratioX},${ratioY});transform-origin: left top;background-size: 100%  ${ratioY}`;
+      };
+      resizeFull();
+    },
     // onLayoutChange(e) {
     //   this.layout = e;
     // },
@@ -655,6 +709,59 @@ export default {
         }
       }
     },
+    openFullscreen() {
+      this.isFullScreen = !this.isFullScreen;
+      this.toggleFullScreen();
+    },
+    requestFullScreen(element) {
+      //进入全屏状态 判断各种浏览器，找到正确的方法
+      if (!element) {
+        element = document.body;
+      }
+      var requestMethod =
+        element.requestFullScreen || //W3C
+        element.webkitRequestFullScreen || //Chrome等
+        element.mozRequestFullScreen || //FireFox
+        element.msRequestFullScreen; //IE11
+      if (requestMethod) {
+        requestMethod.call(element);
+      } else if (typeof window.ActiveXObject !== "undefined") {
+        //for Internet Explorer
+        var wscript = new ActiveXObject("WScript.Shell");
+        if (wscript !== null) {
+          wscript.SendKeys("{F11}");
+        }
+      }
+    },
+    toggleFullScreen() {
+      //切换全屏状态
+      if (!document.fullscreenElement) {
+        this.requestFullScreen();
+        // document.documentElement.requestFullscreen();
+      } else {
+        this.exitFullScreen();
+        // if (document.exitFullscreen) {
+        //   document.exitFullscreen();
+        // }
+      }
+    },
+    exitFullScreen() {
+      // 退出全屏状态 判断各种浏览器，找到正确的方法
+      var exitMethod =
+        document.exitFullscreen || //W3C
+        document.mozCancelFullScreen || //FireFox
+        document.webkitExitFullscreen || //Chrome等
+        document.webkitExitFullscreen; //IE11
+      if (exitMethod && document.fullscreenElement) {
+        exitMethod.call(document);
+      } else if (typeof window.ActiveXObject !== "undefined") {
+        //for Internet Explorer
+        var wscript = new ActiveXObject("WScript.Shell");
+        if (wscript !== null) {
+          wscript.SendKeys("{F11}");
+        }
+      }
+    },
     //自定义容器初始化
     initDesign() {
       let domstyleWidth =
@@ -985,8 +1092,8 @@ export default {
 </script>
 <style lang="scss" scoped>
 .page-wrap {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   .cushome-content,
   .custom-design {
@@ -1003,6 +1110,22 @@ export default {
 </style>
 
 <style lang="scss" scoped>
+.page-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 20px;
+  padding-right: 40px;
+  z-index: 99;
+
+  .right {
+    color: #fff;
+    .iconfont {
+      font-size: 40px;
+      cursor: pointer;
+    }
+  }
+}
 .com-item {
   min-height: 90px;
   border: 1px solid #197f54;

@@ -1,4 +1,19 @@
-@import "./base.css";
+@font-face {
+  font-family: "iconfont";
+  src: url("./iconfont/") format("woff2"),
+    url("./iconfont//iconfont.woff?t=1681386805916") format("woff"),
+    url("./iconfont//iconfont.ttf?t=1681386805916") format("truetype");
+}
+
+.iconfont {
+    font-family: "iconfont" !important;
+    font-size: 16px;
+    font-style: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+/* @import "./base.css";
 
 #app {
   max-width: 1280px;
@@ -32,4 +47,4 @@ a,
     grid-template-columns: 1fr 1fr;
     padding: 0 2rem;
   }
-}
+} */

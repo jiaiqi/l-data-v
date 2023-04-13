@@ -167,7 +167,8 @@ export default {
 		toVideoPage(o) {
 			if (!o.url) return
 			const url = `/player?deviceSerial=${o.dev_sn}&channelNo=${o.channel}&verify_code=${o.verify_code}`
-			this.$router.push(url)
+			// this.$router.push(url)
+			window.open(url)
 			// let id = 'wxf2b3a0262975d8c2'
 			// let accessToken = this.accessToken
 			// wx.openEmbeddedMiniProgram({

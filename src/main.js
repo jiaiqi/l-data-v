@@ -6,8 +6,8 @@ import "element-ui/lib/theme-chalk/index.css";
 
 import App from "./App.vue";
 import router from "./router";
-
-// import "./assets/main.css";
+import './assets/iconfont/iconfont.css'
+import "./assets/main.css";
 
 import { $axios } from "@/common/http.js";
 Vue.prototype.$axios = $axios;
