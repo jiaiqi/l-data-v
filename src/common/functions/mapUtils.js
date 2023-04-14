@@ -1,8 +1,13 @@
 import { $http, getImagePath, isValidResponse } from "../http";
 
 import coordtransform from "../coordtransform.js";
-import { log } from "ezuikit-js";
-// 生成id
+
+/**
+ * 生成地图id
+ * @param {string} id -默认id
+ * @param {string} prefix -前缀
+ * @returns {string} -生成的id
+ */
 export function generateMapID(id, prefix) {
   let mapId = "";
   if (id) {
@@ -13,7 +18,12 @@ export function generateMapID(id, prefix) {
   return mapId;
 }
 
-// 初始化腾讯地图
+/**
+ * 初始化腾讯地图
+ * @param {string} id 地图容器id
+ * @param {object} pageItem
+ * @returns {object} -腾讯地图实例
+ */
 export function initMap(id, pageItem) {
   let mapInstance = null;
   //定义地图中心点坐标
@@ -88,13 +98,8 @@ export async function getMapTravelData(
       },
     ];
   }
-
   const res = await $http.post(url, req);
-  if (
-    res?.data?.state === "SUCCESS" &&
-    Array.isArray(res?.data?.data) &&
-    res?.data?.data.length > 0
-  ) {
+  if (isValidResponse(res)) {
     // 轨迹图
     const data = res.data.data.reverse();
     let points = [];
@@ -255,7 +260,12 @@ export const initMapData = async (map, pageItem) => {
   }
 };
 
-// marker轨迹回放
+/**
+ *marker轨迹回放
+ * @param {object} map -地图实例
+ * @param {Array} points -标记点合集
+ * @param {boolean} isMoveAlong - 小车是否移动
+ */
 export const setCarMoveAlong = (map, points, isMoveAlong = false) => {
   //小车移动路线
   const path = points.map((item) => {
@@ -333,7 +343,11 @@ export const setCarMoveAlong = (map, points, isMoveAlong = false) => {
   }
 };
 
-// 显示范围包含所有点
+/**
+ * 缩放地图显示范围包含所有点
+ * @param {object} map -地图实例
+ * @param {Array} points -标记点合集
+ */
 export function includePoints(map, points = []) {
   //假设您有一组坐标点
   var coords = points
@@ -351,7 +365,11 @@ export function includePoints(map, points = []) {
   });
 }
 
-// 画线
+/**
+ * 在地图上根据传入的点画折线
+ * @param {object} map -地图实例
+ * @param {Array} points -标记点合集
+ */
 export function createPolyline(map, points) {
   const paths = points.map(
     (item) => new TMap.LatLng(item.latitude, item.longitude)
@@ -388,16 +406,12 @@ export function createPolyline(map, points) {
   return polylineLayer;
 }
 
-// 标记点
+/**
+ * 在地图上创建标记点
+ * @param {object} map -地图实例
+ * @param {Array} markerData -标记点数据
+ */
 export function createMarkers(map, markerData) {
-  var center = new TMap.LatLng(
-    markerData.center.latitude,
-    markerData.center.longitude
-  ); //设置中心点坐标
-  //初始化地图
-//   var map = new TMap.Map("container", {
-//     center: center,
-//   });
   var markerArr = markerData.markers.map((item) => {
     return {
       id: item.id,
