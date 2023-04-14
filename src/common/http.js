@@ -13,7 +13,7 @@ $axios.interceptors.request.use(
     // 在发送请求之前做些什么
     let bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (!bx_auth_ticket) {
-      bx_auth_ticket = "xabxdzkj-c1508f5d-0ea4-426b-bce4-27900adaa35d";
+      bx_auth_ticket = "xabxdzkj-a373aee6-1972-4532-bb65-14c1dba9c800";
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;

@@ -49,13 +49,24 @@
       >
       <el-button
         size="mini"
+        type="primary"
+        style="float: right; margin: 10px 10px 0 0"
+        @click="toPreview"
+        >预览</el-button
+      >
+      <el-button
+        size="mini"
         style="float: right; margin: 10px 10px 0 0"
         @click="clearFn"
         >清空画布</el-button
       >
     </div>
     <div class="cushome-content" id="content" :style="[]">
-      <div class="custom-design" id="custom-design"  :style="[bjStyles,stylefn(styleJson)]" >
+      <div
+        class="custom-design"
+        id="custom-design"
+        :style="[bjStyles, stylefn(styleJson)]"
+      >
         <!-- <div class="custom-design" id="custom-design" :style="stylefn(styleJson)"> -->
         <grid-layout
           ref="gridlayout"
@@ -96,18 +107,18 @@
             <div
               v-if="item.isLeftBarItem"
               class="com-item dashed"
-              @click.stop="changeDesign(item.i)"
+              @click.stop.prevent.capture="changeDesign(item.i)"
             >
-              <!-- <img
+              <img
                 :src="getImagePath(item.data.example)"
                 alt=""
                 style="display: inline-block; width: 100%"
-              /> -->
-              <page-item
+              />
+              <!-- <page-item
                 ref="pageItem"
                 :page-item="item.data"
                 :layout="item"
-              ></page-item>
+              ></page-item> -->
 
               <!-- <span>{{ item.data.com_type_name }}</span>
               <span>{{ item.data.com_type }}</span> -->
@@ -150,7 +161,7 @@
 </template>
 
 <script>
-import dayjs from "dayjs";
+import dayjs, { unix } from "dayjs";
 import { GridLayout, GridItem } from "vue-grid-layout";
 import PageItem from "@/components/page-item/page-item.vue";
 import { formatStyleData } from "@/common/common.js";
@@ -294,6 +305,10 @@ export default {
     clearFn() {
       this.layout = [];
     },
+    // 跳转到预览页面
+    toPreview(){
+      window.open(window.location.hash.replace('#','#/preview'))
+    },
     clickSave() {
       if (this.layout.length === 0) {
         this.$message.error("画布为空！");
@@ -340,7 +355,7 @@ export default {
               dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss") +
               "-" +
               i,
-            seq: i+1,
+            seq: i + 1,
             pos_x: item.x,
             pos_y: item.y,
             col_span: item.h,
@@ -374,8 +389,8 @@ export default {
             page_layout_no: layoutNo.layout_no,
             com_type: item.data.com_type,
             page_no: pageNo.page_no,
-            com_seq: i+1,
-            layout_seq: i+1,
+            com_seq: i + 1,
+            layout_seq: i + 1,
           });
         });
         this.saveService("add", addObj);
@@ -436,7 +451,7 @@ export default {
                 dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss") +
                 "-" +
                 i,
-              seq: i+1,
+              seq: i + 1,
               pos_x: item.x,
               pos_y: item.y,
               col_span: item.h,
@@ -487,8 +502,8 @@ export default {
               page_layout_no: this.layoutObj.layout_no,
               com_type: item.data.com_type,
               page_no: this.pgNo,
-              com_seq: i+1,
-              layout_seq: i+1,
+              com_seq: i + 1,
+              layout_seq: i + 1,
             });
           }
         });
@@ -606,8 +621,10 @@ export default {
 
         this.layoutJson = data.layout_json_data;
         console.log(data.layout_json_data);
-        this.comJson = this.comJson.sort((a,b)=>a.layout_seq-b.layout_seq)
-        this.layoutJson.parts_json =  this.layoutJson.parts_json.sort((a,b)=>a.seq-b.seq)
+        this.comJson = this.comJson.sort((a, b) => a.layout_seq - b.layout_seq);
+        this.layoutJson.parts_json = this.layoutJson.parts_json.sort(
+          (a, b) => a.seq - b.seq
+        );
         this.layoutJson.parts_json.forEach((item, index) => {
           // const data = this.comJson.find(e=>);
           const data = this.comJson[index];
@@ -616,7 +633,7 @@ export default {
             y: item.pos_y,
             w: item.row_span,
             h: item.col_span,
-            i: item.id||new Date().getTime(), // item.seq - 1
+            i: item.id || new Date().getTime(), // item.seq - 1
             // i: index, // item.seq - 1
             layout_no: item.layout_no,
             data,

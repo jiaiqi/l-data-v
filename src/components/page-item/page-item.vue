@@ -89,7 +89,7 @@ export default {
     stylefn(style) {
       if (style) {
         let res = formatStyleData(style);
-        if (this.layout?.h&&this.layout?.w) {
+        if (this.layout?.h && this.layout?.w) {
           res.height = "100%";
           res.width = "100%";
         }
@@ -99,3 +99,11 @@ export default {
   },
 };
 </script>
+
+<style lang="scss">
+.page-item {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+</style>
