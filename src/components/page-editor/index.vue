@@ -546,6 +546,7 @@ export default {
             data,
             isLeftBarItem: false,
             id: item.id,
+            static:true,
           };
 
           this.layout.push(obj);

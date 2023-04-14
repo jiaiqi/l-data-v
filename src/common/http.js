@@ -13,7 +13,7 @@ $axios.interceptors.request.use(
     // 在发送请求之前做些什么
     let bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (!bx_auth_ticket) {
-      bx_auth_ticket = "xabxdzkj-a373aee6-1972-4532-bb65-14c1dba9c800";
+      bx_auth_ticket = "xabxdzkj-e8073455-05ed-41b2-a36a-1f12dd0b4b19";
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
@@ -94,6 +94,8 @@ $axios.interceptors.response.use(
   }
 );
 
+export const $http = $axios;
+
 export const $select = async (req, app) => {
   app = app || req.srvApp || req.mapp;
   if (app) {
@@ -112,4 +114,42 @@ export const $select = async (req, app) => {
       };
     }
   }
+};
+
+// 使用文件编号拼文件路径
+export const getImagePath = (no, notThumb) => {
+  if (no && typeof no === "string") {
+    if (no.indexOf("http://") !== -1 || no.indexOf("https://") !== -1) {
+      return no;
+    }
+    if (no.indexOf("data:image") !== -1 && no.indexOf("base64") !== -1) {
+      return no;
+    }
+    if (no.indexOf("&bx_auth_ticket") !== -1) {
+      no = no.split("&bx_auth_ticket")[0];
+    }
+    let url = `${
+      serviceApi.imageFileNo
+    }${no}&bx_auth_ticket=${sessionStorage.getItem("bx_auth_ticket")}`;
+    return url;
+  } else {
+    return "";
+  }
+};
+
+/**
+ * 判断查询接口返回的数据是否有效
+ * @param {object} res 接口返回的数据
+ * @param {boolean} gtZero 查回来的数据长度是否需要大于0
+ * @returns {boolean} true/false
+ */
+export const isValidResponse = (res, gtZero = false) => {
+  if (res?.data?.state === "SUCCESS" && Array.isArray(res.data.data)) {
+    if (!gtZero) {
+      return true;
+    } else if (gtZero && res.data.data.length === 0) {
+      return false;
+    }
+  }
+  return true
 };

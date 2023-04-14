@@ -9,7 +9,7 @@ import router from "./router";
 import './assets/iconfont/iconfont.css'
 import "./assets/main.css";
 
-import { $axios } from "@/common/http.js";
+import { $axios,getImagePath } from "@/common/http.js";
 Vue.prototype.$axios = $axios;
 
 import VueUtil from '@/common/vue_util'
@@ -22,25 +22,7 @@ Vue.use(PiniaVuePlugin);
 
 Vue.use(ElementUI);
 
-Vue.prototype.getImagePath = (no, notThumb) => {
-  if (no && typeof no === "string") {
-    if (no.indexOf("http://") !== -1 || no.indexOf("https://") !== -1) {
-      return no;
-    }
-    if (no.indexOf("data:image") !== -1 && no.indexOf("base64") !== -1) {
-      return no;
-    }
-    if (no.indexOf("&bx_auth_ticket") !== -1) {
-      no = no.split("&bx_auth_ticket")[0];
-    }
-    let url = `${
-      serviceApi.imageFileNo
-    }${no}&bx_auth_ticket=${sessionStorage.getItem("bx_auth_ticket")}`;
-    return url;
-  } else {
-    return "";
-  }
-};
+Vue.prototype.getImagePath = getImagePath
 
 new Vue({
   router,
