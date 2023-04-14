@@ -248,8 +248,6 @@ export const initMapData = async (map, pageItem) => {
       return points;
     } else {
       const markerData = await getMarkerList(pageItem); // 查找所有标记点
-      console.log(markerData);
-      debugger;
       includePoints(map, markerData.markers); //设置缩放，包含所有标记点
       createMarkers(map, markerData);
       return markerData;
@@ -410,7 +408,6 @@ export function createMarkers(map, markerData) {
       },
     };
   });
-  debugger
   var styles = {};
   markerData.markers.forEach((item) => {
     styles[`marker${item.id}`] = new TMap.MarkerStyle({
