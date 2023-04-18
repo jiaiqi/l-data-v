@@ -1269,6 +1269,7 @@ export default {
   right: 6px;
   background: none;
   padding: 0;
+  z-index: 99;
 }
 
 .vue-grid-item:hover .vue-resizable-handle {
