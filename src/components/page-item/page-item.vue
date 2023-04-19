@@ -46,6 +46,11 @@
       :pageItem="pageItem"
       :index="layout.i"
     ></page-item-chart>
+    <mix-list
+      v-if="pageItem.com_type === 'list'"
+      :ref="pageItem.com_type"
+      :pageItem="pageItem"
+    ></mix-list>
   </div>
 </template>
 
@@ -59,6 +64,7 @@ import noticeBar from "./notice-bar.vue";
 import mapCard from "./map-card.vue";
 import basicChart from "./chart-basic.vue";
 import pageItemChart from "./chart/page-item-chart.vue";
+import mixList from "./mix-list/list.vue";
 export default {
   components: {
     videoCard,
@@ -69,6 +75,7 @@ export default {
     mapCard,
     basicChart,
     pageItemChart,
+    mixList,
   },
   props: {
     pageItem: {

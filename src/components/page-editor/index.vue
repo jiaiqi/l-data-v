@@ -993,7 +993,7 @@ export default {
 <style lang="scss" scoped>
 .com-item {
   min-height: 90px;
-  cursor: move;
+  // cursor: move;
   text-align: center;
   display: grid;
   font-size: 14px;

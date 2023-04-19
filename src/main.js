@@ -22,6 +22,9 @@ Vue.use(PiniaVuePlugin);
 
 Vue.use(ElementUI);
 
+// import dataV from '@jiaminghi/data-view'
+// Vue.use(dataV)
+
 Vue.prototype.getImagePath = getImagePath
 
 new Vue({

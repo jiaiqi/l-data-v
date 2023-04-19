@@ -1,6 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@jiaminghi/data-view': ^2.10.0
   '@vitejs/plugin-legacy': ^2.0.0
   '@vitejs/plugin-vue2': ^1.1.2
   axios: ^1.3.4
@@ -20,6 +21,7 @@ specifiers:
   vue-router: ^3.5.4
 
 dependencies:
+  '@jiaminghi/data-view': 2.10.0
   axios: 1.3.4
   dayjs: 1.11.7
   echarts: 5.4.2
@@ -56,6 +58,13 @@ packages:
     hasBin: true
     dependencies:
       '@babel/types': 7.21.3
+
+  /@babel/runtime/7.21.0:
+    resolution: {integrity: sha512-xwII0//EObnq89Ji5AKYQaRYiW/nZ3llSv29d49IuxPhKbtJoLP+9QUUZ4nVragQVtaVGeZrpB+ZtG/Pdy/POw==}
+    engines: {node: '>=6.9.0'}
+    dependencies:
+      regenerator-runtime: 0.13.11
+    dev: false
 
   /@babel/standalone/7.21.3:
     resolution: {integrity: sha512-c8feJERTAHlBEvihQUWrnUMLg2GzrwSnE76WDyN3fRJWju10pHeRy8r3wniIq0q7zPLhHd71PQtFVsn1H+Qscw==}
@@ -314,6 +323,45 @@ packages:
 
   /@interactjs/vue/1.10.2:
     resolution: {integrity: sha512-msLdc42DFsCPQZt6YBGZrw8Ro23kQcNnj+iLz2OUQcOrp/lma7WjorUuAwwfyFna2DevLtiYlMLbT0dpO/cVhg==}
+    dev: false
+
+  /@jiaminghi/bezier-curve/0.0.9:
+    resolution: {integrity: sha512-u9xJPOEl6Dri2E9FfmJoGxYQY7vYJkURNX04Vj64tdi535tPrpkuf9Sm0lNr3QTKdHQh0DdNRsaa62FLQNQEEw==}
+    dependencies:
+      '@babel/runtime': 7.21.0
+    dev: false
+
+  /@jiaminghi/c-render/0.4.3:
+    resolution: {integrity: sha512-FJfzj5hGj7MLqqqI2D7vEzHKbQ1Ynnn7PJKgzsjXaZpJzTqs2Yw5OSeZnm6l7Qj7jyPAP53lFvEQNH4o4j6s+Q==}
+    dependencies:
+      '@babel/runtime': 7.21.0
+      '@jiaminghi/bezier-curve': 0.0.9
+      '@jiaminghi/color': 1.1.3
+      '@jiaminghi/transition': 1.1.11
+    dev: false
+
+  /@jiaminghi/charts/0.2.18:
+    resolution: {integrity: sha512-K+HXaOOeWG9OOY1VG6M4mBreeeIAPhb9X+khG651AbnwEwL6G2UtcAQ8GWCq6GzhczcLwwhIhuaHqRygwHC0sA==}
+    dependencies:
+      '@babel/runtime': 7.21.0
+      '@jiaminghi/c-render': 0.4.3
+    dev: false
+
+  /@jiaminghi/color/1.1.3:
+    resolution: {integrity: sha512-ZY3hdorgODk4OSTbxyXBPxAxHPIVf9rPlKJyK1C1db46a50J0reFKpAvfZG8zMG3lvM60IR7Qawgcu4ZDO3+Hg==}
+    dev: false
+
+  /@jiaminghi/data-view/2.10.0:
+    resolution: {integrity: sha512-Cud2MTiMcqc5k2KWabR/svuVQmXHANqURo+yj40370/LdI/gyUJ6LG203hWXEnT1nMCeiv/SLVmxv3PXLScCeA==}
+    dependencies:
+      '@babel/runtime': 7.21.0
+      '@jiaminghi/charts': 0.2.18
+    dev: false
+
+  /@jiaminghi/transition/1.1.11:
+    resolution: {integrity: sha512-owBggipoHMikDHHDW5Gc7RZYlVuvxHADiU4bxfjBVkHDAmmck+fCkm46n2JzC3j33hWvP9nSCAeh37t6stgWeg==}
+    dependencies:
+      '@babel/runtime': 7.21.0
     dev: false
 
   /@jridgewell/gen-mapping/0.3.2:
@@ -941,7 +989,6 @@ packages:
 
   /regenerator-runtime/0.13.11:
     resolution: {integrity: sha512-kY1AZVr2Ra+t+piVaJ4gxaFaReZVH40AKNo7UCX6W+dEwBo/2oZJzqfuN1qLq1oL45o56cPaTXELwrTh8Fpggg==}
-    dev: true
 
   /resize-observer-polyfill/1.5.1:
     resolution: {integrity: sha512-LwZrotdHOo12nQuZlHEmtuXdqGoOD0OhaxopaNFxWzInpEgaLWoVuAMbTzixuosCx2nEG58ngzW3vxdWoxIgdg==}
