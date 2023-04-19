@@ -15,7 +15,7 @@
                     {{ col.label }}
                 </div>
             </div>
-            <div class="table-row" v-for="item in tableData">
+            <div class="table-row" v-for="item in tableData" :class="{stripe:stripe}">
                 <div class="table-column" v-for="col in tableColumn">
                     {{ formatValue(item, col) }}
                 </div>
@@ -36,7 +36,15 @@ const props = defineProps({
     },
 });
 
-const listJson = props.pageItem?.list_json || {}
+const list_options = props.pageItem?.list_json?.list_options || ''
+
+const stripe = computed(()=>{
+    return props.pageItem?.list_json?.list_options&&props.pageItem?.list_json?.list_options.indexOf('斑马纹')>-1
+})
+
+const carousel = computed(()=>{
+    return props.pageItem?.list_json?.list_options&&props.pageItem?.list_json?.list_options.indexOf('滚动')>-1
+})
 
 const config = computed(() => {
     let res = {
@@ -172,6 +180,11 @@ onMounted(() => {
     .table-head,
     .table-row {
         display: flex;
+        &.stripe{
+            &:nth-child(2n+1){
+                background-color: rgba($color: #fff, $alpha: 0.1);
+            }
+        }
 
         .table-column {
             flex: 1;

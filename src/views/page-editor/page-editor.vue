@@ -279,8 +279,8 @@ export default {
     initWH() {
       let containerWidth = this.containerWidth || 800;
       return {
-        w: 300,
-        h: 200,
+        w: 100,
+        h: 80,
         // w: containerWidth / 4,
         // h: containerWidth / 8,
       };
