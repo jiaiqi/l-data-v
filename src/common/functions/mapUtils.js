@@ -39,6 +39,7 @@ export function initMap(id, pageItem) {
     zoom: 17.2, //设置地图缩放级别
     pitch: 43.5, //设置俯仰角
     rotation: 45, //设置地图旋转角度
+    mapStyleId: '2',//设置地图样式id
   });
   return mapInstance;
 }

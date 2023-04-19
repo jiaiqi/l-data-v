@@ -1123,14 +1123,25 @@ export default {
   display: grid;
   font-size: 14px;
   border: 1px solid #000;
-
   &.margin {
     margin: 20px;
   }
   &.dashed {
     width: 100%;
     height: 100%;
+    min-height: 30px;
     border: 1px dashed #666;
+    // border: none;
+    position: relative;
+    // &::after{
+    //   position: absolute;
+    //   content: '';
+    //   left: 0;
+    //   top: 0;
+    //   width: 100%;
+    //   height: 100%;
+    //   border: 1px dashed #666;
+    // }
   }
 }
 
@@ -1266,7 +1277,7 @@ export default {
 .gridItem {
   // border: 1px solid #fff;
   // background-color: rgba(255,255,255,1);
-  overflow: hidden;
+  // overflow: hidden;
 }
 
 .remove {

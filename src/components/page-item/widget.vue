@@ -4,12 +4,16 @@
       pageItem.widget_json.init_val || ""
     }}</span>
   </div>
+  <date-time
+    v-else-if="widgetType === '时间日期'"
+    :color="widgetColor"
+  ></date-time>
 </template>
 
 <script setup>
 import { computed } from "vue";
 import { formatStyleData } from "@/common/common.js";
-
+import dateTime from "../widgets/date-time.vue";
 const props = defineProps({
   pageItem: Object,
 });
@@ -21,6 +25,9 @@ const textWidgetJson = computed(() => {
 });
 const widgetType = computed(() => {
   return props.pageItem?.widget_json?.widget_type;
+});
+const widgetColor = computed(() => {
+  return props.pageItem?.widget_json?.col_text_pub_style_json?.color;
 });
 </script>
 

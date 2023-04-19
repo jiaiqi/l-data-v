@@ -4,7 +4,8 @@
             <div class="statistic-item" v-for="item in stasticData">
                 <div class="label">{{ item.label }}</div>
                 <div class="value">{{ item.value || '0' }}
-                <span v-if="v2Data&&v2Data.cfgJson&&v2Data.cfgJson.statistics_card_col_unit">{{v2Data.cfgJson.statistics_card_col_unit}}</span>
+                    <span
+                        v-if="v2Data && v2Data.cfgJson && v2Data.cfgJson.statistics_card_col_unit">{{ v2Data.cfgJson.statistics_card_col_unit }}</span>
                 </div>
             </div>
         </div>
@@ -34,6 +35,9 @@ const props = defineProps({
         type: Object,
     },
 });
+
+const listJson = props.pageItem?.list_json || {}
+
 const config = computed(() => {
     let res = {
         header: [],
@@ -94,13 +98,6 @@ const getStatisticData = async (req) => {
                 'aliasName': 'count'
             }
         ]
-        // const cols = col.option_list_v2
-        // const group = cols.map(item => {
-        //     return {
-        //         "colName":item.value,
-        //         "type": "count"
-        //     }
-        // })
         const url = `/${req.mapp}/select/${req.serviceName}`;
         req.group = group
         const res = await $http.post(url, req);
@@ -168,6 +165,9 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .bx-table {
+    .table-head {
+        background-color: rgba($color: #fff, $alpha: 0.1);
+    }
 
     .table-head,
     .table-row {
@@ -205,7 +205,8 @@ onMounted(() => {
             color: #6BA1FF;
             text-align: left;
         }
-        .value{
+
+        .value {
             text-align: left;
 
         }
