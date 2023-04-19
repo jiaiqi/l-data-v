@@ -51,6 +51,11 @@
       :ref="pageItem.com_type"
       :pageItem="pageItem"
     ></mix-list>
+    <page-widget
+      v-if="pageItem.com_type === '控件'"
+      :ref="pageItem.com_type"
+      :pageItem="pageItem"
+    ></page-widget>
   </div>
 </template>
 
@@ -65,6 +70,7 @@ import mapCard from "./map-card.vue";
 import basicChart from "./chart-basic.vue";
 import pageItemChart from "./chart/page-item-chart.vue";
 import mixList from "./mix-list/list.vue";
+import pageWidget from "./widget.vue";
 export default {
   components: {
     videoCard,
@@ -76,6 +82,7 @@ export default {
     basicChart,
     pageItemChart,
     mixList,
+    pageWidget,
   },
   props: {
     pageItem: {
