@@ -7,7 +7,7 @@
     <!-- <div class="customhome-header">
       <div>head</div>
     </div> -->
-    <div class="cushome-sidebar">
+    <div class="cushome-sidebar" v-if="!isDataview">
       <div
         v-for="pageItem in comList"
         :key="pageItem.id"
@@ -26,7 +26,7 @@
         <span>{{ pageItem.com_type }}</span>
       </div>
     </div>
-    <div class="cushome-right">
+    <div class="cushome-right" v-if="!isDataview">
       <el-input
         size="small"
         v-model="pageName"
@@ -61,7 +61,12 @@
         >清空画布</el-button
       >
     </div>
-    <div class="cushome-content" id="content" :style="[]">
+    <div
+      class="cushome-content"
+      id="content"
+      :style="[]"
+      :class="{ 'data-view-mode': isDataview }"
+    >
       <div
         class="custom-design"
         id="custom-design"
@@ -71,23 +76,25 @@
         <grid-layout
           ref="gridlayout"
           :layout.sync="layout"
-          :col-num="containerWidth"
+          :col-num="colNum"
+          :breakpoints="{ lg: 1920, md: 1200, sm: 996, xs: 768, xxs: 480 }"
+          :cols="{ lg: 1920, md: 1200, sm: 996, xs: 768, xxs: 480 }"
           :row-height="1"
           :preventCollision="true"
           :responsive="true"
-          :is-draggable="true"
-          :is-resizable="true"
+          :is-draggable="!isDataview"
+          :is-resizable="!isDataview"
           :is-mirrored="false"
           :vertical-compact="false"
           :margin="[0, 0]"
           :use-css-transforms="true"
           @layout-updated="layoutUpdatedEvent"
         >
-          <!-- <div
+          <div
             class="grid-container"
             id="grid-container"
             :style="bjStyles"
-          ></div> -->
+          ></div>
           <grid-item
             v-for="item in layout"
             :x="item.x"
@@ -99,9 +106,8 @@
             @moved="movedEvent"
             @resized="resizedEvent"
             class="gridItem"
-            :style="layoutJson ? stylefn(layoutJson.style_json) : ''"
           >
-            <span class="remove" @click.stop="removeItem(item.i)"
+            <span class="remove" @click.stop="removeItem(item.i)" v-if="!isDataview"
               ><i class="el-icon-close"></i
             ></span>
             <div
@@ -114,17 +120,9 @@
                 alt=""
                 style="display: inline-block; width: 100%"
               />
-              <!-- <page-item
-                ref="pageItem"
-                :page-item="item.data"
-                :layout="item"
-              ></page-item> -->
-
-              <!-- <span>{{ item.data.com_type_name }}</span>
-              <span>{{ item.data.com_type }}</span> -->
             </div>
             <div
-              class="com-item dashe"
+              class="com-item dashed"
               v-else
               @click.stop.prevent.capture="changeDesign(item.i)"
             >
@@ -135,17 +133,6 @@
                 @click.stop=""
               ></page-item>
             </div>
-            <!-- <div
-              v-else
-              class="com-item dashed"
-              @click.stop="changeDesign(item.i)"
-            >
-              <img
-                :src="getImagePath(item.data.example)"
-                alt=""
-                style="display: inline-block; width: 100%"
-              />
-            </div> -->
           </grid-item>
         </grid-layout>
       </div>
@@ -161,7 +148,7 @@
 </template>
 
 <script>
-import dayjs, { unix } from "dayjs";
+import dayjs from "dayjs";
 import { GridLayout, GridItem } from "vue-grid-layout";
 import PageItem from "@/components/page-item/page-item.vue";
 import { formatStyleData } from "@/common/common.js";
@@ -272,42 +259,87 @@ export default {
     this.initDesign();
     this.moveMousemove();
     this.moveMouseup();
+    this.initColNum();
     window.onclick = () => {
       this.curDesign = "";
     };
-    // window.onresize = () => {
-    //   this.containerWidth = document.getElementById("content").offsetWidth;
-    //   // this.initColNum();
-    // };
+    // if (this.$route?.name === "dataview") {
+    //   window.onresize = () => {
+    //     this.resize();
+    //   };
+    //   setTimeout(() => {
+    //     this.resize();
+    //   }, 200);
+    // }
   },
   computed: {
+    isDataview() {
+      return this.$route?.name === "dataview";
+    },
     initWH() {
       let containerWidth = this.containerWidth || 800;
       return {
         w: 300,
-        h: 150,
+        h: 200,
         // w: containerWidth / 4,
         // h: containerWidth / 8,
       };
     },
   },
   methods: {
+    resize() {
+      // 自适应缩放
+      let element = document.getElementById("custom-design");
+      let resizeFull = () => {
+        const windowWidth = window.innerWidth;
+        const windowheight = window.innerHeight;
+        if (!window.screen.height || !window.screen.width)
+          return resizeFullBak();
+        let ratioX = windowWidth / window.screen.width;
+        let ratioY = windowheight / window.screen.height;
+        let contentData = this.styleJson;
+
+        let dashboard_width = Number(contentData.width);
+        let dashboard_height = Number(contentData.height);
+        if (window.screen.width / dashboard_width < 1) {
+          ratioX = (ratioX * window.screen.width) / width;
+        }
+        if (window.screen.height / dashboard_height < 1) {
+          ratioY = (ratioY * window.screen.height) / dashboard_height;
+        }
+        document.body.style = `width:${this.styleJson.width};height:${this.styleJson.height};overflow-y:hidden;transform:scale(${ratioX}, ${ratioY});transform-origin: left top; background-size: 100% 100%;`;
+      };
+      let resizeFullBak = () => {
+        let ratioX = windowWidth / document.body.innerWidth;
+        let ratioY = windowheight / document.body.innerHeight;
+        let dashboard_width = Number(contentData.width);
+        let dashboard_height = Number(contentData.height);
+        if (window.screen.width / dashboard_width < 1) {
+          ratiox = (ratio * window.screen.width) / dashboard_width;
+        }
+        if (window.screen.height / dashboard_height < 1) {
+          ratiox = (ratio * window.screen.height) / dashboard_height;
+        }
+        document.body.style = `width:${this.styleJson.width};height:${this.styleJson.height};transform: scale(${ratioX},${ratioY});transform-origin: left top;background-size: 100%  ${ratioY}`;
+      };
+      resizeFull();
+    },
     initColNum() {
-      let containerWidth =
-        document.getElementById("grid-container").offsetWidth;
-      this.colNum = containerWidth / 20;
+      let containerWidth = document.getElementById("custom-design").offsetWidth;
+      this.colNum = containerWidth;
     },
     stylefn(style) {
       if (style) {
-        return formatStyleData(style);
+        let res = formatStyleData(style);
+        return res;
       }
     },
     clearFn() {
       this.layout = [];
     },
     // 跳转到预览页面
-    toPreview(){
-      window.open(window.location.hash.replace('#','#/preview'))
+    toPreview() {
+      window.open(window.location.hash.replace("#", "#/preview"));
     },
     clickSave() {
       if (this.layout.length === 0) {
@@ -763,25 +795,19 @@ export default {
     //自定义容器初始化
     initDesign() {
       let domstyleWidth =
-          document.getElementById("grid-container").offsetWidth - 20 * 10,
+          document.getElementById("custom-design").offsetWidth - 20 * 10,
         domstyleHeight = 50,
-        // domstyleHeight = document.getElementById("grid-container").offsetHeight / 20,
         domContainer = document.getElementById("custom-design"),
         resWidth = domstyleWidth / 12,
         everyWidth = ((resWidth / domstyleWidth) * 100).toFixed(2);
-      this.bjStyles = {
-        // right: "20px",
-        background: `linear-gradient(to right, transparent 19px,#ccc 1px),linear-gradient(to bottom, transparent 19px,#ccc 1px)`,
-        "background-size": `20px 20px`,
-        borderLeft: "1px solid #ccc",
-        borderRight: "1px solid #ccc",
-        borderTop: "1px solid #ccc",
-
-        // background:
-        //   "linear-gradient(rgba(241, 243, 242, 1) 20px, transparent 0px) 0% 0%," +
-        //   "linear-gradient(to right, rgba(241, 243, 242, 1) 20px, transparent 0px) rgba(223, 232, 228, 1)",
-        // "background-size": `${everyWidth}% ${domstyleHeight}px`,
-      };
+      // this.bjStyles = {
+      //   // right: "20px",
+      //   background: `linear-gradient(to right, transparent 19px,#ccc 1px),linear-gradient(to bottom, transparent 19px,#ccc 1px)`,
+      //   "background-size": `20px 20px`,
+      //   borderLeft: "1px solid #ccc",
+      //   borderRight: "1px solid #ccc",
+      //   borderTop: "1px solid #ccc",
+      // };
       this.rowheight = domstyleHeight - 10;
       this.designLeft = domContainer.offsetLeft + 250;
       this.designTop = domContainer.offsetTop + 70;
@@ -1092,11 +1118,11 @@ export default {
 <style lang="scss" scoped>
 .com-item {
   min-height: 90px;
-  border: 1px solid #197f54;
   cursor: move;
   text-align: center;
   display: grid;
   font-size: 14px;
+  border: 1px solid #000;
 
   &.margin {
     margin: 20px;
@@ -1145,6 +1171,18 @@ export default {
     overflow: auto;
     padding: 20px;
     background: #f1f3f2;
+    &.data-view-mode {
+      padding: 0;
+      left: 0;
+      right: 0;
+      background-color: transparent;
+      .com-item{
+        cursor: inherit;
+      }
+      .com-item.dashed {
+        border: none;
+      }
+    }
     .custom-design {
       height: 100%;
       // width: 800px;
@@ -1164,58 +1202,6 @@ export default {
         right: 0;
         bottom: 0;
         position: absolute;
-      }
-
-      .design-conbox {
-        width: 100%;
-        height: 100%;
-        background: #fff;
-        border: 1px dashed transparent;
-
-        &.activeBorder {
-          border: 1px dashed #197f54;
-        }
-
-        .design-title {
-          width: 100%;
-          height: 56px;
-          padding: 0 32px;
-          justify-content: space-between;
-          align-items: center;
-
-          .row-tit {
-            height: 100%;
-            align-items: center;
-
-            .line {
-              width: 4px;
-              height: 16px;
-              border-radius: 3px;
-              margin-right: 12px;
-              background: #197f54;
-            }
-
-            .tit-text {
-              height: 100%;
-              line-height: 56px;
-              font-size: 16px;
-              font-weight: 400;
-              color: #304265;
-              cursor: default;
-            }
-          }
-
-          .closeIcon {
-            font-size: 20px;
-            cursor: pointer;
-          }
-        }
-
-        .design-content {
-          width: 100%;
-          height: calc(100% - 56px);
-          padding: 0 31px 16px;
-        }
       }
     }
   }
@@ -1270,6 +1256,7 @@ export default {
   background: none;
   padding: 0;
   z-index: 99;
+  background-color: #197f54;
 }
 
 .vue-grid-item:hover .vue-resizable-handle {

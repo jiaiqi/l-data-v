@@ -14,6 +14,11 @@ const router = new VueRouter({
       component: HomeView,
     },
     {
+      path: "/dataview",
+      name: "dataview",
+      component: HomeView,
+    },
+    {
       path: "/preview",
       name: "preview",
       // route level code-splitting

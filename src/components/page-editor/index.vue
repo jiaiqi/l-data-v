@@ -210,7 +210,9 @@ export default {
     },
     stylefn(style) {
       if (style) {
-        return formatStyleData(style);
+        const res = formatStyleData(style);
+        debugger
+        return res
       }
     },
     clearFn() {

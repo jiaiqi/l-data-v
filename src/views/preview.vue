@@ -16,56 +16,8 @@
       :layoutJson="layoutJson"
       :editable="false"
     ></page-editor>
-
-    <!-- <div class="cushome-content" id="content">
-      <div class="custom-design" id="custom-design">
-        <grid-layout
-          ref="gridlayout"
-          :layout.sync="layout"
-          :col-num="containerWidth"
-          :row-height="1"
-          :preventCollision="true"
-          :responsive="true"
-          :is-draggable="false"
-          :is-resizable="false"
-          :is-mirrored="false"
-          :vertical-compact="false"
-          :margin="[0, 0]"
-          :use-css-transforms="true"
-          @layout-updated="layoutUpdatedEvent"
-        >
-          <div
-            class="grid-container"
-            id="grid-container"
-            :style="bjStyles"
-          ></div>
-          <grid-item
-            v-for="item in layout"
-            :x="item.x"
-            :y="item.y"
-            :w="item.w"
-            :h="item.h"
-            :i="item.i"
-            :key="item.i"
-            @moved="movedEvent"
-            @resized="resizedEvent"
-            class="gridItem"
-            :style="layoutJson ? stylefn(layoutJson.style_json) : ''"
-          >
-            <page-item
-              ref="pageItem"
-              :page-item="item.data"
-              :layout="item"
-            ></page-item>
-          </grid-item>
-        </grid-layout>
-      </div>
-    </div> -->
   </div>
 </template>
-<!-- <script setup>
-import pageEditor from "@/components/page-editor/index.vue";
-</script> -->
 
 <script>
 import dayjs from "dayjs";
@@ -767,7 +719,6 @@ export default {
       let domstyleWidth =
           document.getElementById("grid-container").offsetWidth - 20 * 10,
         domstyleHeight = 50,
-        // domstyleHeight = document.getElementById("grid-container").offsetHeight / 20,
         domContainer = document.getElementById("custom-design"),
         resWidth = domstyleWidth / 12,
         everyWidth = ((resWidth / domstyleWidth) * 100).toFixed(2);
@@ -778,16 +729,10 @@ export default {
         borderLeft: "1px solid #ccc",
         borderRight: "1px solid #ccc",
         borderTop: "1px solid #ccc",
-
-        // background:
-        //   "linear-gradient(rgba(241, 243, 242, 1) 20px, transparent 0px) 0% 0%," +
-        //   "linear-gradient(to right, rgba(241, 243, 242, 1) 20px, transparent 0px) rgba(223, 232, 228, 1)",
-        // "background-size": `${everyWidth}% ${domstyleHeight}px`,
       };
       this.rowheight = domstyleHeight - 10;
       this.designLeft = domContainer.offsetLeft + 250;
       this.designTop = domContainer.offsetTop + 70;
-      // this.containerWidth = document.getElementById("content").offsetWidth;
     },
     //鼠标移动
     moveMousemove() {
@@ -1090,24 +1035,7 @@ export default {
   // },
 };
 </script>
-<style lang="scss" scoped>
-.page-wrap {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  .cushome-content,
-  .custom-design {
-    width: 100%;
-    height: 100%;
-    .vue-grid-layout {
-      margin: 0;
-      padding: 0;
-      height: 100% !important;
-      width: 100%;
-    }
-  }
-}
-</style>
+
 
 <style lang="scss" scoped>
 .page-header {
@@ -1126,205 +1054,5 @@ export default {
     }
   }
 }
-.com-item {
-  min-height: 90px;
-  border: 1px solid #197f54;
-  cursor: move;
-  text-align: center;
-  display: grid;
-  font-size: 14px;
 
-  &.margin {
-    margin: 20px;
-  }
-  &.dashed {
-    width: 100%;
-    height: 100%;
-    border: 1px dashed #666;
-  }
-}
-
-.customhome-container {
-  width: 100%;
-  height: 100%;
-  background: #f1f3f2;
-  user-select: none;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  .cushome-sidebar {
-    width: 240px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    background: #fff;
-    overflow: auto;
-    box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.08);
-  }
-
-  .cushome-right {
-    width: 240px;
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    background: #fff;
-    overflow: auto;
-    padding: 20px;
-  }
-
-  .cushome-content {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    right: 240px;
-    left: 240px;
-    overflow: auto;
-    // padding: 20px;
-    background: #f1f3f2;
-    .custom-design {
-      height: 100%;
-      //   width: 800px;
-      margin: 0 auto;
-      background: #fff;
-
-      .grid-container {
-        height: 100%;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        position: absolute;
-      }
-
-      .design-conbox {
-        width: 100%;
-        height: 100%;
-        background: #fff;
-        border: 1px dashed transparent;
-
-        &.activeBorder {
-          border: 1px dashed #197f54;
-        }
-
-        .design-title {
-          width: 100%;
-          height: 56px;
-          padding: 0 32px;
-          justify-content: space-between;
-          align-items: center;
-
-          .row-tit {
-            height: 100%;
-            align-items: center;
-
-            .line {
-              width: 4px;
-              height: 16px;
-              border-radius: 3px;
-              margin-right: 12px;
-              background: #197f54;
-            }
-
-            .tit-text {
-              height: 100%;
-              line-height: 56px;
-              font-size: 16px;
-              font-weight: 400;
-              color: #304265;
-              cursor: default;
-            }
-          }
-
-          .closeIcon {
-            font-size: 20px;
-            cursor: pointer;
-          }
-        }
-
-        .design-content {
-          width: 100%;
-          height: calc(100% - 56px);
-          padding: 0 31px 16px;
-        }
-      }
-    }
-  }
-
-  .moveCon {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 208px;
-    height: 40px;
-    background: #edf5f2;
-    border-radius: 4px;
-    margin-bottom: 12px;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    padding-left: 16px;
-    opacity: 0.5;
-
-    .rowIcon {
-      font-size: 20px;
-    }
-
-    .item-name {
-      font-size: 14px;
-      color: #303133;
-      margin-left: 10px;
-    }
-  }
-}
-</style>
-<style lang="scss" scoped>
-.custom-design .vue-grid-layout {
-  min-height: calc(100% - 200px);
-  padding-bottom: 200px;
-  box-sizing: content-box;
-}
-
-.vue-grid-item.vue-grid-placeholder {
-  background: #197f54;
-}
-
-.vue-grid-item > .vue-resizable-handle {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border: 6px solid;
-  border-color: transparent #e8eaef #e8eaef transparent;
-  box-sizing: border-box;
-  bottom: 6px;
-  right: 6px;
-  background: none;
-  padding: 0;
-  z-index: 99;
-}
-
-.vue-grid-item:hover .vue-resizable-handle {
-  border-color: transparent #197f54 #197f54 transparent;
-}
-
-.gridItem {
-  border: 1px solid #fff;
-  // background-color: rgba(255,255,255,1);
-  overflow: hidden;
-}
-
-.remove {
-  position: absolute;
-  right: 0;
-  top: 0;
-  cursor: pointer;
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  margin: 0 auto;
-  line-height: 24px;
-  text-align: center;
-  z-index: 1;
-}
 </style>

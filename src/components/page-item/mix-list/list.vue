@@ -3,7 +3,9 @@
         <div class="statistic-box">
             <div class="statistic-item" v-for="item in stasticData">
                 <div class="label">{{ item.label }}</div>
-                <div class="value">{{ item.value || '0' }}</div>
+                <div class="value">{{ item.value || '0' }}
+                <span v-if="v2Data&&v2Data.cfgJson&&v2Data.cfgJson.statistics_card_col_unit">{{v2Data.cfgJson.statistics_card_col_unit}}</span>
+                </div>
             </div>
         </div>
         <div class="bx-table">
@@ -191,7 +193,7 @@ onMounted(() => {
         flex-direction: column;
         padding: 10px;
         background-color: #1E2750;
-        margin-right: 10px;
+        margin-right: 20px;
         cursor: pointer;
 
         &:last-child {
@@ -201,6 +203,11 @@ onMounted(() => {
         .label {
             line-height: 30px;
             color: #6BA1FF;
+            text-align: left;
+        }
+        .value{
+            text-align: left;
+
         }
     }
 }

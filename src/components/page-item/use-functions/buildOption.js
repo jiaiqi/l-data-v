@@ -129,8 +129,7 @@ export const useBuildOption = (type, pageItem, cellData) => {
   let seriesValueCols = chartJson?.series_value_cols || "";
   seriesValueCols = seriesValueCols.split(",");
 
-  const mapJson = pageItem.cols_map_json.cols_map_json;
-
+  const mapJson = pageItem.cols_map_json?.cols_map_json || pageItem?.page_com_cols_map_json?.cols_map_json;
   let arr = [];
   seriesValueCols.forEach((item) => {
     for (let k in mapJson) {

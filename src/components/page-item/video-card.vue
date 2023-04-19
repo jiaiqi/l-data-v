@@ -6,8 +6,9 @@
 				<div class="video-item" @click="toVideoPlayer(col)">
 					<img class="video-bg" :src="col.url || defPic">
 					<img class="play-btn" v-if="col.showPlayImg" src="@/assets/img/video-play-btn.png">
+				<div class="video-title" :style="[titleStyle]">{{ col[pageItem.video_card_json.col_label] }}</div>
+
 				</div>
-				<div class="video-title">{{ col[pageItem.video_card_json.col_label] }}</div>
 			</el-col>
 		</el-row>
 	</div>
@@ -30,11 +31,27 @@ export default {
 		};
 	},
 	computed: {
+		titleStyle(){
+			let style = { }
+			let position = this.pageItem.video_card_json?.video_label_option
+			if(position === '下方'){
+				style = {
+					position:'absolute',
+					width:'100%',
+					left:'0',
+					bottom:'0',
+					padding:'0',
+					color:'#fff',
+					background:'rgb(0 0 0 / 50%)'
+				}
+			}
+			return style
+		},
 		computGutter() {
-			return this.pageItem.video_card_json.card_layout_json.style_json_diy.margin || 20
+			return this.pageItem.video_card_json?.card_layout_json?.style_json_diy?.margin || 20
 		},
 		computSpan() {
-			return 24 / Number(this.pageItem.video_card_json.card_layout_json.cols_num) || 12
+			return 24 / Number(this.pageItem.video_card_json?.card_layout_json?.cols_num) || 12
 		},
 		computClass() {
 			if (this.pageItem.video_card_json.video_label_option === '下方') {
@@ -167,33 +184,7 @@ export default {
 		toVideoPage(o) {
 			if (!o.url) return
 			const url = `/player?deviceSerial=${o.dev_sn}&channelNo=${o.channel}&verify_code=${o.verify_code}`
-			// this.$router.push(url)
 			window.open(url)
-			// let id = 'wxf2b3a0262975d8c2'
-			// let accessToken = this.accessToken
-			// wx.openEmbeddedMiniProgram({
-			// 	appId: id,
-			// 	path: '/pages/live/live?accessToken=' + accessToken + '&deviceSerial=' + o.dev_sn + '&channelNo=' + o.channel,
-			// 	success: res => {
-			// 		// 打开成功
-			// 		console.log("打开成功", res);
-			// 	},
-			// 	fail: err => {
-			// 		console.log(err);
-			// 	}
-			// })
-			// uni.navigateToMiniProgram({
-			// 	appId: id,
-			// 	path: 'pages/live/live?accessToken=' + accessToken + '&deviceSerial=' + o.dev_sn +
-			// 		'&channelNo=' + o.channel,
-			// 	success: res => {
-			// 		// 打开成功
-			// 		console.log("打开成功", res);
-			// 	},
-			// 	fail: err => {
-			// 		console.log(err);
-			// 	}
-			// })
 		},
 		toVideoPlayer(o) {
 			if (!o.url) return
@@ -201,15 +192,15 @@ export default {
 			this.$router.push({
 				path:url
 			})
-			// uni.navigateTo({
-			// 	url: `/views/public/video/video?deviceSerial=${o.dev_sn}&channelNo=${o.channel}&verify_code=${o.verify_code}`
-			// })
 		}
 	}
 }
 </script>
 
 <style lang="scss" scoped>
+.el-col{
+	position: relative;
+}
 .row-layout {
 	padding: 5px;
 
@@ -217,7 +208,7 @@ export default {
 		.video-item {
 			height: 104px;
 			position: relative;
-
+			cursor: pointer;
 			.video-bg {
 				width: 100%;
 				height: 104px;
