@@ -118,7 +118,10 @@
             @resized="resizedEvent"
             class="gridItem"
           >
-            <span class="remove" @click.stop="removeItem(item.i)" v-if="!isDataview"
+            <span
+              class="remove"
+              @click.stop="removeItem(item.i)"
+              v-if="!isDataview"
               ><i class="el-icon-close"></i
             ></span>
             <div
@@ -131,6 +134,14 @@
                 alt=""
                 style="display: inline-block; width: 100%"
               />
+            </div>
+            <div class="com-item dashed" v-else-if="isDataview">
+              <page-item
+                ref="pageItem"
+                :page-item="item.data"
+                :layout="item"
+                @click.stop=""
+              ></page-item>
             </div>
             <div
               class="com-item dashed"
@@ -176,7 +187,7 @@ export default {
   data() {
     return {
       isFullScreen: false,
-      pageConfg:{},
+      pageConfg: {},
       containerWidth: 800,
       colNum: 40,
       pgNo: "",
@@ -244,11 +255,11 @@ export default {
       };
       setTimeout(() => {
         this.resize();
-      }, 200);
+      }, 500);
     }
     setTimeout(() => {
-      if(this.needLogin){
-        location.href = '/main/login.html'
+      if (this.needLogin) {
+        // location.href = '/main/login.html'
       }
     }, 3000);
   },
@@ -256,11 +267,18 @@ export default {
     isDataview() {
       return this.$route?.name === "dataview";
     },
-    showFullScreen(){
-      return this.pageConfg?.page_options&&this.pageConfg?.page_options.indexOf('全屏按钮')>-1
+    showFullScreen() {
+      return (
+        this.pageConfg?.page_options &&
+        this.pageConfg?.page_options.indexOf("全屏按钮") > -1
+      );
     },
-    needLogin(){
-      return this.pageConfg?.page_options&&this.pageConfg?.page_options.indexOf('先登录')>-1&&sessionStorage.getItem('logined')!=='true'
+    needLogin() {
+      return (
+        this.pageConfg?.page_options &&
+        this.pageConfg?.page_options.indexOf("先登录") > -1 &&
+        sessionStorage.getItem("logined") !== "true"
+      );
     },
     initWH() {
       let containerWidth = this.containerWidth || 800;
@@ -627,7 +645,7 @@ export default {
         this.pageTitle = page_row_json_data.page_title;
         this.comJson = page_row_json_data.component_json || [];
         this.styleJson = page_row_json_data.page_style_json;
-        this.pageConfg = data
+        this.pageConfg = data;
         if (!this.comJson) return;
         this.comJson.forEach((com, i) => {
           this.comList.forEach((list) => {
@@ -1243,7 +1261,7 @@ export default {
       left: 0;
       right: 0;
       background-color: transparent;
-      .com-item{
+      .com-item {
         cursor: inherit;
       }
       .com-item.dashed {

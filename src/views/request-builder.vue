@@ -70,7 +70,6 @@
           placeholder="请选择服务名称"
           clearable
           filterable
-      
           @change="getColumns()"
         >
           <el-option
@@ -363,13 +362,13 @@ export default {
         if (Array.isArray(originData) && originData.length > 0) {
           reqDatas.push({
             serviceName: `${serviceNames[type]}_delete`,
-            // depend_keys: [
-            //   {
-            //     type: "column",
-            //     add_col: type === "group" ? "srv_req_no" : "srv_call_no",
-            //     depend_key: type === "group" ? "srv_req_no" : "srv_call_no",
-            //   },
-            // ],
+            depend_keys: [
+              {
+                type: "column",
+                add_col: type === "group" ? "srv_req_no" : "srv_call_no",
+                depend_key: type === "group" ? "srv_req_no" : "srv_call_no",
+              },
+            ],
             condition: [
               {
                 colName: "id",
@@ -382,13 +381,13 @@ export default {
         if (Array.isArray(localData) && localData.length > 0) {
           reqDatas.push({
             serviceName: `${serviceNames[type]}_add`,
-            // depend_keys: [
-            //   {
-            //     type: "column",
-            //     add_col: type === "group" ? "srv_req_no" : "srv_call_no",
-            //     depend_key: type === "group" ? "srv_req_no" : "srv_call_no",
-            //   },
-            // ],
+            depend_keys: [
+              {
+                type: "column",
+                add_col: type === "group" ? "srv_req_no" : "srv_call_no",
+                depend_key: type === "group" ? "srv_req_no" : "srv_call_no",
+              },
+            ],
             data: localData.map((item, index) => {
               let res = null;
               switch (type) {
@@ -431,13 +430,13 @@ export default {
       ) {
         reqDatas.push({
           serviceName: `${serviceNames.column}_delete`,
-          // depend_keys: [
-          //   {
-          //     type: "column",
-          //     add_col: "srv_call_no",
-          //     depend_key: "srv_call_no",
-          //   },
-          // ],
+          depend_keys: [
+            {
+              type: "column",
+              add_col: "srv_call_no",
+              depend_key: "srv_call_no",
+            },
+          ],
           condition: [
             {
               colName: "id",
@@ -451,13 +450,13 @@ export default {
         if (!this.childData.column.find((item) => item.col_srv == "*")) {
           reqDatas.push({
             serviceName: `${serviceNames.column}_add`,
-            // depend_keys: [
-            //   {
-            //     type: "column",
-            //     add_col: "srv_call_no",
-            //     depend_key: "srv_call_no",
-            //   },
-            // ],
+            depend_keys: [
+              {
+                type: "column",
+                add_col: "srv_call_no",
+                depend_key: "srv_call_no",
+              },
+            ],
             data: [
               {
                 col_srv: "*",
@@ -469,13 +468,13 @@ export default {
       } else {
         reqDatas.push({
           serviceName: `${serviceNames.column}_add`,
-          // depend_keys: [
-          //   {
-          //     type: "column",
-          //     add_col: "srv_call_no",
-          //     depend_key: "srv_call_no",
-          //   },
-          // ],
+          depend_keys: [
+            {
+              type: "column",
+              add_col: "srv_call_no",
+              depend_key: "srv_call_no",
+            },
+          ],
           data: this.checkedColumns.map((item) => {
             return {
               srv_call_no: this.srv_call_no,
@@ -494,9 +493,8 @@ export default {
         order_json: "",
         page_no: 1,
         cycle_req_timer: 0,
-        srv_req_json:
-          '{"mapp":"mer","srv_type":"select","serviceName":"srvbu_store_sale_order_select","colNames":["*"],"condition":[{"colName":"a","ruleType":"ne","value":"ss"}],"page":{"pageNo":1,"rownumber":10},"order":[{"colName":"aa","orderType":"desc"}]}',
-        req_cols_json: '["*"]',
+        srv_req_json: "",
+        req_cols_json: "",
         srv_req_name: this.ruleForm.srv_req_name,
         srv_type: this.ruleForm.srv_type,
         rownumber: 10,
@@ -651,7 +649,12 @@ export default {
       // return;
       const saveData = this.buildSaveData();
       const child_data_list = this.buildChildData();
-      this.updateModel(saveData, child_data_list);
+      if (this.srv_call_no) {
+        saveData.child_data_list = child_data_list;
+        this.updateModel(saveData);
+      } else {
+        this.updateModel(saveData, child_data_list);
+      }
     },
     exportExcel() {
       this.tableExportStatus = true;
@@ -876,6 +879,9 @@ export default {
     updateModel(saveData, child_data_list) {
       // 编辑模型
       let serviceName = "srvpage_cfg_srv_call_update";
+      if (!this.srv_call_no) {
+        serviceName = "srvpage_cfg_srv_call_add";
+      }
       let url = this.getServiceUrl("operate", serviceName, "config");
       let params = [
         {
@@ -893,7 +899,7 @@ export default {
       this.$http.post(url, params).then((res) => {
         loadingInstance1.close();
         if (res.data.resultCode === "SUCCESS") {
-          this.$alert("保存成功", "SUCCESS", {
+          this.$alert(this.srv_call_no ? "保存成功" : "添加成功", "SUCCESS", {
             confirmButtonText: "确定",
             callback: (action) => {},
           });

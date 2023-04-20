@@ -187,6 +187,7 @@ export default {
 			window.open(url)
 		},
 		toVideoPlayer(o) {
+			debugger
 			if (!o.url) return
 			const url = `/player?deviceSerial=${o.dev_sn}&channelNo=${o.channel}&verify_code=${o.verify_code}`
 			this.$router.push({
