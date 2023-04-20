@@ -649,12 +649,12 @@ export default {
       // return;
       const saveData = this.buildSaveData();
       const child_data_list = this.buildChildData();
-      if (this.srv_call_no) {
-        saveData.child_data_list = child_data_list;
-        this.updateModel(saveData);
-      } else {
-        this.updateModel(saveData, child_data_list);
-      }
+      // if (this.srv_call_no) {
+      //   saveData.child_data_list = child_data_list;
+      //   this.updateModel(saveData);
+      // } else {
+      this.updateModel(saveData, child_data_list);
+      // }
     },
     exportExcel() {
       this.tableExportStatus = true;
@@ -892,12 +892,21 @@ export default {
           data: [saveData],
         },
       ];
-      if (Array.isArray(child_data_list) && child_data_list.length > 0) {
+      if (
+        this.srv_call_no &&
+        Array.isArray(child_data_list) &&
+        child_data_list.length > 0
+      ) {
         params = [...params, ...child_data_list];
+      }else{
+        params[0].data[0].child_data_list = child_data_list
       }
       let loadingInstance1 = Loading.service({ fullscreen: true });
       this.$http.post(url, params).then((res) => {
         loadingInstance1.close();
+        if(!this.srv_call_no){
+
+        }
         if (res.data.resultCode === "SUCCESS") {
           this.$alert(this.srv_call_no ? "保存成功" : "添加成功", "SUCCESS", {
             confirmButtonText: "确定",
