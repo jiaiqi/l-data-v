@@ -7,6 +7,17 @@
     <!-- <div class="customhome-header">
       <div>head</div>
     </div> -->
+    <div class="page-header">
+      <div class="left"></div>
+      <div class="right" @click="openFullscreen">
+        <span
+          class="iconfont icon-tuichuquanping"
+          v-if="isFullScreen"
+          title="退出全屏"
+        ></span>
+        <span class="iconfont icon-quanping" v-else title="全屏"></span>
+      </div>
+    </div>
     <div class="cushome-sidebar" v-if="!isDataview">
       <div
         v-for="pageItem in comList"
@@ -164,6 +175,8 @@ export default {
   },
   data() {
     return {
+      isFullScreen: false,
+      pageConfg:{},
       containerWidth: 800,
       colNum: 40,
       pgNo: "",
@@ -177,44 +190,6 @@ export default {
       layoutJson: null,
       comJson: [],
       comList: [],
-      selectors: [
-        {
-          id: "1",
-          title: "合同报表",
-          child: [
-            {
-              title: "表格1/1",
-              id: "1-1",
-              move: true,
-              type: "table",
-            },
-            {
-              title: "柱状图1/2",
-              id: "1-2",
-              move: true,
-              type: "bar",
-            },
-          ],
-        },
-        {
-          id: "2",
-          title: "结算报表",
-          child: [
-            {
-              title: "折线图2/1",
-              id: "2-1",
-              move: true,
-              type: "line",
-            },
-            {
-              title: "饼图2/2",
-              id: "2-2",
-              move: true,
-              type: "pie",
-            },
-          ],
-        },
-      ], //menu数据
       designData: { layoutCon: [], layoutData: [] }, //容器内容
       bjStyles: {}, //栅格样式
       curDesign: "", //点击容器组件样式
@@ -263,18 +238,29 @@ export default {
     window.onclick = () => {
       this.curDesign = "";
     };
-    // if (this.$route?.name === "dataview") {
-    //   window.onresize = () => {
-    //     this.resize();
-    //   };
-    //   setTimeout(() => {
-    //     this.resize();
-    //   }, 200);
-    // }
+    if (this.$route?.name === "dataview") {
+      window.onresize = () => {
+        this.resize();
+      };
+      setTimeout(() => {
+        this.resize();
+      }, 200);
+    }
+    setTimeout(() => {
+      if(this.needLogin){
+        location.href = '/main/login.html'
+      }
+    }, 3000);
   },
   computed: {
     isDataview() {
       return this.$route?.name === "dataview";
+    },
+    showFullScreen(){
+      return this.pageConfg?.page_options&&this.pageConfg?.page_options.indexOf('全屏按钮')>-1
+    },
+    needLogin(){
+      return this.pageConfg?.page_options&&this.pageConfg?.page_options.indexOf('先登录')>-1&&sessionStorage.getItem('logined')!=='true'
     },
     initWH() {
       let containerWidth = this.containerWidth || 800;
@@ -339,7 +325,8 @@ export default {
     },
     // 跳转到预览页面
     toPreview() {
-      window.open(window.location.hash.replace("#", "#/preview"));
+      window.open(window.location.hash.replace("#", "#/dataview"));
+      // window.open(window.location.hash.replace("#", "#/preview"));
     },
     clickSave() {
       if (this.layout.length === 0) {
@@ -640,7 +627,7 @@ export default {
         this.pageTitle = page_row_json_data.page_title;
         this.comJson = page_row_json_data.component_json || [];
         this.styleJson = page_row_json_data.page_style_json;
-
+        this.pageConfg = data
         if (!this.comJson) return;
         this.comJson.forEach((com, i) => {
           this.comList.forEach((list) => {
@@ -1103,6 +1090,59 @@ export default {
       }
       return res;
     },
+    openFullscreen() {
+      this.isFullScreen = !this.isFullScreen;
+      this.toggleFullScreen();
+    },
+    requestFullScreen(element) {
+      //进入全屏状态 判断各种浏览器，找到正确的方法
+      if (!element) {
+        element = document.body;
+      }
+      var requestMethod =
+        element.requestFullScreen || //W3C
+        element.webkitRequestFullScreen || //Chrome等
+        element.mozRequestFullScreen || //FireFox
+        element.msRequestFullScreen; //IE11
+      if (requestMethod) {
+        requestMethod.call(element);
+      } else if (typeof window.ActiveXObject !== "undefined") {
+        //for Internet Explorer
+        var wscript = new ActiveXObject("WScript.Shell");
+        if (wscript !== null) {
+          wscript.SendKeys("{F11}");
+        }
+      }
+    },
+    toggleFullScreen() {
+      //切换全屏状态
+      if (!document.fullscreenElement) {
+        this.requestFullScreen();
+        // document.documentElement.requestFullscreen();
+      } else {
+        this.exitFullScreen();
+        // if (document.exitFullscreen) {
+        //   document.exitFullscreen();
+        // }
+      }
+    },
+    exitFullScreen() {
+      // 退出全屏状态 判断各种浏览器，找到正确的方法
+      var exitMethod =
+        document.exitFullscreen || //W3C
+        document.mozCancelFullScreen || //FireFox
+        document.webkitExitFullscreen || //Chrome等
+        document.webkitExitFullscreen; //IE11
+      if (exitMethod && document.fullscreenElement) {
+        exitMethod.call(document);
+      } else if (typeof window.ActiveXObject !== "undefined") {
+        //for Internet Explorer
+        var wscript = new ActiveXObject("WScript.Shell");
+        if (wscript !== null) {
+          wscript.SendKeys("{F11}");
+        }
+      }
+    },
   },
   // beforeRouteLeave(to, from, next) {
   //   const answer = window.confirm("当前页面数据未保存，确定要离开？");
@@ -1116,6 +1156,22 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.page-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 20px;
+  padding-right: 40px;
+  z-index: 99;
+
+  .right {
+    color: #fff;
+    .iconfont {
+      font-size: 40px;
+      cursor: pointer;
+    }
+  }
+}
 .com-item {
   min-height: 90px;
   cursor: move;

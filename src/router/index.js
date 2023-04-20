@@ -31,6 +31,11 @@ const router = new VueRouter({
       name: "player",
       component: () => import("@/views/video-player.vue"),
     },
+    {
+      path: "/request-builder",
+      name: "requestBuilder",
+      component: () => import("@/views/request-builder.vue"),
+    },
     // {
     //   path: '/about',
     //   name: 'about',
