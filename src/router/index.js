@@ -32,18 +32,10 @@ const router = new VueRouter({
       component: () => import("@/views/video-player.vue"),
     },
     {
-      path: "/request-builder",
+      path: "/request",
       name: "requestBuilder",
       component: () => import("@/views/request-builder.vue"),
     },
-    // {
-    //   path: '/about',
-    //   name: 'about',
-    //   // route level code-splitting
-    //   // this generates a separate chunk (About.[hash].js) for this route
-    //   // which is lazy-loaded when the route is visited.
-    //   component: () => import('../views/AboutView.vue')
-    // }
   ],
 });
 

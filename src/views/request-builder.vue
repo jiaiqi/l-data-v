@@ -92,7 +92,11 @@
     </el-form>
     <div class="content-box">
       <div class="column-box">
-        <listhaul :singList="allColum"></listhaul>
+        <column-box
+          :singList="allColum"
+          :allow-check="true"
+          :checkedColumns.sync="checkedColumns"
+        ></column-box>
       </div>
       <div class="condition-box">
         <div
@@ -101,12 +105,12 @@
           :key="index"
           v-show="item.show"
         >
-          <listhaul
+          <column-box
             ref="child"
             @save="requestData"
             :singList="item"
             :endData="endData"
-          ></listhaul>
+          ></column-box>
         </div>
       </div>
     </div>
@@ -156,33 +160,30 @@
 </template>
 
 <script>
-import listhaul from "@/components/request-builder.vue";
+import { Loading } from 'element-ui';
+import columnBox from "@/components/column-box.vue";
 import moment from "moment";
 import FileSaver from "file-saver";
 import * as XLSX from "xlsx";
 export default {
-  name: "listDemo",
+  name: "RequestBuilder",
   components: {
-    listhaul,
+    columnBox,
   },
   data() {
     return {
       srv_call_no: "",
       reqConfig: null,
-      dialogTableVisible: false,
-      app: this.$route.params.app,
-      serveice: this.$route.params.serveice,
-      modelId: this.$route.params.modelId,
-      modelConfig: "", // 模型配置信息
-      chartNumber: this.$route.params.chartNumber,
-      chart_id: "", //图表id
       requestBody: {},
-      dashBoardName: "",
-      // chartName: "",
+      childData: {
+        order: [],
+        condition: [],
+        group: [],
+        column: [],
+      },
+      checkedColumns: [],
       ruleForm: {
         serviceName: "",
-        appName: "",
-
         srv_req_name: "", //接口调用名称
         mapp: "", //微服务
         service_name: "",
@@ -233,8 +234,6 @@ export default {
       tableTitle: [], //预览表格表头
       tableData: [], //预览表格内容
       tableExportStatus: false, // 导出预览表格为excel
-      chartType: "",
-      databaseModel: "",
       endList: [],
       endData: {
         condition: [],
@@ -257,10 +256,225 @@ export default {
         rowNum: 0,
         totalPage: 0,
       },
-      detailCondition: [],
     };
   },
   methods: {
+    async fetchChildDatas() {
+      const serviceNames = {
+        order: "srvpage_cfg_srv_call_order_select",
+        condition: "srvpage_cfg_srv_call_cond_select",
+        group: "srvpage_cfg_srv_call_group_stats_select",
+        column: "srvpage_cfg_srv_call_req_cols_select",
+      };
+      const reqs = [];
+      Object.keys(serviceNames).forEach((type) => {
+        const req = {
+          serviceName: serviceNames[type],
+          colNames: ["*"],
+          condition: [
+            {
+              colName: type === "group" ? "srv_req_no" : "srv_call_no",
+              ruleType: "eq",
+              value: this.srv_call_no,
+            },
+          ],
+          relation_condition: {},
+          page: { pageNo: 1, rownumber: 50 },
+        };
+
+        const url = `/config/select/${serviceNames[type]}`;
+        const res = this.$http.post(url, req);
+        reqs.push(res);
+      });
+      const res = await Promise.all(reqs);
+      let result = [];
+      if (Array.isArray(res) && res.length > 0) {
+        res.forEach((response, index) => {
+          let resData = response.data.data;
+          if (response.data.state === "SUCCESS" && resData.length > 0) {
+            let data = resData.map((item) => {
+              let str =
+                item.row_order_json ||
+                item.row_cond_json ||
+                item.row_json ||
+                item.row_group_json;
+              let rItem = null;
+              if (item.col_srv) {
+                rItem = item.col_srv;
+              } else if (str) {
+                try {
+                  rItem = JSON.parse(str);
+                } catch (error) {}
+              }
+              return rItem;
+            });
+            if (index === 0) {
+              this.childData.order = resData;
+            }
+            if (index === 1) {
+              this.childData.condition = resData;
+            }
+            if (index === 2) {
+              this.childData.group = resData;
+            }
+            if (index === 3) {
+              this.childData.column = resData;
+            }
+            result.push(data);
+          } else {
+            result.push(null);
+          }
+        });
+      }
+      return result;
+    },
+    buildChildData() {
+      const serviceNames = {
+        order: "srvpage_cfg_srv_call_order",
+        condition: "srvpage_cfg_srv_call_cond",
+        group: "srvpage_cfg_srv_call_group_stats",
+        column: "srvpage_cfg_srv_call_req_cols",
+      };
+      const ruleTypeMap = {
+        ne: "不等于",
+        eq: "等于",
+        in: "包含",
+      };
+      const reqDatas = [];
+      Object.keys(this.childData).forEach((type) => {
+        if (type === "column") return;
+        let localData = [...this.endData[type]];
+        if (type == "group") {
+          localData = [...localData, ...this.endData["aggregation"]];
+        }
+        let originData = this.childData[type];
+        if (Array.isArray(originData) && originData.length > 0) {
+          reqDatas.push({
+            serviceName: `${serviceNames[type]}_delete`,
+            // depend_keys: [
+            //   {
+            //     type: "column",
+            //     add_col: type === "group" ? "srv_req_no" : "srv_call_no",
+            //     depend_key: type === "group" ? "srv_req_no" : "srv_call_no",
+            //   },
+            // ],
+            condition: [
+              {
+                colName: "id",
+                ruleType: "in",
+                value: originData.map((item) => item.id).toString(),
+              },
+            ],
+          });
+        }
+        if (Array.isArray(localData) && localData.length > 0) {
+          reqDatas.push({
+            serviceName: `${serviceNames[type]}_add`,
+            // depend_keys: [
+            //   {
+            //     type: "column",
+            //     add_col: type === "group" ? "srv_req_no" : "srv_call_no",
+            //     depend_key: type === "group" ? "srv_req_no" : "srv_call_no",
+            //   },
+            // ],
+            data: localData.map((item, index) => {
+              let res = null;
+              switch (type) {
+                case "order":
+                  res = {
+                    order_seq: index * 100,
+                    col_name: item.colName,
+                    order_type: item.orderType,
+                    srv_call_no:this.srv_call_no
+                  };
+                  break;
+                case "condition":
+                  res = {
+                    col_name: item.colName,
+                    rule_type: ruleTypeMap[item.ruleType] || "like",
+                    val_type: "常量",
+                    const: item.value,
+                    srv_call_no:this.srv_call_no
+                  };
+                  break;
+                case "group":
+                  res = {
+                    col_name: item.colName,
+                    type_stat: item.type,
+                    alias_name: item.aliasName,
+                    srv_req_no: this.srv_call_no,
+                    
+                  };
+                  break;
+              }
+              return res;
+            }),
+          });
+        }
+      });
+      // 请求字段
+      // 先删掉所有的
+      if (
+        Array.isArray(this.childData.column) &&
+        this.childData.column.length > 0
+      ) {
+        reqDatas.push({
+          serviceName: `${serviceNames.column}_delete`,
+          // depend_keys: [
+          //   {
+          //     type: "column",
+          //     add_col: "srv_call_no",
+          //     depend_key: "srv_call_no",
+          //   },
+          // ],
+          condition: [
+            {
+              colName: "id",
+              ruleType: "in",
+              value: this.childData.column.map((item) => item.id).toString(),
+            },
+          ],
+        });
+      }
+      if (this.checkedColumns.length === this.allColum.list.length) {
+        if (!this.childData.column.find((item) => item.col_srv == "*")) {
+          reqDatas.push({
+            serviceName: `${serviceNames.column}_add`,
+            // depend_keys: [
+            //   {
+            //     type: "column",
+            //     add_col: "srv_call_no",
+            //     depend_key: "srv_call_no",
+            //   },
+            // ],
+            data: [
+              {
+                col_srv: "*",
+                srv_call_no:this.srv_call_no
+              },
+            ],
+          });
+        }
+      } else {
+        reqDatas.push({
+          serviceName: `${serviceNames.column}_add`,
+          // depend_keys: [
+          //   {
+          //     type: "column",
+          //     add_col: "srv_call_no",
+          //     depend_key: "srv_call_no",
+          //   },
+          // ],
+          data: this.checkedColumns.map((item) => {
+            return {
+              srv_call_no:this.srv_call_no,
+              col_srv: item,
+            };
+          }),
+        });
+      }
+      return reqDatas;
+    },
     buildSaveData() {
       const data = {
         group_json: "",
@@ -352,89 +566,7 @@ export default {
       });
       this.deleteListData();
       this.allColum.list = this.columnsOption;
-      return;
-      let _condition = [];
-      let _group = [];
-      let _aggregation = [];
-      let _order = [];
-
-      let endData = {
-        condition: [],
-        group: [],
-        aggregation: [],
-        order: [],
-      };
-      // this.requestBody.condition.map((cond) => {
-      //   this.allColum.list.map((column) => {
-      //     if (column.columns == cond.colName) {
-      //       column._condition = cond;
-      //       _condition.push(cond);
-      //       endData.condition.push(column);
-      //     }
-      //   });
-      // });
-      // let group = this.requestBody.group;
-      // if (group) {
-      //   group.map((groupItem) => {
-      //     this.allColum.list.map((column) => {
-      //       if (column.columns == groupItem.colName) {
-      //         if (
-      //           groupItem.type == "sum" ||
-      //           groupItem.type == "min" ||
-      //           groupItem.type == "max" ||
-      //           groupItem.type == "avg" ||
-      //           groupItem.type == "count" ||
-      //           groupItem.type == "count_all" ||
-      //           groupItem.type == "distinct_count"
-      //         ) {
-      //           column._aggregation = groupItem;
-      //           _aggregation.push(groupItem);
-      //           endData.aggregation.push(column);
-      //         }
-      //         if (
-      //           groupItem.type == "by" ||
-      //           groupItem.type == "by_year" ||
-      //           groupItem.type == "by_month" ||
-      //           groupItem.type == "by_week" ||
-      //           groupItem.type == "by_date" ||
-      //           groupItem.type == "by_hour" ||
-      //           groupItem.type == "by_minute" ||
-      //           groupItem.type == "by_second" ||
-      //           groupItem.type == "by_month_of_year" ||
-      //           groupItem.type == "by_week_of_year" ||
-      //           groupItem.type == "by_date_of_year" ||
-      //           groupItem.type == "by_hour_of_date" ||
-      //           groupItem.type == "by_minute_of_date"
-      //         ) {
-      //           column._group = groupItem;
-      //           _group.push(groupItem);
-      //           endData.group.push(column);
-      //         }
-      //       }
-      //     });
-      //   });
-      // }
-      // let order = this.requestBody.order;
-      // if (order) {
-      //   order.map((orderItem) => {
-      //     this.allColum.list.map((column) => {
-      //       if (column.columns == orderItem.colName) {
-      //         column._order = orderItem;
-      //         _order.push(orderItem);
-      //         endData.order.push(column);
-      //       }
-      //     });
-      //   });
-      // }
-
-      // this.listData[0].list = endData.condition;
-      // this.listData[1].list = endData.group;
-      // this.listData[2].list = endData.aggregation;
-      // this.listData[3].list = endData.order;
-      // this.endData.condition = _condition;
-      // this.endData.group = _group;
-      // this.endData.aggregation = _aggregation;
-      // this.endData.order = _order;
+      this.checkedColumns = this.columnsOption.map((item) => item.columns);
     },
     requestData(endList, endData) {
       if (endList.type === "condition") {
@@ -505,14 +637,10 @@ export default {
     },
     saveConfig() {
       // 保存配置到服务器
-      // let saveData = {};
-      // saveData["url"] = "/" + this.appName + "/select/" + this.serviceName;
-      // saveData["req"] = JSON.stringify(this.requestBody, "", 1);
-
-      // this.updateModel(saveData);
-
+      // return;
       const saveData = this.buildSaveData();
-      this.updateModel(saveData);
+      const child_data_list = this.buildChildData();
+      this.updateModel(saveData,child_data_list);
     },
     exportExcel() {
       this.tableExportStatus = true;
@@ -728,7 +856,7 @@ export default {
         })
         .catch((err) => {});
     },
-    updateModel(saveData) {
+    updateModel(saveData,child_data_list) {
       // 编辑模型
       let serviceName = "srvpage_cfg_srv_call_update";
       let url = this.getServiceUrl("operate", serviceName, "config");
@@ -741,13 +869,22 @@ export default {
           data: [saveData],
         },
       ];
+      if(Array.isArray(child_data_list)&&child_data_list.length>0){
+        params = [...params,...child_data_list]
+      }
+      let loadingInstance1 = Loading.service({ fullscreen: true });
       this.$http.post(url, params).then((res) => {
+        loadingInstance1.close()
         if (res.data.resultCode === "SUCCESS") {
           this.$alert("保存成功", "SUCCESS", {
             confirmButtonText: "确定",
             callback: (action) => {},
           });
-        } else if (res.data.resultCode === "FAILURE") {
+        } else {
+          this.$alert(`${res.data.resultMessage}`, "保存失败", {
+            confirmButtonText: "确定",
+            callback: (action) => {},
+          });
         }
       });
     },
@@ -760,7 +897,7 @@ export default {
       this.previewInfo.currentPage = val;
       this.getPreviewTableData(this.reqData);
     },
-    async fetchRequestConfig() {
+    async fetchRequestConfig(initData) {
       const req = {
         serviceName: "srvpage_cfg_srv_call_select",
         colNames: ["*"],
@@ -789,19 +926,19 @@ export default {
           }
 
           // 填充默认值
-          let reqData = {};
-          if (this.reqConfig.order_json) {
-            reqData.order = JSON.parse(this.reqConfig.order_json);
-          }
-          if (this.reqConfig.condition_json) {
-            reqData.condition = JSON.parse(this.reqConfig.condition_json);
-          }
-          if (this.reqConfig.group_json) {
-            const group_json = JSON.parse(this.reqConfig.group_json);
-            reqData.aggregation = [];
-            reqData.group = [];
-            if (Array.isArray(group_json) && group_json.length > 0) {
-              group_json.forEach((item) => {
+          let reqData = {
+            condition: [],
+            order: [],
+            aggregation: [],
+            group: [],
+          };
+          if (Array.isArray(initData) && initData.length === 4) {
+            console.log(initData);
+            reqData.order = initData[0];
+            reqData.condition = initData[1];
+            const group = initData[2] || [];
+            if (Array.isArray(group) && group.length > 0) {
+              group.forEach((item) => {
                 if (item.type !== "by") {
                   reqData.aggregation.push(item);
                 } else {
@@ -809,7 +946,37 @@ export default {
                 }
               });
             }
+            // reqData.group = group.filter((item) => item.type);
+            // reqData.columns = initData[3]
+            if (initData[3]&&initData[3].includes("*")) {
+              this.checkedColumns = this.columnsOption.map(
+                (item) => item.columns
+              );
+            } else {
+              this.checkedColumns = initData[3] || [];
+            }
           }
+
+          // if (this.reqConfig.order_json) {
+          //   reqData.order = JSON.parse(this.reqConfig.order_json);
+          // }
+          // if (this.reqConfig.condition_json) {
+          //   reqData.condition = JSON.parse(this.reqConfig.condition_json);
+          // }
+          // if (this.reqConfig.group_json) {
+          //   const group_json = JSON.parse(this.reqConfig.group_json);
+          //   reqData.aggregation = [];
+          //   reqData.group = [];
+          //   if (Array.isArray(group_json) && group_json.length > 0) {
+          //     group_json.forEach((item) => {
+          //       if (item.type !== "by") {
+          //         reqData.aggregation.push(item);
+          //       } else {
+          //         reqData.group.push(item);
+          //       }
+          //     });
+          //   }
+          // }
 
           let _condition = [];
           let _group = [];
@@ -903,9 +1070,7 @@ export default {
     chartName() {
       return this.ruleForm.chartName;
     },
-    appName() {
-      return this.ruleForm.appName;
-    },
+
     serviceName() {
       return this.ruleForm.serviceName;
     },
@@ -921,15 +1086,15 @@ export default {
   created() {
     if (this.$route.query?.no) {
       this.srv_call_no = this.$route.query?.no;
-      this.fetchRequestConfig();
+      this.fetchChildDatas().then((res) => {
+        this.fetchRequestConfig(res);
+      });
     }
 
     this.changeReqOption();
 
     this.getApp();
 
-    // let appName = this.$route.params.app
-    // let serviceName = this.$route.params.serveice
     // let operate = this.$route.params.modelId
     // if (operate == 'add') {
     //   this.app = appName
@@ -937,8 +1102,6 @@ export default {
     //   this.getApp();
     // } else { // 编辑
     //   this.getApp();
-    //   // this.serveice = serviceName
-    //   this.getModelConfig(operate)
     // }
   },
 };
@@ -989,7 +1152,7 @@ export default {
     justify-content: space-between;
     .column-box {
       max-width: 15%;
-      min-width: 8%;
+      min-width: 13%;
       margin-right: 1.5rem;
       height: 500px;
       max-width: 500px;
@@ -998,25 +1161,31 @@ export default {
     }
     .condition-box {
       min-height: 500px;
-      flex: 1;
+      // flex: 1;
+      width: 83%;
       display: flex;
       flex-wrap: wrap;
       align-content: space-between;
       justify-content: space-between;
       .sing_hual {
+        width: calc(50% - 10px);
+        margin-bottom: 10px;
         // height: 100%;
         // flex: 1;
-        width: 49%;
+        // min-width: max(40%,400px);
+        // max-width: min(400px,45%);
+        // min-width: 350px;
+        // max-width: 400px;
         max-height: 49%;
         display: flex;
         box-sizing: border-box;
-        &:nth-child(2n + 1) {
-          flex: 1;
-          min-width: 49%;
-        }
-        &:nth-child(2n) {
-          flex: 0.6;
-        }
+        // &:nth-child(2n + 1) {
+        //   flex: 1;
+        //   min-width: 49%;
+        // }
+        // &:nth-child(2n) {
+        //   flex: 0.6;
+        // }
       }
     }
   }

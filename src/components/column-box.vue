@@ -4,152 +4,157 @@
       <span>{{ singList.name }}</span>
     </div>
     <div class="content">
-      <draggable
-        :list="singList.list"
-        :options="deploy"
-        class="dragArea"
-        @start="start(singList)"
-        @end="onMove($event, singList)"
-        @add="add($event, singList)"
+      <el-checkbox-group
+        v-model="checkList"
+        @change="$emit('update:checkedColumns', $event)"
       >
-        <div
-          class="content_list"
-          v-for="(item, index) in singList.list"
-          :key="index"
+        <draggable
+          :list="singList.list"
+          :options="deploy"
+          class="dragArea"
+          @start="start(singList)"
+          @end="onMove($event, singList)"
+          @add="add($event, singList)"
         >
           <div
-            v-if="singList.type === 'all'"
-            class="value"
-            :class="{ columns: singList.type === 'all' }"
+            class="content_list"
+            v-for="(item, index) in singList.list"
+            :key="index"
           >
-            {{ item.label }}
-          </div>
-          <div
-            v-else
-            class="value"
-            :class="{ order_value: singList.type === 'order' }"
-          >
-            {{ item.label }}
-          </div>
-          <el-select
-            v-model="item._condition.ruleType"
-            filterable
-            placeholder="请选择"
-            v-if="singList.type == 'condition' && singList.list"
-            class="el-select"
-            @visible-change="selectConditionOperator(item, 'click')"
-          >
-            <el-option
-              v-for="item in selectList"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
+            <div
+              v-if="singList.type === 'all'"
+              class="value"
+              :class="{ columns: singList.type === 'all' }"
             >
-              <span style="float: left; font-size: 13px">{{
-                item.label + "-" + item.value
-              }}</span>
-            </el-option>
-          </el-select>
-          <el-select
-            v-model="item._group.type"
-            filterable
-            placeholder="请选择"
-            v-if="singList.type == 'group'"
-            class="el-select"
-            @visible-change="selectGroupOperator(item, 'click')"
-          >
-            <el-option
-              v-for="item in selectList"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            ></el-option>
-          </el-select>
-          <el-select
-            v-model="item._order.orderType"
-            filterable
-            placeholder="请选择"
-            v-if="singList.type == 'order'"
-            class="el-select"
-          >
-            <el-option
-              v-for="item in selectList"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
+              <el-checkbox
+                :label="item.columns"
+                :name="item.columns"
+                :value="item.columns"
+              >
+                {{ item.label }}</el-checkbox
+              >
+              <!-- {{ item.label }} -->
+            </div>
+            <div
+              v-else
+              class="value"
+              :class="{ order_value: singList.type === 'order' }"
             >
-              <span style="float: left; font-size: 13px">{{
-                item.label + "-" + item.value
-              }}</span>
-            </el-option>
-          </el-select>
-          <el-select
-            v-model="item._aggregation.type"
-            filterable
-            placeholder="请选择"
-            v-if="singList.type == 'aggregation'"
-            class="el-select"
-          >
-            <el-option
-              v-for="(item, index) in selectList"
-              :key="index"
-              :label="item.label"
-              :value="item.value"
-              @visible-change="seleteAggregationOperator(item, 'click')"
+              {{ item.label }}
+            </div>
+            <el-select
+              v-model="item._condition.ruleType"
+              filterable
+              placeholder="请选择"
+              v-if="singList.type == 'condition' && singList.list"
+              class="el-select"
+              @visible-change="selectConditionOperator(item, 'click')"
             >
-              <span style="float: left; font-size: 13px">{{
-                item.label + "-" + item.value
-              }}</span>
-            </el-option>
-          </el-select>
-          <el-input
-            v-model="item._condition.value"
-            v-if="
-              singList.type != 'all' &&
-              singList.type === 'condition' &&
-              item.col_type !== 'DateTime' &&
-              item.col_type !== 'Date'
-            "
-            placeholder="请输入内容"
-            class="input-value"
-          ></el-input>
-          <el-input
-            v-model="item.aliasName"
-            v-if="singList.type === 'aggregation' || singList.type === 'group'"
-            placeholder="请输入别名"
-            class="input-value"
-          ></el-input>
-          <!-- <el-date-picker
-              class="date-picker"
+              <el-option
+                v-for="item in selectList"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              >
+                <span style="float: left; font-size: 13px">{{
+                  item.label + "-" + item.value
+                }}</span>
+              </el-option>
+            </el-select>
+            <el-select
+              v-model="item._group.type"
+              filterable
+              placeholder="请选择"
+              v-if="singList.type == 'group'"
+              class="el-select"
+              @visible-change="selectGroupOperator(item, 'click')"
+            >
+              <el-option
+                v-for="item in selectList"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              ></el-option>
+            </el-select>
+            <el-select
+              v-model="item._order.orderType"
+              filterable
+              placeholder="请选择"
+              v-if="singList.type == 'order'"
+              class="el-select"
+            >
+              <el-option
+                v-for="item in selectList"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              >
+                <span style="float: left; font-size: 13px">{{
+                  item.label + "-" + item.value
+                }}</span>
+              </el-option>
+            </el-select>
+            <el-select
+              v-model="item._aggregation.type"
+              filterable
+              placeholder="请选择"
+              v-if="singList.type == 'aggregation'"
+              class="el-select"
+            >
+              <el-option
+                v-for="(item, index) in selectList"
+                :key="index"
+                :label="item.label"
+                :value="item.value"
+                @visible-change="seleteAggregationOperator(item, 'click')"
+              >
+                <span style="float: left; font-size: 13px">{{
+                  item.label + "-" + item.value
+                }}</span>
+              </el-option>
+            </el-select>
+            <el-input
               v-model="item._condition.value"
-              v-if="(item.col_type=='DateTime'||item.col_type=='Date' )&& singList.type ==='condition'"
-              type="datetime"
-              placeholder="选择日期时间"
+              v-if="
+                singList.type != 'all' &&
+                singList.type === 'condition' &&
+                item.col_type !== 'DateTime' &&
+                item.col_type !== 'Date'
+              "
+              placeholder="请输入内容"
+              class="input-value"
+            ></el-input>
+            <el-input
+              v-model="item.aliasName"
+              v-if="
+                singList.type === 'aggregation' || singList.type === 'group'
+              "
+              placeholder="请输入别名"
+              class="input-value"
+            ></el-input>
+            <el-date-picker
+              v-model="item._condition.value"
+              v-if="
+                (item.col_type == 'DateTime' || item.col_type == 'Date') &&
+                singList.type === 'condition'
+              "
+              type="daterange"
               align="right"
+              unlink-panels
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
               :picker-options="pickerOptions"
-            ></el-date-picker>-->
-          <el-date-picker
-            v-model="item._condition.value"
-            v-if="
-              (item.col_type == 'DateTime' || item.col_type == 'Date') &&
-              singList.type === 'condition'
-            "
-            type="daterange"
-            align="right"
-            unlink-panels
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            :picker-options="pickerOptions"
-          ></el-date-picker>
-          <el-button
-            type="danger"
-            icon="el-icon-delete"
-            @click.prevent.stop="deleteItem(item, singList, index)"
-            v-if="singList.type != 'all'"
-          ></el-button>
-        </div>
-      </draggable>
+            ></el-date-picker>
+            <el-button
+              type="danger"
+              icon="el-icon-delete"
+              @click.prevent.stop="deleteItem(item, singList, index)"
+              v-if="singList.type != 'all'"
+            ></el-button>
+          </div>
+        </draggable>
+      </el-checkbox-group>
     </div>
   </div>
 </template>
@@ -175,9 +180,22 @@ export default {
         default: () => {},
       },
     },
+    allowCheck: {
+      type: Boolean,
+      default: false,
+    },
+    checkedColumns: {
+      type: Array,
+    },
+  },
+  mounted() {
+    if (Array.isArray(this.checkedColumns) && this.checkedColumns.length > 0) {
+      this.checkList = JSON.parse(JSON.stringify(this.checkedColumns));
+    }
   },
   data() {
     return {
+      checkList: [],
       deploy: {},
       selectList: [],
       modelType: "",
@@ -243,7 +261,7 @@ export default {
       }
     },
     setEndData(list) {
-      let endData = null
+      let endData = null;
       if (list.type === "condition") {
         this.condition = [];
         list.list.forEach((item) => {
@@ -839,6 +857,13 @@ export default {
   },
 
   watch: {
+    checkedColumns: {
+      handler(newVal, oldVal) {
+        if (Array.isArray(newVal) && newVal.length > 0) {
+          this.checkList = JSON.parse(JSON.stringify(newVal));
+        }
+      },
+    },
     singList: {
       handler(newVal, oldVal) {
         if (newVal.type === "condition") {
@@ -947,7 +972,7 @@ export default {
         flex: 1;
       }
       .columns {
-        text-indent: 0.5rem;
+        // text-indent: 0.5rem;
         line-height: 1.5rem;
         width: 100%;
         text-align: left;
@@ -991,5 +1016,8 @@ export default {
       border-radius: 0;
     }
   }
+}
+.el-checkbox-group {
+  height: 100%;
 }
 </style>

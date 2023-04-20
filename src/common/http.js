@@ -12,10 +12,10 @@ $axios.interceptors.request.use(
   function (config) {
     // 在发送请求之前做些什么
     let bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
-    if (!bx_auth_ticket) {
-      bx_auth_ticket = "xabxdzkj-9fec1b24-8eef-4473-abfb-452c41bf625f";
-      sessionStorage.setItem("bx_auth_ticket", bx_auth_ticket)
-    }
+    // if (!bx_auth_ticket) {
+    //   bx_auth_ticket = "xabxdzkj-9323eadb-29de-4b68-8fde-9ee65c0254bd";
+    //   sessionStorage.setItem("bx_auth_ticket", bx_auth_ticket)
+    // }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
   },
