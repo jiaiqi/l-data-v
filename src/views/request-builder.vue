@@ -26,6 +26,7 @@
           v-model="ruleForm.mapp"
           placeholder="请选择应用名称"
           @change="getServiceName()"
+          clearable
           filterable
         >
           <el-option
@@ -46,6 +47,7 @@
         <el-select
           v-model="ruleForm.srv_type"
           placeholder="接口类型："
+          clearable
           filterable
         >
           <el-option
@@ -66,6 +68,9 @@
         <el-select
           v-model="ruleForm.service_name"
           placeholder="请选择服务名称"
+          clearable
+          filterable
+      
           @change="getColumns()"
         >
           <el-option
@@ -160,7 +165,7 @@
 </template>
 
 <script>
-import { Loading } from 'element-ui';
+import { Loading } from "element-ui";
 import columnBox from "@/components/column-box.vue";
 import moment from "moment";
 import FileSaver from "file-saver";
@@ -259,6 +264,13 @@ export default {
     };
   },
   methods: {
+    remoteMethod(query) {
+      if (query !== "") {
+        this.getServiceName(query);
+      } else {
+        this.options = [];
+      }
+    },
     async fetchChildDatas() {
       const serviceNames = {
         order: "srvpage_cfg_srv_call_order_select",
@@ -385,7 +397,7 @@ export default {
                     order_seq: index * 100,
                     col_name: item.colName,
                     order_type: item.orderType,
-                    srv_call_no:this.srv_call_no
+                    srv_call_no: this.srv_call_no,
                   };
                   break;
                 case "condition":
@@ -394,7 +406,7 @@ export default {
                     rule_type: ruleTypeMap[item.ruleType] || "like",
                     val_type: "常量",
                     const: item.value,
-                    srv_call_no:this.srv_call_no
+                    srv_call_no: this.srv_call_no,
                   };
                   break;
                 case "group":
@@ -403,7 +415,6 @@ export default {
                     type_stat: item.type,
                     alias_name: item.aliasName,
                     srv_req_no: this.srv_call_no,
-                    
                   };
                   break;
               }
@@ -450,7 +461,7 @@ export default {
             data: [
               {
                 col_srv: "*",
-                srv_call_no:this.srv_call_no
+                srv_call_no: this.srv_call_no,
               },
             ],
           });
@@ -467,7 +478,7 @@ export default {
           // ],
           data: this.checkedColumns.map((item) => {
             return {
-              srv_call_no:this.srv_call_no,
+              srv_call_no: this.srv_call_no,
               col_srv: item,
             };
           }),
@@ -640,7 +651,7 @@ export default {
       // return;
       const saveData = this.buildSaveData();
       const child_data_list = this.buildChildData();
-      this.updateModel(saveData,child_data_list);
+      this.updateModel(saveData, child_data_list);
     },
     exportExcel() {
       this.tableExportStatus = true;
@@ -726,7 +737,7 @@ export default {
         }
       }
     },
-    async getServiceName(appno) {
+    async getServiceName(name) {
       //选择服务名称列表
       this.allService = [];
       this.allColum.list = [];
@@ -764,7 +775,13 @@ export default {
           },
         ],
       };
-
+      if (name) {
+        req.condition.push({
+          colName: "service_name",
+          ruleType: "like",
+          value: name,
+        });
+      }
       const url = `/${this.ruleForm.mapp}/select/${req.serviceName}`;
       const res = await this.$http.post(url, req);
       let data = res.data.data;
@@ -856,7 +873,7 @@ export default {
         })
         .catch((err) => {});
     },
-    updateModel(saveData,child_data_list) {
+    updateModel(saveData, child_data_list) {
       // 编辑模型
       let serviceName = "srvpage_cfg_srv_call_update";
       let url = this.getServiceUrl("operate", serviceName, "config");
@@ -869,12 +886,12 @@ export default {
           data: [saveData],
         },
       ];
-      if(Array.isArray(child_data_list)&&child_data_list.length>0){
-        params = [...params,...child_data_list]
+      if (Array.isArray(child_data_list) && child_data_list.length > 0) {
+        params = [...params, ...child_data_list];
       }
       let loadingInstance1 = Loading.service({ fullscreen: true });
       this.$http.post(url, params).then((res) => {
-        loadingInstance1.close()
+        loadingInstance1.close();
         if (res.data.resultCode === "SUCCESS") {
           this.$alert("保存成功", "SUCCESS", {
             confirmButtonText: "确定",
@@ -948,7 +965,7 @@ export default {
             }
             // reqData.group = group.filter((item) => item.type);
             // reqData.columns = initData[3]
-            if (initData[3]&&initData[3].includes("*")) {
+            if (initData[3] && initData[3].includes("*")) {
               this.checkedColumns = this.columnsOption.map(
                 (item) => item.columns
               );
