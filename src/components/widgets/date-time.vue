@@ -23,6 +23,10 @@ export default {
       type: Boolean, //是否显示秒数
       default: false,
     },
+    partsSet: {
+      type: String,
+      default: "年,月,日,时,分,秒",
+    },
     color: {
       type: String,
       default: "#fff",
@@ -30,7 +34,17 @@ export default {
   },
   computed: {
     date() {
-      return dayjs(new Date()).format("YYYY-MM-DD");
+      let format = "";
+      if (this.partsSet.indexOf("年") > -1) {
+        format += "YYYY-";
+      }
+      if (this.partsSet.indexOf("月") > -1) {
+        format += "MM-";
+      }
+      if (this.partsSet.indexOf("日") > -1) {
+        format += "DD";
+      }
+      return dayjs(new Date()).format(format || "YYYY-MM-DD");
     },
     week() {
       let arr = [
@@ -46,7 +60,22 @@ export default {
     },
   },
   mounted() {
-    if (this.showSeconds) {
+    if (this.partsSet) {
+      let timeFormat = "";
+      if (this.partsSet.indexOf("时") > -1) {
+        timeFormat += "HH:";
+      }
+      if (this.partsSet.indexOf("分") > -1) {
+        timeFormat += "mm:";
+      }
+      if (this.partsSet.indexOf("秒") > -1) {
+        timeFormat += "ss";
+      }
+      this.time = dayjs(new Date()).format(timeFormat || "HH:mm:ss");
+      timer = setInterval(() => {
+        this.time = dayjs(new Date()).format(timeFormat || "HH:mm:ss");
+      }, 1000);
+    } else if (this.showSeconds) {
       this.time = dayjs(new Date()).format("HH:mm:ss");
       timer = setInterval(() => {
         this.time = dayjs(new Date()).format("HH:mm:ss");

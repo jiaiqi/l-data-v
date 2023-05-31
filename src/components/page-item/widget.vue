@@ -6,6 +6,8 @@
   </div>
   <date-time
     v-else-if="widgetType === '时间日期'"
+    :show-seconds="showSeconds"
+    :parts-set="timeWidgetJson['parts-set']"
     :color="widgetColor"
   ></date-time>
 </template>
@@ -23,6 +25,20 @@ const textWidgetJson = computed(() => {
     return formatStyleData(props.pageItem.widget_json.col_text_pub_style_json);
   }
 });
+
+const timeWidgetJson = computed(() => {
+  if (props.pageItem.widget_json.col_type_time_json) {
+    return formatStyleData(props.pageItem.widget_json.col_type_time_json);
+  }
+});
+const showSeconds = computed(() => {
+  return (
+    timeWidgetJson.value &&
+    timeWidgetJson.value['parts-set'] &&
+    timeWidgetJson.value['parts-set'].indexOf("秒")
+  );
+});
+
 const widgetType = computed(() => {
   return props.pageItem?.widget_json?.widget_type;
 });

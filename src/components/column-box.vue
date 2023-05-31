@@ -690,13 +690,9 @@ export default {
         let dataType = sign.col_type;
         if (dataType == "Date" || dataType == "DateTime") {
           dataType = "date";
-        } else if (dataType == "String" || dataType == "string") {
+        } else if ( ['string','String'].includes(dataType)) {
           dataType = "string";
-        } else if (
-          dataType == "Number" ||
-          dataType == "number" ||
-          dataType == "int"
-        ) {
+        } else if (['Number','number','int'].includes(dataType)) {
           dataType = "number";
         }
         let operator = [];

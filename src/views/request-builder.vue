@@ -142,7 +142,7 @@
           <template v-for="(only, i) in tableTitle">
             <el-table-column
               :prop="only.columns"
-              :label="only.aliasName ? only.aliasName : only.label"
+              :label="only.aliasName || only.label"
             ></el-table-column>
           </template>
         </el-table>
