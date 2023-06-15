@@ -551,7 +551,7 @@ export default {
       let all = res.data.data;
       this.columnsOption = [];
       all.forEach((item) => {
-        if (item.in_list === 1) {
+        if (item.in_list === 1 || item.in_cond === 1 || item.in_detail === 1) {
           item["_condition"] = {
             colName: item.columns,
             ruleType: "",
@@ -898,14 +898,13 @@ export default {
         child_data_list.length > 0
       ) {
         params = [...params, ...child_data_list];
-      }else{
-        params[0].data[0].child_data_list = child_data_list
+      } else {
+        params[0].data[0].child_data_list = child_data_list;
       }
       let loadingInstance1 = Loading.service({ fullscreen: true });
       this.$http.post(url, params).then((res) => {
         loadingInstance1.close();
-        if(!this.srv_call_no){
-
+        if (!this.srv_call_no) {
         }
         if (res.data.resultCode === "SUCCESS") {
           this.$alert(this.srv_call_no ? "保存成功" : "添加成功", "SUCCESS", {

@@ -686,13 +686,13 @@ export default {
     },
     seleteAggregationOperator(sign, isClick) {
       let self = this;
-      if (isClick) {
-        let dataType = sign.col_type;
-        if (dataType == "Date" || dataType == "DateTime") {
+      if (isClick&&sign?.col_type) {
+        let dataType = sign.col_type.tolowercase();
+        if (['date','datetime'].includes(dataType)) {
           dataType = "date";
-        } else if ( ['string','String'].includes(dataType)) {
+        } else if ( ['string'].includes(dataType)) {
           dataType = "string";
-        } else if (['Number','number','int'].includes(dataType)) {
+        } else if (['money','number','int','float','integer'].includes(dataType)) {
           dataType = "number";
         }
         let operator = [];
