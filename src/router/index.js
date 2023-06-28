@@ -36,6 +36,12 @@ const router = new VueRouter({
       name: "requestBuilder",
       component: () => import("@/views/request-builder.vue"),
     },
+    {
+      path: "/request-preview",
+      name: "requestpreview",
+      component: () => import("@/views/request-preview.vue"),
+    },
+    
   ],
 });
 
