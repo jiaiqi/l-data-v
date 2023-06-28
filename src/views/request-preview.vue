@@ -1,11 +1,13 @@
 <template>
   <div class="page-wrap">
     <!-- 标题 -->
-    <div></div>
+    <div class="title" v-if="config && config.srv_req_name">
+      {{ config.srv_req_name }}
+    </div>
     <!-- 筛选项 -->
     <div class="group-box" v-if="groupByCols">
       <div class="group-box-item" v-for="cols in groupByCols">
-        <el-radio-group @input="changeGroup($event, cols)">
+        <el-radio-group @input="changeGroup($event, cols)" v-model="current">
           <el-radio :label="index" :value="item.col_name" v-for="(item, index) in cols">{{
             item.label }}</el-radio>
         </el-radio-group>
@@ -15,7 +17,8 @@
     <div></div>
 
     <!-- 表格 -->
-    <el-table :data="tableData" border style="width: 100%" :span-method="objectSpanMethod" v-loading="onLoading">
+    <el-table :data="tableData" border stripe style="width: 100%" :span-method="objectSpanMethod" v-loading="onLoading"
+      :header-cell-style="{ 'background': '#f0f3f9', 'font-weight': 'bold', 'color': '#000' }">
       <el-table-column :prop="column.columns" :label="column.label" min-width="180" v-for="column in srvCols">
       </el-table-column>
     </el-table>
@@ -42,8 +45,9 @@ export default {
       groupCols: [],
       calcCols: [],
       groupByCols: {},// 分组字段 可能重复
-      groupColsChecked: {},
       onLoading: false,
+      curGroup: null,
+      current:"",
     };
   },
   computed: {
@@ -61,7 +65,9 @@ export default {
         if (info.row_json) {
           try {
             let group = JSON.parse(info.row_json)
-            this.getList({ group: [group, ...this.groupCols, ...this.calcCols] })
+            this.curGroup = [group, ...this.groupCols, ...this.calcCols]
+            // this.getList({ group: [group, ...this.groupCols, ...this.calcCols] })
+            this.getList()
           } catch (error) {
 
           }
@@ -261,21 +267,7 @@ export default {
             Array.isArray(this.srvReqJson?.group) &&
             this.srvReqJson?.group.length > 0
           ) {
-            // this.groupCols = this.srvReqJson?.group.map(item => {
-            //   switch (item.type) {
-            //     case 'value':
 
-            //       break;
-
-            //     default:
-            //       break;
-            //   }
-            //   return item
-            // })
-
-            let groupColList = this.srvReqJson?.group.reduce((res, cur) => { },
-              []);
-            let colNames = this.srvReqJson?.group;
             this.srvCols = res.data?.data?.srv_cols.filter((item) => {
               let groupItem = this.srvReqJson?.group.find(
                 (e) => item.columns === e.colName
@@ -288,22 +280,7 @@ export default {
               }
             });
             await this.getGroupFields();
-
-            // this.groupCols = this.srvCols.map((item) => {
-            //   let groupItem = this.srvReqJson?.group.find(
-            //     (e) => item.columns === e.colName
-            //   );
-            //   if (groupItem?.colName) {
-            //     if (groupItem.aliasName) {
-            //       // item.columns = groupItem.aliasName
-            //     }
-            //   }
-            //   return item;
-            // });
           }
-          //  else {
-
-          // }
         }
       }
     },
@@ -312,8 +289,8 @@ export default {
       const req = this.srvReqJson;
       req.page = this.page || req.page
       delete req.group;
-      if (p?.group) {
-        req.group = p.group
+      if (Array.isArray(this.curGroup) && this.curGroup.length > 0) {
+        req.group = this.curGroup
       } else {
         // req.group = [...this.groupCols, ...this.calcCols]
       }
@@ -338,9 +315,20 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.page-wrap{
-  // padding: 20px;
+.page-wrap {
+  padding: 20px;
+
+  .title {
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .table-header {
+    background-color: #f0f3f9;
+    font-weight: bold;
+  }
 }
+
 .group-box {
   padding: 10px;
 
