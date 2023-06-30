@@ -6,10 +6,12 @@
     </div>
     <!-- 筛选项 -->
     <div class="group-box" v-if="groupByCols">
-      <div class="group-box-item" v-for="cols in groupByCols">
-        <el-radio-group @input="changeGroup($event, cols)" v-model="current">
-          <el-radio :label="index" :value="item.col_name" v-for="(item, index) in cols">{{
-            item.label }}</el-radio>
+      <div class="group-box-item" v-for="(groupItem, key) in groupByCols">
+        <el-radio-group @input="changeGroup($event, groupItem.list, key)" v-model="groupItem.value">
+          <el-radio :label="index" :value="item.col_name" v-for="(item, index) in  groupItem.list"
+            @click.native="clickRadio($event, key, index)">
+            <span>{{ item.label }}</span>
+          </el-radio>
         </el-radio-group>
       </div>
     </div>
@@ -45,9 +47,10 @@ export default {
       groupCols: [],
       calcCols: [],
       groupByCols: {},// 分组字段 可能重复
+      groupByColsVal: {},
       onLoading: false,
       curGroup: null,
-      current:"",
+      current: "",
     };
   },
   computed: {
@@ -59,19 +62,47 @@ export default {
     },
   },
   methods: {
+    clickRadio(e, key, index) {
+      console.log(key, index);
+      if (this.groupByCols[key].value === index) {
+        e.preventDefault();
+
+        this.groupByCols[key].value = -1
+        this.$set(this.groupByCols[key], 'value', -1)
+        this.curGroup = this.curGroup.filter(item => item.colName !== key)
+        if (Object.keys(this.groupByCols).every(key => (typeof this.groupByCols[key]?.value === 'number' && this.groupByCols[key]?.value > -1)||this.groupByCols[key]?.value !== 'number')) {
+          this.curGroup = []
+        }
+        this.getList()
+      }
+
+    },
     changeGroup(val, cols) {
       if (typeof val === 'number' && Array.isArray(cols) && cols.length > val) {
         const info = cols[val]
-        if (info.row_json) {
-          try {
-            let group = JSON.parse(info.row_json)
-            this.curGroup = [group, ...this.groupCols, ...this.calcCols]
-            // this.getList({ group: [group, ...this.groupCols, ...this.calcCols] })
-            this.getList()
-          } catch (error) {
+        console.log(this.groupByColsVal)
+        const groupList = []
+        for (const key in this.groupByCols) {
+          if (Object.hasOwnProperty.call(this.groupByCols, key)) {
+            const item = this.groupByCols[key].list;
+            if (typeof this.groupByCols[key].value === 'number' && this.groupByCols[key].value > -1) {
+              const info = item[this.groupByCols[key].value]
+              if (info.row_json) {
+                try {
+                  let group = JSON.parse(info.row_json)
+                  groupList.push(group)
 
+                } catch (error) {
+
+                }
+              }
+            }
           }
         }
+        this.curGroup = [...groupList, ...this.calcCols]
+        // this.getList({ group: [group, ...this.groupCols, ...this.calcCols] })
+        this.getList()
+        return
       }
 
     },
@@ -171,6 +202,7 @@ export default {
         }, [])
         this.srvCols = cols
         const groupType = [
+          "by",
           "by_year",
           "by_month",
           "by_week",
@@ -230,14 +262,23 @@ export default {
                   cur.label = '按日';
                   break;
               }
-              if (res[cur.col_name]) {
-                res[cur.col_name].push({ ...cur });
+              if (res[cur.col_name]?.list) {
+                res[cur.col_name].list.push({ ...cur });
               } else {
-                res[cur.col_name] = [{ ...cur }];
+                res[cur.col_name] = {
+                  list: [{ ...cur }],
+                  key: cur.col_name,
+                  value: -1
+                };
               }
             }
             return res;
           }, {});
+        this.groupByColsVal = {}
+        for (const key in this.groupByCols) {
+          this.groupByColsVal[key] = null
+          // this.groupByColsVal[key] = this.groupByCols[key]
+        }
       }
     },
     async getListV2(serviceName) {
