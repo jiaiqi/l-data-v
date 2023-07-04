@@ -95,6 +95,7 @@ export default {
       curGroup: null,
       current: "",
       filterCols: [],
+      sum_row_data: {}
     };
   },
   computed: {
@@ -501,14 +502,14 @@ export default {
           }
           if (item.value !== undefined) {
             const obj = { colName: item.columns, ruleType: 'like', value: null }
-            if (['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)) {
+            if (['Money', 'Float', 'Int', 'Integer','Date'].includes(item.col_type)) {
               obj.ruleType = 'between'
             }
-            if (item.col_type === 'Date') {
-              obj.value = item.value.toString()
-            } else {
+            // if (item.col_type === 'Date') {
+            //   obj.value = item.value.toString()
+            // } else {
               obj.value = item.value
-            }
+            // }
             return obj
           }
         }).filter(item => item?.colName)
@@ -521,6 +522,12 @@ export default {
       if (res?.data?.state === "SUCCESS") {
         this.tableData = res.data.data;
         this.page = res.data.page;
+        if (res.data.sum_row_data) {
+          this.sum_row_data = res.data.sum_row_data
+          this.tableData.push()
+        } else {
+          this.sum_row_data = null
+        }
       }
     },
   },
