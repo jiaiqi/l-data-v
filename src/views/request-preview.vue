@@ -34,11 +34,19 @@
                   <!-- <el-input v-model.number="item.value" type="number"
                     v-else-if="['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)"
                     @change="valueChange($event, item)"></el-input> -->
-                  <el-input-number v-model="item.value" clearable label="描述文字"
+                  <!-- <el-input-number v-model="item.value" clearable label="描述文字"
                     v-else-if="['Money', 'Float'].includes(item.col_type)"
                     @change="valueChange($event, item)"></el-input-number>
                   <el-input-number v-model="item.value" clearable v-else-if="['Int', 'Integer'].includes(item.col_type)"
-                    @change="valueChange($event, item)"></el-input-number>
+                    @change="valueChange($event, item)"></el-input-number> -->
+                  <div class="number-range-input"
+                    v-else-if="['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)">
+                    <el-input v-model.number="item.value1" clearable @change="valueChange($event, item)"
+                      type="number"></el-input>
+                    <span class="marign-lr">-</span>
+                    <el-input v-model.number="item.value2" clearable @change="valueChange($event, item)"
+                      type="number"></el-input>
+                  </div>
                 </el-form-item>
               </el-col>
               <!-- <el-col :xs="8" :sm="6" :md="4" :lg="2" :xl="1" align="right">
@@ -55,7 +63,7 @@
             'font-weight': 'bold',
             color: '#000',
           }">
-          <el-table-column :prop="column.columns" :label="column.label" min-width="180" v-for="column in srvCols">
+          <el-table-column :prop="column.columns" :label="column.label" min-width="180" v-for="column in setSrvCols">
           </el-table-column>
         </el-table>
       </el-main>
@@ -104,45 +112,10 @@ export default {
     serviceName() {
       return this.srvReqJson?.serviceName;
     },
-  },
-  methods: {
-    resetFilter() {
-      this.filterCols = this.filterCols.map(item => {
-        item.value = undefined
-        return item
-      })
-    },
-    valueChange(e, columnInfo) {
-      console.log(e, columnInfo);
-      console.log(this.filterModel)
-      this.getList()
-    },
-    clickRadio(e, key, index) {
-      console.log(key, index);
-      if (this.groupByCols[key].value === index) {
-        e.preventDefault();
-
-        this.groupByCols[key].value = -1;
-        this.$set(this.groupByCols[key], "value", -1);
-        this.curGroup = this.curGroup.filter((item) => item.colName !== key);
-        if (
-          Object.keys(this.groupByCols).every(
-            (key) =>
-              (typeof this.groupByCols[key]?.value === "number" &&
-                this.groupByCols[key]?.value > -1) ||
-              this.groupByCols[key]?.value !== "number"
-          )
-        ) {
-          this.curGroup = [];
-        }
-        this.getList();
-      }
-    },
-    changeGroup(val, cols) {
-      if (typeof val === "number" && Array.isArray(cols) && cols.length > val) {
-        const info = cols[val];
-        console.log(this.groupByColsVal);
-        const groupList = [];
+    setSrvCols() {
+      if (this.groupByCols && Array.isArray(this.listV2?.srv_cols) && this.listV2?.srv_cols.length > 0) {
+        let arr = this.srvReqJson?.group || []
+        arr = arr.filter(item => item.type && item.type.indexOf('by') == -1)
         for (const key in this.groupByCols) {
           if (Object.hasOwnProperty.call(this.groupByCols, key)) {
             const item = this.groupByCols[key].list;
@@ -154,17 +127,80 @@ export default {
               if (info.row_json) {
                 try {
                   let group = JSON.parse(info.row_json);
-                  groupList.push(group);
+                  arr.push(group);
                 } catch (error) { }
               }
             }
           }
         }
-        this.curGroup = [...groupList, ...this.calcCols];
-        // this.getList({ group: [group, ...this.groupCols, ...this.calcCols] })
-        this.getList();
-        return;
+        return this.listV2?.srv_cols.filter(item => {
+          let group = arr.find(g => g.colName === item.columns)
+          if (group?.seq) {
+            item.seq = group.seq
+          }
+          return !!group
+        }).sort((a, b) => a.seq - b.seq)
       }
+    },
+  },
+  methods: {
+    resetFilter() {
+      this.filterCols = this.filterCols.map(item => {
+        item.value = undefined
+        return item
+      })
+    },
+    valueChange(e, columnInfo) {
+      console.log(e, columnInfo);
+      console.log(this.filterModel)
+      if (['Money', 'Float', 'Int', 'Integer'].includes(columnInfo?.col_type) && (!columnInfo.value1 || !columnInfo.value2) && ((columnInfo.value1 || columnInfo.value2))) {
+        return
+      }
+      this.getList()
+    },
+    clickRadio(e, key, index) {
+      console.log(key, index);
+      if (this.groupByCols[key].value === index) {
+        e.preventDefault();
+
+        this.groupByCols[key].value = -1;
+        this.$set(this.groupByCols[key], "value", -1);
+        // this.curGroup = this.curGroup.filter((item) => item.colName !== key);
+        // if (
+        //   Object.keys(this.groupByCols).every(
+        //     (key) =>
+        //       (typeof this.groupByCols[key]?.value === "number" &&
+        //         this.groupByCols[key]?.value > -1) ||
+        //       this.groupByCols[key]?.value !== "number"
+        //   )
+        // ) {
+        //   this.curGroup = [];
+        // }
+        // this.getList();
+        this.changeGroup()
+      }
+    },
+    changeGroup(val, cols) {
+      const groupList = [];
+      for (const key in this.groupByCols) {
+        if (Object.hasOwnProperty.call(this.groupByCols, key)) {
+          const item = this.groupByCols[key].list;
+          if (
+            typeof this.groupByCols[key].value === "number" &&
+            this.groupByCols[key].value > -1
+          ) {
+            const info = item[this.groupByCols[key].value];
+            if (info.row_json) {
+              try {
+                let group = JSON.parse(info.row_json);
+                groupList.push(group);
+              } catch (error) { }
+            }
+          }
+        }
+      }
+      this.curGroup = [...groupList, ...this.calcCols];
+      this.getList();
     },
     objectSpanMethod({ row, column, rowIndex, columnIndex }) {
       const colName = column.property;
@@ -431,9 +467,11 @@ export default {
               this.filterCols = this.srvCols.filter((item) => filter_cols.includes(item.columns))
               if (this.filterCols.length > 0) {
                 this.filterCols.forEach(item => {
-                  this.$set(item, 'value', undefined)
-
                   this.$set(this.filterModel, item.columns, undefined)
+                  if (['Money', 'Float', 'Int', 'Integer'].includes(item?.col_type)) {
+                    this.$set(item, 'value1', undefined)
+                    this.$set(item, 'value2', undefined)
+                  }
                 })
               }
             }
@@ -444,7 +482,7 @@ export default {
     },
     async getList(p) {
       const url = `/${this.srvReqJson.mapp}/select/${this.srvReqJson.serviceName}`;
-      const req = this.srvReqJson;
+      const req = JSON.parse(JSON.stringify(this.srvReqJson));
       req.page = this.page || req.page;
       delete req.group;
       if (Array.isArray(this.curGroup) && this.curGroup.length > 0) {
@@ -454,8 +492,18 @@ export default {
       }
       if (Array.isArray(this.filterCols)) {
         const condition = this.filterCols.map(item => {
+          if (['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)) {
+            if (item.value1 && item.value2) {
+              item.value = [item.value1, item.value2]
+            } else {
+              item.value = undefined
+            }
+          }
           if (item.value !== undefined) {
             const obj = { colName: item.columns, ruleType: 'like', value: null }
+            if (['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)) {
+              obj.ruleType = 'between'
+            }
             if (item.col_type === 'Date') {
               obj.value = item.value.toString()
             } else {
@@ -518,5 +566,13 @@ export default {
 
 .el-date-editor.el-range-editor {
   width: 100%;
+}
+
+.number-range-input {
+  display: flex;
+
+  .marign-lr {
+    margin: 0 10px;
+  }
 }
 </style>
