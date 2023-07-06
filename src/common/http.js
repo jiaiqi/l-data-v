@@ -2,6 +2,15 @@ import axios from "axios";
 
 const baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
 
+const getRootWindow = (_window) => {
+  _window = _window || window;
+  if (_window.top !== _window) {
+    return getRootWindow(_window.top);
+  } else {
+    return _window;
+  }
+};
+
 export const $axios = axios.create({
   baseURL,
   timeout: 3000,
@@ -13,8 +22,8 @@ $axios.interceptors.request.use(
     // 在发送请求之前做些什么
     let bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     // if (!bx_auth_ticket) {
-      // bx_auth_ticket = "xabxdzkj-6492b92e-2aed-4849-b029-636474cc2578";
-      sessionStorage.setItem("bx_auth_ticket", bx_auth_ticket)
+    // bx_auth_ticket = "xabxdzkj-6492b92e-2aed-4849-b029-636474cc2578";
+    sessionStorage.setItem("bx_auth_ticket", bx_auth_ticket);
     // }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
@@ -31,7 +40,6 @@ $axios.interceptors.response.use(
 
     let filter = (response) => {
       // this.msgTips()
-      let _this = window.app;
       if (response.hasOwnProperty("status") && response.status === 429) {
         //layer.msg('当前使用人数过多，请稍后再试', {icon: 12});
         // this.msgTips()
@@ -41,35 +49,35 @@ $axios.interceptors.response.use(
       // console.log("response",response)
       if (response.data.state == "FAILURE") {
         if (response.data.resultCode == "0011") {
-          // if (_this.getRootWindow().layer) {
-          //   var login_page = "/main/login.html";
-          //   try {
-          //     if (top.getLoginAddress) {
-          //       console.info("1");
-          //       login_page = "/" + top.getLoginAddress();
-          //     }
-          //   } catch (exception) {}
-          //   _this.getRootWindow().layer.open({
-          //     title: false,
-          //     type: 2,
-          //     content: window.location.origin + login_page,
-          //     closeBtn: 0,
-          //     area: ["300px", "350px"],
-          //     shade: 0.9,
-          //   });
-          // } else {
-          //   // 当vue页面在iframe中时，跳转到登录页面
-          //   if (top !== window) {
-          //     var login_page = "/main/index.html";
-          //     try {
-          //       if (top.getMainAddress) {
-          //         console.info("1");
-          //         login_page = "/" + top.getMainAddress();
-          //       }
-          //     } catch (exception) {}
-          //     window.location.href = window.location.origin + login_page;
-          //   }
-          // }
+          if (getRootWindow()?.layer) {
+            var login_page = "/main/login.html";
+            try {
+              if (top.getLoginAddress) {
+                console.info("1");
+                login_page = "/" + top.getLoginAddress();
+              }
+            } catch (exception) {}
+            getRootWindow()?.layer.open({
+              title: false,
+              type: 2,
+              content: window.location.origin + login_page,
+              closeBtn: 0,
+              area: ["300px", "350px"],
+              shade: 0.9,
+            });
+          } else {
+            // 当vue页面在iframe中时，跳转到登录页面
+            if (top !== window) {
+              var login_page = "/main/index.html";
+              try {
+                if (top.getMainAddress) {
+                  console.info("1");
+                  login_page = "/" + top.getMainAddress();
+                }
+              } catch (exception) {}
+              window.location.href = window.location.origin + login_page;
+            }
+          }
         } else if (response.data.resultCode == "0000") {
           if (sessionStorage.getItem("need_login_flag") != "need_login") {
             // alert(response.data.resultMessage);
@@ -152,5 +160,5 @@ export const isValidResponse = (res, gtZero = false) => {
       return false;
     }
   }
-  return true
+  return true;
 };

@@ -2,8 +2,8 @@
   <div class="page-wrap">
 
     <el-container>
-      <el-header>
-        <div class="title" v-if="config">
+      <el-header v-if="config && config.list_title">
+        <div class="title">
           {{ config.list_title || '' }}
         </div>
       </el-header>
