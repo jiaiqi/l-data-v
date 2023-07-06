@@ -154,9 +154,9 @@ export default {
     valueChange(e, columnInfo) {
       console.log(e, columnInfo);
       console.log(this.filterModel)
-      if (['Money', 'Float', 'Int', 'Integer'].includes(columnInfo?.col_type) && (!columnInfo.value1 || !columnInfo.value2) && ((columnInfo.value1 || columnInfo.value2))) {
-        return
-      }
+      // if (['Money', 'Float', 'Int', 'Integer'].includes(columnInfo?.col_type) && (!columnInfo.value1 || !columnInfo.value2) && ((columnInfo.value1 || columnInfo.value2))) {
+      //   return
+      // }
       this.getList()
     },
     clickRadio(e, key, index) {
@@ -492,27 +492,52 @@ export default {
         // req.group = [...this.groupCols, ...this.calcCols]
       }
       if (Array.isArray(this.filterCols)) {
-        const condition = this.filterCols.map(item => {
+        const condition = this.filterCols.reduce((res, item) => {
+          const obj = { colName: item.columns, ruleType: 'like', value: null }
           if (['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)) {
-            if (!isNaN(Number(item.value1)) && !isNaN(Number(item.value2))) {
-              item.value = [item.value1, item.value2]
-            } else {
-              item.value = undefined
+            if (item.value1) {
+              const obj1 = { ...obj }
+              obj1.ruleType = 'ge'
+              obj1.value = Number(item.value1)
+              res.push(obj1)
             }
-          }
-          if (item.value !== undefined) {
-            const obj = { colName: item.columns, ruleType: 'like', value: null }
-            if (['Money', 'Float', 'Int', 'Integer','Date'].includes(item.col_type)) {
+            if (item.value2) {
+              const obj1 = { ...obj }
+              obj1.ruleType = 'le'
+              obj1.value = Number(item.value2)
+              res.push(obj1)
+            }
+          } else if (item.value !== undefined) {
+            if (item.col_type === 'Date') {
               obj.ruleType = 'between'
-            }
-            // if (item.col_type === 'Date') {
-            //   obj.value = item.value.toString()
-            // } else {
+              obj.value = item.value.toString()
+            } else {
               obj.value = item.value
-            // }
-            return obj
+            }
           }
-        }).filter(item => item?.colName)
+          return res
+        }, [])
+        // const condition = this.filterCols.filter(item => {
+        //   if (['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)) {
+        //     if (!isNaN(Number(item.value1)) && !isNaN(Number(item.value2))) {
+        //       item.value = [item.value1, item.value2]
+        //     } else {
+        //       item.value = undefined
+        //     }
+        //   }
+        //   if (item.value !== undefined) {
+        //     const obj = { colName: item.columns, ruleType: 'like', value: null }
+        //     if (['Money', 'Float', 'Int', 'Integer', 'Date'].includes(item.col_type)) {
+        //       obj.ruleType = 'between'
+        //     }
+        //     // if (item.col_type === 'Date') {
+        //     //   obj.value = item.value.toString()
+        //     // } else {
+        //     obj.value = item.value
+        //     // }
+        //     return obj
+        //   }
+        // }).filter(item => item?.colName)
         req.condition = [...req.condition, ...condition]
       }
       this.onLoading = true;
