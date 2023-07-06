@@ -4,7 +4,7 @@
     <el-container>
       <el-header>
         <div class="title" v-if="config">
-          {{ config.srv_req_name || config.list_name || '' }}
+          {{ config.list_title || '' }}
         </div>
       </el-header>
       <el-main>
@@ -236,7 +236,7 @@ export default {
       }
     },
     handleSizeChange(val) {
-      this.page.pageSize = val;
+      this.page.rownumber = val;
       this.getList();
     },
     handleCurrentChange(val) {
@@ -494,7 +494,7 @@ export default {
       if (Array.isArray(this.filterCols)) {
         const condition = this.filterCols.map(item => {
           if (['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)) {
-            if (item.value1 && item.value2) {
+            if (!isNaN(Number(item.value1)) && !isNaN(Number(item.value2))) {
               item.value = [item.value1, item.value2]
             } else {
               item.value = undefined
