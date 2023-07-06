@@ -2,11 +2,12 @@
   <div class="page-wrap">
 
     <el-container>
-      <el-header v-if="config && config.list_title">
-        <div class="title">
+      <el-header style="height: unset;">
+        <div class="title"  v-if="config && config.list_title">
           {{ config.list_title || '' }}
         </div>
       </el-header>
+      <!-- <div v-else style="height: 0;flex-shrink:0;box-sizing:border-box;"></div> -->
       <el-main>
         <!-- 分组 -->
         <div class="group-box" v-if="groupByCols">
