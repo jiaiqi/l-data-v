@@ -3,12 +3,9 @@
 
     <el-container>
       <el-header style="height: unset;">
-        <div class="title"  v-if="config && config.list_title">
+        <div class="title" v-if="config && config.list_title">
           {{ config.list_title || '' }}
         </div>
-      </el-header>
-      <!-- <div v-else style="height: 0;flex-shrink:0;box-sizing:border-box;"></div> -->
-      <el-main>
         <!-- 分组 -->
         <div class="group-box" v-if="groupByCols">
           <div class="group-box-item" v-for="(groupItem, key) in groupByCols">
@@ -30,7 +27,8 @@
                     start-placeholder="开始日期" end-placeholder="结束日期" v-if="item.col_type === 'Date'"
                     @change="valueChange($event, item)">
                   </el-date-picker>
-                  <el-input v-model="item.value" clearable v-else-if="item.col_type === 'String'"
+                  <el-input v-model="item.value" clearable
+                    v-else-if="item.col_type === 'String' || (item.col_type && item.col_type.indexOf('bx') === 0)"
                     @change="valueChange($event, item)"></el-input>
                   <!-- <el-input v-model.number="item.value" type="number"
                     v-else-if="['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)"
@@ -56,6 +54,10 @@
             </el-row>
           </el-form>
         </div>
+
+      </el-header>
+      <!-- <div v-else style="height: 0;flex-shrink:0;box-sizing:border-box;"></div> -->
+      <el-main>
 
         <!-- 数据 -->
         <el-table :data="tableData" border stripe style="width: 100%" :span-method="objectSpanMethod"
@@ -511,10 +513,12 @@ export default {
           } else if (item.value !== undefined) {
             if (item.col_type === 'Date') {
               obj.ruleType = 'between'
-              obj.value = item.value.toString()
+              obj.value = item.value
             } else {
               obj.value = item.value
             }
+            res.push(obj)
+
           }
           return res
         }, [])
@@ -570,7 +574,11 @@ export default {
 
 <style lang="scss" scoped>
 .page-wrap {
-  padding: 20px;
+
+  // padding: 20px;
+  .el-container {
+    height: 100vh;
+  }
 
   .title {
     font-size: 18px;
@@ -607,5 +615,4 @@ export default {
   .marign-lr {
     margin: 0 10px;
   }
-}
-</style>
+}</style>
