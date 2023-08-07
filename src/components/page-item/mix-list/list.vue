@@ -106,6 +106,12 @@ const getStatisticData = async (req) => {
                 'aliasName': 'count'
             }
         ]
+        req.condition = req.condition||[]
+        req.condition.push({
+            colName,
+            ruleType:'notnull',
+            value:null
+        })
         const url = `/${req.mapp}/select/${req.serviceName}`;
         req.group = group
         const res = await $http.post(url, req);
