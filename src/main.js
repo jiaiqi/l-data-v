@@ -8,6 +8,7 @@ import App from "./App.vue";
 import router from "./router";
 import './assets/iconfont/iconfont.css'
 import "./assets/main.css";
+import 'uno.css'
 
 import { $axios,getImagePath } from "@/common/http.js";
 Vue.prototype.$axios = $axios;
@@ -21,6 +22,17 @@ VueInit();
 Vue.use(PiniaVuePlugin);
 
 Vue.use(ElementUI);
+
+// 引入VueEasytable
+// 引入样式
+import "vue-easytable/libs/theme-default/index.css";
+// 引入组件库
+import VueEasytable from "vue-easytable";
+Vue.use(VueEasytable);
+// 引入中文文语言包
+import { VeLocale } from "vue-easytable";
+import zhCN from "vue-easytable/libs/locale/lang/zh-CN.js";
+VeLocale.use(zhCN);
 
 // import dataV from '@jiaminghi/data-view'
 // Vue.use(dataV)

@@ -7,6 +7,7 @@
     "preview": "vite preview --port 4173"
   },
   "dependencies": {
+    "@iconify-json/bi": "^1.1.18",
     "@jiaminghi/data-view": "^2.10.0",
     "axios": "^1.3.4",
     "dayjs": "^1.11.7",
@@ -15,6 +16,7 @@
     "ezuikit-js": "^7.6.3",
     "file-saver": "^2.0.5",
     "lodash": "^4.17.21",
+    "lodash-es": "^4.17.21",
     "moment": "^2.29.4",
     "pinia": "^2.0.16",
     "vue": "^2.7.7",
@@ -29,6 +31,8 @@
     "sass": "^1.60.0",
     "sass-loader": "^13.2.1",
     "terser": "^5.14.2",
-    "vite": "^3.0.2"
+    "unocss": "^0.54.1",
+    "vite": "^3.0.2",
+    "vue-easytable": "^2.27.1"
   }
 }

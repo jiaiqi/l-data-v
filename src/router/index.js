@@ -41,7 +41,16 @@ const router = new VueRouter({
       name: "requestpreview",
       component: () => import("@/views/request-preview.vue"),
     },
-    
+    {
+      path: "/sheet/:service",
+      name: "sheetEditor",
+      component: () => import("@/views/sheetEditor.vue"),
+    },
+    {
+      path: "/sheet/:service/:fkCol/:fkVal",
+      name: "sheetEditor",
+      component: () => import("@/views/sheetEditor.vue"),
+    },
   ],
 });
 
