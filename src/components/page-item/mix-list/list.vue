@@ -94,7 +94,7 @@ const stasticData = ref([])
 const getStatisticData = async (req) => {
     const colName = v2Data.value?.cfgJson?.statistics_card_col
     const col = v2Data.value?.srv_cols.find(item => item.columns === colName)
-    if (col && Array.isArray(col.option_list_v2)) {
+    if (col && col.col_type==='Enum') {
         const group = [
             {
                 "colName": colName,
