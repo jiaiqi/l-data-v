@@ -48,8 +48,14 @@ const router = new VueRouter({
     },
     {
       path: "/sheet/:service/:fkCol/:fkVal",
-      name: "sheetEditor",
+      name: "sheetEditor1",
       component: () => import("@/views/sheetEditor.vue"),
+    },
+    ,
+    {
+      path: "/h5",
+      name: "h5Page",
+      component: () => import("@/views/webview.vue"),
     },
   ],
 });
