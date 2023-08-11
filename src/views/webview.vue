@@ -1,6 +1,7 @@
 <template>
   <div class="webview-main">
-    <div class="iframe-box" :class="{ 'is-mobile': mobile }">
+    <div class="iframe-box">
+      <div :class="{ 'is-mobile': mobile }"></div>
       <iframe
         :src="src"
         frameborder="0"
@@ -15,8 +16,10 @@
 export default {
   data() {
     return {
-      width: "375",
-      height: "667",
+      width: 375,
+      height: 740,
+      // width: "337.5",
+      // height: "600",
       src: "",
       mobile: true,
     };
@@ -56,7 +59,6 @@ export default {
 </script>
 
 <style lang="scss">
-
 .webview-main {
   width: 100vw;
   height: 100vh;
@@ -64,12 +66,40 @@ export default {
   justify-content: center;
   align-items: center;
 }
-.iframe-box.is-mobile {
-  overflow: hidden;
-  background-image: url(@/assets/img/phone.png);
-  background-size: cover;
-  // background-size: 430px 880px;
-  padding: 110px 30px;
-  background-repeat: no-repeat;
+.iframe-box {
+  position: relative;
+  padding: 95px 70px 60px;
+  .is-mobile {
+    overflow: hidden;
+    pointer-events: none;
+    background-image: url(@/assets/img/phone3.png);
+    background-size: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: 100% 100%;
+    z-index: 2;
+  }
 }
+// .iframe-box.is-mobile {
+//   overflow: hidden;
+//   background-image: url(@/assets/img/phone3.png);
+//   background-size: cover;
+//   // padding: 110px 30px;
+//   // padding: 100px 28px;
+//   // // padding: 50px 26px;
+//   // width: 375px;
+//   // height: 740px;
+//   // background-repeat: no-repeat;
+//   background-size: 100% 100%;
+
+//   // padding-top: 44px;
+//   // padding-bottom: 21px;
+//   // padding-left: 24px;
+//   // padding-right: 25px;
+//   box-sizing: content-box;
+//   padding: 60px 70px;
+// }
 </style>
