@@ -1,7 +1,8 @@
 <template>
 	<div class="video-card box">
-		<el-row :gutter="computGutter" :class="computClass" v-for="(row ,i) in videoList">
+		<el-row :gutter="computGutter" :class="computClass" v-for="(row ,i) in videoList" :key="i">
 			<el-col :span="computSpan" v-for="(col, index) in row"
+				:key="index"
 				v-if="(index + 1) <= Number(pageItem.video_card_json.card_layout_json.cols_num)">
 				<div class="video-item" @click="toVideoPlayer(col)">
 					<img class="video-bg" :src="col.url || defPic">

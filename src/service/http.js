@@ -1,12 +1,10 @@
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 import axios from "axios";
 
-// import qs from "qs";
-// import NProgress from "nprogress";
-// import 'nprogress/nprogress.css'
-let ticket = "xabxdzkj-edd651b6-62ed-476b-b465-8d34894d348b";
-if (sessionStorage.getItem("bx_auth_ticket")) {
-  ticket = sessionStorage.getItem("bx_auth_ticket");
+let ticket = sessionStorage.getItem("bx_auth_ticket");
+if (import.meta?.env?.DEV === true) {
+  bx_auth_ticket = "xabxdzkj-4cc4d279-d103-48c9-861b-37ad5325aba5";
+  // sessionStorage.setItem("bx_auth_ticket", bx_auth_ticket);
 }
 
 axios.defaults.baseURL = "https://wx.100xsys.cn/";

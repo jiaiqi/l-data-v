@@ -1,4 +1,4 @@
-import moment from "moment";
+import dayjs from "dayjs";
 import * as DataUtil from "./DataUtil";
 import {
   formatMoney,
@@ -947,23 +947,23 @@ function init_util() {
     });
 
   Vue.prototype.parseDateTime = function (dateStr) {
-    return moment(dateStr).toDate();
+    return dayjs(dateStr).toDate();
   };
 
   Vue.prototype.formatDateTime = function (date) {
-    return moment(date).format("YYYY-MM-DD  HH:mm:ss");
+    return dayjs(date).format("YYYY-MM-DD  HH:mm:ss");
   };
 
   Vue.prototype.parseDate = function (dateStr) {
-    return moment(dateStr).toDate();
+    return dayjs(dateStr).toDate();
   };
 
   Vue.prototype.formatDate = function (date) {
-    return moment(date).format("YYYY-MM-DD");
+    return dayjs(date).format("YYYY-MM-DD");
   };
 
   Vue.prototype.addDate = function (date, amount, flag) {
-    return moment(date).add(amount, flag).toDate();
+    return dayjs(date).add(amount, flag).toDate();
   };
 
   Vue.prototype.templateToString = function (row, temp) {

@@ -34,9 +34,6 @@ import { VeLocale } from "vue-easytable";
 import zhCN from "vue-easytable/libs/locale/lang/zh-CN.js";
 VeLocale.use(zhCN);
 
-// import dataV from '@jiaminghi/data-view'
-// Vue.use(dataV)
-
 Vue.prototype.getImagePath = getImagePath
 
 new Vue({

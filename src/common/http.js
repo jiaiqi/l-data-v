@@ -1,6 +1,20 @@
 import axios from "axios";
+import { Message } from "element-ui"; // 引入elementUI的Message组件
 
-const baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
+let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
+
+if (top?.pathConfig?.gateway) {
+  baseURL = top?.pathConfig?.gateway;
+}
+let pathConfig = sessionStorage.pathConfig;
+if (pathConfig) {
+  try {
+    pathConfig = JSON.parse(pathConfig);
+    if (pathConfig?.gateway) {
+      baseURL = pathConfig?.gateway;
+    }
+  } catch (error) {}
+}
 
 const getRootWindow = (_window) => {
   _window = _window || window;
@@ -24,7 +38,7 @@ $axios.interceptors.request.use(
     // 在发送请求之前做些什么
     let bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (import.meta?.env?.DEV === true) {
-      bx_auth_ticket = "xabxdzkj-edd651b6-62ed-476b-b465-8d34894d348b";
+      bx_auth_ticket = "xabxdzkj-0f69d151-9a38-432d-bff6-5dfb055cbeb1";
       // sessionStorage.setItem("bx_auth_ticket", bx_auth_ticket);
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
@@ -101,6 +115,12 @@ $axios.interceptors.response.use(
   function (error) {
     // 超出 2xx 范围的状态码都会触发该函数。
     // 对响应错误做点什么
+    console.log(error);
+    Message({
+      showClose: true,
+      message: error?.data?.resultMessage || JSON.stringify(error),
+      type: "error",
+    });
     return Promise.reject(error);
   }
 );

@@ -1,5 +1,6 @@
 import { Message } from "element-ui";
-import http from "./http";
+// import http from "./http";
+import { $axios as http } from "../common/http";
 /**
  * 请求v2数据
  * @param {String} serviceName - 服务名称
@@ -19,7 +20,10 @@ const getServiceV2 = async (serviceName, use_type = "list", app = "health") => {
       order: [{ colName: "seq", orderType: "asc" }],
     };
     let url = `${app}/select/srvsys_service_columnex_v2_select`;
-    return await http.post(url, req);
+    const res = await http.post(url, req);
+    if (res?.data?.state === "SUCCESS") {
+      return res.data;
+    }
   }
 };
 
@@ -35,7 +39,10 @@ const onSelect = async (serviceName, app, condition, page = {}) => {
       },
     };
     const url = `${app}/select/${serviceName}`;
-    return await http.post(url, req);
+    const res = await http.post(url, req);
+    if (res?.data?.state === "SUCCESS") {
+      return res.data;
+    }
   }
 };
 export const onDelete = async (datas, service, app) => {
@@ -47,7 +54,10 @@ export const onDelete = async (datas, service, app) => {
   ];
   const url = `/${app}/operate/${service}`;
   if (datas) {
-    return await http.post(url, req);
+    const res = await http.post(url, req);
+    if (res?.data?.state === "SUCCESS") {
+      return res.data;
+    }
   } else {
     Message({
       showClose: true,
@@ -72,7 +82,10 @@ export const onBatchOperate = async (reqData, service = "", app = "") => {
     if (Array.isArray(reqData) && reqData.length > 0) {
       // const url = `/${app}/operate/${service}`;
       const url = `/${app}/operate/multi`;
-      return await http.post(url, reqData);
+      const res = await http.post(url, reqData);
+      if (res?.data?.state === "SUCCESS") {
+        return res.data;
+      }
     }
   }
 };

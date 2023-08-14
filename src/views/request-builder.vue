@@ -166,7 +166,7 @@
 <script>
 import { Loading } from "element-ui";
 import columnBox from "@/components/column-box.vue";
-import moment from "moment";
+import dayjs from "dayjs";
 import FileSaver from "file-saver";
 import * as XLSX from "xlsx";
 export default {
@@ -670,7 +670,7 @@ export default {
         alert("表格数据为空");
         return;
       } else {
-        let time = moment().format("YYYYMMDDHHmmss");
+        let time = dayjs().format("YYYYMMDDHHmmss");
         let fileName = this.ruleForm.serviceName + time + ".xlsx";
         // 将预览表格中的数据导出为excel
         let wb = XLSX.utils.table_to_book(document.querySelector("#out-table"));
