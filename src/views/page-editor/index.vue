@@ -179,6 +179,7 @@ let mouseXY = { x: null, y: null };
 let DragPos = { x: null, y: null, w: 1, h: 1, i: null };
 
 export default {
+  name:"pageEditor",
   components: {
     GridLayout,
     GridItem,
