@@ -52,6 +52,7 @@
         >
           <el-option
             v-for="item in srvTypeList"
+            :disabled="item !== 'select'"
             :key="item"
             :label="item"
             :value="item"
@@ -352,15 +353,14 @@ export default {
         in: "包含",
       };
       const reqDatas = [];
-      Object.keys(this.childData).forEach((type) => {
+      Object.keys(serviceNames).forEach((type) => {
         if (type === "column") return;
         let localData = [...this.endData[type]];
         if (type == "group") {
           localData = [...localData, ...this.endData["aggregation"]];
         }
-        let originData = this.childData[type];
-        if (Array.isArray(originData) && originData.length > 0) {
-          reqDatas.push({
+        if (this.srv_call_no) {
+          reqDatas.unshift({
             serviceName: `${serviceNames[type]}_delete`,
             depend_keys: [
               {
@@ -371,13 +371,22 @@ export default {
             ],
             condition: [
               {
-                colName: "id",
-                ruleType: "in",
-                value: originData.map((item) => item.id).toString(),
+                colName: type === "group" ? "srv_req_no" : "srv_call_no",
+                ruleType: "eq",
+                value: this.srv_call_no,
               },
+              // {
+              //   colName: "id",
+              //   ruleType: "in",
+              //   value: originData.map((item) => item.id).toString(),
+              // },
             ],
           });
         }
+        // let originData = this.childData[type];
+        // if (Array.isArray(originData) && originData.length > 0) {
+
+        // }
         if (Array.isArray(localData) && localData.length > 0) {
           reqDatas.push({
             serviceName: `${serviceNames[type]}_add`,
@@ -424,11 +433,12 @@ export default {
       });
       // 请求字段
       // 先删掉所有的
-      if (
-        Array.isArray(this.childData.column) &&
-        this.childData.column.length > 0
-      ) {
-        reqDatas.push({
+      // if (
+      //   Array.isArray(this.childData.column) &&
+      //   this.childData.column.length > 0
+      // ) {
+      if (this.srv_call_no) {
+        reqDatas.unshift({
           serviceName: `${serviceNames.column}_delete`,
           depend_keys: [
             {
@@ -439,32 +449,39 @@ export default {
           ],
           condition: [
             {
-              colName: "id",
-              ruleType: "in",
-              value: this.childData.column.map((item) => item.id).toString(),
+              colName: "srv_call_no",
+              ruleType: "eq",
+              value: this.srv_call_no,
             },
+            // {
+            //   colName: "id",
+            //   ruleType: "in",
+            //   value: this.childData.column.map((item) => item.id).toString(),
+            // },
           ],
         });
       }
+
+      // }
       if (this.checkedColumns.length === this.allColum.list.length) {
-        if (!this.childData.column.find((item) => item.col_srv == "*")) {
-          reqDatas.push({
-            serviceName: `${serviceNames.column}_add`,
-            depend_keys: [
-              {
-                type: "column",
-                add_col: "srv_call_no",
-                depend_key: "srv_call_no",
-              },
-            ],
-            data: [
-              {
-                col_srv: "*",
-                srv_call_no: this.srv_call_no,
-              },
-            ],
-          });
-        }
+        // if (!this.childData.column.find((item) => item.col_srv == "*")) {
+        reqDatas.push({
+          serviceName: `${serviceNames.column}_add`,
+          depend_keys: [
+            {
+              type: "column",
+              add_col: "srv_call_no",
+              depend_key: "srv_call_no",
+            },
+          ],
+          data: [
+            {
+              col_srv: "*",
+              srv_call_no: this.srv_call_no,
+            },
+          ],
+        });
+        // }
       } else {
         reqDatas.push({
           serviceName: `${serviceNames.column}_add`,
@@ -589,7 +606,27 @@ export default {
       }
       this.endList = endList;
     },
+    setEndData(){
+      let endData = {
+        group:[],
+        order:[],
+        condition:[],
+        aggregation:[]
+      }
+      if(Array.isArray(this.listData)&&this.listData.length>0){
+        this.listData.forEach(item=>{
+          Object.keys(endData).forEach(key=>{
+            if(item.type===key&&item?.list?.length){
+              endData[key].push(...item.list.map(d=>d[`_${key}`]))
+            }
+          })
+        })
+      }
+      this.endData = endData
+      return endData
+    },
     previewData() {
+      this.setEndData()
       // 根据组装的条件 发送请求 预览数据
       this.reqData = {
         group:
@@ -647,6 +684,7 @@ export default {
     saveConfig() {
       // 保存配置到服务器
       // return;
+      this.setEndData()
       const saveData = this.buildSaveData();
       const child_data_list = this.buildChildData();
       // if (this.srv_call_no) {
@@ -885,13 +923,15 @@ export default {
       let url = this.getServiceUrl("operate", serviceName, "config");
       let params = [
         {
-          condition: [
-            { colName: "srv_call_no", ruleType: "eq", value: this.srv_call_no },
-          ],
           serviceName: serviceName,
           data: [saveData],
         },
       ];
+      if (this.srv_call_no) {
+        params[0].condition = [
+          { colName: "srv_call_no", ruleType: "eq", value: this.srv_call_no },
+        ];
+      }
       if (
         this.srv_call_no &&
         Array.isArray(child_data_list) &&
@@ -904,13 +944,16 @@ export default {
       let loadingInstance1 = Loading.service({ fullscreen: true });
       this.$http.post(url, params).then((res) => {
         loadingInstance1.close();
-        if (!this.srv_call_no) {
-        }
+
         if (res.data.resultCode === "SUCCESS") {
           this.$alert(this.srv_call_no ? "保存成功" : "添加成功", "SUCCESS", {
             confirmButtonText: "确定",
             callback: (action) => {},
           });
+          if (!this.srv_call_no) {
+            this.srv_call_no =
+              res.data.response[0].response.effect_data[0].srv_call_no;
+          }
         } else {
           this.$alert(`${res.data.resultMessage}`, "保存失败", {
             confirmButtonText: "确定",
@@ -945,17 +988,64 @@ export default {
       const res = await this.$http.post(url, req);
       if (res?.data?.state === "SUCCESS") {
         if (Array.isArray(res.data.data) && res.data.data.length > 0) {
-          this.reqConfig = res.data.data[0];
+          const reqConfig = res.data.data[0];
+          this.reqConfig = reqConfig;
           this.ruleForm = {
             srv_req_name: this.reqConfig.srv_req_name, //接口调用名称
             mapp: this.reqConfig.mapp, //微服务
             service_name: this.reqConfig.service_name,
             srv_type: this.reqConfig.srv_type, //接口类型
           };
-          if (this.ruleForm.mapp) {
+          if (this.$route.query?.srvApp) {
+            this.ruleForm.mapp = this.$route.query?.srvApp;
             await this.getServiceName();
           }
+          initData = new Array(4);
+          if (reqConfig?.order_json) {
+            try {
+              const orders = JSON.parse(reqConfig.order_json);
+              if (Array.isArray(orders)) {
+                initData[0] = orders;
+              }
+            } catch (error) {}
+          }
+          if (reqConfig?.condition_json) {
+            try {
+              const conditions = JSON.parse(reqConfig.condition_json);
+              if (Array.isArray(conditions)) {
+                initData[1] = conditions;
+              }
+            } catch (error) {}
+          }
+          if (reqConfig?.group_json) {
+            try {
+              const groupJson = JSON.parse(reqConfig.group_json);
+              debugger;
+              if (Array.isArray(groupJson)) {
+                initData[2] = groupJson.map((item) => {
+                  if (!item.alias_name) {
+                    item.aliasName = "";
+                  } else {
+                    item.aliasName = item.alias_name;
+                  }
+                  return item;
+                });
+              }
+            } catch (error) {}
+          }
+          if (reqConfig?.cols_cfg_json) {
+            try {
+              const cols = JSON.parse(reqConfig.cols_cfg_json);
+              initData[3] = cols.map((item) => item.col_srv);
+            } catch (error) {}
+          }
 
+          // this.childData.order = [...initData[0]];
+          // this.childData.condition = [...initData[1]];
+          // this.childData.group = [...initData[2]];
+          // this.childData.column = [...initData[3]];
+
+          this.reqConfig._initData = JSON.parse(JSON.stringify(initData));
           // 填充默认值
           let reqData = {
             condition: [],
@@ -970,11 +1060,11 @@ export default {
             const group = initData[2] || [];
             if (Array.isArray(group) && group.length > 0) {
               group.forEach((item) => {
-                if (item.type !== "by") {
-                  reqData.aggregation.push(item);
-                } else {
-                  reqData.group.push(item);
-                }
+                // if (item.type !== "by") {
+                //   reqData.aggregation.push(item);
+                // } else {
+                reqData.group.push(item);
+                // }
               });
             }
             // reqData.group = group.filter((item) => item.type);
@@ -987,27 +1077,6 @@ export default {
               this.checkedColumns = initData[3] || [];
             }
           }
-
-          // if (this.reqConfig.order_json) {
-          //   reqData.order = JSON.parse(this.reqConfig.order_json);
-          // }
-          // if (this.reqConfig.condition_json) {
-          //   reqData.condition = JSON.parse(this.reqConfig.condition_json);
-          // }
-          // if (this.reqConfig.group_json) {
-          //   const group_json = JSON.parse(this.reqConfig.group_json);
-          //   reqData.aggregation = [];
-          //   reqData.group = [];
-          //   if (Array.isArray(group_json) && group_json.length > 0) {
-          //     group_json.forEach((item) => {
-          //       if (item.type !== "by") {
-          //         reqData.aggregation.push(item);
-          //       } else {
-          //         reqData.group.push(item);
-          //       }
-          //     });
-          //   }
-          // }
 
           let _condition = [];
           let _group = [];
@@ -1061,6 +1130,11 @@ export default {
                 if (column.columns == groupItem.colName) {
                   if (aggregationTypes.includes(groupItem.type)) {
                     column._aggregation = groupItem;
+                    if (!groupItem.alias_name) {
+                      groupItem.aliasName = "";
+                    } else {
+                      groupItem.aliasName = item.alias_name;
+                    }
                     _aggregation.push(groupItem);
                     endData.aggregation.push(column);
                   } else if (groupTypes.includes(groupItem.type)) {
@@ -1114,17 +1188,17 @@ export default {
       },
     },
   },
-  created() {
+  async created() {
+    await this.getApp();
     if (this.$route.query?.no) {
       this.srv_call_no = this.$route.query?.no;
-      this.fetchChildDatas().then((res) => {
-        this.fetchRequestConfig(res);
-      });
+      // this.fetchChildDatas().then((res) => {
+      // this.fetchRequestConfig(res);
+      this.fetchRequestConfig();
+      // });
     }
 
     this.changeReqOption();
-
-    this.getApp();
 
     // let operate = this.$route.params.modelId
     // if (operate == 'add') {

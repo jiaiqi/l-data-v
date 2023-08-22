@@ -125,10 +125,14 @@
               class="input-value"
             ></el-input>
             <el-input
-              v-model="item.aliasName"
-              v-if="
-                singList.type === 'aggregation' || singList.type === 'group'
-              "
+              v-model="item._aggregation.aliasName"
+              v-if="singList.type === 'aggregation'"
+              placeholder="请输入别名"
+              class="input-value"
+            ></el-input>
+            <el-input
+              v-model="item._group.aliasName"
+              v-if="singList.type === 'group'"
               placeholder="请输入别名"
               class="input-value"
             ></el-input>
@@ -340,15 +344,14 @@ export default {
       // 切换condition的操作符
       if (isClick) {
         let dataType = sign.col_type; // 暂定有时间、数字、其它三种
+        if (dataType) {
+          dataType = dataType.toLowerCase();
+        }
         if (dataType == "Date" || dataType == "DateTime") {
           dataType = "date";
-        } else if (dataType == "String" || dataType == "string") {
+        } else if (dataType == "string") {
           dataType = "string";
-        } else if (
-          dataType == "Number" ||
-          dataType == "number" ||
-          dataType == "int"
-        ) {
+        } else if (["float", "int", "money", "number"].includes(dataType)) {
           dataType = "number";
         }
         let operator = [];
@@ -434,15 +437,12 @@ export default {
       } else {
         sign.forEach((item) => {
           let dataType = item.col_type; // 暂定有时间、数字、其它三种
+          dataType = dataType.toLowerCase();
           if (dataType == "Date" || dataType == "DateTime") {
             dataType = "date";
-          } else if (dataType == "String" || dataType == "string") {
+          } else if (dataType == "string") {
             dataType = "string";
-          } else if (
-            dataType == "Number" ||
-            dataType == "number" ||
-            dataType == "int"
-          ) {
+          } else if (["float", "int", "money", "number"].includes(dataType)) {
             dataType = "number";
           }
           let operator = [];
@@ -686,13 +686,15 @@ export default {
     },
     seleteAggregationOperator(sign, isClick) {
       let self = this;
-      if (isClick&&sign?.col_type) {
-        let dataType = sign.col_type.tolowercase();
-        if (['date','datetime'].includes(dataType)) {
+      if (isClick && sign?.col_type) {
+        let dataType = sign.col_type?.toLowerCase();
+        if (["date", "datetime"].includes(dataType)) {
           dataType = "date";
-        } else if ( ['string'].includes(dataType)) {
+        } else if (["string"].includes(dataType)) {
           dataType = "string";
-        } else if (['money','number','int','float','integer'].includes(dataType)) {
+        } else if (
+          ["money", "number", "int", "float", "integer"].includes(dataType)
+        ) {
           dataType = "number";
         }
         let operator = [];
@@ -751,15 +753,13 @@ export default {
       } else {
         sign.forEach((item) => {
           // 切换聚合条件
-          let dataType = item.col_type;
-          if (dataType == "Date" || dataType == "DateTime") {
+          let dataType = item.col_type?.toLowerCase();
+          if (["date", "datetime"].includes(dataType)) {
             dataType = "date";
-          } else if (dataType == "String" || dataType == "string") {
+          } else if (["string"].includes(dataType)) {
             dataType = "string";
           } else if (
-            dataType == "Number" ||
-            dataType == "number" ||
-            dataType == "int"
+            ["money", "number", "int", "float", "integer"].includes(dataType)
           ) {
             dataType = "number";
           }
@@ -850,6 +850,7 @@ export default {
     if (this.singList.type === "order") {
       this.selectList = this.orderList;
     }
+    // this.setEndData(this.singList);
   },
 
   watch: {
@@ -874,6 +875,7 @@ export default {
         if (newVal.type === "aggregation") {
           this.seleteAggregationOperator(newVal.list);
         }
+        this.setEndData(newVal);
       },
       deep: true,
       immediate: true,

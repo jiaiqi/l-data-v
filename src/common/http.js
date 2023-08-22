@@ -38,8 +38,7 @@ $axios.interceptors.request.use(
     // 在发送请求之前做些什么
     let bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (import.meta?.env?.DEV === true) {
-      bx_auth_ticket = "xabxdzkj-0f69d151-9a38-432d-bff6-5dfb055cbeb1";
-      // sessionStorage.setItem("bx_auth_ticket", bx_auth_ticket);
+      bx_auth_ticket = "xabxdzkj-e27cb8f2-02cd-4ef1-a37f-97047493b9e2";
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
@@ -64,6 +63,11 @@ $axios.interceptors.response.use(
 
       // console.log("response",response)
       if (response.data.state == "FAILURE") {
+        Message({
+          showClose: true,
+          message: response?.data?.resultMessage || JSON.stringify(error),
+          type: "error",
+        });
         if (response.data.resultCode == "0011") {
           if (getRootWindow()?.layer) {
             var login_page = "/main/login.html";
@@ -97,11 +101,13 @@ $axios.interceptors.response.use(
         } else if (response.data.resultCode == "0000") {
           if (sessionStorage.getItem("need_login_flag") != "need_login") {
             // alert(response.data.resultMessage);
+           
           }
         } else {
           if (response.data.resultCode !== "9998") {
             if (sessionStorage.getItem("need_login_flag") != "need_login") {
               // alert(response.data.resultMessage);
+           
             }
           }
         }
