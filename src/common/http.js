@@ -35,10 +35,11 @@ export const $axios = axios.create({
 });
 $axios.interceptors.request.use(
   function (config) {
+    debugger
     // 在发送请求之前做些什么
     let bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (import.meta?.env?.DEV === true) {
-      bx_auth_ticket = "xabxdzkj-644475ec-e932-4bce-a079-81d990f33352";
+      bx_auth_ticket = "xabxdzkj-cdaa76db-3dfb-4e62-b113-03136e41cb30";
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;

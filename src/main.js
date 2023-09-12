@@ -1,6 +1,9 @@
 import Vue from "vue";
 import { createPinia, PiniaVuePlugin } from "pinia";
 
+
+import "@antv/x6-vue-shape";
+
 import ElementUI from "element-ui";
 import "element-ui/lib/theme-chalk/index.css";
 

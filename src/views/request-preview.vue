@@ -21,7 +21,7 @@
         <div v-if="filterCols && filterCols.length > 0">
           <el-form ref="form" :model="filterModel" label-width="120px">
             <el-row>
-              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="4" v-for="item in filterCols">
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="4" v-for="(item,index) in filterCols" :key="index">
                 <el-form-item :label="item.label">
                   <el-date-picker value-format="yyyy-MM-dd" v-model="item.value" type="daterange" range-separator="至"
                     start-placeholder="开始日期" end-placeholder="结束日期" v-if="item.col_type === 'Date'"
@@ -66,7 +66,7 @@
             'font-weight': 'bold',
             color: '#000',
           }">
-          <el-table-column :prop="column.columns" :label="column.label" min-width="180" v-for="column in setSrvCols">
+          <el-table-column :prop="column.columns" :label="column.label" min-width="180" v-for="column in setSrvCols" :key="column.columns">
           </el-table-column>
         </el-table>
       </el-main>

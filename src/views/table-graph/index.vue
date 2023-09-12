@@ -6,7 +6,20 @@
 
 <script>
 import { initGraph, erData, buildErData } from "./util";
-import { Snapline } from "@antv/x6-plugin-snapline";
+
+import Vue from 'vue'
+  import CustomNode from './components/CustomNode.vue'
+  import { Graph } from '@antv/x6'
+  import { register } from '@antv/x6-vue-shape'
+
+  register({
+    shape: 'custom-vue-node',
+    width: 100,
+    height: 100,
+    component: CustomNode,
+  })
+
+
 export default {
   name: "TableGraph",
   data() {
@@ -16,6 +29,7 @@ export default {
     };
   },
   methods: {
+    // 表定义
     async loadTables() {
       const url = `/config/select/srvsys_table_defined_select`;
       const req = {
@@ -46,6 +60,7 @@ export default {
         // });
       }
     },
+    // 表字段
     async loadTableColumns(tables = []) {
       const url = `/config/multi/select`;
       const req = tables.map((item) => {
@@ -73,18 +88,6 @@ export default {
   mounted() {
     this.loadTables().then((data) => {
       this.graph = initGraph(document.getElementById("container"), data);
-      // // 加载数据
-      // this.graph.fromJSON({
-      //   edges: erData,
-      // });
-      //居中
-      this.graph.centerContent();
-      // 对齐线
-      this.graph.use(
-        new Snapline({
-          enabled: true,
-        })
-      );
     });
   },
 };

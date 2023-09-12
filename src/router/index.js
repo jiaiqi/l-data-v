@@ -16,12 +16,9 @@ const router = new VueRouter({
       component: HomeView,
     },
     {
-      path: "/preview",
-      name: "preview",
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import("@/views/preview.vue"),
+      path: "/dataview",
+      name: "dataview",
+      component: HomeView,
     },
     {
       path: "/player",
@@ -53,6 +50,11 @@ const router = new VueRouter({
       path: "/h5",
       name: "h5Page",
       component: () => import("@/views/webview.vue"),
+    },
+    {
+      path: "/test",
+      name: "test",
+      component: () => import("@/views/test.vue"),
     },
     ...routers,
   ],

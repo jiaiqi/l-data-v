@@ -1,10 +1,11 @@
 import { Graph, Cell, Shape } from "@antv/x6";
 import { GridLayout } from "@antv/layout";
-
+import { Snapline } from "@antv/x6-plugin-snapline";
 var graph = {};
 
 const LINE_HEIGHT = 54;
 const NODE_WIDTH = 200;
+
 export const initGraph = (container, erData) => {
   Graph.registerPortLayout(
     "erPortPosition",
@@ -13,7 +14,7 @@ export const initGraph = (container, erData) => {
         return {
           position: {
             x: 0,
-            y: (index + 1) * LINE_HEIGHT,
+            y: (index + 1) * LINE_HEIGHT - 20,
           },
           angle: 0,
         };
@@ -26,10 +27,11 @@ export const initGraph = (container, erData) => {
     "er-rect",
     {
       inherit: "rect",
+      height: 30,
       markup: [
         {
-          tagName: "rect",
-          selector: "body",
+          tagName: "rect", // 标签名
+          selector: "body", // 选择器
         },
         {
           tagName: "text",
@@ -37,11 +39,11 @@ export const initGraph = (container, erData) => {
         },
         {
           tagName: "text",
-          selector: "portNameLabel",
+          selector: "subText",
         },
       ],
       attrs: {
-        rect: {
+        body: {
           strokeWidth: 1,
           stroke: "#5F95FF",
           fill: "#5F95FF",
@@ -50,13 +52,16 @@ export const initGraph = (container, erData) => {
           fontWeight: "bold",
           fill: "#ffffff",
           fontSize: 12,
+          refX: 100,
+          refY: 10,
         },
-        portNameLabel: {
+        subText: {
           fill: "#ffffff",
           fontWeight: "bold",
-          ref: "portNameLabel",
-        
-          fontSize: 12,
+          fontSize: 10,
+          ref: "body",
+          refX: 100,
+          refY: 22,
         },
       },
       ports: {
@@ -142,6 +147,11 @@ export const initGraph = (container, erData) => {
       ],
     },
     connecting: {
+      allowBlank() {
+        // 是否允许连接到画布空白位置的点，默认为 true，也支持通过函数的方式来动态调整。
+        return false;
+      },
+      highlight: true,
       router: {
         name: "er",
         args: {
@@ -153,8 +163,8 @@ export const initGraph = (container, erData) => {
         return new Shape.Edge({
           attrs: {
             line: {
-              stroke: "#A2B1C3",
-              strokeWidth: 2,
+              stroke: "#5f95ff",
+              strokeWidth: 1,
             },
           },
         });
@@ -172,6 +182,11 @@ export const initGraph = (container, erData) => {
   //   });
   //   graph.resetCells(cells);
   graph.zoomToFit({ padding: 10, maxScale: 1 });
+  graph.use(
+    new Snapline({
+      enabled: true,
+    })
+  );
   //   console.log(graph);
   const gridLayout = new GridLayout({
     type: "grid",
@@ -186,9 +201,17 @@ export const initGraph = (container, erData) => {
     nodes: erData,
   });
   graph.fromJSON(newModel);
-  //   graph.fromJSON({
-  //     edges: newModel,
-  //   });
+  // 对齐线
+  graph.use(
+    new Snapline({
+      enabled: true,
+    })
+  );
+  graph.fromJSON({
+    edges: newModel,
+  });
+  // 居中
+  graph.centerContent();
   return graph;
 };
 
@@ -197,10 +220,14 @@ export const buildErData = (datas = []) => {
     return {
       id: `table_${item.table_name}`,
       shape: "er-rect",
-      label: item.table_name,
+      label: item.table_label,
       width: NODE_WIDTH,
-      height: LINE_HEIGHT,
+      height: LINE_HEIGHT - 20,
+      // subText:item.table_name,
       attrs: {
+        subText: {
+          text: item.table_name,
+        },
         // label: item.table_label,
         // portNameLabel:item.table_name
       },
