@@ -102,6 +102,8 @@ export default {
               this.oldTableData[rowIndex] &&
               row[column.field] !== this.oldTableData[rowIndex][column.field]
             ) {
+              // if (["Enum","Date"].includes(column.__field_info?.col_type))
+              //   return "table-body-cell__update_border";
               return "table-body-cell__update";
             }
           }
@@ -790,8 +792,16 @@ export default {
 }
 .table-body-cell__update {
   color: #2087cc !important;
+  .el-input {
+    .el-input__inner {
+      color: #2087cc !important;
+    }
+  }
   // background-color: #2087CC !important;
 }
+// .table-body-cell__update_border {
+//   border: 1px solid #2087cc !important;
+// }
 .spreadsheet {
   width: 100vw;
   // padding: 0 10px;
