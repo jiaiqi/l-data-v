@@ -32,11 +32,11 @@ const timeWidgetJson = computed(() => {
   }
 });
 const showSeconds = computed(() => {
-  return (
-    timeWidgetJson.value &&
-    timeWidgetJson.value['parts-set'] &&
-    timeWidgetJson.value['parts-set'].indexOf("秒")
-  );
+  return timeWidgetJson.value &&
+    timeWidgetJson.value["parts-set"] &&
+    timeWidgetJson.value["parts-set"].indexOf("秒")
+    ? true
+    : false;
 });
 
 const widgetType = computed(() => {

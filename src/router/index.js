@@ -38,14 +38,13 @@ const router = new VueRouter({
     {
       path: "/sheet/:service",
       name: "sheetEditor",
-      component: () => import("@/views/sheetEditor.vue"),
+      component: () => import("@/views/sheet-editor/index.vue"),
     },
-    {
-      path: "/sheet/:service/:fkCol/:fkVal",
-      name: "sheetEditor1",
-      component: () => import("@/views/sheetEditor.vue"),
-    },
-    ,
+    // {
+    //   path: "/sheet/:service/:fkCol/:fkVal",
+    //   name: "sheetEditor1",
+    //   component: () => import("@/views/sheet-editor/index.vue"),
+    // },
     {
       path: "/h5",
       name: "h5Page",

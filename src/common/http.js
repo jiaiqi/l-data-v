@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
-
+let bx_auth_ticket = ''
 let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
 
 if (top?.pathConfig?.gateway) {
@@ -35,11 +35,10 @@ export const $axios = axios.create({
 });
 $axios.interceptors.request.use(
   function (config) {
-    debugger
     // 在发送请求之前做些什么
-    let bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
+    bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (import.meta?.env?.DEV === true) {
-      bx_auth_ticket = "xabxdzkj-cdaa76db-3dfb-4e62-b113-03136e41cb30";
+      bx_auth_ticket = "xabxdzkj-1c3fc16e-3d3f-4091-aad2-d987789e0759";
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
@@ -168,7 +167,7 @@ export const getImagePath = (no, notThumb) => {
     }
     let url = `${
       serviceApi.imageFileNo
-    }${no}&bx_auth_ticket=${sessionStorage.getItem("bx_auth_ticket")}`;
+    }${no}&bx_auth_ticket=${bx_auth_ticket || sessionStorage.getItem("bx_auth_ticket")}`;
     return url;
   } else {
     return "";
