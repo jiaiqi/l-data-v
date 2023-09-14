@@ -95,7 +95,7 @@ export default {
               : "";
           }
           if (!["__flag", "rowKey", "__id"].includes(column.field)) {
-             // 某行某列绑定的值跟备份的数据中此行此列绑定的值不同时  增加class
+            // 某行某列绑定的值跟备份的数据中此行此列绑定的值不同时  增加class
             if (
               row?.__flag === "update" &&
               this.oldTableData &&
@@ -302,13 +302,13 @@ export default {
       if (query && Object.keys(query).length > 0) {
         const defaultConditions = [];
         Object.keys(query).forEach((key) => {
-          // if (!["app", "srvApp"].includes(key)) {
+          if (!["srvApp"].includes(key)) {
             defaultConditions.push({
               colName: key,
               ruleType: "eq",
               value: query[key],
             });
-          // }
+          }
         });
         if (defaultConditions?.length === 0 && this.fkCondition) {
           defaultConditions = [this.fkCondition];
@@ -407,7 +407,11 @@ export default {
       return this.$route.params?.service || this.$route.query?.service;
     },
     srvApp() {
-      return this.$route.params?.app || sessionStorage.getItem("current_app");
+      return (
+        this.$route.params?.app ||
+        this.$route.query?.srvApp ||
+        sessionStorage.getItem("current_app")
+      );
       // return (
       //   this.$route.params?.app ||
       //   this.$route.query?.app ||
