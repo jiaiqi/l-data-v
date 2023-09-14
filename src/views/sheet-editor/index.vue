@@ -2,7 +2,7 @@
   <div class="spreadsheet">
     <ve-table
       ref="tableRef"
-      style="word-break: break-word"
+      style="word-break: break-word; width: 100vw"
       fixed-header
       :scroll-width="0"
       max-height="calc(100vh - 110px)"
@@ -36,15 +36,15 @@
 
       <div class="flex flex-items-center">
         <div class="color-map flex flex-items-center m-r-20">
-        <div class="color-map-item flex flex-items-center">
-          <div class="color bg-[#81b9fb] w-4 h-4 m-r-2 rounded"></div>
-          <div class="text">新增</div>
+          <div class="color-map-item flex flex-items-center">
+            <div class="color bg-[#effbf2] w-4 h-4 m-r-2 rounded"></div>
+            <div class="text">新增</div>
+          </div>
+          <div class="color-map-item flex flex-items-center m-l-5">
+            <div class="color bg-[#2087cc] w-4 h-4 m-r-2 rounded"></div>
+            <div class="text">更新</div>
+          </div>
         </div>
-        <div class="color-map-item flex flex-items-center m-l-5">
-          <div class="color bg-[#9beb5e] w-4 h-4 m-r-2 rounded"></div>
-          <div class="text">更新</div>
-        </div>
-      </div>
         <el-button size="mini" type="primary" @click="refreshData"
           >刷新</el-button
         >
@@ -83,12 +83,19 @@ export default {
   },
   data() {
     return {
+      columns: [],
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
+          if (row?.__flag === "add") {
+            // 新增数据 整行某个字段有值后 增加class
+            return Object.keys(row).some(
+              (key) => !["__flag", "rowKey", "__id"].includes(key) && !!row[key]
+            )
+              ? "table-body-cell__add"
+              : "";
+          }
           if (!["__flag", "rowKey", "__id"].includes(column.field)) {
-            if (row?.__flag === "add") {
-              return row[column.field] ? "table-body-cell__add" : "";
-            }
+             // 某行某列绑定的值跟备份的数据中此行此列绑定的值不同时  增加class
             if (
               row?.__flag === "update" &&
               this.oldTableData &&
@@ -105,6 +112,29 @@ export default {
       // 是否开启列宽可变
       columnWidthResizeOption: {
         enable: true,
+        minWidth: 30,
+        // column size change
+        sizeChange: ({ column, differWidth, columnWidth }) => {
+          // console.log(column, differWidth, columnWidth);
+          // this.columnResizeInfo.column = column;
+          // this.columnResizeInfo.differWidth = differWidth;
+          // this.columnResizeInfo.columnWidth = columnWidth;
+          // let index = this.columns.findIndex(
+          //   (item) => item.field === column.field
+          // );
+          // if (index >= 0) {
+          //   const item = this.columns[index];
+          //   this.$nextTick(() => {
+          //     this.$set(item, "width", columnWidth);
+          //   });
+          // }
+        },
+      },
+      columnResizeInfo: {
+        column: "",
+        differWidth: "",
+        columnWidth: "",
+        tableWidth: "",
       },
       // 虚拟滚动配置
       virtualScrollOption: {
@@ -259,18 +289,26 @@ export default {
     };
   },
   computed: {
+    defaultConditionsMap() {
+      if (this.defaultConditions?.length) {
+        return this.defaultConditions.reduce((pre, cur) => {
+          pre[cur.colName] = cur.value;
+          return pre;
+        }, {});
+      }
+    },
     defaultConditions() {
       const query = this.$route.query;
       if (query && Object.keys(query).length > 0) {
         const defaultConditions = [];
         Object.keys(query).forEach((key) => {
-          if (!["app", "srvApp"].includes(key)) {
+          // if (!["app", "srvApp"].includes(key)) {
             defaultConditions.push({
               colName: key,
               ruleType: "eq",
               value: query[key],
             });
-          }
+          // }
         });
         if (defaultConditions?.length === 0 && this.fkCondition) {
           defaultConditions = [this.fkCondition];
@@ -369,14 +407,17 @@ export default {
       return this.$route.params?.service || this.$route.query?.service;
     },
     srvApp() {
-      return (
-        this.$route.params?.app ||
-        this.$route.query?.app ||
-        this.$route.query?.srvApp ||
-        sessionStorage.getItem("current_app")
-      );
+      return this.$route.params?.app || sessionStorage.getItem("current_app");
+      // return (
+      //   this.$route.params?.app ||
+      //   this.$route.query?.app ||
+      //   this.$route.query?.srvApp ||
+      //   sessionStorage.getItem("current_app")
+      // );
     },
-    columns() {
+  },
+  methods: {
+    buildColumns() {
       const self = this;
       const startRowIndex = this.startRowIndex;
       let columns = [
@@ -385,7 +426,7 @@ export default {
           key: "index",
           operationColumn: true,
           title: "#",
-          width: 50,
+          width: 80,
           fixed: "left",
           renderBodyCell: function ({ rowIndex }) {
             return startRowIndex + rowIndex + 1;
@@ -400,114 +441,132 @@ export default {
               title: item.label,
               field: item.columns,
               key: item.columns,
-              width: 100,
+              width: (window.innerWidth + 50) / this.allFields.length,
               edit:
-                ["String", "MultilineText",'Enum'].includes(item.col_type) ||
+                (this.defaultConditions.every(
+                  (col) => col.colName !== item.columns
+                ) &&
+                  ["String", "MultilineText", "Enum"].includes(
+                    item.col_type
+                  )) ||
                 item.col_type.includes("decimal"),
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
               __field_info: { ...item },
-              renderHeaderCell: ({ column }, h) => {
-                return h(HeaderCell, {
-                  attrs: {
-                    column: { ...item },
-                  },
-                });
-              },
             };
+
+            if (this.defaultConditions?.length) {
+              columnObj.disabled = this.defaultConditions.some(
+                (col) => col.colName === item.columns
+              );
+              columnObj.edit = !columnObj.disabled && columnObj.edit;
+            }
+
+            columnObj.renderHeaderCell = ({ column }, h) => {
+              return h(HeaderCell, {
+                attrs: {
+                  column: { ...item, edit: columnObj.edit },
+                },
+              });
+            };
+
             if (["MultilineText"].includes(item.col_type)) {
               columnObj.align = "left";
             }
-            if (
-              ["Integer", "Float", "Money"].includes(item.col_type) ||
-              item.col_type.includes("decimal")
-            ) {
-              let precision = null;
-              let step = 1;
-              if (["Float", "Money"].includes(item.col_type)) {
-                precision = 2;
-                step = 0.01;
-              }
-              if (item.col_type.includes("decimal")) {
-                const str = item.col_type;
-                const regex = /decimal\((\d+),(\d+)\)/;
-                const match = str.match(regex);
-                precision = match[2] * 1;
-                step = 1 / 10 ** match[2];
-              }
-              columnObj.width = 150;
-              columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-                return h("elInputNumber", {
-                  attrs: {
-                    value: row[column.field] || undefined,
-                    size: "mini",
-                    step,
-                    precision,
-                  },
-                  nativeOn: {
-                    click: (event) => {
-                      event.stopPropagation();
-                      event.preventDefault();
-                    },
-                  },
-                  on: {
-                    input: (event) => {
-                      self.$set(row, column.field, event);
-                    },
-                  },
-                });
-              };
-            } else if (item.col_type === "Date") {
-              columnObj.width = 150;
-              columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-                return h("el-date-picker", {
-                  attrs: {
-                    value: row[column.field],
-                    size: "mini",
-                    type: "date",
-                    style: "width:130px;",
-                  },
-                  nativeOn: {
-                    click: (event) => {
-                      event.stopPropagation();
-                      event.preventDefault();
-                    },
-                  },
-                  on: {
-                    input: (event) => {
-                      self.$set(row, column.field, event);
-                    },
-                  },
-                });
-              };
-            } else if (item.col_type === "Enum") {
-              columnObj.width = 120;
-              columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-                return h(
-                  "el-select",
-                  {
+            if (!columnObj.disabled) {
+              if (
+                ["Integer", "Float", "Money"].includes(item.col_type) ||
+                item.col_type.includes("decimal")
+              ) {
+                let precision = null;
+                let step = 1;
+                if (["Float", "Money"].includes(item.col_type)) {
+                  precision = 2;
+                  step = 0.01;
+                }
+                if (item.col_type.includes("decimal")) {
+                  const str = item.col_type;
+                  const regex = /decimal\((\d+),(\d+)\)/;
+                  const match = str.match(regex);
+                  precision = match[2] * 1;
+                  step = 1 / 10 ** match[2];
+                }
+                columnObj.width = 150;
+                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                  return h("elInputNumber", {
                     attrs: {
-                      value: row[column.field],
+                      value: row[column.field] || undefined,
                       size: "mini",
-                      clearable: true,
+                      step,
+                      precision,
+                    },
+                    nativeOn: {
+                      click: (event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
+                      },
                     },
                     on: {
                       input: (event) => {
                         self.$set(row, column.field, event);
-                        console.log(this.$refs["tableRef"].getRangeCellSelection());
                       },
                     },
-                  },
-                  item.option_list_v2.map((op) => {
-                    return h("el-option", {
-                      attrs: {
-                        key: op.value,
-                        label: op.label,
-                        value: op.value,
+                  });
+                };
+              } else if (item.col_type === "Date") {
+                columnObj.width = 150;
+                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                  return h("el-date-picker", {
+                    attrs: {
+                      value: row[column.field],
+                      size: "mini",
+                      type: "date",
+                      style: "width:130px;",
+                    },
+                    nativeOn: {
+                      click: (event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
                       },
-                    });
-                  })
-                );
-              };
+                    },
+                    on: {
+                      input: (event) => {
+                        self.$set(row, column.field, event);
+                      },
+                    },
+                  });
+                };
+              } else if (item.col_type === "Enum") {
+                columnObj.width = 120;
+                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                  return h(
+                    "el-select",
+                    {
+                      attrs: {
+                        value: row[column.field],
+                        size: "mini",
+                        clearable: true,
+                      },
+                      on: {
+                        input: (event) => {
+                          self.$set(row, column.field, event);
+                          console.log(
+                            this.$refs["tableRef"].getRangeCellSelection()
+                          );
+                        },
+                      },
+                    },
+                    item.option_list_v2.map((op) => {
+                      return h("el-option", {
+                        attrs: {
+                          key: op.value,
+                          label: op.label,
+                          value: op.value,
+                        },
+                      });
+                    })
+                  );
+                };
+              }
             }
             return columnObj;
           })
@@ -527,9 +586,11 @@ export default {
       );
       return columns;
     },
-  },
-  methods: {
     refreshData() {
+      if (this.buildReqParams?.length === 0) {
+        this.getList();
+        return;
+      }
       this.$confirm("刷新后之前的操作都将重置, 是否继续?", "提示", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
@@ -616,6 +677,13 @@ export default {
           };
           this.allFields.forEach((field) => {
             dataItem[field.columns] = "";
+            if (
+              this.defaultConditionsMap &&
+              this.defaultConditionsMap[field.columns]
+            ) {
+              dataItem[field.columns] =
+                this.defaultConditionsMap[field.columns];
+            }
           });
           this.tableData.push(dataItem);
           this.$nextTick(() => {
@@ -639,6 +707,17 @@ export default {
         this.list.page = res.page;
 
         let tableData = [];
+        // for (let i = 0; i<res.data.length; i++) {
+        //   const __id = uniqueId("table_item_");
+        //   let dataItem = {
+        //     rowKey: __id,
+        //     __id,
+        //     __flag: null,
+        //     ...res.data[i],
+        //     // __flag: "update",
+        //   };
+        //   tableData.push(dataItem);
+        // }
         for (let i = res.data.length - 1; i >= 0; i--) {
           const __id = uniqueId("table_item_");
           let dataItem = {
@@ -670,6 +749,7 @@ export default {
         this.allFields = this.v2data.allFields;
         // this.initTableData();
         document.title = res.data.service_view_name;
+        this.columns = this.buildColumns();
       }
     },
     scrolling({
@@ -702,13 +782,15 @@ export default {
 </script>
 <style lang="scss">
 .table-body-cell__add {
-  background-color: #e5f1ff !important;
+  background-color: #effbf2 !important;
 }
 .table-body-cell__update {
-  background-color: #ebf7e2 !important;
+  color: #2087cc !important;
+  // background-color: #2087CC !important;
 }
-// .spreadsheet {
-//     padding: 0 10px;
-//     margin: 20px 0;
-// }
+.spreadsheet {
+  width: 100vw;
+  // padding: 0 10px;
+  // margin: 20px 0;
+}
 </style>

@@ -1,7 +1,15 @@
 <template>
   <div class="header-cell">
     <span>{{ column.label }}</span>
-    <img src="@/assets/img/edit.png" alt="" class="right-icon" v-if="editable" />
+    <el-tooltip
+      class="item"
+      effect="dark"
+      content="当前列可编辑"
+      placement="bottom-end"
+      v-if="editable"
+    >
+      <img src="@/assets/img/edit.png" alt="" class="right-icon" />
+    </el-tooltip>
   </div>
 </template>
 
@@ -14,7 +22,8 @@ export default {
     editable() {
       if (this.column?.col_type) {
         return (
-          [
+          this.column.edit !== false &&
+          ([
             "String",
             "MultilineText",
             "Integer",
@@ -23,7 +32,7 @@ export default {
             "Enum",
             "Date",
           ].includes(this.column.col_type) ||
-          this.column.col_type.includes("decimal")
+            this.column.col_type.includes("decimal"))
         );
       }
     },

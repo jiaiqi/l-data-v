@@ -40,11 +40,16 @@ const router = new VueRouter({
       name: "sheetEditor",
       component: () => import("@/views/sheet-editor/index.vue"),
     },
-    // {
-    //   path: "/sheet/:service/:fkCol/:fkVal",
-    //   name: "sheetEditor1",
-    //   component: () => import("@/views/sheet-editor/index.vue"),
-    // },
+    {
+      path: "/sheet/:app/:service",
+      name: "sheetEditor1",
+      component: () => import("@/views/sheet-editor/index.vue"),
+    },
+    {
+      path: "/sheet/:app/:service/:fkCol/:fkVal",
+      name: "sheetEditor2",
+      component: () => import("@/views/sheet-editor/index.vue"),
+    },
     {
       path: "/h5",
       name: "h5Page",
