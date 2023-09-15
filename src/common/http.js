@@ -38,7 +38,7 @@ $axios.interceptors.request.use(
     // 在发送请求之前做些什么
     bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (import.meta?.env?.DEV === true) {
-      bx_auth_ticket = "xabxdzkj-1c3fc16e-3d3f-4091-aad2-d987789e0759";
+      bx_auth_ticket = "xabxdzkj-b7edb15c-abb4-4daa-944e-da75a04e1c84";
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
@@ -63,11 +63,11 @@ $axios.interceptors.response.use(
 
       // console.log("response",response)
       if (response.data.state == "FAILURE") {
-        Message({
-          showClose: true,
-          message: response?.data?.resultMessage || JSON.stringify(error),
-          type: "error",
-        });
+        // Message({
+        //   showClose: true,
+        //   message: response?.data?.resultMessage || JSON.stringify(error),
+        //   type: "error",
+        // });
         if (response.data.resultCode == "0011") {
           if (getRootWindow()?.layer) {
             var login_page = "/main/login.html";
