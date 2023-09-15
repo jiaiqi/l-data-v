@@ -554,10 +554,14 @@ export default {
                       },
                       on: {
                         input: (event) => {
-                          self.$set(row, column.field, event);
-                          console.log(
-                            this.$refs["tableRef"].getRangeCellSelection()
-                          );
+                          // self.$set(row, column.field, event);
+                          // debugger
+                          this.$refs["tableRef"].startEditingCell({
+                            rowKey: row.rowKey,
+                            colKey:column.field,
+                            defaultValue:event,
+                          });
+                          this.$refs["tableRef"].stopEditingCell()
                         },
                       },
                     },
@@ -806,5 +810,9 @@ export default {
   width: 100vw;
   // padding: 0 10px;
   // margin: 20px 0;
+  .el-input__inner {
+    border: none !important;
+    background-color: transparent !important;
+  }
 }
 </style>
