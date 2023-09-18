@@ -30,6 +30,7 @@ const props = defineProps({
 const mapInstance = ref(null); // 地图实例
 const mapId = ref(""); // 地图编号
 const iconJson = ref([]); //地图图例
+const markerInfo = ref({})
 // const title = ref("");
 // const longitude = ref("");
 // const latitude = ref("");
@@ -41,6 +42,7 @@ onMounted(() => {
   nextTick(() => {
     mapInstance.value = initMap(mapId.value, props.pageItem);
     initMapData(mapInstance.value, props.pageItem).then((markerData) => {
+      markerInfo.value = markerData
       if (markerData.iconJson) {
         iconJson.value = markerData.iconJson;
       }
