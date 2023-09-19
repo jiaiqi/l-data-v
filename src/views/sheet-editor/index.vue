@@ -1,26 +1,8 @@
 <template>
   <div class="spreadsheet">
-    <ve-table
-      ref="tableRef"
-      style="word-break: break-word; width: 100vw"
-      fixed-header
-      :scroll-width="0"
-      max-height="calc(100vh - 110px)"
-      border-y
-      :columns="columns"
-      :table-data="tableData"
-      row-key-field-name="rowKey"
-      :virtual-scroll-option="virtualScrollOption"
-      :cell-autofill-option="cellAutofillOption"
-      :cell-style-option="cellStyleOption"
-      :edit-option="editOption"
-      :clipboard-option="clipboardOption"
-      :contextmenu-body-option="contextmenuBodyOption"
-      :contextmenu-header-option="contextmenuHeaderOption"
-      :row-style-option="rowStyleOption"
-      :column-width-resize-option="columnWidthResizeOption"
-    />
-    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-10">
+    <div
+      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-10"
+    >
       <div class="flex w-100">
         <div class="m-r-5">插入</div>
         <el-input-number size="mini" v-model="insertRowNumber" />
@@ -28,12 +10,11 @@
         <el-button
           size="mini"
           type="primary"
-          @click="insertRows"
+          @click="batchInsertRows"
           :disabled="insertRowNumber === 0"
           >确认</el-button
         >
       </div>
-
       <div class="flex flex-items-center">
         <div class="color-map flex flex-items-center m-r-20">
           <div class="color-map-item flex flex-items-center">
@@ -57,6 +38,26 @@
         >
       </div>
     </div>
+    <ve-table
+      ref="tableRef"
+      style="word-break: break-word; width: 100vw"
+      fixed-header
+      :scroll-width="0"
+      max-height="calc(100vh - 50px)"
+      border-y
+      :columns="columns"
+      :table-data="tableData"
+      row-key-field-name="rowKey"
+      :virtual-scroll-option="virtualScrollOption"
+      :cell-autofill-option="cellAutofillOption"
+      :cell-style-option="cellStyleOption"
+      :edit-option="editOption"
+      :clipboard-option="clipboardOption"
+      :contextmenu-body-option="contextmenuBodyOption"
+      :contextmenu-header-option="contextmenuHeaderOption"
+      :row-style-option="rowStyleOption"
+      :column-width-resize-option="columnWidthResizeOption"
+    />
   </div>
 </template>
 
@@ -69,7 +70,7 @@ import {
 } from "@/service/api";
 import { buildSrvCols } from "@/utils/sheetUtils";
 import { COLUMN_KEYS } from "@/utils/constant";
-import { uniqueId } from "lodash-es";
+import { isEmpty, uniqueId } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 export default {
@@ -94,16 +95,15 @@ export default {
               ? "table-body-cell__add"
               : "";
           }
-          if (!["__flag", "rowKey", "__id"].includes(column.field)) {
+          if (
+            row?.__flag === "update" &&
+            !["__flag", "rowKey", "__id"].includes(column.field)
+          ) {
             // 某行某列绑定的值跟备份的数据中此行此列绑定的值不同时  增加class
-            if (
-              row?.__flag === "update" &&
-              this.oldTableData &&
-              this.oldTableData[rowIndex] &&
-              row[column.field] !== this.oldTableData[rowIndex][column.field]
-            ) {
-              // if (["Enum","Date"].includes(column.__field_info?.col_type))
-              //   return "table-body-cell__update_border";
+            const oldRowData = this.oldTableData.find(
+              (item) => item.__id && item.__id === row.__id
+            );
+            if (row[column.field] !== oldRowData[column.field]) {
               return "table-body-cell__update";
             }
           }
@@ -199,14 +199,29 @@ export default {
           console.log("type::", type);
           console.log("selectionRangeKeys::", selectionRangeKeys);
           console.log("selectionRangeIndexes::", selectionRangeIndexes);
-          if (type === "delete-row-data") {
-            if (!this.deleteButton?.service_name) {
-              this.$message({
-                type: "error",
-                message: "没有删除权限",
-              });
-              return false;
-            }
+          const endRowIndex = selectionRangeIndexes.endRowIndex;
+          const startRowIndex = selectionRangeIndexes.startRowIndex;
+
+          if (type === "insertRowBelow") {
+            const index = selectionRangeIndexes.startRowIndex;
+            this.insert2Rows(index + 1);
+          } else if (type === "insertRowAbove") {
+            const index = selectionRangeIndexes.startRowIndex;
+            this.insert2Rows(index);
+          } else if (type === "removeRow") {
+            let willDeleteLocalRows = []; //新增待删除行
+            let willDeleteOriginRows = []; //远程数据中的待删除行
+            this.tableData.forEach((item, index) => {
+              if (startRowIndex >= 0 && index <= endRowIndex) {
+                if (item.__flag == "add") {
+                  item.__index = index;
+                  willDeleteLocalRows.push(item.__id);
+                } else {
+                  willDeleteOriginRows.push(item);
+                }
+              }
+            });
+
             // 删除选中行数据
             let text = `此操作将永久删除该第${
               selectionRangeIndexes.startRowIndex + 1
@@ -230,11 +245,21 @@ export default {
               // center: true
             })
               .then(() => {
-                // this.$message({
-                //     type: 'success',
-                //     message: '删除成功'
-                // });
-                this.deleteRow(selectionRangeIndexes);
+                if (willDeleteLocalRows?.length) {
+                  this.tableData = this.tableData.filter(
+                    (item) => !willDeleteLocalRows.includes(item.__id)
+                  );
+                }
+                if (willDeleteOriginRows?.length) {
+                  if (!this.deleteButton?.service_name) {
+                    this.$message({
+                      type: "error",
+                      message: "没有删除已有数据权限",
+                    });
+                    return false;
+                  }
+                  this.deleteRow(willDeleteOriginRows);
+                }
               })
               .catch((action) => {
                 this.$message({
@@ -251,31 +276,24 @@ export default {
           {
             type: "COPY",
           },
-          // {
-          //   type: "SEPARATOR",
-          // },
-          // {
-          //   type: "INSERT_ROW_ABOVE",
-          // },
-          // {
-          //   type: "INSERT_ROW_BELOW",
-          // },
-          // {
-          //   type: "SEPARATOR",
-          // },
           {
-            type: "delete-row-data",
-            label: "删除选中行数据",
+            type: "SEPARATOR",
           },
-          // {
-          //     type: "REMOVE_ROW",
-          // },
-          // {
-          //     type: "EMPTY_ROW",
-          // },
-          // {
-          //   type: "EMPTY_CELL",
-          // },
+          {
+            type: "insertRowAbove",
+            label: "上方插入行",
+          },
+          {
+            type: "insertRowBelow",
+            label: "下方插入行",
+          },
+          {
+            type: "SEPARATOR",
+          },
+          {
+            type: "removeRow",
+            label: "删除选中行数据",
+          }
         ],
       },
       // 行样式配置
@@ -441,20 +459,30 @@ export default {
         },
       ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
+        let minWidth = (window.innerWidth + 50) / this.allFields.length;
+        if (minWidth < 200) {
+          minWidth = 200;
+        }
         columns = columns.concat(
           this.allFields.map((item) => {
             const columnObj = {
               title: item.label,
               field: item.columns,
               key: item.columns,
-              width: (window.innerWidth + 50) / this.allFields.length,
+              width: minWidth,
               edit:
-                (this.defaultConditions.every(
+                (this.defaultConditions?.every(
                   (col) => col.colName !== item.columns
                 ) &&
-                  ["String", "MultilineText", "Enum"].includes(
-                    item.col_type
-                  )) ||
+                  [
+                    "String",
+                    "MultilineText",
+                    "Enum",
+                    "Integer",
+                    "Float",
+                    "Money",
+                    "Date",
+                  ].includes(item.col_type)) ||
                 item.col_type.includes("decimal"),
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
               __field_info: { ...item },
@@ -513,7 +541,18 @@ export default {
                     },
                     on: {
                       input: (event) => {
-                        self.$set(row, column.field, event);
+                        if (
+                          event !== undefined &&
+                          event !== row[column.field]
+                        ) {
+                          this.$refs["tableRef"].startEditingCell({
+                            rowKey: row.rowKey,
+                            colKey: column.field,
+                            defaultValue: event,
+                          });
+                          this.$refs["tableRef"].stopEditingCell();
+                        }
+                        // self.$set(row, column.field, event);
                       },
                     },
                   });
@@ -536,7 +575,13 @@ export default {
                     },
                     on: {
                       input: (event) => {
-                        self.$set(row, column.field, event);
+                        // self.$set(row, column.field, event);
+                        this.$refs["tableRef"].startEditingCell({
+                          rowKey: row.rowKey,
+                          colKey: column.field,
+                          defaultValue: event,
+                        });
+                        this.$refs["tableRef"].stopEditingCell();
                       },
                     },
                   });
@@ -558,10 +603,10 @@ export default {
                           // debugger
                           this.$refs["tableRef"].startEditingCell({
                             rowKey: row.rowKey,
-                            colKey:column.field,
-                            defaultValue:event,
+                            colKey: column.field,
+                            defaultValue: event,
                           });
-                          this.$refs["tableRef"].stopEditingCell()
+                          this.$refs["tableRef"].stopEditingCell();
                         },
                       },
                     },
@@ -616,14 +661,8 @@ export default {
           });
         });
     },
-    deleteRow(rowIndexs = {}) {
-      const { startRowIndex, endRowIndex } = rowIndexs;
-      const deleIds = [];
-      this.tableData.forEach((item, index) => {
-        if (item.id && index >= startRowIndex && index <= endRowIndex) {
-          deleIds.push(item.id);
-        }
-      });
+    deleteRow(rows) {
+      const deleIds = rows.map((item) => item.id);
       if (deleIds.length > 0) {
         onDelete(
           deleIds.toString(),
@@ -676,32 +715,32 @@ export default {
         });
       }
     },
-    insertRows() {
+    insert2Rows(index) {
+      // 插入到第几行
+      if (index >= 0) {
+        const __id = uniqueId("table_item_");
+        const dataItem = {
+          rowKey: __id,
+          __id,
+          __flag: "add",
+        };
+        this.allFields.forEach((field) => {
+          dataItem[field.columns] = "";
+          if (
+            this.defaultConditionsMap &&
+            this.defaultConditionsMap[field.columns]
+          ) {
+            dataItem[field.columns] = this.defaultConditionsMap[field.columns];
+          }
+        });
+        this.tableData.splice(index, 0, dataItem);
+      }
+    },
+    batchInsertRows() {
       if (this.insertRowNumber > 0) {
         for (let index = 0; index < this.insertRowNumber; index++) {
-          const __id = uniqueId("table_item_");
-          const dataItem = {
-            rowKey: __id,
-            __id,
-            __flag: "add",
-          };
-          this.allFields.forEach((field) => {
-            dataItem[field.columns] = "";
-            if (
-              this.defaultConditionsMap &&
-              this.defaultConditionsMap[field.columns]
-            ) {
-              dataItem[field.columns] =
-                this.defaultConditionsMap[field.columns];
-            }
-          });
-          this.tableData.push(dataItem);
-          this.$nextTick(() => {
-            this.$refs["tableRef"].scrollToRowKey({
-              rowKey: this.tableData[this.tableData.length - 1]["__id"],
-            });
-            this.insertRowNumber = 0;
-          });
+          // 批量插入数据 每次都插入到第0行
+          this.insert2Rows(0);
         }
       }
     },
@@ -717,18 +756,7 @@ export default {
         this.list.page = res.page;
 
         let tableData = [];
-        // for (let i = 0; i<res.data.length; i++) {
-        //   const __id = uniqueId("table_item_");
-        //   let dataItem = {
-        //     rowKey: __id,
-        //     __id,
-        //     __flag: null,
-        //     ...res.data[i],
-        //     // __flag: "update",
-        //   };
-        //   tableData.push(dataItem);
-        // }
-        for (let i = res.data.length - 1; i >= 0; i--) {
+        for (let i = 0; i < res.data.length; i++) {
           const __id = uniqueId("table_item_");
           let dataItem = {
             rowKey: __id,
@@ -739,13 +767,24 @@ export default {
           };
           tableData.push(dataItem);
         }
+        // for (let i = res.data.length - 1; i >= 0; i--) {
+        //   const __id = uniqueId("table_item_");
+        //   let dataItem = {
+        //     rowKey: __id,
+        //     __id,
+        //     __flag: null,
+        //     ...res.data[i],
+        //     // __flag: "update",
+        //   };
+        //   tableData.push(dataItem);
+        // }
         this.tableData = tableData;
         this.oldTableData = JSON.parse(JSON.stringify(tableData));
-        this.$nextTick(() => {
-          this.$refs["tableRef"].scrollToRowKey({
-            rowKey: this.tableData[this.tableData.length - 1]["__id"],
-          });
-        });
+        // this.$nextTick(() => {
+        //   this.$refs["tableRef"].scrollToRowKey({
+        //     rowKey: this.tableData[this.tableData.length - 1]["__id"],
+        //   });
+        // });
       }
     },
     async getV2Data() {
@@ -810,7 +849,7 @@ export default {
   width: 100vw;
   // padding: 0 10px;
   // margin: 20px 0;
-  .el-input__inner {
+  .el-select .el-input__inner {
     border: none !important;
     background-color: transparent !important;
   }
