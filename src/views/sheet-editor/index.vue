@@ -1,5 +1,5 @@
 <template>
-  <div class="spreadsheet">
+  <div class="spreadsheet" v-loading="loading">
     <div
       class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-10"
     >
@@ -57,6 +57,7 @@
       :contextmenu-header-option="contextmenuHeaderOption"
       :row-style-option="rowStyleOption"
       :column-width-resize-option="columnWidthResizeOption"
+      :columnHiddenOption="columnHiddenOption"
     />
   </div>
 </template>
@@ -84,6 +85,7 @@ export default {
   },
   data() {
     return {
+      loading: false,
       columns: [],
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
@@ -145,8 +147,20 @@ export default {
       },
       // 单元格自动填充配置
       cellAutofillOption: {
-        directionX: true,
+        directionX: false,
         directionY: true,
+        afterAutofill: ({
+          direction,
+          sourceSelectionRangeIndexes,
+          targetSelectionRangeIndexes,
+          sourceSelectionData,
+          targetSelectionData,
+        }) => {
+          console.log('sourceSelectionRangeIndexes',sourceSelectionRangeIndexes);
+          console.log('targetSelectionRangeIndexes',targetSelectionRangeIndexes);
+          console.log('sourceSelectionData',sourceSelectionData);
+          console.log('targetSelectionData',targetSelectionData);
+        },
       },
       // 剪贴板配置
       clipboardOption: {
@@ -293,7 +307,7 @@ export default {
           {
             type: "removeRow",
             label: "删除选中行数据",
-          }
+          },
         ],
       },
       // 行样式配置
@@ -315,6 +329,16 @@ export default {
           pre[cur.colName] = cur.value;
           return pre;
         }, {});
+      }
+    },
+    columnHiddenOption() {
+      // 隐藏作为条件传入的列
+      if (this.defaultConditions?.length) {
+        return {
+          defaultHiddenColumnKeys: this.defaultConditions.map(
+            (item) => item.colName
+          ),
+        };
       }
     },
     defaultConditions() {
@@ -482,8 +506,9 @@ export default {
                     "Float",
                     "Money",
                     "Date",
+                    "int"
                   ].includes(item.col_type)) ||
-                item.col_type.includes("decimal"),
+                item.col_type.includes("decimal")||item.bx_col_type=='fk',
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
               __field_info: { ...item },
             };
@@ -507,57 +532,58 @@ export default {
               columnObj.align = "left";
             }
             if (!columnObj.disabled) {
-              if (
-                ["Integer", "Float", "Money"].includes(item.col_type) ||
-                item.col_type.includes("decimal")
-              ) {
-                let precision = null;
-                let step = 1;
-                if (["Float", "Money"].includes(item.col_type)) {
-                  precision = 2;
-                  step = 0.01;
-                }
-                if (item.col_type.includes("decimal")) {
-                  const str = item.col_type;
-                  const regex = /decimal\((\d+),(\d+)\)/;
-                  const match = str.match(regex);
-                  precision = match[2] * 1;
-                  step = 1 / 10 ** match[2];
-                }
-                columnObj.width = 150;
-                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-                  return h("elInputNumber", {
-                    attrs: {
-                      value: row[column.field] || undefined,
-                      size: "mini",
-                      step,
-                      precision,
-                    },
-                    nativeOn: {
-                      click: (event) => {
-                        event.stopPropagation();
-                        event.preventDefault();
-                      },
-                    },
-                    on: {
-                      input: (event) => {
-                        if (
-                          event !== undefined &&
-                          event !== row[column.field]
-                        ) {
-                          this.$refs["tableRef"].startEditingCell({
-                            rowKey: row.rowKey,
-                            colKey: column.field,
-                            defaultValue: event,
-                          });
-                          this.$refs["tableRef"].stopEditingCell();
-                        }
-                        // self.$set(row, column.field, event);
-                      },
-                    },
-                  });
-                };
-              } else if (item.col_type === "Date") {
+              // if (
+              //   ["Integer", "Float", "Money"].includes(item.col_type) ||
+              //   item.col_type.includes("decimal")
+              // ) {
+              //   let precision = null;
+              //   let step = 1;
+              //   if (["Float", "Money"].includes(item.col_type)) {
+              //     precision = 2;
+              //     step = 0.01;
+              //   }
+              //   if (item.col_type.includes("decimal")) {
+              //     const str = item.col_type;
+              //     const regex = /decimal\((\d+),(\d+)\)/;
+              //     const match = str.match(regex);
+              //     precision = match[2] * 1;
+              //     step = 1 / 10 ** match[2];
+              //   }
+              //   columnObj.width = 150;
+              //   columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+              //     return h("elInputNumber", {
+              //       attrs: {
+              //         value: row[column.field] || undefined,
+              //         size: "mini",
+              //         step,
+              //         precision,
+              //       },
+              //       nativeOn: {
+              //         click: (event) => {
+              //           event.stopPropagation();
+              //           event.preventDefault();
+              //         },
+              //       },
+              //       on: {
+              //         input: (event) => {
+              //           if (
+              //             event !== undefined &&
+              //             event !== row[column.field]
+              //           ) {
+              //             this.$refs["tableRef"].startEditingCell({
+              //               rowKey: row.rowKey,
+              //               colKey: column.field,
+              //               defaultValue: event,
+              //             });
+              //             this.$refs["tableRef"].stopEditingCell();
+              //           }
+              //           // self.$set(row, column.field, event);
+              //         },
+              //       },
+              //     });
+              //   };
+              // } else
+              if (item.col_type === "Date") {
                 columnObj.width = 150;
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h("el-date-picker", {
@@ -746,11 +772,14 @@ export default {
     },
     async getList() {
       if (this.serviceName) {
+        this.loading = true;
         const res = await onSelect(
           this.serviceName,
           this.srvApp,
           this.defaultConditions
         );
+        this.loading = false;
+
         this.list.data = res.data;
         // this.tableData = res.data
         this.list.page = res.page;
@@ -831,13 +860,15 @@ export default {
 </script>
 <style lang="scss">
 .table-body-cell__add {
-  background-color: #effbf2 !important;
+  background-color: #a4da89 !important;
 }
 .table-body-cell__update {
-  color: #2087cc !important;
+  // color: #2087cc !important;
+  color: #cc0000 !important;
   .el-input {
     .el-input__inner {
-      color: #2087cc !important;
+      // color: #2087cc !important;
+      color: #cc0000 !important;
     }
   }
   // background-color: #2087CC !important;
@@ -847,6 +878,7 @@ export default {
 // }
 .spreadsheet {
   width: 100vw;
+  height: 100vh;
   // padding: 0 10px;
   // margin: 20px 0;
   .el-select .el-input__inner {

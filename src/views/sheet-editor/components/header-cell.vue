@@ -6,7 +6,7 @@
       effect="dark"
       content="当前列可编辑"
       placement="bottom-end"
-      v-if="editable"
+      v-if="editable||column.edit"
     >
       <img src="@/assets/img/edit.png" alt="" class="right-icon" />
     </el-tooltip>
