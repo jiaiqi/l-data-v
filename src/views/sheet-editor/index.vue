@@ -71,21 +71,28 @@ import {
 } from "@/service/api";
 import { buildSrvCols } from "@/utils/sheetUtils";
 import { COLUMN_KEYS } from "@/utils/constant";
-import { isEmpty, uniqueId } from "lodash-es";
+import { isEmpty, uniqueId, cloneDeep } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
+// import { diffString, diff } from "json-diff";
+import { RecordManager } from "./util/recordManager.js";
+
 export default {
   name: "SheetEditor",
   mounted() {
+    this.bindKeyboardEvent(this.undo, this.redo);
     if (this.serviceName) {
       this.getV2Data().then(() => {
-        this.getList();
+        this.getList().then(() => {
+          this.recordManager?.push(cloneDeep(this.oldTableData));
+        });
       });
     }
   },
   data() {
     return {
       loading: false,
+      recordManager: new RecordManager(),
       columns: [],
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
@@ -150,35 +157,95 @@ export default {
         directionX: false,
         directionY: true,
         afterAutofill: ({
-          direction,
           sourceSelectionRangeIndexes,
           targetSelectionRangeIndexes,
           sourceSelectionData,
           targetSelectionData,
         }) => {
-          console.log('sourceSelectionRangeIndexes',sourceSelectionRangeIndexes);
-          console.log('targetSelectionRangeIndexes',targetSelectionRangeIndexes);
-          console.log('sourceSelectionData',sourceSelectionData);
-          console.log('targetSelectionData',targetSelectionData);
+          console.log(
+            "sourceSelectionRangeIndexes",
+            sourceSelectionRangeIndexes
+          );
+          console.log(
+            "targetSelectionRangeIndexes",
+            targetSelectionRangeIndexes
+          );
+          console.log("sourceSelectionData", sourceSelectionData);
+          console.log("targetSelectionData", targetSelectionData);
         },
       },
       // 剪贴板配置
       clipboardOption: {
-        beforePaste: ({ data, selectionRangeIndexes, selectionRangeKeys }) => {
-          console.log({
-            data,
-            selectionRangeIndexes,
-            selectionRangeKeys,
-          });
+        afterPaste: ({ selectionRangeIndexes }) => {
+          const { startRowIndex, endRowIndex, startColIndex, endColIndex } =
+            selectionRangeIndexes;
+          const columns = this.columns.filter(
+            (item) =>
+              !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
+                item.field
+              )
+          );
+          for (let i = startRowIndex; i <= endRowIndex; i++) {
+            const row = this.tableData[i];
+            for (let j = startColIndex; j <= endColIndex; j++) {
+              const col = columns[j];
+              this.$refs["tableRef"].startEditingCell({
+                rowKey: row.rowKey,
+                colKey: col.field,
+                defaultValue: row[col.field],
+              });
+              this.$refs["tableRef"].stopEditingCell();
+            }
+          }
+        },
+        afterCut: ({ selectionRangeIndexes }) => {
+          const { startRowIndex, endRowIndex, startColIndex, endColIndex } =
+            selectionRangeIndexes;
+          const columns = this.columns.filter(
+            (item) =>
+              !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
+                item.field
+              )
+          );
+          for (let i = startRowIndex; i <= endRowIndex; i++) {
+            const row = this.tableData[i];
+            for (let j = startColIndex; j <= endColIndex; j++) {
+              const col = columns[j];
+              this.$refs["tableRef"].startEditingCell({
+                rowKey: row.rowKey,
+                colKey: col.field,
+                defaultValue: row[col.field],
+              });
+              this.$refs["tableRef"].stopEditingCell();
+            }
+          }
         },
       },
       // 单元格编辑配置
       editOption: {
+        beforeCellValueChange: ({ row, column, changeValue }) => {
+          const colType = column?.__field_info?.col_type;
+          if (
+            ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
+            colType.includes("decimal")
+          ) {
+            // 数字 校验
+            if (typeof changeValue !== "number") {
+              this.$message({
+                message: "请输入数字",
+                type: "warning",
+              });
+              return false;
+            }
+          }
+        },
         afterCellValueChange: ({ row, column, changeValue }) => {
-          console.log(row, column, changeValue);
+          console.log("afterCellValueChange", row, column, changeValue);
+
           if (row.__id && row.__flag !== "add") {
             row.__flag = "update";
           }
+          this.recordManager?.push(cloneDeep(this.tableData));
           // console.log(this.tableData);
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
@@ -405,11 +472,13 @@ export default {
                 }
               }
             });
-            reqData.push({
-              serviceName: this.updateButton.service_name,
-              condition: [{ colName: "id", ruleType: "eq", value: item.id }],
-              data: [updateObj],
-            });
+            if (Object.keys(updateObj)?.length) {
+              reqData.push({
+                serviceName: this.updateButton.service_name,
+                condition: [{ colName: "id", ruleType: "eq", value: item.id }],
+                data: [updateObj],
+              });
+            }
           }
         } else if (item.__flag === "add" && this.addButton?.service_name) {
           const addObj = {
@@ -465,6 +534,20 @@ export default {
     },
   },
   methods: {
+    undo() {
+      // ctrl+z 撤销
+      const tableData = this.recordManager?.undo();
+      if (Array.isArray(tableData) && tableData?.length) {
+        this.tableData = cloneDeep(tableData);
+      }
+    },
+    redo() {
+      // ctrl+y 重做
+      const tableData = this.recordManager?.redo();
+      if (Array.isArray(tableData) && tableData?.length) {
+        this.tableData = cloneDeep(tableData);
+      }
+    },
     buildColumns() {
       const self = this;
       const startRowIndex = this.startRowIndex;
@@ -506,9 +589,10 @@ export default {
                     "Float",
                     "Money",
                     "Date",
-                    "int"
+                    "int",
                   ].includes(item.col_type)) ||
-                item.col_type.includes("decimal")||item.bx_col_type=='fk',
+                item.col_type.includes("decimal") ||
+                item.bx_col_type == "fk",
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
               __field_info: { ...item },
             };
@@ -533,7 +617,7 @@ export default {
             }
             if (!columnObj.disabled) {
               // if (
-              //   ["Integer", "Float", "Money"].includes(item.col_type) ||
+              //   ["Integer", "Float", "Money",'int','Int'].includes(item.col_type) ||
               //   item.col_type.includes("decimal")
               // ) {
               //   let precision = null;
@@ -626,7 +710,6 @@ export default {
                       on: {
                         input: (event) => {
                           // self.$set(row, column.field, event);
-                          // debugger
                           this.$refs["tableRef"].startEditingCell({
                             rowKey: row.rowKey,
                             colKey: column.field,
@@ -808,6 +891,7 @@ export default {
         //   tableData.push(dataItem);
         // }
         this.tableData = tableData;
+
         this.oldTableData = JSON.parse(JSON.stringify(tableData));
         // this.$nextTick(() => {
         //   this.$refs["tableRef"].scrollToRowKey({
@@ -854,6 +938,50 @@ export default {
         tableData.push(dataItem);
       }
       this.tableData = tableData;
+    },
+    /**
+     * @description 绑定ctrl+z ctrl+y事件
+     * @param {*} callBackCZ 撤销/回退事件
+     * @param {*} callBackCY 前进事件
+     */
+    bindKeyboardEvent(callBackCZ = null, callBackCY = null) {
+      //记录特殊键被按下
+      let ctrlDown = false;
+      let shiftDown = false;
+      window.addEventListener("keydown", (e) => {
+        if (["Control", "Meta"].includes(e.key)) {
+          ctrlDown = true;
+        }
+        if (e.key === "Shift") {
+          shiftDown = true;
+        }
+        if (ctrlDown) {
+          if (
+            (shiftDown && ["z", "Z"].includes(e.key)) ||
+            (!shiftDown && ["Y", "y"].includes(e.key))
+          ) {
+            // 前进/重做 shift+ctrl+z | ctrl+y
+            callBackCY?.();
+          } else if (!shiftDown && ["z", "Z"].includes(e.key)) {
+            //后退/撤销 ctrl+z
+            callBackCZ?.();
+          }
+        }
+      });
+      // 松开按键
+      window.addEventListener("keyup", function (e) {
+        if (["Control", "Meta"].includes(e.key)) {
+          ctrlDown = false;
+        }
+        if (e.key === "Shift") {
+          shiftDown = false;
+        }
+      });
+      // 浏览器脱离焦点，释放
+      window.onblur = function () {
+        ctrlDown = false;
+        shiftDown = false;
+      };
     },
   },
 };
