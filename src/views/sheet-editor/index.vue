@@ -22,7 +22,7 @@
             <div class="text">新增</div>
           </div>
           <div class="color-map-item flex flex-items-center m-l-5">
-            <div class="color bg-[#2087cc] w-4 h-4 m-r-2 rounded"></div>
+            <div class="color bg-[#c00] w-4 h-4 m-r-2 rounded"></div>
             <div class="text">更新</div>
           </div>
         </div>
