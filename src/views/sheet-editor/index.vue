@@ -176,6 +176,41 @@ export default {
       },
       // 剪贴板配置
       clipboardOption: {
+        beforePaste: ({ data, selectionRangeIndexes, selectionRangeKeys }) => {
+          if (Array.isArray(data) && data?.length) {
+            let isValid = true;
+            for (let index = 0; index < data.length; index++) {
+              const element = data[index];
+              this.columns.forEach((col) => {
+                const colType = col?.__field_info?.col_type;
+                if (colType) {
+                  const changeValue = element[col.field];
+                  if (changeValue) {
+                    if (
+                      ["Integer", "Float", "Money", "int", "Int"].includes(
+                        colType
+                      ) ||
+                      colType.includes("decimal")
+                    ) {
+                      // 校验数字
+                      if (
+                        /^-?\d{1,3}(,\d{3})*(\.\d{1,2})?$/.test(changeValue) !==
+                        true
+                      ) {
+                        isValid = false;
+                        this.$message({
+                          message: "请输入数字",
+                          type: "warning",
+                        });
+                      }
+                    }
+                  }
+                }
+              });
+            }
+            return isValid;
+          }
+        },
         afterPaste: ({ selectionRangeIndexes }) => {
           const { startRowIndex, endRowIndex, startColIndex, endColIndex } =
             selectionRangeIndexes;
@@ -230,7 +265,7 @@ export default {
             colType.includes("decimal")
           ) {
             // 数字 校验
-            if (typeof changeValue !== "number") {
+            if (/^-?\d{1,3}(,\d{3})*(\.\d{1,2})?$/.test(changeValue) !== true) {
               this.$message({
                 message: "请输入数字",
                 type: "warning",
@@ -536,6 +571,7 @@ export default {
   methods: {
     undo() {
       // ctrl+z 撤销
+      debugger;
       const tableData = this.recordManager?.undo();
       if (Array.isArray(tableData) && tableData?.length) {
         this.tableData = cloneDeep(tableData);
