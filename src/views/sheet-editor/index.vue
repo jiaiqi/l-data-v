@@ -393,7 +393,7 @@ export default {
     defaultConditions() {
       const query = this.$route.query;
       if (query && Object.keys(query).length > 0) {
-        const defaultConditions = [];
+        let defaultConditions = [];
         Object.keys(query).forEach((key) => {
           if (!["srvApp"].includes(key)) {
             defaultConditions.push({
