@@ -1,7 +1,8 @@
 import axios from "axios";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
-let bx_auth_ticket = ''
-let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
+let bx_auth_ticket = "";
+let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
+// let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
 
 if (top?.pathConfig?.gateway) {
   baseURL = top?.pathConfig?.gateway;
@@ -38,7 +39,7 @@ $axios.interceptors.request.use(
     // 在发送请求之前做些什么
     bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (import.meta?.env?.DEV === true) {
-      bx_auth_ticket = "xabxdzkj-b7edb15c-abb4-4daa-944e-da75a04e1c84";
+      bx_auth_ticket = "xabxdzkj-da28d02f-dfbd-4eab-b49b-d566d98cbfde";
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
@@ -101,13 +102,11 @@ $axios.interceptors.response.use(
         } else if (response.data.resultCode == "0000") {
           if (sessionStorage.getItem("need_login_flag") != "need_login") {
             // alert(response.data.resultMessage);
-           
           }
         } else {
           if (response.data.resultCode !== "9998") {
             if (sessionStorage.getItem("need_login_flag") != "need_login") {
               // alert(response.data.resultMessage);
-           
             }
           }
         }
@@ -165,9 +164,9 @@ export const getImagePath = (no, notThumb) => {
     if (no.indexOf("&bx_auth_ticket") !== -1) {
       no = no.split("&bx_auth_ticket")[0];
     }
-    let url = `${
-      serviceApi.imageFileNo
-    }${no}&bx_auth_ticket=${bx_auth_ticket || sessionStorage.getItem("bx_auth_ticket")}`;
+    let url = `${serviceApi.imageFileNo}${no}&bx_auth_ticket=${
+      bx_auth_ticket || sessionStorage.getItem("bx_auth_ticket")
+    }`;
     return url;
   } else {
     return "";

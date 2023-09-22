@@ -543,7 +543,6 @@ export default {
     },
     undo() {
       // ctrl+z 撤销
-      debugger;
       const tableData = this.recordManager?.undo();
       if (Array.isArray(tableData) && tableData?.length) {
         this.tableData = cloneDeep(tableData);
@@ -557,7 +556,6 @@ export default {
       }
     },
     buildColumns() {
-      const self = this;
       const startRowIndex = this.startRowIndex;
       let columns = [
         {
@@ -586,9 +584,7 @@ export default {
               key: item.columns,
               width: minWidth,
               edit:
-                (this.defaultConditions?.every(
-                  (col) => col.colName !== item.columns
-                ) &&
+                (item.updatable === 1 &&
                   [
                     "String",
                     "MultilineText",
@@ -606,6 +602,11 @@ export default {
             };
 
             if (this.defaultConditions?.length) {
+              // columnObj.edit =
+              //   columnObj.edit &&
+              //   this.defaultConditions?.every(
+              //     (col) => col.colName !== item.columns
+              //   );
               columnObj.disabled = this.defaultConditions.some(
                 (col) => col.colName === item.columns
               );
@@ -912,9 +913,26 @@ export default {
       const res = await getServiceV2(this.serviceName, "list", this.srvApp);
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
+
+        let updateColsMap = null;
+        const editBtn = res.data?.rowButton?.find(
+          (item) => item.button_type === "edit"
+        );
+        if (editBtn?.service_name) {
+          const ress = await getServiceV2(
+            editBtn.service_name,
+            "update",
+            this.srvApp
+          );
+          updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
+            pre[cur.columns] = cur;
+            return pre;
+          }, {});
+        }
+
         this.v2data.allFields = await buildSrvCols(
           this.v2data.srv_cols,
-          this.fkCondition
+          updateColsMap
         );
         this.allFields = this.v2data.allFields;
         // this.initTableData();
@@ -922,13 +940,7 @@ export default {
         this.columns = this.buildColumns();
       }
     },
-    scrolling({
-      startRowIndex,
-      visibleStartIndex,
-      visibleEndIndex,
-      visibleAboveCount,
-      visibleBelowCount,
-    }) {
+    scrolling({ startRowIndex }) {
       this.startRowIndex = startRowIndex;
     },
     // 初始化表格
