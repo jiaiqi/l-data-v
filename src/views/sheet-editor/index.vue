@@ -124,28 +124,6 @@ export default {
       columnWidthResizeOption: {
         enable: true,
         minWidth: 30,
-        // column size change
-        sizeChange: ({ column, differWidth, columnWidth }) => {
-          // console.log(column, differWidth, columnWidth);
-          // this.columnResizeInfo.column = column;
-          // this.columnResizeInfo.differWidth = differWidth;
-          // this.columnResizeInfo.columnWidth = columnWidth;
-          // let index = this.columns.findIndex(
-          //   (item) => item.field === column.field
-          // );
-          // if (index >= 0) {
-          //   const item = this.columns[index];
-          //   this.$nextTick(() => {
-          //     this.$set(item, "width", columnWidth);
-          //   });
-          // }
-        },
-      },
-      columnResizeInfo: {
-        column: "",
-        differWidth: "",
-        columnWidth: "",
-        tableWidth: "",
       },
       // 虚拟滚动配置
       virtualScrollOption: {
@@ -156,22 +134,9 @@ export default {
       cellAutofillOption: {
         directionX: false,
         directionY: true,
-        afterAutofill: ({
-          sourceSelectionRangeIndexes,
-          targetSelectionRangeIndexes,
-          sourceSelectionData,
-          targetSelectionData,
-        }) => {
-          console.log(
-            "sourceSelectionRangeIndexes",
-            sourceSelectionRangeIndexes
-          );
-          console.log(
-            "targetSelectionRangeIndexes",
-            targetSelectionRangeIndexes
-          );
-          console.log("sourceSelectionData", sourceSelectionData);
-          console.log("targetSelectionData", targetSelectionData);
+        afterAutofill: ({ targetSelectionRangeIndexes }) => {
+          //targetSelectionRangeIndexes 自动填充目标的行和列索引
+          this.triggerEditCell(targetSelectionRangeIndexes);
         },
       },
       // 剪贴板配置
@@ -212,26 +177,8 @@ export default {
           }
         },
         afterPaste: ({ selectionRangeIndexes }) => {
-          const { startRowIndex, endRowIndex, startColIndex, endColIndex } =
-            selectionRangeIndexes;
-          const columns = this.columns.filter(
-            (item) =>
-              !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
-                item.field
-              )
-          );
-          for (let i = startRowIndex; i <= endRowIndex; i++) {
-            const row = this.tableData[i];
-            for (let j = startColIndex; j <= endColIndex; j++) {
-              const col = columns[j];
-              this.$refs["tableRef"].startEditingCell({
-                rowKey: row.rowKey,
-                colKey: col.field,
-                defaultValue: row[col.field],
-              });
-              this.$refs["tableRef"].stopEditingCell();
-            }
-          }
+          //selectionRangeIndexes ：拷贝区域的索引信息
+          this.triggerEditCell(selectionRangeIndexes);
         },
         afterCut: ({ selectionRangeIndexes }) => {
           const { startRowIndex, endRowIndex, startColIndex, endColIndex } =
@@ -569,6 +516,31 @@ export default {
     },
   },
   methods: {
+    triggerEditCell({
+      startRowIndex,
+      endRowIndex,
+      startColIndex,
+      endColIndex,
+    }) {
+      const columns = this.columns.filter(
+        (item) =>
+          !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
+            item.field
+          )
+      );
+      for (let i = startRowIndex; i <= endRowIndex; i++) {
+        const row = this.tableData[i];
+        for (let j = startColIndex; j <= endColIndex; j++) {
+          const col = columns[j];
+          this.$refs["tableRef"].startEditingCell({
+            rowKey: row.rowKey,
+            colKey: col.field,
+            defaultValue: row[col.field],
+          });
+          this.$refs["tableRef"].stopEditingCell();
+        }
+      }
+    },
     undo() {
       // ctrl+z 撤销
       debugger;
