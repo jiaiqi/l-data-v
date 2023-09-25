@@ -954,25 +954,26 @@ export default {
             return pre;
           }, {});
         }
-
-        // const addBtn = res.data?.gridButton?.find(
-        //   (item) => item.button_type === "edit"
-        // );
-        // if (editBtn?.service_name) {
-        //   const ress = await getServiceV2(
-        //     editBtn.service_name,
-        //     "update",
-        //     this.srvApp
-        //   );
-        //   updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
-        //     pre[cur.columns] = cur;
-        //     return pre;
-        //   }, {});
-        // }
+        let addColsMap = null;
+        const addBtn = res.data?.gridButton?.find(
+          (item) => item.button_type === "add"
+        );
+        if (addBtn?.service_name) {
+          const ress = await getServiceV2(
+            addBtn.service_name,
+            "add",
+            this.srvApp
+          );
+          addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
+            pre[cur.columns] = cur;
+            return pre;
+          }, {});
+        }
 
         this.v2data.allFields = await buildSrvCols(
           this.v2data.srv_cols,
-          updateColsMap
+          updateColsMap,
+          addColsMap
         );
         this.allFields = this.v2data.allFields;
         // this.initTableData();

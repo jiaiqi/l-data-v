@@ -8,14 +8,16 @@ const buildSrvCols = async (cols, updateColsMap) => {
     cols = cols.filter((item) => item.in_list === 1);
     for (let index = 0; index < cols.length; index++) {
       const col = cols[index];
-      if (updateColsMap?.[col.columns]?.updatable) {
-        col.updatable = updateColsMap?.[col.columns]?.updatable;
-      }
+      // if (updateColsMap?.[col.columns]?.updatable) {
+      //   col.updatable = updateColsMap?.[col.columns]?.updatable;
+      // }
       col.editable =
-        (col.updatable === 1 || col.updatable === null) &&
-        (col.in_add === 1 || col.in_update === 1)
-          ? true
-          : false;
+        col.updatable === 1 || updateColsMap?.[col.columns]?.updatable === 1;
+      // col.editable =
+      //   (col.updatable === 1 || col.updatable === null) &&
+      //   (col.in_add === 1 || col.in_update === 1)
+      //     ? true
+      //     : false;
       switch (col.bx_col_type) {
         case "fk":
           col.editType = "dropdownFk";
