@@ -1,7 +1,50 @@
-export default {
-    host: '192.168.0.111',
+module.exports = [
+  {
+    title: "高速公路项目 内网",
+    host: "192.168.0.111",
     port: 22,
-    username: 'root',
-    password: 123456,
-    path: '/home/front/dataview'
-}
+    username: "root",
+    password: "123456",
+    path: "/home/front/dataview",
+  },
+  {
+    title: "研学基地 内网",
+    host: "192.168.0.155",
+    port: 22,
+    username: "root",
+    password: "123456",
+    path: "/home/bxdev/front/dataview",
+  },
+  {
+    title: "外网 111",
+    host: "139.196.209.46",
+    port: 22,
+    username: "root",
+    password: "Bxaliyun46;",
+    path: "/bxstorage/111pages/dataview",
+  },
+  {
+    title: "外网 oa",
+    host: "139.196.209.46",
+    port: 22,
+    username: "root",
+    password: "Bxaliyun46;",
+    path: "/bxstorage/155pages/dataview",
+  },
+  {
+    title: "外网 冷链",
+    host: "139.196.209.46",
+    port: 22,
+    username: "root",
+    password: "Bxaliyun46;",
+    path: "/bxstorage/1443pages/dataview",
+  },
+  {
+    title: "外网 研学基地",
+    host: "139.196.209.46",
+    port: 22,
+    username: "root",
+    password: "Bxaliyun46;",
+    path: "/bxstorage/155yxjd/dataview",
+  },
+];
