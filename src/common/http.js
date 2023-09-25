@@ -30,7 +30,7 @@ console.log("env:", import.meta.env);
 
 export const $axios = axios.create({
   baseURL,
-  timeout: 3000,
+  timeout: 20 * 1000,
   withCredentials: true,
   // headers: {'X-Custom-Header': 'foobar'}
 });
@@ -39,7 +39,7 @@ $axios.interceptors.request.use(
     // 在发送请求之前做些什么
     bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (import.meta?.env?.DEV === true) {
-      bx_auth_ticket = "xabxdzkj-a78dc06b-5fdb-4d0e-875b-b103031abfcd";
+      bx_auth_ticket = "xabxdzkj-07dd936a-20f1-45a0-9e7b-243fab76a135";
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;

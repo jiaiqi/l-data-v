@@ -466,6 +466,11 @@ export default {
           const addObj = {
             ...item,
           };
+          Object.keys(addObj).forEach((key) => {
+            if (addObj[key] === null) {
+              delete addObj[key];
+            }
+          });
           if (this.defaultConditions?.length) {
             this.defaultConditions.forEach((item) => {
               addObj[item.colName] = item.value;
@@ -584,7 +589,7 @@ export default {
               key: item.columns,
               width: minWidth,
               edit:
-                (item.updatable === 1 &&
+                (item.editable === true &&
                   [
                     "String",
                     "MultilineText",
@@ -850,7 +855,9 @@ export default {
           __flag: "add",
         };
         this.allFields.forEach((field) => {
-          dataItem[field.columns] = "";
+          if (field.editable) {
+            dataItem[field.columns] = null;
+          }
           if (
             this.defaultConditionsMap &&
             this.defaultConditionsMap[field.columns]
@@ -858,6 +865,13 @@ export default {
             dataItem[field.columns] = this.defaultConditionsMap[field.columns];
           }
         });
+        if (this.defaultConditions?.length) {
+          this.defaultConditions.forEach((item) => {
+            if (!dataItem[item.colName]) {
+              dataItem[item.colName] = item.value;
+            }
+          });
+        }
         this.tableData.splice(index, 0, dataItem);
       }
     },
@@ -895,6 +909,7 @@ export default {
           };
           tableData.push(dataItem);
         }
+
         // for (let i = res.data.length - 1; i >= 0; i--) {
         //   const __id = uniqueId("table_item_");
         //   let dataItem = {
@@ -909,6 +924,9 @@ export default {
         this.tableData = tableData;
 
         this.oldTableData = JSON.parse(JSON.stringify(tableData));
+        if (tableData.length === 0) {
+          this.insert2Rows(0);
+        }
         // this.$nextTick(() => {
         //   this.$refs["tableRef"].scrollToRowKey({
         //     rowKey: this.tableData[this.tableData.length - 1]["__id"],
@@ -936,6 +954,21 @@ export default {
             return pre;
           }, {});
         }
+
+        // const addBtn = res.data?.gridButton?.find(
+        //   (item) => item.button_type === "edit"
+        // );
+        // if (editBtn?.service_name) {
+        //   const ress = await getServiceV2(
+        //     editBtn.service_name,
+        //     "update",
+        //     this.srvApp
+        //   );
+        //   updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
+        //     pre[cur.columns] = cur;
+        //     return pre;
+        //   }, {});
+        // }
 
         this.v2data.allFields = await buildSrvCols(
           this.v2data.srv_cols,
@@ -1040,5 +1073,9 @@ export default {
     border: none !important;
     background-color: transparent !important;
   }
+}
+
+.ve-table-container {
+  min-height: 60px;
 }
 </style>
