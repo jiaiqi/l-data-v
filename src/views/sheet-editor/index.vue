@@ -593,6 +593,7 @@ export default {
                     "Float",
                     "Money",
                     "Date",
+                    "DateTime",
                     "int",
                   ].includes(item.col_type)) ||
                 item.col_type.includes("decimal") ||
@@ -676,15 +677,21 @@ export default {
               //     });
               //   };
               // } else
-              if (item.col_type === "Date") {
+              if (["Date", "DateTime"].includes(item.col_type)) {
                 columnObj.width = 150;
+                if (item.col_type === "DateTime") {
+                  columnObj.width = 200;
+                }
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h("el-date-picker", {
                     attrs: {
                       value: row[column.field],
                       size: "mini",
-                      type: "date",
-                      style: "width:130px;",
+                      type: item.col_type.toLowerCase(),
+                      style: `width:${
+                        item.col_type === "DateTime" ? 180 : 130
+                      }px;`,
+                      valueFormat: "yyyy-MM-dd HH:mm:ss",
                     },
                     nativeOn: {
                       click: (event) => {

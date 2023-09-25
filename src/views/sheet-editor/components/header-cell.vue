@@ -31,6 +31,7 @@ export default {
             "Money",
             "Enum",
             "Date",
+            "DateTime",
           ].includes(this.column.col_type) ||
             this.column.col_type.includes("decimal"))
         );
