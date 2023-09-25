@@ -12,7 +12,7 @@ module.exports = [
     host: "192.168.0.155",
     port: 22,
     username: "root",
-    password: "123456",
+    password: "%TGB6yhn&UJM",
     path: "/home/bxdev/front/dataview",
   },
   {
