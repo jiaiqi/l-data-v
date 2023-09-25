@@ -1,5 +1,14 @@
 <template>
   <div class="header-cell">
+    <el-tooltip
+      class="item"
+      effect="dark"
+      content="必填"
+      placement="bottom-center"
+      v-if="column.isRequired"
+    >
+      <span class="required color-red m-r-2 font-bold">*</span>
+    </el-tooltip>
     <span>{{ column.label }}</span>
     <el-tooltip
       class="item"
