@@ -3,9 +3,16 @@
     <div
       class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5"
     >
-      <div class="flex w-100 items-center text-sm">
+      <div
+        class="flex w-100 items-center text-sm"
+        v-if="addButton && addButton.service_name"
+      >
         <div class="m-r-2">添加</div>
-        <el-input-number size="mini" v-model="insertRowNumber" style="width:100px"/>
+        <el-input-number
+          size="mini"
+          v-model="insertRowNumber"
+          style="width: 100px"
+        />
         <div class="m-x-2">行</div>
         <el-button
           size="mini"
@@ -15,6 +22,7 @@
           >添加</el-button
         >
       </div>
+      <div v-else></div>
 
       <div class="flex flex-items-center">
         <div class="color-map flex flex-items-center m-r-20">
@@ -82,10 +90,10 @@ import {
   onBatchOperate,
   onDelete,
 } from "../../service/api";
-import { buildSrvCols } from "@/utils/sheetUtils";
-import { COLUMN_KEYS } from "@/utils/constant";
+import { buildSrvCols } from "../../utils/sheetUtils";
+import { COLUMN_KEYS } from "../../utils/constant";
 import { isEmpty, uniqueId, cloneDeep } from "lodash-es";
-import { Message } from "element-ui"; // 引入elementUI的Message组件
+import { Message, MessageBox } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
 // import { diffString, diff } from "json-diff";
@@ -164,6 +172,8 @@ export default {
       // 剪贴板配置
       clipboardOption: {
         beforePaste: ({ data, selectionRangeIndexes, selectionRangeKeys }) => {
+          console.log(selectionRangeIndexes);
+
           if (Array.isArray(data) && data?.length) {
             let isValid = true;
             for (let index = 0; index < data.length; index++) {
@@ -173,6 +183,15 @@ export default {
                 if (colType) {
                   const changeValue = element[col.field];
                   if (changeValue) {
+                    debugger;
+                    //           const row = this.tableData[]
+                    //           if (row.__flag !== "add" && !row?._button_auth?.edit) {
+                    //   Message.error("没有当前行的编辑权限！");
+                    //   this.$nextTick(() => {
+                    //     this.$refs["tableRef"].stopEditingCell();
+                    //   });
+                    //   return false;
+                    // }
                     if (
                       ["Integer", "Float", "Money", "int", "Int"].includes(
                         colType
@@ -253,7 +272,20 @@ export default {
           // console.log(this.tableData);
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
-          console.log(row, column, cellValue);
+          console.log("beforeStartCellEditing：",cellValue);
+          if (row.__flag !== "add" && !row?._button_auth?.edit) {
+            Message.error("没有当前行的编辑权限！");
+            this.tableData = this.tableData.map((item, index) => {
+              if (item.__id === row.__id) {
+                item[column.field] = this.oldTableData[index][column.field];
+              }
+              return item;
+            });
+            this.$nextTick(() => {
+              this.$refs["tableRef"].stopEditingCell();
+            });
+            return false;
+          }
           if (column.__field_info.col_type !== "String") {
             return;
           }
@@ -949,7 +981,7 @@ export default {
           this.insert2Rows(0);
         }
       }
-      this.insertRowNumber = 0
+      this.insertRowNumber = 0;
     },
     async getList() {
       if (this.serviceName) {
@@ -961,11 +993,27 @@ export default {
           {
             rownumber: this.page.rownumber,
             pageNo: this.page.pageNo,
+            vpage_no: this.v2data?.vpage_no,
           }
         );
         this.loading = false;
 
-        this.list.data = res.data;
+        this.list.data = res.data.map((item) => {
+          if (
+            item?._buttons?.length &&
+            item?._buttons?.length === this.v2data?.rowButton?.length
+          ) {
+            item._button_auth = {};
+            this.v2data?.rowButton.forEach((btn, index) => {
+              if (item?._buttons[index] === 1) {
+                item._button_auth[btn.button_type] = true;
+              } else if (item?._buttons[index] === 0) {
+                item._button_auth[btn.button_type] = false;
+              }
+            });
+          }
+          return item;
+        });
         // this.tableData = res.data
         this.list.page = res.page;
         this.page.total = res.page.total;
@@ -983,28 +1031,13 @@ export default {
           tableData.push(dataItem);
         }
 
-        // for (let i = res.data.length - 1; i >= 0; i--) {
-        //   const __id = uniqueId("table_item_");
-        //   let dataItem = {
-        //     rowKey: __id,
-        //     __id,
-        //     __flag: null,
-        //     ...res.data[i],
-        //     // __flag: "update",
-        //   };
-        //   tableData.push(dataItem);
-        // }
         this.tableData = tableData;
 
         this.oldTableData = JSON.parse(JSON.stringify(tableData));
         if (tableData.length === 0) {
           this.insert2Rows(0);
         }
-        // this.$nextTick(() => {
-        //   this.$refs["tableRef"].scrollToRowKey({
-        //     rowKey: this.tableData[this.tableData.length - 1]["__id"],
-        //   });
-        // });
+
       }
     },
     async getV2Data() {

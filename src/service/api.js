@@ -27,17 +27,20 @@ const getServiceV2 = async (serviceName, use_type = "list", app = "health") => {
   }
 };
 
-const onSelect = async (serviceName, app, condition, page = {}) => {
+const onSelect = async (serviceName, app, condition, params = {}) => {
   if (serviceName) {
     const req = {
       serviceName: serviceName,
       colNames: ["*"],
       condition: condition || [],
       page: {
-        rownumber: page?.rownumber || 100,
-        pageNo: page?.pageNo || 1,
+        rownumber: params?.rownumber || 100,
+        pageNo: params?.pageNo || 1,
       },
     };
+    if (params?.vpage_no) {
+      req.vpage_no = params.vpage_no;
+    }
     const url = `${app}/select/${serviceName}`;
     const res = await http.post(url, req);
     if (res?.data?.state === "SUCCESS") {
