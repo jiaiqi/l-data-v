@@ -45,18 +45,24 @@ const onSelect = async (serviceName, app, condition, page = {}) => {
     }
   }
 };
-export const onDelete = async (datas, service, app) => {
+export const onDelete = async (ids, service, app) => {
   const req = [
     {
-      serviceName: "srvwuliu_waybill_addr_delete",
-      condition: [{ colName: "id", ruleType: "in", value: datas }],
+      serviceName: service,
+      condition: [{ colName: "id", ruleType: "in", value: ids }],
     },
   ];
   const url = `/${app}/operate/${service}`;
-  if (datas) {
+  if (ids) {
     const res = await http.post(url, req);
     if (res?.data?.state === "SUCCESS") {
       return res.data;
+    } else {
+      Message({
+        showClose: true,
+        message: res?.data?.resultMessage,
+        type: "error",
+      });
     }
   } else {
     Message({
@@ -83,9 +89,7 @@ export const onBatchOperate = async (reqData, service = "", app = "") => {
       // const url = `/${app}/operate/${service}`;
       const url = `/${app}/operate/multi`;
       const res = await http.post(url, reqData);
-      if (res?.data?.state === "SUCCESS") {
-        return res.data;
-      }
+      return res.data;
     }
   }
 };

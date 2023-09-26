@@ -68,7 +68,7 @@ import {
   onSelect,
   onBatchOperate,
   onDelete,
-} from "@/service/api";
+} from "../../service/api";
 import { buildSrvCols } from "@/utils/sheetUtils";
 import { COLUMN_KEYS } from "@/utils/constant";
 import { isEmpty, uniqueId, cloneDeep } from "lodash-es";
@@ -92,6 +92,9 @@ export default {
   },
   data() {
     return {
+      listColsMap: null,
+      addColsMap: null,
+      updateColsMap: null,
       loading: false,
       recordManager: new RecordManager(),
       columns: [],
@@ -439,6 +442,7 @@ export default {
     buildReqParams() {
       const tableData = JSON.parse(JSON.stringify(this.tableData));
       const reqData = [];
+      const addDatas = [];
       tableData.forEach((item, index) => {
         if (
           item.__flag === "update" &&
@@ -449,7 +453,10 @@ export default {
           const updateObj = {};
           if (oldItem) {
             Object.keys(oldItem).forEach((key) => {
-              if (!["__id", "__flag", "rowKey", "id"].includes(key)) {
+              if (
+                !["__id", "__flag", "rowKey", "id"].includes(key) &&
+                this.updateColsMap?.[key]?.in_update === 1
+              ) {
                 if (oldItem[key] !== item[key]) {
                   updateObj[key] = item[key];
                 }
@@ -468,7 +475,7 @@ export default {
             ...item,
           };
           Object.keys(addObj).forEach((key) => {
-            if (addObj[key] === null) {
+            if (addObj[key] === null || this.addColsMap?.[key]?.in_add !== 1) {
               delete addObj[key];
             }
           });
@@ -491,13 +498,20 @@ export default {
                 addObj[key] !== ""
             )
           ) {
-            reqData.push({
-              serviceName: this.addButton.service_name,
-              data: [addObj],
-            });
+            addDatas.push(addObj);
+            // reqData.push({
+            //   serviceName: this.addButton.service_name,
+            //   data: [addObj],
+            // });
           }
         }
       });
+      if (addDatas?.length) {
+        reqData.push({
+          serviceName: this.addButton.service_name,
+          data: addDatas,
+        });
+      }
       return reqData;
     },
 
@@ -562,7 +576,7 @@ export default {
       }
     },
     buildColumns() {
-      const self = this
+      const self = this;
       const startRowIndex = this.startRowIndex;
       let columns = [
         {
@@ -964,8 +978,6 @@ export default {
       const res = await getServiceV2(this.serviceName, "list", this.srvApp);
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
-
-        let updateColsMap = null;
         const editBtn = res.data?.rowButton?.find(
           (item) => item.button_type === "edit"
         );
@@ -975,12 +987,11 @@ export default {
             "update",
             this.srvApp
           );
-          updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
+          this.updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
             return pre;
           }, {});
         }
-        let addColsMap = null;
         const addBtn = res.data?.gridButton?.find(
           (item) => item.button_type === "add"
         );
@@ -990,7 +1001,7 @@ export default {
             "add",
             this.srvApp
           );
-          addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
+          this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
             return pre;
           }, {});
@@ -998,10 +1009,14 @@ export default {
 
         this.v2data.allFields = await buildSrvCols(
           this.v2data.srv_cols,
-          updateColsMap,
-          addColsMap
+          this.updateColsMap,
+          this.addColsMap
         );
         this.allFields = this.v2data.allFields;
+        this.listColsMap = this.allFields?.reduce((pre, cur) => {
+          pre[cur.columns] = cur;
+          return pre;
+        }, {});
         // this.initTableData();
         document.title = res.data.service_view_name;
         this.columns = this.buildColumns();
