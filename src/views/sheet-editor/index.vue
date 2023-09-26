@@ -1,20 +1,21 @@
 <template>
   <div class="spreadsheet" v-loading="loading">
     <div
-      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-10"
+      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5"
     >
-      <div class="flex w-100">
-        <div class="m-r-5">插入</div>
-        <el-input-number size="mini" v-model="insertRowNumber" />
-        <div class="m-l-5 m-r-5">行</div>
+      <div class="flex w-100 items-center text-sm">
+        <div class="m-r-2">添加</div>
+        <el-input-number size="mini" v-model="insertRowNumber" style="width:100px"/>
+        <div class="m-x-2">行</div>
         <el-button
           size="mini"
           type="primary"
           @click="batchInsertRows"
           :disabled="insertRowNumber === 0"
-          >确认</el-button
+          >添加</el-button
         >
       </div>
+
       <div class="flex flex-items-center">
         <div class="color-map flex flex-items-center m-r-20">
           <div class="color-map-item flex flex-items-center">
@@ -43,7 +44,7 @@
       style="word-break: break-word; width: 100vw"
       fixed-header
       :scroll-width="0"
-      max-height="calc(100vh - 50px)"
+      max-height="calc(100vh - 80px)"
       border-y
       :columns="columns"
       :table-data="tableData"
@@ -59,6 +60,18 @@
       :column-width-resize-option="columnWidthResizeOption"
       :columnHiddenOption="columnHiddenOption"
     />
+    <div class="text-center">
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="page.pageNo"
+        :page-sizes="[20, 50, 100, 200, 500]"
+        :page-size="page.rownumber"
+        layout="total, sizes, pager,  jumper"
+        :total="page.total"
+      >
+      </el-pagination>
+    </div>
   </div>
 </template>
 
@@ -92,6 +105,11 @@ export default {
   },
   data() {
     return {
+      page: {
+        total: 0,
+        rownumber: 50,
+        pageNo: 1,
+      },
       listColsMap: null,
       addColsMap: null,
       updateColsMap: null,
@@ -536,6 +554,15 @@ export default {
     },
   },
   methods: {
+    handleCurrentChange(val) {
+      this.page.pageNo = val;
+      this.getList();
+    },
+    handleSizeChange(val) {
+      this.page.rownumber = val;
+      this.page.pageNo = 1;
+      this.getList();
+    },
     triggerEditCell({
       startRowIndex,
       endRowIndex,
@@ -922,6 +949,7 @@ export default {
           this.insert2Rows(0);
         }
       }
+      this.insertRowNumber = 0
     },
     async getList() {
       if (this.serviceName) {
@@ -929,13 +957,18 @@ export default {
         const res = await onSelect(
           this.serviceName,
           this.srvApp,
-          this.defaultConditions
+          this.defaultConditions,
+          {
+            rownumber: this.page.rownumber,
+            pageNo: this.page.pageNo,
+          }
         );
         this.loading = false;
 
         this.list.data = res.data;
         // this.tableData = res.data
         this.list.page = res.page;
+        this.page.total = res.page.total;
 
         let tableData = [];
         for (let i = 0; i < res.data.length; i++) {
