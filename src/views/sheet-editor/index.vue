@@ -19,7 +19,7 @@
       <div class="flex flex-items-center">
         <div class="color-map flex flex-items-center m-r-20">
           <div class="color-map-item flex flex-items-center">
-            <div class="color bg-[#effbf2] w-4 h-4 m-r-2 rounded"></div>
+            <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div>
             <div class="text">新增</div>
           </div>
           <div class="color-map-item flex flex-items-center m-l-5">
