@@ -74,6 +74,7 @@ import { COLUMN_KEYS } from "@/utils/constant";
 import { isEmpty, uniqueId, cloneDeep } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
+import fkSelector from "./components/fk-selector.vue";
 // import { diffString, diff } from "json-diff";
 import { RecordManager } from "./util/recordManager.js";
 
@@ -561,6 +562,7 @@ export default {
       }
     },
     buildColumns() {
+      const self = this
       const startRowIndex = this.startRowIndex;
       let columns = [
         {
@@ -682,7 +684,31 @@ export default {
               //     });
               //   };
               // } else
-              if (["Date", "DateTime"].includes(item.col_type)) {
+              if (item.bx_col_type === "fk") {
+                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                  return h(fkSelector, {
+                    attrs: {
+                      value: row[column.field],
+                      size: "mini",
+                      srvInfo: item.option_list_v2,
+                      app: this.srvApp,
+                      row,
+                      column,
+                    },
+                    on: {
+                      input: (event) => {
+                        // self.$set(row, column.field, event);
+                        this.$refs["tableRef"].startEditingCell({
+                          rowKey: row.rowKey,
+                          colKey: column.field,
+                          defaultValue: event,
+                        });
+                        this.$refs["tableRef"].stopEditingCell();
+                      },
+                    },
+                  });
+                };
+              } else if (["Date", "DateTime"].includes(item.col_type)) {
                 columnObj.width = 150;
                 if (item.col_type === "DateTime") {
                   columnObj.width = 200;

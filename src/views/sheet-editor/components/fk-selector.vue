@@ -1,0 +1,248 @@
+<template>
+  <div v-loading="loading" class="flex justify-between items-center">
+    <el-select
+      v-model="modelValue"
+      remote
+      reserve-keyword
+      placeholder="请输入关键词"
+      :remote-method="remoteMethod"
+      :loading="loading"
+      @click.native="remoteMethod"
+      clearable
+    >
+      <el-option
+        v-for="item in options"
+        :key="item.value"
+        :label="item.label"
+        :value="item.value"
+      >
+      </el-option>
+    </el-select>
+    <i
+      class="el-icon-arrow-right cursor-pointer p-l-2 text-#C0C4CC"
+      @click="openDialog"
+    ></i>
+
+    <el-dialog
+      title="选择"
+      :visible.sync="dialogVisible"
+      width="80%"
+      append-to-body
+      v-loading="tableloading"
+    >
+      <div @click.stop="">
+        <el-table
+          :data="tableData"
+          style="width: 100%"
+          v-if="tableData.length"
+          @row-dblclick="onDBClick"
+        >
+          <el-table-column
+            :prop="column.columns"
+            :label="column.label"
+            width="180"
+            show-overflow-tooltip
+            border
+            v-for="column in tableColumns"
+          >
+          </el-table-column>
+        </el-table>
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :page-sizes="[5, 10, 20, 30]"
+          :page-size="rownumber"
+          :total="total"
+          :current-page="pageNo"
+          layout="total, sizes, prev, pager, next"
+        >
+        </el-pagination>
+        <div class="text-red text-center m-t-4" v-if="tableData && tableData.length">
+          双击列表进行选择
+        </div>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+import { getFkOptions } from "../../../service/api";
+
+export default {
+  props: {
+    app: {
+      type: String,
+      default: "",
+    },
+    srvInfo: {
+      type: Object,
+    },
+    value: String,
+    column: Object,
+    row: Object,
+    defaultOptions: Array,
+  },
+  data() {
+    return {
+      loading: false,
+      options: [],
+      modelValue: null,
+      dialogVisible: false,
+      tableColumns: [],
+      tableData: [],
+      pageNo: 1,
+      rownumber: 5,
+      total: 0,
+      tableloading: false,
+    };
+  },
+  watch: {
+    value: {
+      immediate: true,
+      handler(newValue, oldValue) {
+        if (this.modelValue !== newValue) {
+          this.modelValue = newValue;
+        }
+      },
+    },
+    modelValue: {
+      immediate: true,
+      handler(newValue, oldValue) {
+        if (newValue !== this.value) {
+          this.$emit("input", newValue);
+        }
+      },
+    },
+  },
+  created() {
+    if (this.defaultOptions?.length) {
+      this.options = [...this.defaultOptions];
+    }
+  },
+  methods: {
+    handleSizeChange(val) {
+      this.rownumber = val;
+      this.pageNo = 1;
+      this.getTableData();
+    },
+    handleCurrentChange(val) {
+      this.pageNo = val;
+      this.getTableData();
+    },
+    onDBClick(row, column, cell, event) {
+      this.modelValue = row[this.srvInfo.refed_col];
+      this.options = JSON.parse(JSON.stringify(this.tableData));
+      this.dialogVisible = false;
+    },
+    getFkColumns() {
+      const req = {
+        serviceName: "srvsys_service_columnex_v2_select",
+        colNames: ["*"],
+        condition: [
+          {
+            colName: "service_name",
+            value: this.srvInfo.serviceName,
+            ruleType: "eq",
+          },
+          { colName: "use_type", value: "selectlist", ruleType: "eq" },
+        ],
+        order: [{ colName: "seq", orderType: "asc" }],
+      };
+      const app =
+        this.srvInfo.srv_app ||
+        this.app ||
+        sessionStorage.getItem("current_app");
+      if (app) {
+        const url = `/${app}/select/srvsys_service_columnex_v2_select?colsel_v2=${this.srvInfo.serviceName}`;
+        this.$http.post(url, req).then((res) => {
+          if (res?.data?.data?.srv_cols?.length) {
+            this.tableColumns = res.data.data.srv_cols.filter(
+              (item) => item.columns && item.in_list === 1
+            );
+          }
+        });
+      }
+    },
+    getTableData() {
+      this.tableloading = true;
+
+      getFkOptions(
+        { ...this.column, option_list_v2: this.srvInfo },
+        this.row,
+        this.app,
+        this.pageNo,
+        this.rownumber
+      ).then((res) => {
+        if (res?.data?.length) {
+          this.tableData = res.data.map((item) => {
+            item.label = item[this.srvInfo.key_disp_col];
+            item.value = item[this.srvInfo.refed_col];
+            return item;
+          });
+          this.total = res?.page?.total;
+        } else {
+          this.tableData = [];
+        }
+        this.tableloading = false;
+      });
+    },
+    openDialog() {
+      this.dialogVisible = true;
+      this.pageNo = 1;
+      this.rownumber = 5;
+      this.getTableData();
+
+      if (!this.tableColumns?.length) {
+        this.getFkColumns();
+      }
+    },
+    remoteMethod(query) {
+      //   if (query !== "") {
+      if (!this.options?.length) {
+        this.loading = true;
+      }
+      let option = this.srvInfo;
+      let relation_condition = {
+        relation: "OR",
+        data: [],
+      };
+      if (!option.key_disp_col && !option.refed_col) {
+        return;
+      }
+      if (option.key_disp_col) {
+        relation_condition.data.push({
+          colName: option.key_disp_col,
+          value: this.value,
+          ruleType: "[like]",
+        });
+      }
+      if (option.refed_col) {
+        relation_condition.data.push({
+          colName: option.refed_col,
+          value: this.value,
+          ruleType: "[like]",
+        });
+      }
+      option.relation_condition = relation_condition;
+      getFkOptions(
+        { ...this.column, option_list_v2: option },
+        this.row,
+        this.app
+      ).then((res) => {
+        if (res?.data?.length) {
+          this.options = res.data.map((item) => {
+            item.label = item[option.key_disp_col];
+            item.value = item[option.refed_col];
+            return item;
+          });
+        } else {
+          this.options = [];
+        }
+        this.loading = false;
+      });
+    },
+  },
+};
+</script>
+
+<style lang="scss" scoped></style>

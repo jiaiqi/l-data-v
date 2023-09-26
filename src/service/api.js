@@ -158,23 +158,65 @@ const onBatchAdd = async (data = {}, serviceName = "", app = "daq") => {
 };
 
 // 获取fk字段的下拉值
-const getFkOptions = async (col) => {
+const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
   let { option_list_v2 } = col;
-  let app = option_list_v2?.srv_app || sessionStorage.getItem("current_app");
+  app = option_list_v2?.srv_app || app || sessionStorage.getItem("current_app");
   let req = {
     serviceName: option_list_v2.serviceName,
     colNames: ["*"],
     condition: [],
     page: {
-      pageNo: 1,
-      rownumber: 20,
+      pageNo: pageNo || 1,
+      rownumber: rownumber || 20,
     },
   };
+
+  let conditions = option_list_v2?.condition || option_list_v2?.conditions;
+
+  if (conditions?.length) {
+    conditions = JSON.parse(JSON.stringify(conditions));
+    conditions = conditions.map((item) => {
+      if (typeof item.value === "string" && item.value) {
+        if (item.value.indexOf("data.") !== -1) {
+          let colName = item.value.slice(item.value.indexOf("data.") + 5);
+          if (row[colName]) {
+            item.value = row[colName];
+          } else {
+            item.value = undefined;
+          }
+        } else if (item.value.indexOf("top.user") !== -1) {
+          let key = item.init_expr.split("top.user.");
+          key = key.length > 1 ? key[1] : "";
+          if (key) {
+            item.value = uni.getStorageSync("login_user_info")[key];
+          }
+        } else if (item.value?.value_type) {
+          if (item.value?.value_type === "constant") {
+            item.value = item.value?.value;
+          } else if (item.value?.value_key) {
+            item.value = row[item.value?.value_key];
+          }
+        } else if (
+          item.value.indexOf("'") === 0 &&
+          item.value.lastIndexOf("'") === item.value.length - 1
+        ) {
+          item.value = item.value.replace(/\'/gi, "");
+        }
+      }
+      if (item.value_exp) {
+        delete item.value_exp;
+      }
+      return item;
+    });
+  }
   if (option_list_v2.serviceName) {
     let url = `${app}/select/${option_list_v2.serviceName}`;
     let res = await http.post(url, req);
-    if (res.state === "SUCCESS") {
-      return res.data;
+    if (res.data.state === "SUCCESS") {
+      return {
+        data: res.data.data,
+        page: res.data.page,
+      };
     }
   }
 };
