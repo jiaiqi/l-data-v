@@ -11,10 +11,11 @@ const buildSrvCols = async (cols, updateColsMap, addColsMap) => {
       // if (updateColsMap?.[col.columns]?.updatable) {
       //   col.updatable = updateColsMap?.[col.columns]?.updatable;
       // }
-      col.editable =
-        col.updatable === 1 ||
-        updateColsMap?.[col.columns]?.updatable === 1 ||
-        addColsMap?.[col.columns]?.updatable === 1;
+      // col.editable =
+      //   col.updatable === 1 ||
+      //   updateColsMap?.[col.columns]?.updatable === 1 ||
+      //   addColsMap?.[col.columns]?.updatable === 1;
+      col.editable = updateColsMap?.[col.columns]?.updatable === 1;
       col.isRequired =
         col.required === "是" ||
         updateColsMap?.[col.columns]?.required === "是" ||
