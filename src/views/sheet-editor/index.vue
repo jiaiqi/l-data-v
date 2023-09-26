@@ -22,7 +22,7 @@
           >添加</el-button
         >
       </div>
-      <div v-else></div>
+      <div class="text-sm text-gray cursor-not-allowed" v-else>没有添加权限</div>
 
       <div class="flex flex-items-center">
         <div class="color-map flex flex-items-center m-r-20">
