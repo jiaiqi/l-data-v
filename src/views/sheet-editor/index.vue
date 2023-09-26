@@ -123,6 +123,10 @@ export default {
       updateColsMap: null,
       loading: false,
       recordManager: new RecordManager(),
+      tableData: [],
+      oldTableData: [],
+      v2data: {},
+      allFields: [],
       columns: [],
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
@@ -183,15 +187,6 @@ export default {
                 if (colType) {
                   const changeValue = element[col.field];
                   if (changeValue) {
-                    debugger;
-                    //           const row = this.tableData[]
-                    //           if (row.__flag !== "add" && !row?._button_auth?.edit) {
-                    //   Message.error("没有当前行的编辑权限！");
-                    //   this.$nextTick(() => {
-                    //     this.$refs["tableRef"].stopEditingCell();
-                    //   });
-                    //   return false;
-                    // }
                     if (
                       ["Integer", "Float", "Money", "int", "Int"].includes(
                         colType
@@ -272,7 +267,7 @@ export default {
           // console.log(this.tableData);
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
-          console.log("beforeStartCellEditing：",cellValue);
+          console.log("beforeStartCellEditing：", cellValue);
           if (row.__flag !== "add" && !row?._button_auth?.edit) {
             Message.error("没有当前行的编辑权限！");
             this.tableData = this.tableData.map((item, index) => {
@@ -418,11 +413,6 @@ export default {
         clickHighlight: false,
         hoverHighlight: true,
       },
-      tableData: [],
-      oldTableData: [],
-      list: {},
-      v2data: {},
-      allFields: [],
     };
   },
   computed: {
@@ -998,24 +988,25 @@ export default {
         );
         this.loading = false;
 
-        this.list.data = res.data.map((item) => {
-          if (
-            item?._buttons?.length &&
-            item?._buttons?.length === this.v2data?.rowButton?.length
-          ) {
-            item._button_auth = {};
-            this.v2data?.rowButton.forEach((btn, index) => {
-              if (item?._buttons[index] === 1) {
-                item._button_auth[btn.button_type] = true;
-              } else if (item?._buttons[index] === 0) {
-                item._button_auth[btn.button_type] = false;
-              }
-            });
-          }
-          return item;
-        });
-        // this.tableData = res.data
-        this.list.page = res.page;
+        if (res?.data?.length) {
+          res.data = res.data.map((item) => {
+            if (
+              item?._buttons?.length &&
+              item?._buttons?.length === this.v2data?.rowButton?.length
+            ) {
+              item._button_auth = {};
+              this.v2data?.rowButton.forEach((btn, index) => {
+                if (item?._buttons[index] === 1) {
+                  item._button_auth[btn.button_type] = true;
+                } else if (item?._buttons[index] === 0) {
+                  item._button_auth[btn.button_type] = false;
+                }
+              });
+            }
+            return item;
+          });
+        }
+
         this.page.total = res.page.total;
 
         let tableData = [];
@@ -1037,7 +1028,6 @@ export default {
         if (tableData.length === 0) {
           this.insert2Rows(0);
         }
-
       }
     },
     async getV2Data() {
