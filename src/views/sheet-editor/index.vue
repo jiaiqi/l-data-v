@@ -22,7 +22,9 @@
           >添加</el-button
         >
       </div>
-      <div class="text-sm text-gray cursor-not-allowed" v-else>没有添加权限</div>
+      <div class="text-sm text-gray cursor-not-allowed" v-else>
+        没有添加权限
+      </div>
 
       <div class="flex flex-items-center">
         <div class="color-map flex flex-items-center m-r-20">
@@ -195,8 +197,9 @@ export default {
                     ) {
                       // 校验数字
                       if (
-                        /^-?\d{1,3}(,\d{3})*(\.\d{1,2})?$/.test(changeValue) !==
-                        true
+                        isNaN(Number(changeValue))
+                        // /^-?\d{1,100}(,\d{3})*(\.\d{1,10})?$/.test(changeValue) !==
+                        // true
                       ) {
                         isValid = false;
                         this.$message({
@@ -248,7 +251,7 @@ export default {
             colType.includes("decimal")
           ) {
             // 数字 校验
-            if (/^-?\d{1,3}(,\d{3})*(\.\d{1,2})?$/.test(changeValue) !== true) {
+            if (isNaN(Number(changeValue))) {
               this.$message({
                 message: "请输入数字",
                 type: "warning",

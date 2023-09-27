@@ -3,7 +3,7 @@ import { Message } from "element-ui"; // 引入elementUI的Message组件
 let bx_auth_ticket = "";
 let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
-
+const devTicket = 'xabxdzkj-66306a1b-b798-49e2-b3bd-f212ebf6bccd'
 if (top?.pathConfig?.gateway) {
   baseURL = top?.pathConfig?.gateway;
 }
@@ -39,7 +39,7 @@ $axios.interceptors.request.use(
     // 在发送请求之前做些什么
     bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (import.meta?.env?.DEV === true) {
-      bx_auth_ticket = "xabxdzkj-726ca998-0516-4cc6-852c-b12a9562a103";
+      bx_auth_ticket = devTicket
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
