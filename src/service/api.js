@@ -168,6 +168,7 @@ const onBatchAdd = async (data = {}, serviceName = "", app = "daq") => {
 const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
   let { option_list_v2 } = col;
   app = option_list_v2?.srv_app || app || sessionStorage.getItem("current_app");
+
   let req = {
     serviceName: option_list_v2.serviceName,
     colNames: ["*"],
@@ -177,7 +178,9 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
       rownumber: rownumber || 20,
     },
   };
-
+  if(option_list_v2?.relation_condition){
+   req.relation_condition =  option_list_v2?.relation_condition
+  }
   let conditions = option_list_v2?.condition || option_list_v2?.conditions;
 
   if (conditions?.length) {

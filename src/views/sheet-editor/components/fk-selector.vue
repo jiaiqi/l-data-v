@@ -3,6 +3,7 @@
     <el-select
       v-model="modelValue"
       remote
+      filterable
       reserve-keyword
       placeholder="请输入关键词"
       :remote-method="remoteMethod"
@@ -197,6 +198,10 @@ export default {
       }
     },
     remoteMethod(query) {
+      let queryString = this.value
+      if(query&&typeof query === 'string'){
+        queryString = query
+      }
       //   if (query !== "") {
       if (!this.options?.length) {
         this.loading = true;
@@ -209,17 +214,18 @@ export default {
       if (!option.key_disp_col && !option.refed_col) {
         return;
       }
+      console.log(query);
       if (option.key_disp_col) {
         relation_condition.data.push({
           colName: option.key_disp_col,
-          value: this.value,
+          value: queryString,
           ruleType: "[like]",
         });
       }
       if (option.refed_col) {
         relation_condition.data.push({
           colName: option.refed_col,
-          value: this.value,
+          value: queryString,
           ruleType: "[like]",
         });
       }

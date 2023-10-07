@@ -219,7 +219,7 @@ export default {
               // 选中单元格起始索引
               const selectionRangeIndexes =
                 rangeCellSelection.selectionRangeIndexes;
-              // 只有复制了单行单列 才可以这样批量粘贴 
+              // 只有复制了单行单列 才可以这样批量粘贴
               if (selectionRangeIndexes && data?.length == 1) {
                 const {
                   startRowIndex,
@@ -792,6 +792,15 @@ export default {
               //     });
               //   };
               // } else
+              if (item.col_type === "User") {
+                item.bx_col_type = "fk";
+                item.option_list_v2 = {
+                  refed_col: "user_no",
+                  srv_app: "sso",
+                  serviceName: "srvsso_user_select",
+                  key_disp_col: "user_disp",
+                };
+              }
               if (item.bx_col_type === "fk") {
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h(fkSelector, {
@@ -991,6 +1000,24 @@ export default {
         this.allFields.forEach((field) => {
           if (field.editable) {
             dataItem[field.columns] = null;
+          }
+          if (this.addColsMap[field.columns]?.init_expr) {
+            // 初始值
+            let init_expr = this.addColsMap[field.columns]?.init_expr;
+            let val = null;
+            if (init_expr) {
+              init_expr = init_expr.replace(/\'|\"/g, "");
+              if (
+                init_expr.indexOf("'") == -1 &&
+                init_expr.lastIndexOf("'") === init_expr.length - 1
+              ) {
+                // 变量
+                val = eval(init_expr);
+              } else {
+                val = init_expr;
+              }
+            }
+            dataItem[field.columns] = val;
           }
           if (
             this.defaultConditionsMap &&
