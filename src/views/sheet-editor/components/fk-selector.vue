@@ -9,6 +9,7 @@
       :remote-method="remoteMethod"
       :loading="loading"
       @click.native="remoteMethod"
+      @change="onSelectChange"
       clearable
     >
       <el-option
@@ -58,7 +59,10 @@
           layout="total, sizes, prev, pager, next"
         >
         </el-pagination>
-        <div class="text-red text-center m-t-4" v-if="tableData && tableData.length">
+        <div
+          class="text-red text-center m-t-4"
+          v-if="tableData && tableData.length"
+        >
           双击列表进行选择
         </div>
       </div>
@@ -130,8 +134,13 @@ export default {
       this.pageNo = val;
       this.getTableData();
     },
+    onSelectChange(val) {
+      this.modelValue = val;
+      this.$emit("input", val);
+    },
     onDBClick(row, column, cell, event) {
       this.modelValue = row[this.srvInfo.refed_col];
+      this.$emit("input", this.modelValue);
       this.options = JSON.parse(JSON.stringify(this.tableData));
       this.dialogVisible = false;
     },
@@ -198,9 +207,9 @@ export default {
       }
     },
     remoteMethod(query) {
-      let queryString = this.value
-      if(query&&typeof query === 'string'){
-        queryString = query
+      let queryString = this.value;
+      if (query && typeof query === "string") {
+        queryString = query;
       }
       //   if (query !== "") {
       if (!this.options?.length) {

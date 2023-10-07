@@ -815,6 +815,9 @@ export default {
                     on: {
                       input: (event) => {
                         // self.$set(row, column.field, event);
+                        console.log(row, column.field, event);
+                        row[column.field] = event
+                        this.$set(this.tableData,rowIndex,row)
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
                           colKey: column.field,
