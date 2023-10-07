@@ -212,6 +212,48 @@ export default {
                 }
               });
             }
+            if (isValid) {
+              // 获取选中单元格信息
+              const rangeCellSelection =
+                this.$refs["tableRef"].getRangeCellSelection();
+              // 选中单元格起始索引
+              const selectionRangeIndexes =
+                rangeCellSelection.selectionRangeIndexes;
+              // 只有复制了单行单列 才可以这样批量粘贴 
+              if (selectionRangeIndexes && data?.length == 1) {
+                const {
+                  startRowIndex,
+                  endRowIndex,
+                  startColIndex,
+                  endColIndex,
+                } = selectionRangeIndexes;
+                // 选中区域大于一行或者一列
+                if (
+                  endRowIndex - startRowIndex > 0 ||
+                  endColIndex - startColIndex > 0
+                ) {
+                  const columns = this.columns.filter(
+                    (item) =>
+                      !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
+                        item.field
+                      )
+                  );
+                  for (let i = startRowIndex; i <= endRowIndex; i++) {
+                    const row = this.tableData[i];
+                    for (let j = startColIndex; j <= endColIndex; j++) {
+                      const col = columns[j];
+                      this.$refs["tableRef"].startEditingCell({
+                        rowKey: row.rowKey,
+                        colKey: col.field,
+                        defaultValue: data[0][selectionRangeKeys.startColKey],
+                      });
+                      this.$refs["tableRef"].stopEditingCell();
+                    }
+                  }
+                  return false;
+                }
+              }
+            }
             return isValid;
           }
         },
@@ -1150,6 +1192,14 @@ export default {
 <style lang="scss">
 .table-body-cell__add {
   background-color: #a4da89 !important;
+  .el-select .el-input {
+    .el-select__caret {
+      color: #fff;
+    }
+    .el-input__inner::placeholder {
+      color: #fff;
+    }
+  }
 }
 .table-body-cell__update {
   // color: #2087cc !important;
