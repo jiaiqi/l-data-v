@@ -92,6 +92,7 @@ import {
   onBatchOperate,
   onDelete,
 } from "../../service/api";
+import dayjs from "dayjs";
 import { buildSrvCols } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
 import { isEmpty, uniqueId, cloneDeep } from "lodash-es";
@@ -329,6 +330,28 @@ export default {
           if (column.__field_info.col_type !== "String") {
             return;
           }
+        },
+        afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
+          console.log("afterCellValueChange");
+          console.log("row::", row);
+          console.log("column::", column);
+          console.log("changeValue::", changeValue);
+          const colType = column?.__field_info?.col_type;
+          // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
+          if (
+            ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
+            colType.includes("decimal")
+          ) {
+            if (changeValue && typeof changeValue === "string") {
+              this.tableData.forEach((item) => {
+                if (item.__id === row.__id && item.__id) {
+                  // item[column.field] = Number(changeValue)
+                  this.$set(item, column.field, Number(changeValue));
+                }
+              });
+            }
+          }
+          console.log("---");
         },
       },
       // header 右键菜单配置
@@ -816,8 +839,8 @@ export default {
                       input: (event) => {
                         // self.$set(row, column.field, event);
                         console.log(row, column.field, event);
-                        row[column.field] = event
-                        this.$set(this.tableData,rowIndex,row)
+                        row[column.field] = event;
+                        this.$set(this.tableData, rowIndex, row);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
                           colKey: column.field,
@@ -836,7 +859,7 @@ export default {
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h("el-date-picker", {
                     attrs: {
-                      value: row[column.field],
+                      value: new Date(row[column.field]),
                       size: "mini",
                       type: item.col_type.toLowerCase(),
                       style: `width:${
@@ -1004,7 +1027,7 @@ export default {
           if (field.editable) {
             dataItem[field.columns] = null;
           }
-          if (this.addColsMap[field.columns]?.init_expr) {
+          if (this.addColsMap[field.columns]?.init_expr&&field.editable) {
             // 初始值
             let init_expr = this.addColsMap[field.columns]?.init_expr;
             let val = null;
@@ -1018,6 +1041,18 @@ export default {
                 val = eval(init_expr);
               } else {
                 val = init_expr;
+              }
+              const colType = field?.col_type;
+              // 日期
+              if(val === 'new Date()'){
+                val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss")
+              }
+              if (
+                ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
+                colType.includes("decimal")
+              ) {
+                // 数字类型 初始值处理
+                val = Number(val)
               }
             }
             dataItem[field.columns] = val;
