@@ -389,10 +389,11 @@ export default {
             const index = selectionRangeIndexes.startRowIndex;
             this.insert2Rows(index);
           } else if (type === "removeRow") {
+
             let willDeleteLocalRows = []; //新增待删除行
             let willDeleteOriginRows = []; //远程数据中的待删除行
             this.tableData.forEach((item, index) => {
-              if (startRowIndex >= 0 && index <= endRowIndex) {
+              if (index >= startRowIndex && index <= endRowIndex) {
                 if (item.__flag == "add") {
                   item.__index = index;
                   willDeleteLocalRows.push(item.__id);
@@ -1027,7 +1028,7 @@ export default {
           if (field.editable) {
             dataItem[field.columns] = null;
           }
-          if (this.addColsMap[field.columns]?.init_expr&&field.editable) {
+          if (this.addColsMap[field.columns]?.init_expr && field.editable) {
             // 初始值
             let init_expr = this.addColsMap[field.columns]?.init_expr;
             let val = null;
@@ -1044,15 +1045,15 @@ export default {
               }
               const colType = field?.col_type;
               // 日期
-              if(val === 'new Date()'){
-                val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss")
+              if (val === "new Date()") {
+                val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
               }
               if (
                 ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
                 colType.includes("decimal")
               ) {
                 // 数字类型 初始值处理
-                val = Number(val)
+                val = Number(val);
               }
             }
             dataItem[field.columns] = val;

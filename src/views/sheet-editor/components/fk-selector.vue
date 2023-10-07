@@ -8,6 +8,7 @@
       placeholder="请输入关键词"
       :remote-method="remoteMethod"
       :loading="loading"
+      :value-key="srvInfo.refed_col"
       @click.native="remoteMethod"
       @change="onSelectChange"
       clearable
@@ -224,14 +225,14 @@ export default {
         return;
       }
       console.log(query);
-      if (option.key_disp_col) {
+      if (option.key_disp_col&&queryString) {
         relation_condition.data.push({
           colName: option.key_disp_col,
           value: queryString,
           ruleType: "[like]",
         });
       }
-      if (option.refed_col) {
+      if (option.refed_col&&queryString) {
         relation_condition.data.push({
           colName: option.refed_col,
           value: queryString,
