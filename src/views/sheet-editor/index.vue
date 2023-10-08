@@ -713,11 +713,20 @@ export default {
         }
         columns = columns.concat(
           this.allFields.map((item) => {
+            let width = minWidth;
+            const length = item.label.replace(
+              /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
+              ""
+            );
+            if (length > 4) {
+              // 去掉符号的字符数长度大于4
+              width = item.label.length * 50 + 20;
+            }
             const columnObj = {
               title: item.label,
               field: item.columns,
               key: item.columns,
-              width: minWidth,
+              width: width,
               edit:
                 (item.editable === true &&
                   [
@@ -761,57 +770,6 @@ export default {
               columnObj.align = "left";
             }
             if (!columnObj.disabled) {
-              // if (
-              //   ["Integer", "Float", "Money",'int','Int'].includes(item.col_type) ||
-              //   item.col_type.includes("decimal")
-              // ) {
-              //   let precision = null;
-              //   let step = 1;
-              //   if (["Float", "Money"].includes(item.col_type)) {
-              //     precision = 2;
-              //     step = 0.01;
-              //   }
-              //   if (item.col_type.includes("decimal")) {
-              //     const str = item.col_type;
-              //     const regex = /decimal\((\d+),(\d+)\)/;
-              //     const match = str.match(regex);
-              //     precision = match[2] * 1;
-              //     step = 1 / 10 ** match[2];
-              //   }
-              //   columnObj.width = 150;
-              //   columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-              //     return h("elInputNumber", {
-              //       attrs: {
-              //         value: row[column.field] || undefined,
-              //         size: "mini",
-              //         step,
-              //         precision,
-              //       },
-              //       nativeOn: {
-              //         click: (event) => {
-              //           event.stopPropagation();
-              //           event.preventDefault();
-              //         },
-              //       },
-              //       on: {
-              //         input: (event) => {
-              //           if (
-              //             event !== undefined &&
-              //             event !== row[column.field]
-              //           ) {
-              //             this.$refs["tableRef"].startEditingCell({
-              //               rowKey: row.rowKey,
-              //               colKey: column.field,
-              //               defaultValue: event,
-              //             });
-              //             this.$refs["tableRef"].stopEditingCell();
-              //           }
-              //           // self.$set(row, column.field, event);
-              //         },
-              //       },
-              //     });
-              //   };
-              // } else
               if (item.col_type === "User") {
                 item.bx_col_type = "fk";
                 item.option_list_v2 = {
@@ -849,10 +807,6 @@ export default {
                   });
                 };
               } else if (["Date", "DateTime"].includes(item.col_type)) {
-                columnObj.width = 150;
-                if (item.col_type === "DateTime") {
-                  columnObj.width = 200;
-                }
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h("el-date-picker", {
                     attrs: {
