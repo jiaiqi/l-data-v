@@ -303,15 +303,6 @@ export default {
             }
           }
         },
-        afterCellValueChange: ({ row, column, changeValue }) => {
-          console.log("afterCellValueChange", row, column, changeValue);
-
-          if (row.__id && row.__flag !== "add") {
-            row.__flag = "update";
-          }
-          this.recordManager?.push(cloneDeep(this.tableData));
-          // console.log(this.tableData);
-        },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
           console.log("beforeStartCellEditing：", cellValue);
           if (row.__flag !== "add" && !row?._button_auth?.edit) {
@@ -337,6 +328,8 @@ export default {
           console.log("column::", column);
           console.log("changeValue::", changeValue);
           const colType = column?.__field_info?.col_type;
+          console.log("afterCellValueChange", row, column, changeValue);
+
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
@@ -351,7 +344,11 @@ export default {
               });
             }
           }
-          console.log("---");
+
+          if (row.__id && row.__flag !== "add") {
+            row.__flag = "update";
+          }
+          this.recordManager?.push(cloneDeep(this.tableData));
         },
       },
       // header 右键菜单配置
@@ -389,7 +386,6 @@ export default {
             const index = selectionRangeIndexes.startRowIndex;
             this.insert2Rows(index);
           } else if (type === "removeRow") {
-
             let willDeleteLocalRows = []; //新增待删除行
             let willDeleteOriginRows = []; //远程数据中的待删除行
             this.tableData.forEach((item, index) => {
@@ -564,7 +560,7 @@ export default {
             Object.keys(oldItem).forEach((key) => {
               if (
                 !["__id", "__flag", "rowKey", "id"].includes(key) &&
-                this.updateColsMap?.[key]?.in_update === 1
+                this.updateColsMap?.[key]?.in_update !== 0
               ) {
                 if (oldItem[key] !== item[key]) {
                   updateObj[key] = item[key];
