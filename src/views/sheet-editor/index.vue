@@ -118,7 +118,7 @@ export default {
     return {
       page: {
         total: 0,
-        rownumber: 50,
+        rownumber: 20,
         pageNo: 1,
       },
       listColsMap: null,
@@ -548,6 +548,14 @@ export default {
       const tableData = JSON.parse(JSON.stringify(this.tableData));
       const reqData = [];
       const addDatas = [];
+      const ignoreKeys = [
+        "__id",
+        "__flag",
+        "rowKey",
+        "id",
+        "_button_auth",
+        "_buttons",
+      ];
       tableData.forEach((item, index) => {
         if (
           item.__flag === "update" &&
@@ -559,10 +567,14 @@ export default {
           if (oldItem) {
             Object.keys(oldItem).forEach((key) => {
               if (
-                !["__id", "__flag", "rowKey", "id"].includes(key) &&
+                key.indexOf("_") !== 0 &&
+                !ignoreKeys.includes(key) &&
                 this.updateColsMap?.[key]?.in_update !== 0
               ) {
                 if (oldItem[key] !== item[key]) {
+                  if (!item[key]) {
+                    item[key] = null;
+                  }
                   updateObj[key] = item[key];
                 }
               }
@@ -594,6 +606,11 @@ export default {
           delete addObj.__id;
           delete addObj.__flag;
           delete addObj.rowKey;
+          Object.keys(addObj).forEach((key) => {
+            if (ignoreKeys.includes(key) || key.indexOf("_") === 0) {
+              delete addObj[key];
+            }
+          });
           if (
             Object.keys(addObj).length > 0 &&
             Object.keys(addObj).some(
@@ -789,6 +806,7 @@ export default {
                       app: this.srvApp,
                       row,
                       column,
+                      disabled: !columnObj.edit,
                     },
                     on: {
                       input: (event) => {
@@ -810,6 +828,7 @@ export default {
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h("el-date-picker", {
                     attrs: {
+                      disabled: !columnObj.edit,
                       value: new Date(row[column.field]),
                       size: "mini",
                       type: item.col_type.toLowerCase(),
@@ -838,12 +857,13 @@ export default {
                   });
                 };
               } else if (item.col_type === "Enum") {
-                columnObj.width = 120;
+                // columnObj.width = 120;
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h(
                     "el-select",
                     {
                       attrs: {
+                        disabled: !columnObj.edit,
                         value: row[column.field],
                         size: "mini",
                         clearable: true,

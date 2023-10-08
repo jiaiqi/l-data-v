@@ -12,6 +12,7 @@
       @click.native="remoteMethod"
       @change="onSelectChange"
       clearable
+      :disabled="disabled"
     >
       <el-option
         v-for="item in options"
@@ -23,6 +24,7 @@
     </el-select>
     <i
       class="el-icon-arrow-right cursor-pointer p-l-2 text-#C0C4CC"
+      :class="{ 'cursor-not-allowed': onDisabled }"
       @click="openDialog"
     ></i>
 
@@ -87,6 +89,7 @@ export default {
     column: Object,
     row: Object,
     defaultOptions: Array,
+    disabled: Boolean,
   },
   data() {
     return {
@@ -101,6 +104,11 @@ export default {
       total: 0,
       tableloading: false,
     };
+  },
+  computed: {
+    onDisabled() {
+      return this.disabled;
+    },
   },
   watch: {
     value: {
@@ -198,6 +206,9 @@ export default {
       });
     },
     openDialog() {
+      if (this.disabled) {
+        return;
+      }
       this.dialogVisible = true;
       this.pageNo = 1;
       this.rownumber = 5;
@@ -225,14 +236,14 @@ export default {
         return;
       }
       console.log(query);
-      if (option.key_disp_col&&queryString) {
+      if (option.key_disp_col && queryString) {
         relation_condition.data.push({
           colName: option.key_disp_col,
           value: queryString,
           ruleType: "[like]",
         });
       }
-      if (option.refed_col&&queryString) {
+      if (option.refed_col && queryString) {
         relation_condition.data.push({
           colName: option.refed_col,
           value: queryString,
