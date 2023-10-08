@@ -95,7 +95,7 @@ import {
 import dayjs from "dayjs";
 import { buildSrvCols } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
-import { isEmpty, uniqueId, cloneDeep } from "lodash-es";
+import { isEmpty, uniqueId, cloneDeep, cond } from "lodash-es";
 import { Message, MessageBox } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
@@ -117,21 +117,23 @@ export default {
   data() {
     return {
       page: {
+        //分页信息
         total: 0,
         rownumber: 20,
         pageNo: 1,
       },
-      sortState: [],
-      listColsMap: null,
-      addColsMap: null,
-      updateColsMap: null,
+      sortState: [], // 表头排序
+      filterState: {}, //筛选
+      listColsMap: null, //列表字段映射
+      addColsMap: null, //新增字段映射
+      updateColsMap: null, //编辑字段映射
       loading: false,
-      recordManager: new RecordManager(),
+      recordManager: new RecordManager(), //编辑记录
       tableData: [],
-      oldTableData: [],
-      v2data: {},
-      allFields: [],
-      columns: [],
+      oldTableData: [], //源数据
+      v2data: {}, //select v2
+      allFields: [], //所有字段
+      columns: [], //表头字段
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
           if (row?.__flag === "add") {
@@ -501,6 +503,18 @@ export default {
     };
   },
   computed: {
+    setFilterState() {
+      let keys = Object.keys(this.filterState);
+      let condition = [];
+      if (keys?.length) {
+        keys.forEach((key) => {
+          if (this.filterState[key]) {
+            condition.push(this.filterState[key]);
+          }
+        });
+      }
+      return condition;
+    },
     setSortState() {
       let obj = {};
       if (this.sortState?.length) {
@@ -543,6 +557,9 @@ export default {
         });
         if (defaultConditions?.length === 0 && this.fkCondition) {
           defaultConditions = [this.fkCondition];
+        }
+        if (this.setFilterState?.length) {
+          defaultConditions.push(...this.setFilterState);
         }
         return defaultConditions;
       }
@@ -744,7 +761,7 @@ export default {
           key: "index",
           operationColumn: true,
           title: "#",
-          width: 80,
+          width: 50,
           fixed: "left",
           renderBodyCell: function ({ rowIndex }) {
             return startRowIndex + rowIndex + 1;
@@ -779,6 +796,7 @@ export default {
                 (item.editable === true &&
                   [
                     "String",
+                    "User",
                     "MultilineText",
                     "Enum",
                     "Integer",
@@ -813,6 +831,18 @@ export default {
                   sortState: this.setSortState,
                 },
                 on: {
+                  "filter-change": (event) => {
+                    if (event?.colName) {
+                      if (event.remove) {
+                        this.$set(this.filterState, event.colName, null);
+                      } else {
+                        this.$set(this.filterState, event.colName, event);
+                      }
+                      this.$nextTick(() => {
+                        this.getList();
+                      });
+                    }
+                  },
                   "sort-change": (event) => {
                     const curSortIndex = this.sortState.findIndex(
                       (item) => item.colName && item.colName === event
