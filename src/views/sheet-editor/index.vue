@@ -347,8 +347,8 @@ export default {
           // console.log("row::", row);
           // console.log("column::", column);
           // console.log("changeValue::", changeValue);
-          // const colType = column?.__field_info?.col_type;
-          console.log("afterCellValueChange", row, column, changeValue);
+          const colType = column?.__field_info?.col_type;
+          // console.log("afterCellValueChange", row, column, changeValue);
 
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
           if (
