@@ -75,7 +75,7 @@
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
         :current-page="page.pageNo"
-        :page-sizes="[20, 50, 100, 200, 500]"
+        :page-sizes="[10, 20, 50, 100, 200, 500]"
         :page-size="page.rownumber"
         layout="total, sizes, pager,  jumper"
         :total="page.total"
@@ -121,6 +121,7 @@ export default {
         rownumber: 20,
         pageNo: 1,
       },
+      sortState: [],
       listColsMap: null,
       addColsMap: null,
       updateColsMap: null,
@@ -289,6 +290,25 @@ export default {
       editOption: {
         beforeCellValueChange: ({ row, column, changeValue }) => {
           const colType = column?.__field_info?.col_type;
+          if (row.__flag === "add") {
+            // 新增行 处理in_add
+            if (this.addColsMap[column.field]?.in_add !== 1) {
+              this.$message({
+                message: "新增行不支持编辑当前列",
+                type: "warning",
+              });
+              return false;
+            }
+          } else {
+            // 编辑行 处理in_update
+            if (this.updateColsMap[column.field]?.in_update !== 1) {
+              this.$message({
+                message: "当前列不支持编辑",
+                type: "warning",
+              });
+              return false;
+            }
+          }
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
             colType.includes("decimal")
@@ -307,27 +327,27 @@ export default {
           console.log("beforeStartCellEditing：", cellValue);
           if (row.__flag !== "add" && !row?._button_auth?.edit) {
             Message.error("没有当前行的编辑权限！");
-            this.tableData = this.tableData.map((item, index) => {
-              if (item.__id === row.__id) {
-                item[column.field] = this.oldTableData[index][column.field];
-              }
-              return item;
-            });
+            // this.tableData = this.tableData.map((item, index) => {
+            //   if (item.__id === row.__id) {
+            //     item[column.field] = this.oldTableData[index][column.field];
+            //   }
+            //   return item;
+            // });
             this.$nextTick(() => {
               this.$refs["tableRef"].stopEditingCell();
             });
             return false;
           }
-          if (column.__field_info.col_type !== "String") {
-            return;
-          }
+          // if (column.__field_info.col_type !== "String") {
+          //   return;
+          // }
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
-          console.log("afterCellValueChange");
-          console.log("row::", row);
-          console.log("column::", column);
-          console.log("changeValue::", changeValue);
-          const colType = column?.__field_info?.col_type;
+          // console.log("afterCellValueChange");
+          // console.log("row::", row);
+          // console.log("column::", column);
+          // console.log("changeValue::", changeValue);
+          // const colType = column?.__field_info?.col_type;
           console.log("afterCellValueChange", row, column, changeValue);
 
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
@@ -481,6 +501,15 @@ export default {
     };
   },
   computed: {
+    setSortState() {
+      let obj = {};
+      if (this.sortState?.length) {
+        this.sortState.forEach((item) => {
+          obj[item.colName] = item.orderType;
+        });
+      }
+      return obj;
+    },
     defaultConditionsMap() {
       if (this.defaultConditions?.length) {
         return this.defaultConditions.reduce((pre, cur) => {
@@ -734,10 +763,12 @@ export default {
             const length = item.label.replace(
               /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
               ""
-            );
-            if (length > 4) {
+            )?.length;
+            if (length > 6) {
               // 去掉符号的字符数长度大于4
-              width = item.label.length * 50 + 20;
+              console.log(`${item.label}:${length}`);
+              width = length * 30;
+              console.log(width);
             }
             const columnObj = {
               title: item.label,
@@ -779,6 +810,39 @@ export default {
               return h(HeaderCell, {
                 attrs: {
                   column: { ...item, edit: columnObj.edit },
+                  sortState: this.setSortState,
+                },
+                on: {
+                  "sort-change": (event) => {
+                    const curSortIndex = this.sortState.findIndex(
+                      (item) => item.colName && item.colName === event
+                    );
+                    if (curSortIndex > -1) {
+                      const sortState = this.sortState[curSortIndex];
+                      if (!sortState?.orderType) {
+                        this.sortState.push({
+                          colName: event,
+                          orderType: "ASC",
+                        });
+                      } else if (sortState?.orderType === "ASC") {
+                        this.$set(this.sortState, curSortIndex, {
+                          colName: event,
+                          orderType: "DESC",
+                        });
+                      } else {
+                        this.sortState = this.sortState.filter(
+                          (item) => item.colName !== event
+                        );
+                      }
+                    } else {
+                      this.sortState.push({
+                        colName: event,
+                        orderType: "ASC",
+                      });
+                    }
+
+                    this.getList();
+                  },
                 },
               });
             };
@@ -912,6 +976,7 @@ export default {
       return columns;
     },
     refreshData() {
+      this.sortState = [];
       if (this.buildReqParams?.length === 0) {
         this.getList();
         return;
@@ -1065,6 +1130,7 @@ export default {
             rownumber: this.page.rownumber,
             pageNo: this.page.pageNo,
             vpage_no: this.v2data?.vpage_no,
+            order: this.sortState,
           }
         );
         this.loading = false;

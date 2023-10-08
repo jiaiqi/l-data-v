@@ -41,6 +41,9 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     if (params?.vpage_no) {
       req.vpage_no = params.vpage_no;
     }
+    if(params?.order){
+      req.order = params.order
+    }
     const url = `${app}/select/${serviceName}`;
     const res = await http.post(url, req);
     if (res?.data?.state === "SUCCESS") {
