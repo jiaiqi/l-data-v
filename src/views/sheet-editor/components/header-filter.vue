@@ -24,7 +24,7 @@
         </div>
         <div
           class="date-range"
-          v-else-if="['时间', '日期', '时间日期'].includes(colType)"
+          v-else-if="['时间'].includes(colType)"
         >
           <div class="label">选择时间范围：</div>
           <el-time-select
