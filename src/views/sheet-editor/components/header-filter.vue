@@ -1,15 +1,242 @@
 <template>
-    <div>
+  <div class="header-filter" v-if="colType">
+    <el-popover placement="bottom" trigger="click" v-model="filterVisible">
+      <div class="filter-box">
+        <!-- Enum、Set -->
+        <div class="option-list" v-if="['枚举', '集合'].includes(colType)">
+          <el-checkbox-group v-model="modelValue">
+            <el-checkbox
+              v-for="item in optionList"
+              :label="item.value"
+              :key="item.value"
+              >{{ item.label }}</el-checkbox
+            >
+          </el-checkbox-group>
+        </div>
 
-    </div>
+        <div class="number-range" v-else-if="colType === '数字'">
+          <div class="label">输入数值范围：</div>
+          <div class="">
+            <el-input placeholder="请输入最小值" v-model="min"></el-input>
+            <div>至</div>
+            <el-input placeholder="请输入最大值" v-model="max"></el-input>
+          </div>
+        </div>
+
+        <div
+          class="date-range"
+          v-else-if="['时间', '日期', '时间日期'].includes(colType)"
+        >
+          <div class="label">选择日期范围：</div>
+          <el-date-picker v-model="min" type="date" v-if="colType === '日期'">
+          </el-date-picker>
+          <div>至</div>
+          <el-date-picker v-model="max" type="date" v-if="colType === '日期'">
+          </el-date-picker>
+        </div>
+        <div class="input-box" v-else-if="colType === '字符串'">
+          <div class="label">内容过滤：</div>
+
+          <el-input v-model="modelValue" clearable></el-input>
+        </div>
+        <div class="handler-bar flex justify-end m-t-2">
+          <el-button
+            class="text-gray"
+            size="mini"
+            @click="filterVisible = false"
+            >取消</el-button
+          >
+          <el-button size="mini" @click="resetFilter">重置</el-button>
+          <el-button size="mini" @click="toFilter" type="primary"
+            >筛选</el-button
+          >
+        </div>
+      </div>
+
+      <svg
+        slot="reference"
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 16 16"
+      >
+        <path
+          :fill="onFilter ? '#409eff' : 'currentColor'"
+          d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"
+        />
+      </svg>
+    </el-popover>
+  </div>
 </template>
 
 <script>
-    export default {
-        
-    }
+export default {
+  props: {
+    column: {
+      type: Object,
+    },
+  },
+  computed: {
+    colType() {
+      let res = null;
+      switch (this.column?.col_type) {
+        case "Enum":
+          res = "枚举";
+          break;
+        case "Set":
+          res = "集合";
+          break;
+        case "Float":
+        case "Int":
+        case "int":
+        case "Integer":
+        case "Money":
+        case "Float":
+          res = "数字";
+          break;
+        case "DateTime":
+          res = "时间日期";
+          break;
+        case "Date":
+          res = "日期";
+          break;
+        case "Time":
+          res = "时间";
+          break;
+        default:
+          res = "字符串";
+          break;
+      }
+      if (this.column?.col_type?.includes("decimal")) {
+        res = "数字";
+      }
+      return res;
+    },
+    optionList() {
+      let res = null;
+      if (this.colType === "枚举") {
+        res = this.column?.option_list_v2;
+      }
+      return res;
+    },
+  },
+  data() {
+    return {
+      filterVisible: false,
+      modelValue: null,
+      onFilter: false, // 已选择筛选项
+      min: null,
+      max: null,
+    };
+  },
+  methods: {
+    initModelValue() {
+      //枚举类型 多选 绑定值默认为空数组
+      if (["枚举", "集合"].includes(this.colType)) {
+        this.modelValue = [];
+      } else {
+        this.modelValue = null;
+      }
+    },
+    resetFilter() {
+      this.filterVisible = false;
+      this.onFilter = false;
+      this.min = null;
+      this.max = null;
+      this.initModelValue();
+
+      this.$emit("filter-change", {
+        colName: this.column.columns,
+        remove: true, //移除当前筛选条件
+      });
+    },
+    toFilter() {
+      this.filterVisible = false;
+      let val = {
+        colName: this.column.columns,
+        remove: false, //移除当前筛选条件
+      };
+      switch (this.colType) {
+        case "集合":
+          val.condition = [
+            {
+              colName: this.column.columns,
+              ruleType: "inset",
+              value: this.modelValue.toString(),
+            },
+          ];
+          val.remove = !this.modelValue?.length;
+          this.onFilter = !!this.modelValue?.length;
+          break;
+        case "枚举":
+          val.condition = [
+            {
+              colName: this.column.columns,
+              ruleType: "in",
+              value: this.modelValue.toString(),
+            },
+          ];
+          val.remove = !this.modelValue?.length;
+          this.onFilter = !!this.modelValue?.length;
+          break;
+        case "日期":
+        case "数字":
+          val.condition = [];
+          if (this.min) {
+            val.condition.push({
+              colName: this.column.columns,
+              ruleType: "ge",
+              value: this.min,
+            });
+          }
+          if (this.max) {
+            val.condition.push({
+              colName: this.column.columns,
+              ruleType: "le",
+              value: this.max,
+            });
+          }
+          val.remove = !this.min && !this.max;
+          if (val.remove) {
+            delete val.condition;
+          }
+          this.onFilter = this.min || this.max;
+          break;
+        case "字符串":
+          if (this.modelValue) {
+            val.condition = [
+              {
+                colName: this.column.columns,
+                ruleType: "like",
+                value: this.modelValue,
+              },
+            ];
+            this.onFilter = true;
+          } else {
+            this.onFilter = false;
+          }
+          break;
+      }
+      this.$emit("filter-change", val);
+    },
+  },
+  created() {
+    this.initModelValue();
+  },
+};
 </script>
 
 <style lang="scss" scoped>
-
+.filter-box {
+  .option-list {
+    width: 200px;
+  }
+  .el-checkbox-group {
+    .el-checkbox {
+      // width: 100%;
+    }
+  }
+}
+.number-range {
+}
 </style>

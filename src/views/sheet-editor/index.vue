@@ -350,20 +350,11 @@ export default {
           }
           if (row.__flag !== "add" && !row?._button_auth?.edit) {
             Message.error("没有当前行的编辑权限！");
-            // this.tableData = this.tableData.map((item, index) => {
-            //   if (item.__id === row.__id) {
-            //     item[column.field] = this.oldTableData[index][column.field];
-            //   }
-            //   return item;
-            // });
             this.$nextTick(() => {
               this.$refs["tableRef"].stopEditingCell();
             });
             return false;
           }
-          // if (column.__field_info.col_type !== "String") {
-          //   return;
-          // }
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           // console.log("afterCellValueChange");
@@ -529,8 +520,8 @@ export default {
       let condition = [];
       if (keys?.length) {
         keys.forEach((key) => {
-          if (this.filterState[key]) {
-            condition.push(this.filterState[key]);
+          if (this.filterState?.[key]?.["condition"]) {
+            condition.push(...this.filterState[key]["condition"]);
           }
         });
       }
@@ -565,8 +556,9 @@ export default {
     },
     defaultConditions() {
       const query = this.$route.query;
+      let defaultConditions = [];
+
       if (query && Object.keys(query).length > 0) {
-        let defaultConditions = [];
         Object.keys(query).forEach((key) => {
           if (!["srvApp"].includes(key)) {
             defaultConditions.push({
@@ -579,11 +571,11 @@ export default {
         if (defaultConditions?.length === 0 && this.fkCondition) {
           defaultConditions = [this.fkCondition];
         }
-        if (this.setFilterState?.length) {
-          defaultConditions.push(...this.setFilterState);
-        }
-        return defaultConditions;
       }
+      if (this.setFilterState?.length) {
+        defaultConditions.push(...this.setFilterState);
+      }
+      return defaultConditions;
     },
     fkCondition() {
       const fkCol = this.$route?.params?.fkCol || this.$route?.query?.fkCol;
@@ -818,7 +810,7 @@ export default {
                   [
                     "String",
                     "User",
-                    'Note',
+                    "Note",
                     "RichText",
                     "MultilineText",
                     "Enum",

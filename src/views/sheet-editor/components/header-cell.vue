@@ -22,8 +22,9 @@
       <i class="el-icon-edit-outline"></i>
       <!-- <img src="@/assets/img/edit.png" alt="" class="right-icon" /> -->
     </el-tooltip>
-    <div class="filter-icon cursor-pointer" v-if="optionList">
-      <el-popover
+    <div class="filter-icon cursor-pointer">
+      <header-filter :column="column" @filter-change="filterChange"></header-filter>
+      <!-- <el-popover
         placement="bottom"
         width="200"
         trigger="click"
@@ -66,7 +67,7 @@
             d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"
           />
         </svg>
-      </el-popover>
+      </el-popover> -->
     </div>
     <div
       class="sort-icon"
@@ -90,7 +91,11 @@
 </template>
 
 <script>
+import headerFilter from "./header-filter.vue";
 export default {
+  components: {
+    headerFilter,
+  },
   props: {
     column: Object,
     sortState: Object,
@@ -99,11 +104,15 @@ export default {
     return {
       checkedOption: [],
       oldCheckedOption: [],
-      onFilter:false,
+      onFilter: false,
       filterVisible: false,
     };
   },
   methods: {
+    filterChange(val){
+      console.log(val);
+      this.$emit('filter-change',val)
+    },
     toFilter() {
       this.filterVisible = false;
       this.$emit("filter-change", {
@@ -112,7 +121,7 @@ export default {
         value: this.checkedOption.toString(),
         remove: !this.checkedOption?.length,
       });
-      this.onFilter = !!this.checkedOption?.length
+      this.onFilter = !!this.checkedOption?.length;
     },
     handleCheckedChange(e) {
       console.log(e);
