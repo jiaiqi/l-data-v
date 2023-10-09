@@ -818,6 +818,8 @@ export default {
                   [
                     "String",
                     "User",
+                    'Note',
+                    "RichText",
                     "MultilineText",
                     "Enum",
                     "Integer",
@@ -834,11 +836,6 @@ export default {
             };
 
             if (this.defaultConditions?.length) {
-              // columnObj.edit =
-              //   columnObj.edit &&
-              //   this.defaultConditions?.every(
-              //     (col) => col.colName !== item.columns
-              //   );
               columnObj.disabled = this.defaultConditions.some(
                 (col) => col.colName === item.columns
               );
@@ -961,14 +958,6 @@ export default {
                       },
                     },
                     on: {
-                      // clear: () => {
-                      //   this.$refs["tableRef"].startEditingCell({
-                      //     rowKey: row.rowKey,
-                      //     colKey: column.field,
-                      //     defaultValue: null,
-                      //   });
-                      //   this.$refs["tableRef"].stopEditingCell();
-                      // },
                       input: (event) => {
                         console.log;
                         // self.$set(row, column.field, event);
@@ -1017,12 +1006,17 @@ export default {
                     })
                   );
                 };
-              } else if (item.col_type === "Note") {
-                // 富文本
-
+              } else if (["Note", "RichText"].includes(item.col_type)) {
+                // 富文本 暂时只能展示 不能编辑 可以从别的地方复制然后粘进来
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h(RenderHtml, {
                     attrs: {
+                      row,
+                      column:
+                        row.__flag === "add"
+                          ? this.addColsMap[column.field]
+                          : this.updateColsMap[column.field],
+                      editable: column.edit,
                       html: row[column.field],
                     },
                   });
