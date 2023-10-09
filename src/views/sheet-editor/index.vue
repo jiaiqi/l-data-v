@@ -99,6 +99,7 @@ import { isEmpty, uniqueId, cloneDeep, cond } from "lodash-es";
 import { Message, MessageBox } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
+import RenderHtml from "./components/render-html.vue";
 // import { diffString, diff } from "json-diff";
 import { RecordManager } from "./util/recordManager.js";
 
@@ -1015,6 +1016,16 @@ export default {
                       });
                     })
                   );
+                };
+              } else if (item.col_type === "Note") {
+                // 富文本
+
+                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                  return h(RenderHtml, {
+                    attrs: {
+                      html: row[column.field],
+                    },
+                  });
                 };
               }
             }
