@@ -222,6 +222,7 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
       return item;
     });
   }
+  req.condition = conditions
   if (option_list_v2.serviceName) {
     let url = `${app}/select/${option_list_v2.serviceName}`;
     let res = await http.post(url, req);

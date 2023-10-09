@@ -23,7 +23,12 @@
       <!-- <img src="@/assets/img/edit.png" alt="" class="right-icon" /> -->
     </el-tooltip>
     <div class="filter-icon cursor-pointer">
-      <header-filter :column="column" @filter-change="filterChange"></header-filter>
+      <header-filter
+        :column="column"
+        :app="app"
+        :list="list"
+        @filter-change="filterChange"
+      ></header-filter>
       <!-- <el-popover
         placement="bottom"
         width="200"
@@ -99,6 +104,8 @@ export default {
   props: {
     column: Object,
     sortState: Object,
+    app: String,
+    list: Array,
   },
   data() {
     return {
@@ -109,9 +116,9 @@ export default {
     };
   },
   methods: {
-    filterChange(val){
+    filterChange(val) {
       console.log(val);
-      this.$emit('filter-change',val)
+      this.$emit("filter-change", val);
     },
     toFilter() {
       this.filterVisible = false;

@@ -22,10 +22,7 @@
             <el-input placeholder="请输入最大值" v-model="max"></el-input>
           </div>
         </div>
-        <div
-          class="date-range"
-          v-else-if="['时间'].includes(colType)"
-        >
+        <div class="date-range" v-else-if="['时间'].includes(colType)">
           <div class="label">选择时间范围：</div>
           <el-time-select
             v-model="min"
@@ -69,10 +66,33 @@
           >
           </el-date-picker>
         </div>
-        <div class="input-box" v-else-if="colType === '字符串'">
+        <div
+          class="input-box"
+          v-else-if="['富文本', '字符串'].includes(colType)"
+        >
           <div class="label">内容过滤：</div>
-
           <el-input v-model="modelValue" clearable></el-input>
+          <el-checkbox-group v-model="strList" v-if="colType === '字符串'">
+            <el-checkbox v-for="item in optionList" :label="item" :key="item">{{
+              item
+            }}</el-checkbox>
+          </el-checkbox-group>
+        </div>
+        <div class="input-box" v-else-if="colType === '外键'">
+          <div class="label">内容过滤：</div>
+          <el-input
+            v-model="filterText"
+            clearable
+            @change="getFkOptions"
+          ></el-input>
+          <el-checkbox-group v-model="modelValue">
+            <el-checkbox
+              v-for="item in optionList"
+              :label="item.value"
+              :key="item.value"
+              >{{ item.label }}</el-checkbox
+            >
+          </el-checkbox-group>
         </div>
         <div class="handler-bar flex justify-end m-t-2">
           <el-button
@@ -105,11 +125,15 @@
 </template>
 
 <script>
+import { getFkOptions } from "../../../service/api";
+
 export default {
   props: {
     column: {
       type: Object,
     },
+    app: String,
+    list: Array,
   },
   computed: {
     colType() {
@@ -138,6 +162,9 @@ export default {
         case "Time":
           res = "时间";
           break;
+        case "Note":
+          res = "富文本";
+          break;
         default:
           res = "字符串";
           break;
@@ -145,12 +172,22 @@ export default {
       if (this.column?.col_type?.includes("decimal")) {
         res = "数字";
       }
+      if (this.column?.bx_col_type == "fk") {
+        res = "外键";
+      }
       return res;
     },
     optionList() {
       let res = null;
       if (this.colType === "枚举") {
         res = this.column?.option_list_v2;
+      } else if (this.colType === "外键") {
+        res = this.fkOptions || [];
+      } else if (this.colType === "字符串" && this.list?.length) {
+        res = this.list
+          .map((item) => item[this.column.columns])
+          .filter((item) => !!item);
+        res = [...new Set(res)];
       }
       return res;
     },
@@ -159,15 +196,68 @@ export default {
     return {
       filterVisible: false,
       modelValue: null,
+      filterText: "",
+      strList: [],
       onFilter: false, // 已选择筛选项
       min: null,
       max: null,
+      fkPage: {
+        total: 0,
+        rownumber: 20,
+        pageNo: 1,
+      },
+      fkOptions: [],
     };
   },
   methods: {
+    getFkOptions(val) {
+      console.log(val);
+      const srvInfo = JSON.parse(JSON.stringify(this.column.option_list_v2));
+      if (val) {
+        srvInfo.relation_condition = {
+          relation: "OR",
+          data: [
+            {
+              colName: srvInfo.key_disp_col,
+              ruleType: "like",
+              value: val,
+            },
+            {
+              colName: srvInfo.refed_col,
+              ruleType: "like",
+              value: val,
+            },
+          ],
+        };
+      }
+      const req = {
+        serviceName: srvInfo.serviceName,
+        colNames: ["*"],
+        condition: [],
+        page: { pageNo: 1, rownumber: 20 },
+      };
+      getFkOptions(
+        { ...this.column, option_list_v2: srvInfo },
+        null,
+        this.app,
+        this.fkPage.pageNo,
+        this.fkPage.rownumber
+      ).then((res) => {
+        if (res?.data?.length) {
+          this.fkOptions = res.data.map((item) => {
+            item.label = item[srvInfo.key_disp_col];
+            item.value = item[srvInfo.refed_col];
+            return item;
+          });
+          this.fkPage.total = res?.page?.total;
+        } else {
+          this.fkOptions = [];
+        }
+      });
+    },
     initModelValue() {
       //枚举类型 多选 绑定值默认为空数组
-      if (["枚举", "集合"].includes(this.colType)) {
+      if (["枚举", "集合", "外键"].includes(this.colType)) {
         this.modelValue = [];
       } else {
         this.modelValue = null;
@@ -178,6 +268,7 @@ export default {
       this.onFilter = false;
       this.min = null;
       this.max = null;
+      this.strList = [];
       this.initModelValue();
 
       this.$emit("filter-change", {
@@ -238,12 +329,36 @@ export default {
           this.onFilter = this.min || this.max;
           break;
         case "字符串":
-          if (this.modelValue) {
+          if (this.strList?.length) {
+            val.condition = [
+              {
+                colName: this.column.columns,
+                ruleType: "in",
+                value: this.strList.toString(),
+              },
+            ];
+            this.modelValue = "";
+            this.onFilter = true;
+          } else if (this.modelValue) {
             val.condition = [
               {
                 colName: this.column.columns,
                 ruleType: "like",
                 value: this.modelValue,
+              },
+            ];
+            this.onFilter = true;
+          } else {
+            this.onFilter = false;
+          }
+          break;
+        case "外键":
+          if (this.modelValue?.length) {
+            val.condition = [
+              {
+                colName: this.column.columns,
+                ruleType: "in",
+                value: this.modelValue.toString(),
               },
             ];
             this.onFilter = true;
@@ -257,6 +372,11 @@ export default {
   },
   created() {
     this.initModelValue();
+    setTimeout(() => {
+      if (this.colType === "外键") {
+        this.getFkOptions();
+      }
+    }, 1000);
   },
 };
 </script>
@@ -270,6 +390,9 @@ export default {
     .el-checkbox {
       // width: 100%;
     }
+  }
+  .input-box {
+    max-width: 300px;
   }
 }
 .number-range {

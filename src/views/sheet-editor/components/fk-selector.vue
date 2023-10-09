@@ -227,7 +227,7 @@ export default {
       if (!this.options?.length) {
         this.loading = true;
       }
-      let option = this.srvInfo;
+      let option = JSON.parse(JSON.stringify(this.srvInfo));
       let relation_condition = {
         relation: "OR",
         data: [],

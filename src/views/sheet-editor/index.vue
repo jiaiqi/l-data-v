@@ -837,6 +837,8 @@ export default {
             columnObj.renderHeaderCell = ({ column }, h) => {
               return h(HeaderCell, {
                 attrs: {
+                  app:this.srvApp,
+                  list:this.tableData,
                   column: { ...item, edit: columnObj.edit },
                   sortState: this.setSortState,
                 },
