@@ -22,16 +22,51 @@
             <el-input placeholder="请输入最大值" v-model="max"></el-input>
           </div>
         </div>
+        <div
+          class="date-range"
+          v-else-if="['时间', '日期', '时间日期'].includes(colType)"
+        >
+          <div class="label">选择时间范围：</div>
+          <el-time-select
+            v-model="min"
+            :picker-options="{
+              start: '00:00',
+              step: '00:15',
+              end: '23:59',
+              selectableRange: '00:00:00 - 23:59:59',
+            }"
+            placeholder="选择开始时间"
+          >
+          </el-time-select>
+          <div>至</div>
+          <el-time-select
+            v-model="max"
+            :picker-options="{
+              start: '00:00',
+              step: '00:15',
+              end: '23:59',
+              // selectableRange: '18:30:00 - 20:30:00',
+            }"
+            placeholder="选择结束时间"
+          >
+          </el-time-select>
+        </div>
 
         <div
           class="date-range"
           v-else-if="['时间', '日期', '时间日期'].includes(colType)"
         >
           <div class="label">选择日期范围：</div>
-          <el-date-picker v-model="min" type="date" v-if="colType === '日期'">
+          <el-date-picker
+            v-model="min"
+            :type="colType === '日期' ? 'date' : 'datetime'"
+          >
           </el-date-picker>
           <div>至</div>
-          <el-date-picker v-model="max" type="date" v-if="colType === '日期'">
+          <el-date-picker
+            v-model="max"
+            :type="colType === '日期' ? 'date' : 'datetime'"
+          >
           </el-date-picker>
         </div>
         <div class="input-box" v-else-if="colType === '字符串'">
