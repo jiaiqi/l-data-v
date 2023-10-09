@@ -327,6 +327,26 @@ export default {
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
           console.log("beforeStartCellEditing：", cellValue);
+          const colType = column?.__field_info?.col_type;
+          if (row.__flag === "add") {
+            // 新增行 处理in_add
+            if (this.addColsMap[column.field]?.in_add !== 1) {
+              this.$message({
+                message: "新增行不支持编辑当前列",
+                type: "warning",
+              });
+              return false;
+            }
+          } else {
+            // 编辑行 处理in_update
+            if (this.updateColsMap[column.field]?.in_update !== 1) {
+              this.$message({
+                message: "当前列不支持编辑",
+                type: "warning",
+              });
+              return false;
+            }
+          }
           if (row.__flag !== "add" && !row?._button_auth?.edit) {
             Message.error("没有当前行的编辑权限！");
             // this.tableData = this.tableData.map((item, index) => {
@@ -793,7 +813,7 @@ export default {
               key: item.columns,
               width: width,
               edit:
-                (item.editable === true &&
+                ((item.editable === true || item.canAdd == true) &&
                   [
                     "String",
                     "User",
@@ -923,7 +943,9 @@ export default {
                   return h("el-date-picker", {
                     attrs: {
                       disabled: !columnObj.edit,
-                      value: new Date(row[column.field]),
+                      value: row[column.field]
+                        ? new Date(row[column.field])
+                        : "",
                       size: "mini",
                       type: item.col_type.toLowerCase(),
                       style: `width:${
@@ -938,12 +960,21 @@ export default {
                       },
                     },
                     on: {
+                      // clear: () => {
+                      //   this.$refs["tableRef"].startEditingCell({
+                      //     rowKey: row.rowKey,
+                      //     colKey: column.field,
+                      //     defaultValue: null,
+                      //   });
+                      //   this.$refs["tableRef"].stopEditingCell();
+                      // },
                       input: (event) => {
+                        console.log;
                         // self.$set(row, column.field, event);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
                           colKey: column.field,
-                          defaultValue: event,
+                          defaultValue: event || null,
                         });
                         this.$refs["tableRef"].stopEditingCell();
                       },
@@ -1110,7 +1141,8 @@ export default {
               }
               const colType = field?.col_type;
               // 日期
-              if (val === "new Date()") {
+              if (val === "new Date()" || val?.indexOf("new Da") > -1) {
+                // 兼容单词书写错误的情况
                 val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
               }
               if (

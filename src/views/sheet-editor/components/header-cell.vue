@@ -17,7 +17,7 @@
       effect="dark"
       content="当前列可编辑"
       placement="bottom-end"
-      v-if="column.edit"
+      v-if="column.editable"
     >
       <i class="el-icon-edit-outline"></i>
       <!-- <img src="@/assets/img/edit.png" alt="" class="right-icon" /> -->
@@ -132,25 +132,6 @@ export default {
       if (this.column?.columns) {
         // return this.sortState?.get(this.column.columns);
         return this.sortState?.[this.column.columns];
-      }
-    },
-    editable() {
-      if (this.column?.col_type) {
-        return (
-          this.column.edit !== false &&
-          ([
-            "String",
-            "User",
-            "MultilineText",
-            "Integer",
-            "Float",
-            "Money",
-            "Enum",
-            "Date",
-            "DateTime",
-          ].includes(this.column.col_type) ||
-            this.column.col_type.includes("decimal"))
-        );
       }
     },
   },
