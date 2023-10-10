@@ -12,7 +12,7 @@
       @click.native="remoteMethod"
       @change="onSelectChange"
       clearable
-      :disabled="disabled"
+      :disabled="setDisabled"
     >
       <el-option
         v-for="item in options"
@@ -24,7 +24,7 @@
     </el-select>
     <i
       class="el-icon-arrow-right cursor-pointer p-l-2 text-#C0C4CC"
-      :class="{ 'cursor-not-allowed': onDisabled }"
+      :class="{ 'cursor-not-allowed': setDisabled }"
       @click="openDialog"
     ></i>
 
@@ -36,6 +36,15 @@
       v-loading="tableloading"
     >
       <div @click.stop="">
+        <div class="filter-box">
+          <div class="text-bold">输入文字进行筛选:</div>
+          <el-input
+            placeholder="输入文字进行筛选"
+            @change="toFilter"
+            v-model="filterText"
+            clearable
+          ></el-input>
+        </div>
         <el-table
           :data="tableData"
           style="width: 100%"
@@ -103,10 +112,17 @@ export default {
       rownumber: 5,
       total: 0,
       tableloading: false,
+      filterText: "",
     };
   },
   computed: {
-    onDisabled() {
+    setDisabled() {
+      if (
+        this.row?.__flag !== "add" &&
+        this.row?._button_auth?.edit === false
+      ) {
+        return true;
+      }
       return this.disabled;
     },
   },
@@ -134,6 +150,59 @@ export default {
     }
   },
   methods: {
+    toFilter(query) {
+      this.pageNo = 1;
+      this.total = 0;
+      // this.tableloading = true;
+
+      let queryString = "";
+      if (query && typeof query === "string") {
+        queryString = query;
+      }
+
+      let option = JSON.parse(JSON.stringify(this.srvInfo));
+      let relation_condition = {
+        relation: "OR",
+        data: [],
+      };
+      if (!option.key_disp_col && !option.refed_col) {
+        return;
+      }
+      if (option.key_disp_col && queryString) {
+        relation_condition.data.push({
+          colName: option.key_disp_col,
+          value: queryString,
+          ruleType: "[like]",
+        });
+      }
+      if (option.refed_col && queryString) {
+        relation_condition.data.push({
+          colName: option.refed_col,
+          value: queryString,
+          ruleType: "[like]",
+        });
+      }
+      option.relation_condition = relation_condition;
+      getFkOptions(
+        { ...this.column, option_list_v2: option },
+        this.row,
+        this.app,
+        this.pageNo,
+        this.rownumber
+      ).then((res) => {
+        if (res?.data?.length) {
+          this.tableData = res.data.map((item) => {
+            item.label = item[option.key_disp_col];
+            item.value = item[option.refed_col];
+            return item;
+          });
+          this.total = res?.page?.total;
+        } else {
+          this.options = [];
+        }
+        // this.tableloading = false;
+      });
+    },
     handleSizeChange(val) {
       this.rownumber = val;
       this.pageNo = 1;
@@ -184,7 +253,10 @@ export default {
     },
     getTableData() {
       this.tableloading = true;
-
+      const srvInfo = JSON.parse(JSON.stringify(this.srvInfo));
+      if (this.filterText) {
+        srvInfo;
+      }
       getFkOptions(
         { ...this.column, option_list_v2: this.srvInfo },
         this.row,

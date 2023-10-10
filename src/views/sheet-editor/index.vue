@@ -138,12 +138,14 @@ export default {
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
           if (row?.__flag === "add") {
+            // 新增行直接显示为绿色背景 不用判断字段有没有值
+            return "table-body-cell__add";
             // 新增数据 整行某个字段有值后 增加class
-            return Object.keys(row).some(
-              (key) => !["__flag", "rowKey", "__id"].includes(key) && !!row[key]
-            )
-              ? "table-body-cell__add"
-              : "";
+            // return Object.keys(row).some(
+            //   (key) => !["__flag", "rowKey", "__id"].includes(key) && !!row[key]
+            // )
+            //   ? "table-body-cell__add"
+            //   : "";
           }
           if (
             row?.__flag === "update" &&
@@ -293,6 +295,7 @@ export default {
       editOption: {
         beforeCellValueChange: ({ row, column, changeValue }) => {
           const colType = column?.__field_info?.col_type;
+          console.log(row, column, changeValue);
           if (row.__flag === "add") {
             // 新增行 处理in_add
             if (this.addColsMap[column.field]?.in_add !== 1) {
@@ -800,6 +803,12 @@ export default {
               width = length * 30;
               console.log(width);
             }
+            if (item.col_span) {
+              width = item.col_span * 800;
+            }
+            if (item.list_min_width) {
+              width = parseFloat(item.list_min_width);
+            }
             const columnObj = {
               title: item.label,
               field: item.columns,
@@ -837,8 +846,8 @@ export default {
             columnObj.renderHeaderCell = ({ column }, h) => {
               return h(HeaderCell, {
                 attrs: {
-                  app:this.srvApp,
-                  list:this.tableData,
+                  app: this.srvApp,
+                  list: this.tableData,
                   column: { ...item, edit: columnObj.edit },
                   sortState: this.setSortState,
                 },
@@ -934,7 +943,10 @@ export default {
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h("el-date-picker", {
                     attrs: {
-                      disabled: !columnObj.edit,
+                      disabled:
+                        !columnObj.edit ||
+                        (row.__flag !== "add" &&
+                          row?._button_auth?.edit === false),
                       value: row[column.field]
                         ? new Date(row[column.field])
                         : "",
@@ -972,7 +984,10 @@ export default {
                     "el-select",
                     {
                       attrs: {
-                        disabled: !columnObj.edit,
+                        disabled:
+                          !columnObj.edit ||
+                          (row.__flag !== "add" &&
+                            row?._button_auth?.edit === false),
                         value: row[column.field],
                         size: "mini",
                         clearable: true,
@@ -1000,8 +1015,8 @@ export default {
                     })
                   );
                 };
-              } else{
-              // } else if (["Note", "RichText"].includes(item.col_type)) {
+              } else {
+                // } else if (["Note", "RichText"].includes(item.col_type)) {
                 // 富文本 暂时只能展示 不能编辑 可以从别的地方复制然后粘进来
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h(RenderHtml, {
