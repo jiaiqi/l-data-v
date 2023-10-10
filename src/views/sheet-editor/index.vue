@@ -1000,7 +1000,8 @@ export default {
                     })
                   );
                 };
-              } else if (["Note", "RichText"].includes(item.col_type)) {
+              } else{
+              // } else if (["Note", "RichText"].includes(item.col_type)) {
                 // 富文本 暂时只能展示 不能编辑 可以从别的地方复制然后粘进来
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
                   return h(RenderHtml, {
