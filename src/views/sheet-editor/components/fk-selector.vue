@@ -221,6 +221,7 @@ export default {
       this.$emit("input", this.modelValue);
       this.options = JSON.parse(JSON.stringify(this.tableData));
       this.dialogVisible = false;
+      this.filterText = ''
     },
     getFkColumns() {
       const req = {
@@ -278,9 +279,10 @@ export default {
       });
     },
     openDialog() {
-      if (this.disabled) {
+      if (this.setDisabled) {
         return;
       }
+      this.filterText = ''
       this.dialogVisible = true;
       this.pageNo = 1;
       this.rownumber = 5;
