@@ -19,7 +19,7 @@
     ></el-button>
 
     <el-dialog
-      :title="editable?'编辑':'详情'"
+      :title="editable ? '编辑' : '详情'"
       :visible.sync="dialogTableVisible"
       :close-on-press-escape="false"
       :close-on-click-modal="false"
@@ -81,73 +81,54 @@ export default {
     // },
   },
   data() {
+    const uploadConfig = {
+      server:
+        window.backendIpAddr +
+        "/file/upload?bx_auth_ticket=" +
+        sessionStorage.bx_auth_ticket,
+      // form-data fieldName ，默认值 'wangeditor-uploaded-image'
+      fieldName: "file",
+      // 单个文件的最大体积限制，默认为 2M
+      maxFileSize: 10 * 1024 * 1024, // 10M
+      // 最多可上传几个文件，默认为 100
+      maxNumberOfFiles: 1,
+      // 选择文件时的类型限制，默认为 ['image/*'] 。如不想限制，则设置为 []
+      // allowedFileTypes: ["image/*"],
+      // 自定义上传参数，例如传递验证的 token 等。参数会被添加到 formData 中，一起上传到服务端。
+      meta: {
+        serviceName: "srv_bxfile_service",
+        interfaceName: "add",
+        app_no:
+          top?.pathConfig?.application ||
+          sessionStorage.getItem("current_app") ||
+          "oa",
+      },
+      // 自定义增加 http  header
+      headers: {
+        bx_auth_ticket: sessionStorage.getItem("bx_auth_ticket"),
+      },
+      // 跨域是否传递 cookie ，默认为 false
+      withCredentials: true,
+      // 超时时间，默认为 10 秒
+      timeout: 100 * 1000, //100 秒
+      customInsert(res, insertFn) {
+        // JS 语法
+        // res 即服务端的返回结果
+        // 从 res 中找到 url alt href ，然后插入图片
+        if (res.fileurl) {
+          const url = `${window.backendIpAddr}/file/download?filePath=${res.fileurl}`;
+          insertFn(url);
+        }
+      },
+    };
     return {
       dialogTableVisible: false,
       editorConfig: {
         placeholder: "",
         readOnly: !this.editable,
         MENU_CONF: {
-          uploadImage: {
-            server:
-              window.backendIpAddr +
-              "/file/upload?bx_auth_ticket=" +
-              sessionStorage.bx_auth_ticket,
-            // form-data fieldName ，默认值 'wangeditor-uploaded-image'
-            fieldName: "file",
-
-            // 单个文件的最大体积限制，默认为 2M
-            maxFileSize: 10 * 1024 * 1024, // 10M
-
-            // 最多可上传几个文件，默认为 100
-            maxNumberOfFiles: 1,
-
-            // 选择文件时的类型限制，默认为 ['image/*'] 。如不想限制，则设置为 []
-            allowedFileTypes: ["image/*"],
-
-            // 自定义上传参数，例如传递验证的 token 等。参数会被添加到 formData 中，一起上传到服务端。
-            meta: {
-              serviceName: "srv_bxfile_service",
-              interfaceName: "add",
-              app_no: "oa",
-              // bx_auth_ticket:sessionStorage.getItem("bx_auth_ticket"),
-              // token: "xxx",
-              // otherKey: "yyy",
-            },
-
-            // 将 meta 拼接到 url 参数中，默认 false
-            metaWithUrl: false,
-
-            // 自定义增加 http  header
-            headers: {
-              bx_auth_ticket: sessionStorage.getItem("bx_auth_ticket"),
-              // Accept: "text/x-json",
-              // otherKey: "xxx",
-            },
-            // 跨域是否传递 cookie ，默认为 false
-            withCredentials: true,
-            // 超时时间，默认为 10 秒
-            timeout: 100 * 1000, //100 秒
-            onSuccess(file, res) {
-              // TS 语法
-              // onSuccess(file, res) {          // JS 语法
-              console.log(`${file.name} 上传成功`, res);
-            },
-            // async customUpload(file, insertFn) {
-            //   // file 即选中的文件
-            //   // 自己实现上传，并得到图片 url alt href
-            //   // 最后插入图片
-            //   insertFn(url, alt, href);
-            // },
-            customInsert(res, insertFn) {
-              // JS 语法
-              // res 即服务端的返回结果
-              // 从 res 中找到 url alt href ，然后插入图片
-              if (res.fileurl) {
-               const url = `${window.backendIpAddr}/file/download?filePath=${res.fileurl}`;
-                insertFn(url,res.src_name);
-              }
-            },
-          },
+          uploadImage: uploadConfig,
+          uploadVideo: uploadConfig,
         },
       },
       toolbarConfig: {},
@@ -167,11 +148,18 @@ export default {
       // event 是 ClipboardEvent 类型，可以拿到粘贴的数据
       // 可参考 https://developer.mozilla.org/zh-CN/docs/Web/API/ClipboardEvent
       // const html = event.clipboardData.getData('text/html') // 获取粘贴的 html
-      const text = event.clipboardData.getData("text/plain"); // 获取粘贴的纯文本
+      // event.preventDefault();
+      let text = event.clipboardData.getData("text/plain"); // 获取粘贴的纯文本
+      // editor.dangerouslyInsertHtml(text);
+      // return false
       if (/<[^>]+>/.test(text)) {
         // 包含html标签
-        // editor.setHtml(text);
+        // editor.insertText(text);
+        text = `<p><br></p>${text}<p><br></p>`;
+        console.log(editor.getHtml());
         editor.dangerouslyInsertHtml(text);
+        console.log(editor.getHtml());
+
         event.preventDefault();
         return false;
       } else {
