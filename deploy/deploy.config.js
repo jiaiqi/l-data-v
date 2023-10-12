@@ -16,6 +16,14 @@ module.exports = [
     path: "/home/bxdev/front/dataview",
   },
   {
+    title: "研学基地 内网 180端口",
+    host: "192.168.0.155",
+    port: 22,
+    username: "root",
+    password: "%TGB6yhn&UJM",
+    path: "/home/bxdev/front2/dataview",
+  },
+  {
     title: "外网 111",
     host: "139.196.209.46",
     port: 22,

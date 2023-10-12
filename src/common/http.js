@@ -1,9 +1,10 @@
 import axios from "axios";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 let bx_auth_ticket = "";
+// let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
 let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
-const devTicket = 'xabxdzkj-a791de57-b9bd-45f2-bcc6-4ee532927a32'
+const devTicket = 'xabxdzkj-33d6499a-7d40-433e-8e64-2ea98f0c16cc'
 if (top?.pathConfig?.gateway) {
   baseURL = top?.pathConfig?.gateway;
 }
@@ -16,6 +17,7 @@ if (pathConfig) {
     }
   } catch (error) {}
 }
+window.backendIpAddr = baseURL
 
 const getRootWindow = (_window) => {
   _window = _window || window;
@@ -40,6 +42,7 @@ $axios.interceptors.request.use(
     bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
     if (import.meta?.env?.DEV === true) {
       bx_auth_ticket = devTicket
+      sessionStorage.setItem('bx_auth_ticket',devTicket)
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;

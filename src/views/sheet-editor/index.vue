@@ -830,8 +830,8 @@ export default {
                     "DateTime",
                     "int",
                   ].includes(item.col_type)) ||
-                item.col_type.includes("decimal") ||
-                item.bx_col_type == "fk",
+                item?.col_type?.includes("decimal") ||
+                item?.bx_col_type == "fk",
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
               __field_info: { ...item },
             };
@@ -1019,6 +1019,21 @@ export default {
                 // } else if (["Note", "RichText"].includes(item.col_type)) {
                 // 富文本 暂时只能展示 不能编辑 可以从别的地方复制然后粘进来
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                  let editable = true;
+                  if (row.__flag === "add") {
+                    // 新增行 处理in_add
+                    if (this.addColsMap[column.field]?.in_add !== 1) {
+                      editable = false;
+                    }
+                  } else {
+                    // 编辑行 处理in_update
+                    if (this.updateColsMap[column.field]?.in_update !== 1) {
+                      editable = false;
+                    }
+                  }
+                  if (row.__flag !== "add" && !row?._button_auth?.edit) {
+                    editable = false;
+                  }
                   return h(RenderHtml, {
                     attrs: {
                       row,
@@ -1026,8 +1041,19 @@ export default {
                         row.__flag === "add"
                           ? this.addColsMap[column.field]
                           : this.updateColsMap[column.field],
-                      editable: column.edit,
+                      editable: editable,
                       html: row[column.field],
+                    },
+                    on: {
+                      change: (event) => {
+                        // self.$set(row, column.field, event);
+                        this.$refs["tableRef"].startEditingCell({
+                          rowKey: row.rowKey,
+                          colKey: column.field,
+                          defaultValue: event || null,
+                        });
+                        this.$refs["tableRef"].stopEditingCell();
+                      },
                     },
                   });
                 };

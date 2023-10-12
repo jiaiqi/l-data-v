@@ -47,6 +47,9 @@ dependencies:
   pinia:
     specifier: ^2.0.16
     version: 2.0.33(vue@2.7.14)
+  tinymce:
+    specifier: ^6.7.0
+    version: 6.7.0
   vue:
     specifier: ^2.7.7
     version: 2.7.14
@@ -2733,6 +2736,10 @@ packages:
   /throttle-debounce@1.1.0:
     resolution: {integrity: sha512-XH8UiPCQcWNuk2LYePibW/4qL97+ZQ1AN3FNXwZRBNPPowo/NRU5fAlDCSNBJIYCKbioZfuYtMhG4quqoJhVzg==}
     engines: {node: '>=4'}
+    dev: false
+
+  /tinymce@6.7.0:
+    resolution: {integrity: sha512-Wf2RSobIXQ7XNw3/v4z1lPGiH3Pjsmc/6/7fG28aIS6uVWj/7IhvOPuwfJJDeOx0o0D3nSnoLHgR2KU8JAdE+w==}
     dev: false
 
   /to-fast-properties@2.0.0:

@@ -63,7 +63,7 @@ function init() {
       ":" +
       server_cfg.back_server_port;
   }
-  window.backendIpAddr = backendIpAddr;
+  // window.backendIpAddr = backendIpAddr;
 
   let defaultApp =
     (window.frameElement && window.frameElement.dataset["app"]) ||
