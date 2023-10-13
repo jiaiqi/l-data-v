@@ -1,23 +1,13 @@
 <template>
-  <!-- <div v-html="html" class="render-html">
-  
-  </div> -->
   <div class="render-html" :style="setStyle" v-loading="loadingFold">
-    <!-- <Editor
-      :value="html"
-      style="height: 100%"
-      :defaultConfig="editorConfig"
-      :mode="mode"
-    /> -->
     <div class="flex">
-      <!-- <div class="w-5 h-5" v-loading="loadingFold" v-if="showUnfold"></div> -->
       <div
         class="prefix-icon"
         v-if="showUnfold && column.isFirstCol"
         @click="changeFold"
       >
-        <div class="fold-icon" v-if="unfold === true">-</div>
-        <div class="unfold-icon" v-else>+</div>
+        <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
+        <div class="unfold-icon el-icon-plus" v-else></div>
       </div>
       <div class="prefix-icon cursor-initial" v-else-if="column.isFirstCol"></div>
       <div v-html="html"></div>
@@ -203,9 +193,7 @@ export default {
 
 <style lang="scss" scoped>
 .prefix-icon {
-  font-size: 18px;
   width: 20px;
-  line-height: 18px;
   cursor: pointer;
   &.cursor-initial {
     cursor: initial;
