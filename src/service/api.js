@@ -5,10 +5,10 @@ import { $axios as http } from "../common/http";
  * 请求v2数据
  * @param {String} serviceName - 服务名称
  * @param {String} use_type - 方法名称
- * @param {String} operate - 操作类型 select/operate(add、update、delete)
  * @param {*} app - 应用
+ * @param {Boolean} isTree - 是否树型列表  true/false
  */
-const getServiceV2 = async (serviceName, use_type = "list", app = "health") => {
+const getServiceV2 = async (serviceName, use_type = "list", app = "health",isTree=false) => {
   if (serviceName) {
     const req = {
       serviceName: "srvsys_service_columnex_v2_select",
