@@ -2,19 +2,32 @@
   <!-- <div v-html="html" class="render-html">
   
   </div> -->
-  <div class="render-html">
+  <div class="render-html" :style="setStyle" v-loading="loadingFold">
     <!-- <Editor
       :value="html"
       style="height: 100%"
       :defaultConfig="editorConfig"
       :mode="mode"
     /> -->
-    <div v-html="html"></div>
+    <div class="flex">
+      <!-- <div class="w-5 h-5" v-loading="loadingFold" v-if="showUnfold"></div> -->
+      <div
+        class="prefix-icon"
+        v-if="showUnfold && column.isFirstCol"
+        @click="changeFold"
+      >
+        <div class="fold-icon" v-if="unfold === true">-</div>
+        <div class="unfold-icon" v-else>+</div>
+      </div>
+      <div class="prefix-icon cursor-initial" v-else-if="column.isFirstCol"></div>
+      <div v-html="html"></div>
+    </div>
     <el-button
       size="mini"
       class="edit-btn"
       circle
       @click.stop.capture.prevent="showDialog"
+      v-if="useEditor"
       ><i class="el-icon-edit"></i
     ></el-button>
 
@@ -61,6 +74,7 @@
 <script>
 import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
 import "@wangeditor/editor/dist/css/style.css";
+
 // 展示富文本 Note RichText类型
 export default {
   components: { Editor, Toolbar },
@@ -71,14 +85,18 @@ export default {
     column: Object,
   },
   computed: {
-    // innerHtml: {
-    //   get() {
-    //     return this.html;
-    //   },
-    //   set(newValue) {
-    //     this.$emit("input", newValue);
-    //   },
-    // },
+    setStyle() {
+      if (this.row?.__indent && this.column.isFirstCol) {
+        return `--row_indent:${this.row?.__indent}px;`;
+      }
+    },
+    useEditor() {
+      return ["Note", "RichText"].includes(this.column.col_type);
+    },
+    showUnfold() {
+      // 显示展开收起图标
+      return this.row?.is_leaf === "否";
+    },
   },
   data() {
     const uploadConfig = {
@@ -136,9 +154,18 @@ export default {
 
       mode: "default", // or 'simple'
       innerHtml: "",
+      unfold: false, //默认收起
+      loadingFold: false,
     };
   },
   methods: {
+    changeFold() {
+      this.loadingFold = true;
+      this.$emit("unfold", !this.unfold, (res) => {
+        this.loadingFold = false;
+        this.unfold = !this.unfold;
+      });
+    },
     showDialog() {
       console.log("showDialog", this.dialogTableVisible);
       this.dialogTableVisible = true;
@@ -159,27 +186,13 @@ export default {
         console.log(editor.getHtml());
         editor.dangerouslyInsertHtml(text);
         console.log(editor.getHtml());
-
         event.preventDefault();
+        // 阻止默认的粘贴行为
         return false;
       } else {
+        // 继续执行默认的粘贴行为
         return true;
       }
-      // const rtf = event.clipboardData.getData('text/rtf') // 获取 rtf 数据（如从 word wsp 复制粘贴）
-      // const html = event.clipboardData.getData("text/html");
-
-      // 同步
-      // editor.insertText("xxx");
-
-      // // 异步
-      // setTimeout(() => {
-      //   editor.insertText("yy");
-      // }, 1000);
-
-      // 阻止默认的粘贴行为
-
-      // 继续执行默认的粘贴行为
-      // return true
     },
     onCreated(editor) {
       this.editor = Object.seal(editor); // 一定要用 Object.seal() ，否则会报错
@@ -189,8 +202,18 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.prefix-icon {
+  font-size: 18px;
+  width: 20px;
+  line-height: 18px;
+  cursor: pointer;
+  &.cursor-initial {
+    cursor: initial;
+  }
+}
 .render-html {
-  min-height: 50px;
+  margin-left: var(--row_indent);
+  // min-height: 40px;
   text-align: left;
   --w-e-textarea-bg-color: transparent;
   overflow: hidden;
@@ -199,6 +222,7 @@ export default {
   -webkit-line-clamp: 10;
   -webkit-box-orient: vertical;
   max-height: 200px;
+
   position: relative;
   &:hover {
     .edit-btn {

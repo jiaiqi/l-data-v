@@ -102,6 +102,7 @@ import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
 // import { diffString, diff } from "json-diff";
 import { RecordManager } from "./util/recordManager.js";
+import { Loading } from "element-ui";
 
 export default {
   name: "SheetEditor",
@@ -117,6 +118,7 @@ export default {
   },
   data() {
     return {
+      treeList: [],
       page: {
         //分页信息
         total: 0,
@@ -404,6 +406,18 @@ export default {
       },
       // body 右键菜单配置
       contextmenuBodyOption: {
+        beforeShow: ({
+          isWholeRowSelection,
+          selectionRangeKeys,
+          selectionRangeIndexes,
+        }) => {
+          console.log("---contextmenu header beforeShow--");
+          console.log("isWholeColSelection::", isWholeRowSelection);
+          console.log("selectionRangeKeys::", selectionRangeKeys);
+          console.log("selectionRangeIndexes::", selectionRangeIndexes);
+          let startRowIndex = selectionRangeIndexes.startRowIndex;
+          
+        },
         afterMenuClick: ({
           type,
           selectionRangeKeys,
@@ -414,14 +428,44 @@ export default {
           console.log("selectionRangeKeys::", selectionRangeKeys);
           console.log("selectionRangeIndexes::", selectionRangeIndexes);
           const endRowIndex = selectionRangeIndexes.endRowIndex;
-          const startRowIndex = selectionRangeIndexes.startRowIndex;
-
+          let startRowIndex = selectionRangeIndexes.startRowIndex;
+          const startRow = cloneDeep(this.tableData[startRowIndex]);
+          if (type === "addchild") {
+            // 添加下级节点
+            if (startRow?.__flag === "add") {
+              this.$message.error("新增行不能直接添加下级节点,请先保存操作!");
+              return;
+            }
+            this.insert2Rows(startRowIndex + 1, startRow);
+          }
           if (type === "insertRowBelow") {
-            const index = selectionRangeIndexes.startRowIndex;
-            this.insert2Rows(index + 1);
+            //上方插入行
+            if (startRow?.__parent_row) {
+              this.insert2Rows(startRowIndex + 1, startRow?.__parent_row);
+            } else {
+              let lastChildIndex = this.tableData.findLastIndex(
+                (item) =>
+                  item[this.treeInfo.pidCol] === startRow[this.treeInfo.idCol]
+              );
+              if (lastChildIndex != -1) {
+                startRowIndex = lastChildIndex;
+              }
+              this.insert2Rows(startRowIndex + 1);
+            }
           } else if (type === "insertRowAbove") {
-            const index = selectionRangeIndexes.startRowIndex;
-            this.insert2Rows(index);
+            // 下方插入行
+            if (startRow?.__parent_row) {
+              this.insert2Rows(startRowIndex, startRow?.__parent_row);
+            } else {
+              let lastChildIndex = this.tableData.findLastIndex(
+                (item) =>
+                  item[this.treeInfo.pidCol] === startRow[this.treeInfo.idCol]
+              );
+              if (lastChildIndex != -1) {
+                startRowIndex = lastChildIndex;
+              }
+              this.insert2Rows(startRowIndex);
+            }
           } else if (type === "removeRow") {
             let willDeleteLocalRows = []; //新增待删除行
             let willDeleteOriginRows = []; //远程数据中的待删除行
@@ -563,7 +607,7 @@ export default {
 
       if (query && Object.keys(query).length > 0) {
         Object.keys(query).forEach((key) => {
-          if (!["srvApp"].includes(key)) {
+          if (!["srvApp", "isTree"].includes(key)) {
             defaultConditions.push({
               colName: key,
               ruleType: "eq",
@@ -578,6 +622,12 @@ export default {
       if (this.setFilterState?.length) {
         defaultConditions.push(...this.setFilterState);
       }
+      if (this.isTree) {
+        defaultConditions.push({
+          colName: this.treeInfo.pidCol,
+          ruleType: "isnull",
+        });
+      }
       return defaultConditions;
     },
     fkCondition() {
@@ -590,6 +640,11 @@ export default {
           value: fkVal,
         };
       }
+    },
+    addChildButton() {
+      return this.v2data?.rowButton?.find((item) =>
+        item.button_type.includes("addchild")
+      );
     },
     addButton() {
       return this.v2data?.gridButton?.find((item) =>
@@ -660,7 +715,9 @@ export default {
           });
           if (this.defaultConditions?.length) {
             this.defaultConditions.forEach((item) => {
-              addObj[item.colName] = item.value;
+              if (item.value) {
+                addObj[item.colName] = item.value;
+              }
             });
           } else if (this.fkCondition?.colName) {
             addObj[this.fkCondition.colName] = this.fkCondition.value;
@@ -705,18 +762,23 @@ export default {
     serviceName() {
       return this.$route.params?.service || this.$route.query?.service;
     },
+    isTree() {
+      return this.v2data?.is_tree === true && this.treeInfo;
+    },
+    treeInfo() {
+      if (this.v2data?.parent_no_col && this.v2data?.no_col) {
+        return {
+          pidCol: this.v2data?.parent_no_col,
+          idCol: this.v2data?.no_col,
+        };
+      }
+    },
     srvApp() {
       return (
         this.$route.params?.app ||
         this.$route.query?.srvApp ||
         sessionStorage.getItem("current_app")
       );
-      // return (
-      //   this.$route.params?.app ||
-      //   this.$route.query?.app ||
-      //   this.$route.query?.srvApp ||
-      //   sessionStorage.getItem("current_app")
-      // );
     },
   },
   methods: {
@@ -779,7 +841,7 @@ export default {
           title: "#",
           width: 50,
           fixed: "left",
-          renderBodyCell: function ({ rowIndex }) {
+          renderBodyCell: function ({ rowIndex, row }) {
             return startRowIndex + rowIndex + 1;
           },
           // renderBodyCell: this.renderRowIndex,
@@ -791,7 +853,7 @@ export default {
           minWidth = 200;
         }
         columns = columns.concat(
-          this.allFields.map((item) => {
+          this.allFields.map((item, index) => {
             let width = minWidth;
             const length = item.label.replace(
               /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
@@ -801,10 +863,12 @@ export default {
               // 去掉符号的字符数长度大于4
               console.log(`${item.label}:${length}`);
               width = length * 30;
-              console.log(width);
             }
             if (item.col_span) {
-              width = item.col_span * 800;
+              let cfgWidth = item.col_span * 600;
+              if (width < cfgWidth) {
+                width = cfgWidth;
+              }
             }
             if (item.list_min_width) {
               width = parseFloat(item.list_min_width);
@@ -835,6 +899,11 @@ export default {
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
               __field_info: { ...item },
             };
+
+            if (index === 0 && this.isTree) {
+              // 首列 如果有下级则展示展开折叠图标
+              columnObj.isFirstCol = true;
+            }
 
             if (this.defaultConditions?.length) {
               columnObj.disabled = this.defaultConditions.some(
@@ -911,33 +980,166 @@ export default {
                   key_disp_col: "user_disp",
                 };
               }
-              if (item.bx_col_type === "fk") {
+              if (true) {
+                // if (item.bx_col_type === "fk") {
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-                  return h(fkSelector, {
-                    attrs: {
-                      value: row[column.field],
-                      size: "mini",
-                      srvInfo: item.option_list_v2,
-                      app: this.srvApp,
-                      row,
-                      column,
-                      disabled: !columnObj.edit,
-                    },
-                    on: {
-                      input: (event) => {
-                        // self.$set(row, column.field, event);
-                        console.log(row, column.field, event);
-                        row[column.field] = event;
-                        this.$set(this.tableData, rowIndex, row);
-                        this.$refs["tableRef"].startEditingCell({
-                          rowKey: row.rowKey,
-                          colKey: column.field,
-                          defaultValue: event,
-                        });
-                        this.$refs["tableRef"].stopEditingCell();
+                  let setColumn =
+                    row.__flag === "add"
+                      ? this.addColsMap[column.field]
+                      : this.updateColsMap[column.field];
+                  if (!setColumn) {
+                    setColumn = column.__field_info;
+                  }
+                  if (columnObj.isFirstCol === true) {
+                    setColumn.isFirstCol = true;
+                    // 首列 判断是否是叶子节点 不是则显示展开收起
+                    if (row?.is_leaf === "否") {
+                      // 有下级节点
+                      // if(row?.__indent){
+                      //   row?.__indent+=50
+                      //   this.$set()
+                      // }else{
+                      //   row?.__indent = 50
+                      // }
+                    }
+                  }
+                  if (item.bx_col_type === "fk") {
+                    return h(fkSelector, {
+                      attrs: {
+                        value: row[column.field],
+                        size: "mini",
+                        srvInfo: item.option_list_v2,
+                        app: this.srvApp,
+                        row,
+                        column,
+                        disabled: !columnObj.edit,
                       },
-                    },
-                  });
+                      on: {
+                        input: (event) => {
+                          // self.$set(row, column.field, event);
+                          console.log(row, column.field, event);
+                          row[column.field] = event;
+                          this.$set(this.tableData, rowIndex, row);
+                          this.$refs["tableRef"].startEditingCell({
+                            rowKey: row.rowKey,
+                            colKey: column.field,
+                            defaultValue: event,
+                          });
+                          this.$refs["tableRef"].stopEditingCell();
+                        },
+                      },
+                    });
+                  } else if (["Date", "DateTime"].includes(item.col_type)) {
+                    return h("el-date-picker", {
+                      attrs: {
+                        disabled:
+                          !columnObj.edit ||
+                          (row.__flag !== "add" &&
+                            row?._button_auth?.edit === false),
+                        value: row[column.field]
+                          ? new Date(row[column.field])
+                          : "",
+                        size: "mini",
+                        type: item.col_type.toLowerCase(),
+                        style: `width:${
+                          item.col_type === "DateTime" ? 180 : 130
+                        }px;`,
+                        valueFormat: "yyyy-MM-dd HH:mm:ss",
+                      },
+                      nativeOn: {
+                        click: (event) => {
+                          event.stopPropagation();
+                          event.preventDefault();
+                        },
+                      },
+                      on: {
+                        input: (event) => {
+                          console.log;
+                          // self.$set(row, column.field, event);
+                          this.$refs["tableRef"].startEditingCell({
+                            rowKey: row.rowKey,
+                            colKey: column.field,
+                            defaultValue: event || null,
+                          });
+                          this.$refs["tableRef"].stopEditingCell();
+                        },
+                      },
+                    });
+                  } else if (item.col_type === "Enum") {
+                    return h(
+                      "el-select",
+                      {
+                        attrs: {
+                          disabled:
+                            !columnObj.edit ||
+                            (row.__flag !== "add" &&
+                              row?._button_auth?.edit === false),
+                          value: row[column.field],
+                          size: "mini",
+                          clearable: true,
+                        },
+                        on: {
+                          input: (event) => {
+                            // self.$set(row, column.field, event);
+                            this.$refs["tableRef"].startEditingCell({
+                              rowKey: row.rowKey,
+                              colKey: column.field,
+                              defaultValue: event,
+                            });
+                            this.$refs["tableRef"].stopEditingCell();
+                          },
+                        },
+                      },
+                      item.option_list_v2.map((op) => {
+                        return h("el-option", {
+                          attrs: {
+                            key: op.value,
+                            label: op.label,
+                            value: op.value,
+                          },
+                        });
+                      })
+                    );
+                  } else {
+                    let editable = true;
+                    if (row.__flag === "add") {
+                      // 新增行 处理in_add
+                      if (this.addColsMap[column.field]?.in_add !== 1) {
+                        editable = false;
+                      }
+                    } else {
+                      // 编辑行 处理in_update
+                      if (this.updateColsMap[column.field]?.in_update !== 1) {
+                        editable = false;
+                      }
+                    }
+                    if (row.__flag !== "add" && !row?._button_auth?.edit) {
+                      editable = false;
+                    }
+                    return h(RenderHtml, {
+                      attrs: {
+                        treeInfo: this.treeInfo,
+                        row,
+                        column: setColumn,
+                        editable: editable,
+                        html: row[column.field],
+                      },
+                      on: {
+                        unfold: (event, callback) => {
+                          this.loadTree(event, row, rowIndex, callback);
+                        },
+                        change: (event) => {
+                          // self.$set(row, column.field, event);
+                          this.$refs["tableRef"].startEditingCell({
+                            rowKey: row.rowKey,
+                            colKey: column.field,
+                            defaultValue: event || null,
+                          });
+                          this.$refs["tableRef"].stopEditingCell();
+                        },
+                      },
+                    });
+                  }
                 };
               } else if (["Date", "DateTime"].includes(item.col_type)) {
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
@@ -1036,6 +1238,7 @@ export default {
                   }
                   return h(RenderHtml, {
                     attrs: {
+                      treeInfo: this.treeInfo,
                       row,
                       column:
                         row.__flag === "add"
@@ -1152,7 +1355,12 @@ export default {
         });
       }
     },
-    insert2Rows(index) {
+    /**
+     *
+     * @param {*} index 插入到第几条数据
+     * @param {*} parentRow 父节点数据
+     */
+    insert2Rows(index, parentRow) {
       // 插入到第几行
       if (index >= 0) {
         const __id = uniqueId("table_item_");
@@ -1160,6 +1368,7 @@ export default {
           rowKey: __id,
           __id,
           __flag: "add",
+          __parent_row: cloneDeep(parentRow),
         };
         this.allFields.forEach((field) => {
           if (field.editable) {
@@ -1210,6 +1419,10 @@ export default {
             }
           });
         }
+        if (parentRow && parentRow[this.treeInfo.idCol]) {
+          dataItem[this.treeInfo.pidCol] = parentRow[this.treeInfo.idCol];
+          dataItem.__indent = parentRow.__indent ? parentRow.__indent + 40 : 40;
+        }
         this.tableData.splice(index, 0, dataItem);
       }
     },
@@ -1222,6 +1435,88 @@ export default {
       }
       this.insertRowNumber = 0;
     },
+    loadTree(load, row, rowIndex, callback) {
+      if (load) {
+        // 加载当前数据的子数据
+        let loadingInstance = Loading.service({ fullscreen: true });
+        let treeList = this.treeList.filter(
+          (item) =>
+            item[this.treeInfo["pidCol"]] === row[this.treeInfo["idCol"]]
+        );
+        if (treeList?.length) {
+          this.tableData.splice(rowIndex + 1, 0, ...cloneDeep(treeList));
+          callback(true);
+          loadingInstance.close();
+          return;
+        }
+        onSelect(
+          this.serviceName,
+          this.srvApp,
+          [
+            {
+              colName: this.treeInfo.pidCol,
+              ruleType: "eq",
+              value: row[this.treeInfo.idCol],
+            },
+          ],
+          {
+            rownumber: this.page.rownumber,
+            pageNo: this.page.pageNo,
+            vpage_no: this.v2data?.vpage_no,
+            order: this.sortState,
+          }
+        ).then((res) => {
+          loadingInstance.close();
+          if (res?.state === "SUCCESS") {
+            let tableData = cloneDeep(this.tableData);
+            let __indent = 40;
+            if (row.__indent === 0 || row.__indent > 0) {
+              __indent = row.__indent + 40;
+            }
+            let resData = res.data.map((item) => {
+              const __id = uniqueId("table_item_");
+              let dataItem = {
+                rowKey: __id,
+                __id,
+                __flag: null,
+                ...item,
+                __indent,
+              };
+              this.treeList.push(cloneDeep(dataItem));
+              return dataItem;
+            });
+            this.$set(row, "__children", cloneDeep(resData));
+            tableData.splice(rowIndex + 1, 0, ...cloneDeep(resData));
+            this.tableData = cloneDeep(tableData);
+            let oldTableData = this.oldTableData;
+            const oldRowDataIndex = oldTableData.findIndex(
+              (item) => item.__id && item.__id === row.__id
+            );
+            oldTableData.splice(oldRowDataIndex + 1, 0, ...cloneDeep(resData));
+            this.oldTableData = cloneDeep(oldTableData);
+            callback(true);
+          } else {
+            callback(false);
+          }
+        });
+      } else {
+        // 隐藏当前数据的子数据
+        this.tableData = this.tableData.filter((item) => {
+          if (item.path) {
+            return (
+              item[this.treeInfo["idCol"]] === row[this.treeInfo["idCol"]] ||
+              !item.path.includes(row[this.treeInfo["idCol"]])
+            );
+          } else {
+            return (
+              item[this.treeInfo["pidCol"]] !== row[this.treeInfo["idCol"]]
+            );
+          }
+        });
+        callback();
+      }
+    },
+
     async getList() {
       if (this.serviceName) {
         this.loading = true;
@@ -1281,9 +1576,28 @@ export default {
       }
     },
     async getV2Data() {
-      const res = await getServiceV2(this.serviceName, "list", this.srvApp);
+      const res = await getServiceV2(
+        this.serviceName,
+        this.$route?.query?.isTree ? "treelist" : "list",
+        this.srvApp
+      );
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
+        let addChildButton = this.v2data?.rowButton?.find((item) =>
+          item.button_type.includes("addchild")
+        );
+        if (addChildButton) {
+          const treeMenus = [
+            {
+              type: "addchild",
+              label: "添加下级节点",
+            },
+            {
+              type: "SEPARATOR",
+            },
+          ];
+          this.contextmenuBodyOption.contextmenus.unshift(...treeMenus);
+        }
         const editBtn = res.data?.rowButton?.find(
           (item) => item.button_type === "edit"
         );
