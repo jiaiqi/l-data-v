@@ -1,5 +1,10 @@
 <template>
-  <div v-loading="loading" class="flex justify-between items-center">
+  <div
+    v-loading="loading"
+    class="flex justify-between items-center"
+    @dblclick.stop.capture.prevent=""
+    @input.stop.capture.prevent=""
+  >
     <el-select
       v-model="modelValue"
       remote
@@ -221,7 +226,7 @@ export default {
       this.$emit("input", this.modelValue);
       this.options = JSON.parse(JSON.stringify(this.tableData));
       this.dialogVisible = false;
-      this.filterText = ''
+      this.filterText = "";
     },
     getFkColumns() {
       const req = {
@@ -282,7 +287,7 @@ export default {
       if (this.setDisabled) {
         return;
       }
-      this.filterText = ''
+      this.filterText = "";
       this.dialogVisible = true;
       this.pageNo = 1;
       this.rownumber = 5;

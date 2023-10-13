@@ -1,5 +1,10 @@
 <template>
-  <div class="render-html" :style="setStyle" v-loading="loadingFold">
+  <div
+    class="render-html"
+    :style="setStyle"
+    v-loading="loadingFold"
+    @dblclick.capture.stop.prevent="showDialog"
+  >
     <div class="flex">
       <div
         class="prefix-icon"
@@ -9,7 +14,10 @@
         <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
         <div class="unfold-icon el-icon-plus" v-else></div>
       </div>
-      <div class="prefix-icon cursor-initial" v-else-if="column.isFirstCol"></div>
+      <div
+        class="prefix-icon cursor-initial"
+        v-else-if="column.isFirstCol"
+      ></div>
       <div v-html="html"></div>
     </div>
     <el-button
@@ -76,9 +84,14 @@ export default {
   },
   computed: {
     setStyle() {
-      if (this.row?.__indent && this.column.isFirstCol) {
-        return `--row_indent:${this.row?.__indent}px;`;
+      let str = "";
+      if (this.useEditor) {
+        str += `min-height:40px;`;
       }
+      if (this.row?.__indent && this.column.isFirstCol) {
+        str += `--row_indent:${this.row?.__indent}px;`;
+      }
+      return str;
     },
     useEditor() {
       return ["Note", "RichText"].includes(this.column.col_type);

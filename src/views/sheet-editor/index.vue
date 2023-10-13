@@ -68,6 +68,7 @@
       :contextmenu-header-option="contextmenuHeaderOption"
       :row-style-option="rowStyleOption"
       :column-width-resize-option="columnWidthResizeOption"
+      :event-custom-option="eventCustomOption"
       :columnHiddenOption="columnHiddenOption"
     />
     <div class="text-center">
@@ -137,6 +138,28 @@ export default {
       v2data: {}, //select v2
       allFields: [], //所有字段
       columns: [], //表头字段
+      eventCustomOption: {
+        bodyRowEvents: ({ row, rowIndex }) => {
+          return {
+            // click: (event) => {
+            //   console.log("click::", row, rowIndex, event);
+            // },
+            dblclick: (event) => {
+              console.log("dblclick::", row, rowIndex, event);
+              return false;
+            },
+            // contextmenu: (event) => {
+            //   console.log("contextmenu::", row, rowIndex, event);
+            // },
+            // mouseenter: (event) => {
+            //   console.log("mouseenter::", row, rowIndex, event);
+            // },
+            // mouseleave: (event) => {
+            //   console.log("mouseleave::", row, rowIndex, event);
+            // },
+          };
+        },
+      },
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
           if (row?.__flag === "add") {
@@ -333,7 +356,10 @@ export default {
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
           console.log("beforeStartCellEditing：", cellValue);
-          const colType = column?.__field_info?.col_type;
+          // const colType = column?.__field_info?.col_type;
+          // if(column?.__field_info?.bx_col_type==='fk'){
+          //   return false
+          // }
           if (row.__flag === "add") {
             // 新增行 处理in_add
             if (this.addColsMap[column.field]?.in_add !== 1) {
@@ -416,7 +442,6 @@ export default {
           console.log("selectionRangeKeys::", selectionRangeKeys);
           console.log("selectionRangeIndexes::", selectionRangeIndexes);
           let startRowIndex = selectionRangeIndexes.startRowIndex;
-          
         },
         afterMenuClick: ({
           type,
