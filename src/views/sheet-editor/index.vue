@@ -86,7 +86,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import {
   getServiceV2,
   onSelect,
@@ -1461,16 +1461,16 @@ export default {
       if (load) {
         // 加载当前数据的子数据
         let loadingInstance = Loading.service({ fullscreen: true });
-        let treeList = this.treeList.filter(
-          (item) =>
-            item[this.treeInfo["pidCol"]] === row[this.treeInfo["idCol"]]
-        );
-        if (treeList?.length) {
-          this.tableData.splice(rowIndex + 1, 0, ...cloneDeep(treeList));
-          callback(true);
-          loadingInstance.close();
-          return;
-        }
+        // let treeList = this.treeList.filter(
+        //   (item) =>
+        //     item[this.treeInfo["pidCol"]] === row[this.treeInfo["idCol"]]
+        // );
+        // if (treeList?.length) {
+        //   this.tableData.splice(rowIndex + 1, 0, ...cloneDeep(treeList));
+        //   callback(true);
+        //   loadingInstance.close();
+        //   return;
+        // }
         onSelect(
           this.serviceName,
           this.srvApp,
@@ -1504,7 +1504,7 @@ export default {
                 ...item,
                 __indent,
               };
-              this.treeList.push(cloneDeep(dataItem));
+              // this.treeList.push(cloneDeep(dataItem));
               return dataItem;
             });
             this.$set(row, "__children", cloneDeep(resData));
