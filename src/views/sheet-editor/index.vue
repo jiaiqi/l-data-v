@@ -86,7 +86,7 @@
   </div>
 </template>
 
-<script lang="ts">
+<script>
 import {
   getServiceV2,
   onSelect,
@@ -379,6 +379,8 @@ export default {
               return false;
             }
           }
+          // let editBtnIndex = this.v2data.rowButton?.findIndex(item=>item.button_type==='edit')
+          // if (row.__flag !== "add" && !row?._buttons[editBtnIndex]) {
           if (row.__flag !== "add" && !row?._button_auth?.edit) {
             Message.error("没有当前行的编辑权限！");
             this.$nextTick(() => {
@@ -1144,8 +1146,10 @@ export default {
                         html: row[column.field],
                       },
                       on: {
-                        onfocus:()=>{
-                          this.$refs["tableRef"].clearCellSelectionCurrentCell();
+                        onfocus: () => {
+                          this.$refs[
+                            "tableRef"
+                          ].clearCellSelectionCurrentCell();
                         },
                         unfold: (event, callback) => {
                           this.loadTree(event, row, rowIndex, callback);
@@ -1495,8 +1499,22 @@ export default {
             if (row.__indent === 0 || row.__indent > 0) {
               __indent = row.__indent + 40;
             }
+
             let resData = res.data.map((item) => {
               const __id = uniqueId("table_item_");
+              if (
+                item?._buttons?.length &&
+                item?._buttons?.length === this.v2data?.rowButton?.length
+              ) {
+                item._button_auth = {};
+                this.v2data?.rowButton.forEach((btn, index) => {
+                  if (item?._buttons[index] === 1) {
+                    item._button_auth[btn.button_type] = true;
+                  } else if (item?._buttons[index] === 0) {
+                    item._button_auth[btn.button_type] = false;
+                  }
+                });
+              }
               let dataItem = {
                 rowKey: __id,
                 __id,
@@ -1504,6 +1522,7 @@ export default {
                 ...item,
                 __indent,
               };
+
               // this.treeList.push(cloneDeep(dataItem));
               return dataItem;
             });

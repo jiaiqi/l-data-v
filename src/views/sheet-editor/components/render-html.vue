@@ -170,10 +170,12 @@ export default {
       });
     },
     showRichEditor() {
-      this.dialogTableVisible = true;
-      this.innerHtml = this.html;
-      this.editor?.focus()
-      this.$emit('onfocus')
+      if (this.useEditor) {
+        this.dialogTableVisible = true;
+        this.innerHtml = this.html;
+        this.editor?.focus();
+        this.$emit("onfocus");
+      }
     },
     customPaste(editor, event) {
       // event 是 ClipboardEvent 类型，可以拿到粘贴的数据
