@@ -2,8 +2,7 @@
   <div
     v-loading="loading"
     class="flex justify-between items-center"
-    @dblclick.stop.capture.prevent=""
-    @input.stop.capture.prevent=""
+    @dblclick.stop=""
   >
     <el-select
       v-model="modelValue"

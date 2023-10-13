@@ -468,13 +468,6 @@ export default {
             if (startRow?.__parent_row) {
               this.insert2Rows(startRowIndex + 1, startRow?.__parent_row);
             } else {
-              let lastChildIndex = this.tableData.findLastIndex(
-                (item) =>
-                  item[this.treeInfo.pidCol] === startRow[this.treeInfo.idCol]
-              );
-              if (lastChildIndex != -1) {
-                startRowIndex = lastChildIndex;
-              }
               this.insert2Rows(startRowIndex + 1);
             }
           } else if (type === "insertRowAbove") {
@@ -486,6 +479,7 @@ export default {
                 (item) =>
                   item[this.treeInfo.pidCol] === startRow[this.treeInfo.idCol]
               );
+              // 如果当前行有子节点 则新增行在子节点之后
               if (lastChildIndex != -1) {
                 startRowIndex = lastChildIndex;
               }
@@ -1150,6 +1144,9 @@ export default {
                         html: row[column.field],
                       },
                       on: {
+                        onfocus:()=>{
+                          this.$refs["tableRef"].clearCellSelectionCurrentCell();
+                        },
                         unfold: (event, callback) => {
                           this.loadTree(event, row, rowIndex, callback);
                         },

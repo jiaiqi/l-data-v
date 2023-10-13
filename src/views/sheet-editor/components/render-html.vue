@@ -3,7 +3,7 @@
     class="render-html"
     :style="setStyle"
     v-loading="loadingFold"
-    @dblclick.capture.stop.prevent="showDialog"
+    @dblclick.stop="showRichEditor"
   >
     <div class="flex">
       <div
@@ -24,7 +24,7 @@
       size="mini"
       class="edit-btn"
       circle
-      @click.stop.capture.prevent="showDialog"
+      @click.stop="showRichEditor"
       v-if="useEditor"
       ><i class="el-icon-edit"></i
     ></el-button>
@@ -169,10 +169,11 @@ export default {
         this.unfold = !this.unfold;
       });
     },
-    showDialog() {
-      console.log("showDialog", this.dialogTableVisible);
+    showRichEditor() {
       this.dialogTableVisible = true;
       this.innerHtml = this.html;
+      this.editor?.focus()
+      this.$emit('onfocus')
     },
     customPaste(editor, event) {
       // event 是 ClipboardEvent 类型，可以拿到粘贴的数据
