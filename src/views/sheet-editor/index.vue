@@ -122,7 +122,7 @@ export default {
     this.initPage().then(() => {
       if (this.v2data?.is_tree === true) {
         this.listType = "treelist";
-        this.initPage()
+        this.initPage();
       }
       this.getList();
     });
@@ -1664,33 +1664,31 @@ export default {
           (item) => item.button_type === "edit"
         );
         if (editBtn?.service_name) {
-          getServiceV2(
+          const ress = await getServiceV2(
             editBtn.service_name,
             "update",
             this.srvApp,
             this.pageNo
-          ).then((ress) => {
-            this.updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
-              pre[cur.columns] = cur;
-              return pre;
-            }, {});
-          });
+          );
+          this.updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
+            pre[cur.columns] = cur;
+            return pre;
+          }, {});
         }
         const addBtn = res.data?.gridButton?.find(
           (item) => item.button_type === "add"
         );
         if (addBtn?.service_name) {
-          getServiceV2(
+          const ress = await getServiceV2(
             addBtn.service_name,
             "add",
             this.srvApp,
             this.pageNo
-          ).then((ress) => {
-            this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
-              pre[cur.columns] = cur;
-              return pre;
-            }, {});
-          });
+          );
+          this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
+            pre[cur.columns] = cur;
+            return pre;
+          }, {});
         }
 
         this.v2data.allFields = buildSrvCols(

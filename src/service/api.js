@@ -7,12 +7,12 @@ import { cloneDeep } from "lodash-es";
 const colMetaStore = {};
 const setItem = (key, data) => {
   colMetaStore[key] = data;
-  localStorage.setItem("colMetaStore", JSON.stringify(colMetaStore));
+  // localStorage.setItem("colMetaStore", JSON.stringify(colMetaStore));
 };
 const getItem = (key) => {
-  let colMetaStore = localStorage.getItem("colMetaStore");
+  // let colMetaStore = localStorage.getItem("colMetaStore");
   if (colMetaStore) {
-    colMetaStore = JSON.parse(colMetaStore);
+    // colMetaStore = JSON.parse(colMetaStore);
     return colMetaStore[key];
   }
   return;

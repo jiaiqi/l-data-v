@@ -1,6 +1,7 @@
 <template>
   <div
     class="render-html"
+    :class="{ 'is-rich-text': useEditor }"
     :style="setStyle"
     v-loading="loadingFold"
     @dblclick="showRichEditor"
@@ -81,7 +82,7 @@ export default {
     editable: Boolean,
     row: Object,
     column: Object,
-    listType:String
+    listType: String,
   },
   computed: {
     setStyle() {
@@ -99,7 +100,7 @@ export default {
     },
     showUnfold() {
       // 显示展开收起图标
-      return this.listType==='treelist' && this.row?.is_leaf === "否";
+      return this.listType === "treelist" && this.row?.is_leaf === "否";
     },
   },
   data() {
@@ -177,7 +178,7 @@ export default {
         this.editor?.focus();
         this.$emit("onfocus");
         // 阻止冒泡 拦截表格组件的双击事件
-        event.stopPropagation()
+        event.stopPropagation();
       }
     },
     customPaste(editor, event) {
@@ -223,14 +224,17 @@ export default {
   // min-height: 40px;
   text-align: left;
   --w-e-textarea-bg-color: transparent;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 10;
-  -webkit-box-orient: vertical;
   max-height: 200px;
-
   position: relative;
+  overflow-y: auto;
+  .is-rich-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 10;
+    -webkit-box-orient: vertical;
+  }
+
   &:hover {
     .edit-btn {
       display: block;
