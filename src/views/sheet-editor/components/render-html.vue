@@ -3,7 +3,7 @@
     class="render-html"
     :style="setStyle"
     v-loading="loadingFold"
-    @dblclick.stop="showRichEditor"
+    @dblclick="showRichEditor"
   >
     <div class="flex">
       <div
@@ -169,12 +169,14 @@ export default {
         this.unfold = !this.unfold;
       });
     },
-    showRichEditor() {
+    showRichEditor(event) {
       if (this.useEditor) {
         this.dialogTableVisible = true;
         this.innerHtml = this.html;
         this.editor?.focus();
         this.$emit("onfocus");
+        // 阻止冒泡 拦截表格组件的双击事件
+        event.stopPropagation()
       }
     },
     customPaste(editor, event) {
