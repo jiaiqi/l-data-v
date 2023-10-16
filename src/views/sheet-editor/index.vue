@@ -1790,8 +1790,8 @@ export default {
 // .table-body-cell__update_border {
 //   border: 1px solid #2087cc !important;
 // }
-.ve-table-header-th{
-  padding: 10px 0;
+.ve-table-header-th,.ve-table-body-td{
+  padding: 10px 0!important;
 }
 .spreadsheet {
   width: 100vw;
