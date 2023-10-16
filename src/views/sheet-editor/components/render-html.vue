@@ -81,6 +81,7 @@ export default {
     editable: Boolean,
     row: Object,
     column: Object,
+    listType:String
   },
   computed: {
     setStyle() {
@@ -98,7 +99,7 @@ export default {
     },
     showUnfold() {
       // 显示展开收起图标
-      return this.row?.is_leaf === "否";
+      return this.listType==='treelist' && this.row?.is_leaf === "否";
     },
   },
   data() {

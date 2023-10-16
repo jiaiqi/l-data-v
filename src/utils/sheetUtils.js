@@ -1,7 +1,7 @@
 import { getFkOptions } from "@/service/api";
 
 // 组装srvCols数据
-const buildSrvCols = async (cols, updateColsMap, addColsMap) => {
+const buildSrvCols = (cols, updateColsMap, addColsMap) => {
   if (Array.isArray(cols) && cols.length > 0) {
     // cols = cols.filter(item => item.in_add == 1 || item.in_update == 1)
     // cols = cols.filter((item) => item.in_list === 1);
@@ -26,11 +26,7 @@ const buildSrvCols = async (cols, updateColsMap, addColsMap) => {
         col?.validators?.includes("required") ||
         updateColsMap?.[col.columns]?.validators?.includes("required") ||
         addColsMap?.[col.columns]?.validators?.includes("required");
-      // col.editable =
-      //   (col.updatable === 1 || col.updatable === null) &&
-      //   (col.in_add === 1 || col.in_update === 1)
-      //     ? true
-      //     : false;
+
       switch (col.bx_col_type) {
         case "fk":
           col.editType = "dropdownFk";

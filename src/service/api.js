@@ -1,6 +1,22 @@
 import { Message } from "element-ui";
 // import http from "./http";
 import { $axios as http } from "../common/http";
+import { useMetaStore } from "../stores/colMeta.js";
+import { cloneDeep } from "lodash-es";
+// const metaStore = useMetaStore();
+const colMetaStore = {};
+const setItem = (key, data) => {
+  colMetaStore[key] = data;
+  localStorage.setItem("colMetaStore", JSON.stringify(colMetaStore));
+};
+const getItem = (key) => {
+  let colMetaStore = localStorage.getItem("colMetaStore");
+  if (colMetaStore) {
+    colMetaStore = JSON.parse(colMetaStore);
+    return colMetaStore[key];
+  }
+  return;
+};
 /**
  * 请求v2数据
  * @param {String} serviceName - 服务名称
@@ -8,8 +24,17 @@ import { $axios as http } from "../common/http";
  * @param {*} app - 应用
  * @param {Boolean} isTree - 是否树型列表  true/false
  */
-const getServiceV2 = async (serviceName, use_type = "list", app = "health",isTree=false) => {
+const getServiceV2 = async (
+  serviceName,
+  use_type = "list",
+  app = "health",
+  pageNo = null
+) => {
   if (serviceName) {
+    // const v2FromStore = metaStore.metaMap[`${service}-${use_type}`];
+    if (getItem(`${serviceName}-${use_type}`)) {
+      return getItem(`${serviceName}-${use_type}`);
+    }
     const req = {
       serviceName: "srvsys_service_columnex_v2_select",
       colNames: ["*"],
@@ -22,6 +47,7 @@ const getServiceV2 = async (serviceName, use_type = "list", app = "health",isTre
     let url = `${app}/select/srvsys_service_columnex_v2_select`;
     const res = await http.post(url, req);
     if (res?.data?.state === "SUCCESS") {
+      setItem(`${serviceName}-${use_type}`, cloneDeep(res.data));
       return res.data;
     }
   }
@@ -41,8 +67,8 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     if (params?.vpage_no) {
       req.vpage_no = params.vpage_no;
     }
-    if(params?.order){
-      req.order = params.order
+    if (params?.order) {
+      req.order = params.order;
     }
     const url = `${app}/select/${serviceName}`;
     const res = await http.post(url, req);
@@ -181,8 +207,8 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
       rownumber: rownumber || 20,
     },
   };
-  if(option_list_v2?.relation_condition){
-   req.relation_condition =  option_list_v2?.relation_condition
+  if (option_list_v2?.relation_condition) {
+    req.relation_condition = option_list_v2?.relation_condition;
   }
   let conditions = option_list_v2?.condition || option_list_v2?.conditions;
 
@@ -222,7 +248,7 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
       return item;
     });
   }
-  req.condition = conditions
+  req.condition = conditions;
   if (option_list_v2.serviceName) {
     let url = `${app}/select/${option_list_v2.serviceName}`;
     let res = await http.post(url, req);

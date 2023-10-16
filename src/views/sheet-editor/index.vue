@@ -4,7 +4,7 @@
       class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5"
     >
       <div
-        class="flex w-100 items-center text-sm"
+        class="flex flex-1 items-center text-sm"
         v-if="addButton && addButton.service_name"
       >
         <div class="m-r-2">添加</div>
@@ -25,8 +25,19 @@
       <div class="text-sm text-gray cursor-not-allowed" v-else>
         没有添加权限
       </div>
+      <div flex-1>
+        <el-radio-group
+          v-model="listType"
+          @input="listTypeChange"
+          size="mini"
+          v-if="isTree"
+        >
+          <el-radio-button label="list">普通列表</el-radio-button>
+          <el-radio-button label="treelist">树型列表</el-radio-button>
+        </el-radio-group>
+      </div>
 
-      <div class="flex flex-items-center">
+      <div class="flex flex-items-center flex-1 justify-end">
         <div class="color-map flex flex-items-center m-r-20">
           <div class="color-map-item flex flex-items-center">
             <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div>
@@ -101,7 +112,6 @@ import { Message, MessageBox } from "element-ui"; // 引入elementUI的Message�
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
-// import { diffString, diff } from "json-diff";
 import { RecordManager } from "./util/recordManager.js";
 import { Loading } from "element-ui";
 
@@ -109,16 +119,18 @@ export default {
   name: "SheetEditor",
   mounted() {
     this.bindKeyboardEvent(this.undo, this.redo);
-    if (this.serviceName) {
-      this.getV2Data().then(() => {
-        this.getList().then(() => {
-          this.recordManager?.push(cloneDeep(this.oldTableData));
-        });
-      });
-    }
+    this.initPage().then(() => {
+      if (this.v2data?.is_tree === true) {
+        this.listType = "treelist";
+        this.initPage()
+      }
+      this.getList();
+    });
   },
   data() {
     return {
+      pageNo: uniqueId("pageNo"),
+      listType: "list",
       treeList: [],
       page: {
         //分页信息
@@ -643,7 +655,7 @@ export default {
       if (this.setFilterState?.length) {
         defaultConditions.push(...this.setFilterState);
       }
-      if (this.isTree) {
+      if (this.isTree && this.listType === "treelist") {
         defaultConditions.push({
           colName: this.treeInfo.pidCol,
           ruleType: "isnull",
@@ -803,6 +815,20 @@ export default {
     },
   },
   methods: {
+    async initPage() {
+      if (this.serviceName) {
+        this.loading = true;
+        await this.getV2Data();
+        this.loading = false;
+        return;
+      }
+    },
+    listTypeChange(val) {
+      console.log(val);
+      this.initPage().then(() => {
+        this.getList();
+      });
+    },
     handleCurrentChange(val) {
       this.page.pageNo = val;
       this.getList();
@@ -852,7 +878,6 @@ export default {
       }
     },
     buildColumns() {
-      const self = this;
       const startRowIndex = this.startRowIndex;
       let columns = [
         {
@@ -865,7 +890,6 @@ export default {
           renderBodyCell: function ({ rowIndex, row }) {
             return startRowIndex + rowIndex + 1;
           },
-          // renderBodyCell: this.renderRowIndex,
         },
       ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
@@ -1033,6 +1057,7 @@ export default {
                         app: this.srvApp,
                         row,
                         column,
+                        listType: this.listType,
                         disabled: !columnObj.edit,
                       },
                       on: {
@@ -1144,6 +1169,7 @@ export default {
                         column: setColumn,
                         editable: editable,
                         html: row[column.field],
+                        listType: this.listType,
                       },
                       on: {
                         onfocus: () => {
@@ -1465,16 +1491,7 @@ export default {
       if (load) {
         // 加载当前数据的子数据
         let loadingInstance = Loading.service({ fullscreen: true });
-        // let treeList = this.treeList.filter(
-        //   (item) =>
-        //     item[this.treeInfo["pidCol"]] === row[this.treeInfo["idCol"]]
-        // );
-        // if (treeList?.length) {
-        //   this.tableData.splice(rowIndex + 1, 0, ...cloneDeep(treeList));
-        //   callback(true);
-        //   loadingInstance.close();
-        //   return;
-        // }
+
         onSelect(
           this.serviceName,
           this.srvApp,
@@ -1522,8 +1539,6 @@ export default {
                 ...item,
                 __indent,
               };
-
-              // this.treeList.push(cloneDeep(dataItem));
               return dataItem;
             });
             this.$set(row, "__children", cloneDeep(resData));
@@ -1611,6 +1626,8 @@ export default {
         this.tableData = tableData;
 
         this.oldTableData = JSON.parse(JSON.stringify(tableData));
+        this.recordManager = new RecordManager();
+        this.recordManager?.push(cloneDeep(this.oldTableData));
         if (tableData.length === 0) {
           this.insert2Rows(0);
         }
@@ -1619,11 +1636,15 @@ export default {
     async getV2Data() {
       const res = await getServiceV2(
         this.serviceName,
-        this.$route?.query?.isTree ? "treelist" : "list",
-        this.srvApp
+        this.listType,
+        this.srvApp,
+        this.pageNo
       );
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
+        // if(this.v2data?.is_tree===true){
+        //   this.listType = 'treelist'
+        // }
         let addChildButton = this.v2data?.rowButton?.find((item) =>
           item.button_type.includes("addchild")
         );
@@ -1643,32 +1664,36 @@ export default {
           (item) => item.button_type === "edit"
         );
         if (editBtn?.service_name) {
-          const ress = await getServiceV2(
+          getServiceV2(
             editBtn.service_name,
             "update",
-            this.srvApp
-          );
-          this.updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
-            pre[cur.columns] = cur;
-            return pre;
-          }, {});
+            this.srvApp,
+            this.pageNo
+          ).then((ress) => {
+            this.updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
+              pre[cur.columns] = cur;
+              return pre;
+            }, {});
+          });
         }
         const addBtn = res.data?.gridButton?.find(
           (item) => item.button_type === "add"
         );
         if (addBtn?.service_name) {
-          const ress = await getServiceV2(
+          getServiceV2(
             addBtn.service_name,
             "add",
-            this.srvApp
-          );
-          this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
-            pre[cur.columns] = cur;
-            return pre;
-          }, {});
+            this.srvApp,
+            this.pageNo
+          ).then((ress) => {
+            this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
+              pre[cur.columns] = cur;
+              return pre;
+            }, {});
+          });
         }
 
-        this.v2data.allFields = await buildSrvCols(
+        this.v2data.allFields = buildSrvCols(
           this.v2data.srv_cols,
           this.updateColsMap,
           this.addColsMap
@@ -1678,29 +1703,12 @@ export default {
           pre[cur.columns] = cur;
           return pre;
         }, {});
-        // this.initTableData();
         document.title = res.data.service_view_name;
         this.columns = this.buildColumns();
       }
     },
     scrolling({ startRowIndex }) {
       this.startRowIndex = startRowIndex;
-    },
-    // 初始化表格
-    initTableData() {
-      let tableData = [];
-      for (let i = 0; i < 100; i++) {
-        const __id = uniqueId("table_item_");
-        let dataItem = {
-          rowKey: __id,
-          __id,
-        };
-        this.allFields.forEach((field) => {
-          dataItem[field.columns] = "";
-        });
-        tableData.push(dataItem);
-      }
-      this.tableData = tableData;
     },
     /**
      * @description 绑定ctrl+z ctrl+y事件
