@@ -655,12 +655,12 @@ export default {
       if (this.setFilterState?.length) {
         defaultConditions.push(...this.setFilterState);
       }
-      if (this.isTree && this.listType === "treelist") {
-        defaultConditions.push({
-          colName: this.treeInfo.pidCol,
-          ruleType: "isnull",
-        });
-      }
+      // if (this.isTree && this.listType === "treelist") {
+      //   defaultConditions.push({
+      //     colName: this.treeInfo.pidCol,
+      //     ruleType: "isnull",
+      //   });
+      // }
       return defaultConditions;
     },
     fkCondition() {
@@ -1061,6 +1061,11 @@ export default {
                         disabled: !columnObj.edit,
                       },
                       on: {
+                        onfocus: () => {
+                          this.$refs[
+                            "tableRef"
+                          ].clearCellSelectionCurrentCell();
+                        },
                         input: (event) => {
                           // self.$set(row, column.field, event);
                           console.log(row, column.field, event);
@@ -1585,6 +1590,8 @@ export default {
             pageNo: this.page.pageNo,
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
+            isTree:this.isTree,
+            pidCol:this.treeInfo?.pidCol
           }
         );
         this.loading = false;
@@ -1607,7 +1614,6 @@ export default {
             return item;
           });
         }
-
         this.page.total = res.page.total;
 
         let tableData = [];
@@ -1766,6 +1772,9 @@ export default {
       color: #fff;
     }
   }
+  .el-icon-arrow-right {
+    color: #fff;
+  }
 }
 .table-body-cell__update {
   // color: #2087cc !important;
@@ -1781,6 +1790,9 @@ export default {
 // .table-body-cell__update_border {
 //   border: 1px solid #2087cc !important;
 // }
+.ve-table-header-th{
+  padding: 10px 0;
+}
 .spreadsheet {
   width: 100vw;
   height: 100vh;
@@ -1789,6 +1801,9 @@ export default {
   .el-select .el-input__inner {
     border: none !important;
     background-color: transparent !important;
+  }
+  .el-select .el-icon-arrow-right{
+
   }
 }
 

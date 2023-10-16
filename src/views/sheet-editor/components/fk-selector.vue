@@ -15,6 +15,7 @@
       :value-key="srvInfo.refed_col"
       @click.native="remoteMethod"
       @change="onSelectChange"
+      @focus="onFocus"
       clearable
       :disabled="setDisabled"
     >
@@ -154,6 +155,10 @@ export default {
     }
   },
   methods: {
+    onFocus(){
+      console.log('onfocus');
+      this.$emit('onfocus')
+    },
     toFilter(query) {
       this.pageNo = 1;
       this.total = 0;
@@ -350,4 +355,6 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+
+</style>

@@ -70,6 +70,17 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     if (params?.order) {
       req.order = params.order;
     }
+    if (params.isTree) {
+      // rdt: Return Data Type  ttd: top tree data
+      if (req.condition?.length) {
+        req["rdt"] = "ttd";
+      } else if (params.pidCol) {
+        req.condition.push({
+          colName: params.pidCol,
+          ruleType: "isnull",
+        });
+      }
+    }
     const url = `${app}/select/${serviceName}`;
     const res = await http.post(url, req);
     if (res?.data?.state === "SUCCESS") {

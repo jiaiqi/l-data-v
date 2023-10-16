@@ -45,9 +45,10 @@
         :editor="editor"
         :defaultConfig="toolbarConfig"
         :mode="mode"
-        v-if="editable"
+        v-if="editable && useEditor"
       />
       <Editor
+        v-if="useEditor"
         v-model="innerHtml"
         style="height: 500px; overflow-y: hidden; border-bottom: 1px solid #ccc"
         :defaultConfig="editorConfig"
@@ -56,6 +57,15 @@
         @onCreated="onCreated"
         @customPaste="customPaste"
       />
+      <el-input
+        type="textarea"
+        :rows="10"
+        :disabled="!editable"
+        placeholder="请输入内容"
+        v-model="innerHtml"
+        v-else
+      >
+      </el-input>
       <div class="text-center m-t-5" v-if="editable">
         <el-button
           type="primary"
@@ -172,7 +182,7 @@ export default {
       });
     },
     showRichEditor(event) {
-      if (this.useEditor) {
+      if (this.useEditor || this.column.col_type === "MultilineText") {
         this.dialogTableVisible = true;
         this.innerHtml = this.html;
         this.editor?.focus();
@@ -226,7 +236,7 @@ export default {
   --w-e-textarea-bg-color: transparent;
   max-height: 200px;
   position: relative;
-  overflow-y: auto;
+  // overflow-y: auto;
   .is-rich-text {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -234,7 +244,18 @@ export default {
     -webkit-line-clamp: 10;
     -webkit-box-orient: vertical;
   }
-
+  .detail-btn {
+    position: absolute;
+    top: 0;
+    right: 20px;
+    display: none;
+    z-index: 9999;
+  }
+  &:hover {
+    .detail-btn {
+      display: block;
+    }
+  }
   &:hover {
     .edit-btn {
       display: block;
