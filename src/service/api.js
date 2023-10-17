@@ -73,7 +73,7 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     }
     if (params.isTree) {
       // rdt: Return Data Type  ttd: top tree data
-      if (req.condition?.length) {
+      if (req.condition?.length||params.forceUseTTD) {
         req["rdt"] = "ttd";
       } else if (params.pidCol) {
         req.condition.push({

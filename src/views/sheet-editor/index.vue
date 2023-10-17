@@ -639,7 +639,7 @@ export default {
       let defaultConditions = [];
       if (query && Object.keys(query).length > 0) {
         Object.keys(query).forEach((key) => {
-          if (!["srvApp", "isTree"].includes(key)) {
+          if (!["srvApp", "isTree",'topTreeData'].includes(key)) {
             defaultConditions.push({
               colName: key,
               ruleType: "eq",
@@ -1590,7 +1590,8 @@ export default {
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
             isTree:this.isTree&&this.listType==='treelist',
-            pidCol:this.treeInfo?.pidCol
+            pidCol:this.treeInfo?.pidCol,
+            forceUseTTD:this.$route?.query?.topTreeData
           }
         );
         this.loading = false;
