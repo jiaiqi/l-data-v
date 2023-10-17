@@ -637,7 +637,6 @@ export default {
     defaultConditions() {
       const query = this.$route.query;
       let defaultConditions = [];
-
       if (query && Object.keys(query).length > 0) {
         Object.keys(query).forEach((key) => {
           if (!["srvApp", "isTree"].includes(key)) {
@@ -1590,7 +1589,7 @@ export default {
             pageNo: this.page.pageNo,
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
-            isTree:this.isTree,
+            isTree:this.isTree&&this.listType==='treelist',
             pidCol:this.treeInfo?.pidCol
           }
         );

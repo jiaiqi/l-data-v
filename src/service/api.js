@@ -58,7 +58,8 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     const req = {
       serviceName: serviceName,
       colNames: ["*"],
-      condition: condition || [],
+      // condition: condition|| [],
+      condition: condition ? cloneDeep(condition) : [],
       page: {
         rownumber: params?.rownumber || 100,
         pageNo: params?.pageNo || 1,
