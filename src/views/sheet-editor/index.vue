@@ -94,6 +94,16 @@
       >
       </el-pagination>
     </div>
+
+    <select-parent-node
+      ref="changeParentRef"
+      :srvApp="srvApp"
+      :options="
+        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+      "
+      :option-info="parentColOption"
+      @confirm="updateParentNo"
+    ></select-parent-node>
   </div>
 </template>
 
@@ -112,8 +122,10 @@ import { Message, MessageBox } from "element-ui"; // 引入elementUI的Message�
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
+import selectParentNode from "./components/select-parent-node.vue";
 import { RecordManager } from "./util/recordManager.js";
 import { Loading } from "element-ui";
+import { $http } from "../../common/http";
 
 export default {
   name: "SheetEditor",
@@ -127,8 +139,12 @@ export default {
       this.getList();
     });
   },
+  components: {
+    selectParentNode,
+  },
   data() {
     return {
+      changeParentdialogVisible: false,
       pageNo: uniqueId("pageNo"),
       listType: "list",
       treeList: [],
@@ -477,6 +493,18 @@ export default {
             }
             this.insert2Rows(startRowIndex + 1, startRow);
           }
+          if (type === "changeParent") {
+            // 更改父节点
+            if (startRow?.__flag === "add") {
+              this.$message.error("新增行不能直接更改父节点,请先保存操作!");
+              return;
+            }
+            if (startRow.__flag !== "add" && !startRow?._button_auth?.edit) {
+              this.$message.error("没有当前行的编辑权限");
+              return;
+            }
+            this.showChangeParent(startRow);
+          }
           if (type === "insertRowBelow") {
             //上方插入行
             if (startRow?.__parent_row) {
@@ -639,7 +667,7 @@ export default {
       let defaultConditions = [];
       if (query && Object.keys(query).length > 0) {
         Object.keys(query).forEach((key) => {
-          if (!["srvApp", "isTree",'topTreeData'].includes(key)) {
+          if (!["srvApp", "isTree", "topTreeData"].includes(key)) {
             defaultConditions.push({
               colName: key,
               ruleType: "eq",
@@ -795,13 +823,23 @@ export default {
       return this.$route.params?.service || this.$route.query?.service;
     },
     isTree() {
-      return this.v2data?.is_tree === true && this.treeInfo;
+      return this.treeInfo && this.v2data?.is_tree === true;
+    },
+    parentColOption() {
+      if (
+        this.treeInfo?.pidCol &&
+        this.updateColsMap?.[this.treeInfo.pidCol]?.in_update === 1
+      ) {
+        return this.updateColsMap[this.treeInfo.pidCol]["option_list_v2"];
+      }
     },
     treeInfo() {
       if (this.v2data?.parent_no_col && this.v2data?.no_col) {
         return {
           pidCol: this.v2data?.parent_no_col,
           idCol: this.v2data?.no_col,
+          dispCol: this.v2data?.key_disp_col,
+          service: this.serviceName,
         };
       }
     },
@@ -814,6 +852,35 @@ export default {
     },
   },
   methods: {
+    updateParentNo(val, row) {
+      if (this.updateButton?.service_name) {
+        const url = `/${this.srvApp}/operate/${this.updateButton?.service_name}`;
+        const req = [
+          {
+            serviceName: this.updateButton?.service_name,
+            condition: [{ colName: "id", ruleType: "eq", value: row.id }],
+            data: [
+              {
+                [this.v2data?.parent_no_col]: val,
+              },
+            ],
+          },
+        ];
+        $http.post(url, req).then((res) => {
+          if (res?.data?.state == "SUCCESS") {
+            this.$message.success(res.data.resultMessage);
+          } else {
+            this.$message.error(res.data.resultMessage);
+          }
+          this.getList();
+        });
+      }
+    },
+    showChangeParent(row) {
+      // 显示更改父节点弹窗
+      // this.changeParentdialogVisible = true
+      this.$refs?.changeParentRef?.open(row);
+    },
     async initPage() {
       if (this.serviceName) {
         this.loading = true;
@@ -1589,9 +1656,9 @@ export default {
             pageNo: this.page.pageNo,
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
-            isTree:this.isTree&&this.listType==='treelist',
-            pidCol:this.treeInfo?.pidCol,
-            forceUseTTD:this.$route?.query?.topTreeData
+            isTree: this.isTree && this.listType === "treelist",
+            pidCol: this.treeInfo?.pidCol,
+            forceUseTTD: this.$route?.query?.topTreeData,
           }
         );
         this.loading = false;
@@ -1659,6 +1726,10 @@ export default {
             {
               type: "addchild",
               label: "添加下级节点",
+            },
+            {
+              type: "changeParent",
+              label: "更改父节点",
             },
             {
               type: "SEPARATOR",
@@ -1790,8 +1861,9 @@ export default {
 // .table-body-cell__update_border {
 //   border: 1px solid #2087cc !important;
 // }
-.ve-table-header-th,.ve-table-body-td{
-  padding: 10px 0!important;
+.ve-table-header-th,
+.ve-table-body-td {
+  padding: 10px 0 !important;
 }
 .spreadsheet {
   width: 100vw;
@@ -1802,8 +1874,7 @@ export default {
     border: none !important;
     background-color: transparent !important;
   }
-  .el-select .el-icon-arrow-right{
-
+  .el-select .el-icon-arrow-right {
   }
 }
 
