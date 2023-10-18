@@ -55,7 +55,7 @@
           size="mini"
           type="primary"
           @click="saveData"
-          :disabled="buildReqParams.length === 0"
+          :disabled="!calcReqData||calcReqData.length==0"
           >保存</el-button
         >
       </div>
@@ -438,7 +438,7 @@ export default {
           }
           // let editBtnIndex = this.v2data.rowButton?.findIndex(item=>item.button_type==='edit')
           // if (row.__flag !== "add" && !row?._buttons[editBtnIndex]) {
-          if (row.__flag !== "add" && !row?._button_auth?.edit) {
+          if (row.__flag !== "add" && !row?.__button_auth?.edit) {
             Message.error("没有当前行的编辑权限！");
             this.$nextTick(() => {
               this.$refs["tableRef"].stopEditingCell();
@@ -498,6 +498,9 @@ export default {
     };
   },
   computed: {
+    calcReqData(){
+      return this.buildReqParams()||[]
+    },
     // body 右键菜单配置
     contextmenuBodyOption() {
       return {
@@ -539,7 +542,7 @@ export default {
               return;
             }
             // if (startRow.__flag !== "add" && !this.updateButton?.permission) {
-            if (startRow.__flag !== "add" && !startRow?._button_auth?.edit) {
+            if (startRow.__flag !== "add" && !startRow?.__button_auth?.edit) {
               this.$message.error("没有当前行的编辑权限");
               return;
             }
@@ -806,100 +809,96 @@ export default {
         item.button_type?.includes("edit")
       );
     },
-    buildReqParams() {
-      const tableData = JSON.parse(JSON.stringify(this.tableData));
-      const reqData = [];
-      const addDatas = [];
-      const ignoreKeys = [
-        "__id",
-        "__flag",
-        "rowKey",
-        "id",
-        "_button_auth",
-        "_buttons",
-      ];
-      tableData.forEach((item, index) => {
-        if (
-          item.__flag === "update" &&
-          item.id &&
-          this.updateButton?.service_name
-        ) {
-          const oldItem = this.oldTableData.find((d) => d.__id === item.__id);
-          const updateObj = {};
-          if (oldItem) {
-            Object.keys(oldItem).forEach((key) => {
-              if (
-                key.indexOf("_") !== 0 &&
-                !ignoreKeys.includes(key) &&
-                this.updateColsMap?.[key]?.in_update !== 0
-              ) {
-                if (oldItem[key] !== item[key]) {
-                  if (!item[key]) {
-                    item[key] = null;
-                  }
-                  updateObj[key] = item[key];
-                }
-              }
-            });
-            if (Object.keys(updateObj)?.length) {
-              reqData.push({
-                serviceName: this.updateButton.service_name,
-                condition: [{ colName: "id", ruleType: "eq", value: item.id }],
-                data: [updateObj],
-              });
-            }
-          }
-        } else if (item.__flag === "add" && this.addButton?.service_name) {
-          const addObj = {
-            ...item,
-          };
-          Object.keys(addObj).forEach((key) => {
-            if (addObj[key] === null || this.addColsMap?.[key]?.in_add !== 1) {
-              delete addObj[key];
-            }
-          });
-          if (this.defaultConditions?.length) {
-            this.defaultConditions.forEach((item) => {
-              if (item.value) {
-                addObj[item.colName] = item.value;
-              }
-            });
-          } else if (this.fkCondition?.colName) {
-            addObj[this.fkCondition.colName] = this.fkCondition.value;
-          }
-          delete addObj.__id;
-          delete addObj.__flag;
-          delete addObj.rowKey;
-          Object.keys(addObj).forEach((key) => {
-            if (ignoreKeys.includes(key) || key.indexOf("_") === 0) {
-              delete addObj[key];
-            }
-          });
-          if (
-            Object.keys(addObj).length > 0 &&
-            Object.keys(addObj).some(
-              (key) =>
-                addObj[key] !== undefined &&
-                addObj[key] !== null &&
-                addObj[key] !== ""
-            )
-          ) {
-            addDatas.push(addObj);
-            // reqData.push({
-            //   serviceName: this.addButton.service_name,
-            //   data: [addObj],
-            // });
-          }
-        }
-      });
-      if (addDatas?.length) {
-        reqData.push({
-          serviceName: this.addButton.service_name,
-          data: addDatas,
-        });
-      }
-      return reqData;
-    },
+    // buildReqParams() {
+    //   const tableData = JSON.parse(JSON.stringify(this.tableData));
+    //   const reqData = [];
+    //   const addDatas = [];
+    //   const ignoreKeys = [
+    //     "__id",
+    //     "__flag",
+    //     "rowKey",
+    //     "id",
+    //     "__button_auth",
+    //     "_buttons",
+    //   ];
+    //   tableData.forEach((item, index) => {
+    //     if (
+    //       item.__flag === "update" &&
+    //       item.id &&
+    //       this.updateButton?.service_name
+    //     ) {
+    //       const oldItem = this.oldTableData.find((d) => d.__id === item.__id);
+    //       const updateObj = {};
+    //       if (oldItem) {
+    //         Object.keys(oldItem).forEach((key) => {
+    //           if (
+    //             key.indexOf("_") !== 0 &&
+    //             !ignoreKeys.includes(key) &&
+    //             this.updateColsMap?.[key]?.in_update !== 0
+    //           ) {
+    //             if (oldItem[key] !== item[key]) {
+    //               if (!item[key]) {
+    //                 item[key] = null;
+    //               }
+    //               updateObj[key] = item[key];
+    //             }
+    //           }
+    //         });
+    //         if (Object.keys(updateObj)?.length) {
+    //           reqData.push({
+    //             serviceName: this.updateButton.service_name,
+    //             condition: [{ colName: "id", ruleType: "eq", value: item.id }],
+    //             data: [updateObj],
+    //           });
+    //         }
+    //       }
+    //     } else if (item.__flag === "add" && this.addButton?.service_name) {
+    //       const addObj = {
+    //         ...item,
+    //       };
+    //       Object.keys(addObj).forEach((key) => {
+    //         if (addObj[key] === null || this.addColsMap?.[key]?.in_add !== 1) {
+    //           delete addObj[key];
+    //         }
+    //       });
+    //       if (this.defaultConditions?.length) {
+    //         this.defaultConditions.forEach((item) => {
+    //           if (item.value) {
+    //             addObj[item.colName] = item.value;
+    //           }
+    //         });
+    //       } else if (this.fkCondition?.colName) {
+    //         addObj[this.fkCondition.colName] = this.fkCondition.value;
+    //       }
+    //       delete addObj.__id;
+    //       delete addObj.__flag;
+    //       delete addObj.rowKey;
+    //       Object.keys(addObj).forEach((key) => {
+    //         if (ignoreKeys.includes(key) || key.indexOf("_") === 0) {
+    //           delete addObj[key];
+    //         }
+    //       });
+    //       if (
+    //         Object.keys(addObj).length > 0 &&
+    //         Object.keys(addObj).some(
+    //           (key) =>
+    //             addObj[key] !== undefined &&
+    //             addObj[key] !== null &&
+    //             addObj[key] !== ""
+    //         )
+    //       ) {
+    //         addDatas.push(addObj);
+    //       }
+    //     }
+    //   });
+    //   if (addDatas?.length) {
+    //     reqData.push({
+    //       serviceName: this.addButton.service_name,
+    //       data: addDatas,
+    //     });
+    //   }
+    //   return reqData;
+    // },
 
     tableHeader() {
       return this.v2data?.allFields;
@@ -1237,7 +1236,7 @@ export default {
                         disabled:
                           !columnObj.edit ||
                           (row.__flag !== "add" &&
-                            row?._button_auth?.edit === false),
+                            row?.__button_auth?.edit === false),
                         value: row[column.field]
                           ? new Date(row[column.field])
                           : "",
@@ -1275,7 +1274,7 @@ export default {
                           disabled:
                             !columnObj.edit ||
                             (row.__flag !== "add" &&
-                              row?._button_auth?.edit === false),
+                              row?.__button_auth?.edit === false),
                           value: row[column.field],
                           size: "mini",
                           clearable: true,
@@ -1315,7 +1314,7 @@ export default {
                         editable = false;
                       }
                     }
-                    if (row.__flag !== "add" && !row?._button_auth?.edit) {
+                    if (row.__flag !== "add" && !row?.__button_auth?.edit) {
                       editable = false;
                     }
                     return h(RenderHtml, {
@@ -1356,7 +1355,7 @@ export default {
                       disabled:
                         !columnObj.edit ||
                         (row.__flag !== "add" &&
-                          row?._button_auth?.edit === false),
+                          row?.__button_auth?.edit === false),
                       value: row[column.field]
                         ? new Date(row[column.field])
                         : "",
@@ -1397,7 +1396,7 @@ export default {
                         disabled:
                           !columnObj.edit ||
                           (row.__flag !== "add" &&
-                            row?._button_auth?.edit === false),
+                            row?.__button_auth?.edit === false),
                         value: row[column.field],
                         size: "mini",
                         clearable: true,
@@ -1441,7 +1440,7 @@ export default {
                       editable = false;
                     }
                   }
-                  if (row.__flag !== "add" && !row?._button_auth?.edit) {
+                  if (row.__flag !== "add" && !row?.__button_auth?.edit) {
                     editable = false;
                   }
                   return h(RenderHtml, {
@@ -1488,9 +1487,99 @@ export default {
       );
       return columns;
     },
+    buildReqParams() {
+      const tableData = JSON.parse(JSON.stringify(this.tableData));
+      const reqData = [];
+      const addDatas = [];
+      const ignoreKeys = [
+        "__id",
+        "__flag",
+        "rowKey",
+        "id",
+        "__button_auth",
+        "_buttons",
+      ];
+      tableData.forEach((item, index) => {
+        if (
+          item.__flag === "update" &&
+          item.id &&
+          this.updateButton?.service_name
+        ) {
+          const oldItem = this.oldTableData.find((d) => d.__id === item.__id);
+          const updateObj = {};
+          if (oldItem) {
+            Object.keys(oldItem).forEach((key) => {
+              if (
+                key.indexOf("_") !== 0 &&
+                !ignoreKeys.includes(key) &&
+                this.updateColsMap?.[key]?.in_update !== 0
+              ) {
+                if (oldItem[key] !== item[key]) {
+                  if (!item[key]) {
+                    item[key] = null;
+                  }
+                  updateObj[key] = item[key];
+                }
+              }
+            });
+            if (Object.keys(updateObj)?.length) {
+              reqData.push({
+                serviceName: this.updateButton.service_name,
+                condition: [{ colName: "id", ruleType: "eq", value: item.id }],
+                data: [updateObj],
+              });
+            }
+          }
+        } else if (item.__flag === "add" && this.addButton?.service_name) {
+          const addObj = {
+            ...item,
+          };
+          Object.keys(addObj).forEach((key) => {
+            if (addObj[key] === null || this.addColsMap?.[key]?.in_add !== 1) {
+              delete addObj[key];
+            }
+          });
+          if (this.defaultConditions?.length) {
+            this.defaultConditions.forEach((item) => {
+              if (item.value) {
+                addObj[item.colName] = item.value;
+              }
+            });
+          } else if (this.fkCondition?.colName) {
+            addObj[this.fkCondition.colName] = this.fkCondition.value;
+          }
+          
+          Object.keys(addObj).forEach((key) => {
+            if (ignoreKeys.includes(key) || key.indexOf("__") === 0) {
+              delete addObj[key];
+            }
+          });
+
+          if (
+            Object.keys(addObj).length > 0 &&
+            Object.keys(addObj).some(
+              (key) =>
+                addObj[key] !== undefined &&
+                addObj[key] !== null &&
+                addObj[key] !== ""
+            )
+          ) {
+            addDatas.push(addObj);
+          }
+        }
+      });
+      if (addDatas?.length) {
+        reqData.push({
+          serviceName: this.addButton.service_name,
+          data: addDatas,
+        });
+      }
+      return reqData;
+    },
     refreshData() {
       this.sortState = [];
-      if (this.buildReqParams?.length === 0) {
+      const reqData = this.buildReqParams() 
+      if (reqData?.length === 0) {
         this.getList();
         return;
       }
@@ -1535,7 +1624,12 @@ export default {
       }
     },
     saveData() {
-      const reqData = this.buildReqParams;
+      // const reqData = this.buildReqParams;
+      const reqData = this.buildReqParams();
+      if(!reqData?.length){
+        this.$message.error('没有需要保存的操作！')
+        return
+      }
       if (
         Array.isArray(reqData) &&
         reqData.length > 0 &&
@@ -1676,7 +1770,7 @@ export default {
 
             let resData = res.data.map((item) => {
               const __id = uniqueId("table_item_");
-              item._button_auth = this.setButtonAuth(
+              item.__button_auth = this.setButtonAuth(
                 this.v2data?.rowButton,
                 item
               );
@@ -1765,7 +1859,7 @@ export default {
 
         if (res?.data?.length) {
           res.data = res.data.map((item) => {
-            item._button_auth = this.setButtonAuth(
+            item.__button_auth = this.setButtonAuth(
               this.v2data?.rowButton,
               item
             );
