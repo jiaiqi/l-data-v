@@ -104,6 +104,9 @@
       :option-info="parentColOption"
       @confirm="updateParentNo"
     ></select-parent-node>
+    <!-- <div class="custom-contextmenu" :style="{top:ctop,left: cleft}">
+      111111111
+    </div> -->
   </div>
 </template>
 
@@ -144,6 +147,8 @@ export default {
   },
   data() {
     return {
+      ctop: "-100vh",
+      cleft: "-100vw",
       changeParentdialogVisible: false,
       pageNo: uniqueId("pageNo"),
       listType: "list",
@@ -167,6 +172,27 @@ export default {
       allFields: [], //所有字段
       columns: [], //表头字段
       eventCustomOption: {
+        bodyCellEvents: ({ row, column, rowIndex }) => {
+          return {
+            // click: (event) => {
+            //   console.log("click::", row, column, rowIndex, event);
+            // },
+            // dblclick: (event) => {
+            //   console.log("dblclick::", row, column, rowIndex, event);
+            // },
+            contextmenu: (event) => {
+              console.log("bodyCellEvents::", row, column, rowIndex, event);
+              this.cleft = event.x + "px";
+              this.ctop = event.y + "px";
+            },
+            // mouseenter: (event) => {
+            //   console.log("mouseenter::", row, column, rowIndex, event);
+            // },
+            // mouseleave: (event) => {
+            //   console.log("mouseleave::", row, column, rowIndex, event);
+            // },
+          };
+        },
         bodyRowEvents: ({ row, rowIndex }) => {
           return {
             // click: (event) => {
@@ -176,9 +202,11 @@ export default {
               console.log("dblclick::", row, rowIndex, event);
               return false;
             },
-            // contextmenu: (event) => {
-            //   console.log("contextmenu::", row, rowIndex, event);
-            // },
+            contextmenu: (event) => {
+              console.log("bodyRowEvents::", row, rowIndex, event);
+              event.preventDefault();
+              return false;
+            },
             // mouseenter: (event) => {
             //   console.log("mouseenter::", row, rowIndex, event);
             // },
@@ -460,8 +488,18 @@ export default {
         //     },
         // ],
       },
-      // body 右键菜单配置
-      contextmenuBodyOption: {
+
+      // 行样式配置
+      rowStyleOption: {
+        clickHighlight: false,
+        hoverHighlight: true,
+      },
+    };
+  },
+  computed: {
+    // body 右键菜单配置
+    contextmenuBodyOption() {
+      return {
         beforeShow: ({
           isWholeRowSelection,
           selectionRangeKeys,
@@ -472,6 +510,7 @@ export default {
           console.log("selectionRangeKeys::", selectionRangeKeys);
           console.log("selectionRangeIndexes::", selectionRangeIndexes);
           let startRowIndex = selectionRangeIndexes.startRowIndex;
+          return false;
         },
         afterMenuClick: ({
           type,
@@ -499,6 +538,7 @@ export default {
               this.$message.error("新增行不能直接更改父节点,请先保存操作!");
               return;
             }
+            // if (startRow.__flag !== "add" && !this.updateButton?.permission) {
             if (startRow.__flag !== "add" && !startRow?._button_auth?.edit) {
               this.$message.error("没有当前行的编辑权限");
               return;
@@ -588,41 +628,58 @@ export default {
               });
           }
         },
-        contextmenus: [
+        contextmenus: this.contextMenus,
+      };
+    },
+    contextMenus() {
+      let arr = [
+        {
+          type: "CUT",
+        },
+        {
+          type: "COPY",
+        },
+        {
+          type: "SEPARATOR",
+        },
+        {
+          type: "insertRowAbove",
+          label: "上方插入行",
+        },
+        {
+          type: "insertRowBelow",
+          label: "下方插入行",
+        },
+        {
+          type: "SEPARATOR",
+        },
+        {
+          type: "removeRow",
+          label: "删除选中行数据",
+        },
+      ];
+
+      let addChildButton = this.v2data?.rowButton?.find((item) =>
+        item.button_type.includes("addchild")
+      );
+      if (addChildButton) {
+        const treeMenus = [
           {
-            type: "CUT",
+            type: "addchild",
+            label: "添加下级节点",
           },
           {
-            type: "COPY",
+            type: "changeParent",
+            label: "更改父节点",
           },
           {
             type: "SEPARATOR",
           },
-          {
-            type: "insertRowAbove",
-            label: "上方插入行",
-          },
-          {
-            type: "insertRowBelow",
-            label: "下方插入行",
-          },
-          {
-            type: "SEPARATOR",
-          },
-          {
-            type: "removeRow",
-            label: "删除选中行数据",
-          },
-        ],
-      },
-      // 行样式配置
-      rowStyleOption: {
-        clickHighlight: false,
-        hoverHighlight: true,
-      },
-    };
-  },
-  computed: {
+        ];
+        arr.unshift(...treeMenus);
+      }
+      return arr;
+    },
     setFilterState() {
       let keys = Object.keys(this.filterState);
       let condition = [];
@@ -1550,6 +1607,7 @@ export default {
       }
     },
     batchInsertRows() {
+      console.log(this.$refs.tableRef.getRangeCellSelection());
       if (this.insertRowNumber > 0) {
         for (let index = 0; index < this.insertRowNumber; index++) {
           // 批量插入数据 每次都插入到第0行
@@ -1590,19 +1648,11 @@ export default {
 
             let resData = res.data.map((item) => {
               const __id = uniqueId("table_item_");
-              if (
-                item?._buttons?.length &&
-                item?._buttons?.length === this.v2data?.rowButton?.length
-              ) {
-                item._button_auth = {};
-                this.v2data?.rowButton.forEach((btn, index) => {
-                  if (item?._buttons[index] === 1) {
-                    item._button_auth[btn.button_type] = true;
-                  } else if (item?._buttons[index] === 0) {
-                    item._button_auth[btn.button_type] = false;
-                  }
-                });
-              }
+              item._button_auth = this.setButtonAuth(
+                this.v2data?.rowButton,
+                item
+              );
+
               let dataItem = {
                 rowKey: __id,
                 __id,
@@ -1643,7 +1693,27 @@ export default {
         callback();
       }
     },
-
+    setButtonAuth(btns, data) {
+      const obj = {};
+      if (Array.isArray(btns)&&btns?.length) {
+        btns.forEach((btn, index) => {
+          if (
+            data?._buttons?.length &&
+            data?._buttons?.length === btns?.length
+          ) {
+            if (data?._buttons[index] === 1) {
+              obj[btn.button_type] = true;
+            } else if (data?._buttons[index] === 0) {
+              obj[btn.button_type] = false;
+            }
+          } else {
+            // 兼容后端没返回_buttons的情况
+            obj[btn.button_type] = btn.permission === true;
+          }
+        });
+      }
+      return obj;
+    },
     async getList() {
       if (this.serviceName) {
         this.loading = true;
@@ -1665,19 +1735,11 @@ export default {
 
         if (res?.data?.length) {
           res.data = res.data.map((item) => {
-            if (
-              item?._buttons?.length &&
-              item?._buttons?.length === this.v2data?.rowButton?.length
-            ) {
-              item._button_auth = {};
-              this.v2data?.rowButton.forEach((btn, index) => {
-                if (item?._buttons[index] === 1) {
-                  item._button_auth[btn.button_type] = true;
-                } else if (item?._buttons[index] === 0) {
-                  item._button_auth[btn.button_type] = false;
-                }
-              });
-            }
+            item._button_auth = this.setButtonAuth(
+              this.v2data?.rowButton,
+              item
+            );
+
             return item;
           });
         }
@@ -1718,25 +1780,27 @@ export default {
         // if(this.v2data?.is_tree===true){
         //   this.listType = 'treelist'
         // }
-        let addChildButton = this.v2data?.rowButton?.find((item) =>
-          item.button_type.includes("addchild")
-        );
-        if (addChildButton) {
-          const treeMenus = [
-            {
-              type: "addchild",
-              label: "添加下级节点",
-            },
-            {
-              type: "changeParent",
-              label: "更改父节点",
-            },
-            {
-              type: "SEPARATOR",
-            },
-          ];
-          this.contextmenuBodyOption.contextmenus.unshift(...treeMenus);
-        }
+        // let addChildButton = this.v2data?.rowButton?.find((item) =>
+        //   item.button_type.includes("addchild")
+        // );
+        // if (addChildButton) {
+        //   const treeMenus = [
+        //     {
+        //       type: "addchild",
+        //       label: "添加下级节点",
+        //     },
+        //     {
+        //       type: "changeParent",
+        //       label: "更改父节点",
+        //     },
+        //     {
+        //       type: "SEPARATOR",
+        //     },
+        //   ];
+        //   this.contextmenuBodyOption.contextmenus.unshift(...treeMenus);
+        //   // this.contextmenuBodyOption.contextmenus = [];
+        // } else {
+        // }
         const editBtn = res.data?.rowButton?.find(
           (item) => item.button_type === "edit"
         );
@@ -1880,5 +1944,9 @@ export default {
 
 .ve-table-container {
   min-height: 60px;
+}
+.custom-contextmenu {
+  position: fixed;
+  background-color: #fff;
 }
 </style>
