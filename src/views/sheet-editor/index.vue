@@ -561,6 +561,9 @@ export default {
               if (!aNumber) {
                 this.$message("用户取消操作");
                 return;
+              } else if (aNumber < 0) {
+                this.$message("只能输入大于0的整数");
+                return;
               }
             }
             for (let index = 0; index < aNumber; index++) {
@@ -575,6 +578,9 @@ export default {
               aNumber = Number(window.prompt("输入插入的行数", ""));
               if (!aNumber) {
                 this.$message("用户取消操作");
+                return;
+              } else if (aNumber < 0) {
+                this.$message("只能输入大于0的整数");
                 return;
               }
             }
