@@ -104,6 +104,7 @@
       :option-info="parentColOption"
       @confirm="updateParentNo"
     ></select-parent-node>
+
     <!-- <div class="custom-contextmenu" :style="{top:ctop,left: cleft}">
       111111111
     </div> -->
@@ -531,8 +532,7 @@ export default {
               return;
             }
             this.insert2Rows(startRowIndex + 1, startRow);
-          }
-          if (type === "changeParent") {
+          } else if (type === "changeParent") {
             // 更改父节点
             if (startRow?.__flag === "add") {
               this.$message.error("新增行不能直接更改父节点,请先保存操作!");
@@ -544,28 +544,42 @@ export default {
               return;
             }
             this.showChangeParent(startRow);
-          }
-          if (type === "insertRowBelow") {
-            //上方插入行
-            if (startRow?.__parent_row) {
-              this.insert2Rows(startRowIndex + 1, startRow?.__parent_row);
-            } else {
-              this.insert2Rows(startRowIndex + 1);
+          } else if (["insertRowBelow", "insertRowsBelow"].includes(type)) {
+            //下方插入行
+            let lastChildIndex = this.tableData.findLastIndex(
+              (item) =>
+                item[this.treeInfo.pidCol] === startRow[this.treeInfo.idCol]
+            );
+            // 如果当前行有子节点 则新增行在子节点之后
+            if (lastChildIndex != -1) {
+              startRowIndex = lastChildIndex;
             }
-          } else if (type === "insertRowAbove") {
-            // 下方插入行
-            if (startRow?.__parent_row) {
-              this.insert2Rows(startRowIndex, startRow?.__parent_row);
-            } else {
-              let lastChildIndex = this.tableData.findLastIndex(
-                (item) =>
-                  item[this.treeInfo.pidCol] === startRow[this.treeInfo.idCol]
-              );
-              // 如果当前行有子节点 则新增行在子节点之后
-              if (lastChildIndex != -1) {
-                startRowIndex = lastChildIndex;
+            let aNumber = 1;
+            if (type === "insertRowsBelow") {
+              // 下方插入多行
+              aNumber = Number(window.prompt("输入插入的行数", ""));
+              if (!aNumber) {
+                this.$message("用户取消操作");
+                return;
               }
-              this.insert2Rows(startRowIndex);
+            }
+            for (let index = 0; index < aNumber; index++) {
+              const rIndex = startRowIndex + index + 1;
+              this.insert2Rows(rIndex, startRow?.__parent_row);
+            }
+          } else if (["insertRowAbove", "insertRowsAbove"].includes(type)) {
+            // 上方插入行
+            let aNumber = 1;
+            if (type === "insertRowsAbove") {
+              // 上方插入多行
+              aNumber = Number(window.prompt("输入插入的行数", ""));
+              if (!aNumber) {
+                this.$message("用户取消操作");
+                return;
+              }
+            }
+            for (let index = 0; index < aNumber; index++) {
+              this.insert2Rows(startRowIndex + index, startRow?.__parent_row);
             }
           } else if (type === "removeRow") {
             let willDeleteLocalRows = []; //新增待删除行
@@ -647,8 +661,16 @@ export default {
           label: "上方插入行",
         },
         {
+          type: "insertRowsAbove",
+          label: "上方插入多行",
+        },
+        {
           type: "insertRowBelow",
           label: "下方插入行",
+        },
+        {
+          type: "insertRowsBelow",
+          label: "下方插入多行",
         },
         {
           type: "SEPARATOR",
@@ -1659,6 +1681,8 @@ export default {
                 __flag: null,
                 ...item,
                 __indent,
+                // 给每一行子数据存储它的父数据
+                __parent_row: cloneDeep(row),
               };
               return dataItem;
             });
@@ -1695,7 +1719,7 @@ export default {
     },
     setButtonAuth(btns, data) {
       const obj = {};
-      if (Array.isArray(btns)&&btns?.length) {
+      if (Array.isArray(btns) && btns?.length) {
         btns.forEach((btn, index) => {
           if (
             data?._buttons?.length &&

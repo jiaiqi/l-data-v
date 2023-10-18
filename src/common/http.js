@@ -4,7 +4,7 @@ let bx_auth_ticket = "";
 // let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
 let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
-const devTicket = 'xabxdzkj-d1551e98-4e06-41c5-8716-80ad54d3272c'
+const devTicket = 'xabxdzkj-8190678b-e401-46b1-b799-1b45c056a384'
 if (top?.pathConfig?.gateway) {
   baseURL = top?.pathConfig?.gateway;
 }
@@ -73,6 +73,8 @@ $axios.interceptors.response.use(
         //   type: "error",
         // });
         if (response.data.resultCode == "0011") {
+          sessionStorage.clear()
+          localStorage.clear()
           if (getRootWindow()?.layer) {
             var login_page = "/main/login.html";
             try {
