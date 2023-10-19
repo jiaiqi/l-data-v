@@ -30,7 +30,7 @@ const getServiceV2 = async (
   use_type = "list",
   app = "health",
   pageNo = null,
-  forceFeth=false
+  forceFeth = false
 ) => {
   if (serviceName) {
     // const v2FromStore = metaStore.metaMap[`${service}-${use_type}`];
@@ -75,7 +75,7 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     }
     if (params.isTree) {
       // rdt: Return Data Type  ttd: top tree data
-      if (req.condition?.length||params.forceUseTTD) {
+      if (req.condition?.length || params.forceUseTTD) {
         req["rdt"] = "ttd";
       } else if (params.pidCol) {
         req.condition.push({
@@ -227,10 +227,14 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
             item.value = undefined;
           }
         } else if (item.value.indexOf("top.user") !== -1) {
-          let key = item.init_expr.split("top.user.");
+          let key = item.value.split("top.user.");
           key = key.length > 1 ? key[1] : "";
           if (key) {
-            item.value = uni.getStorageSync("login_user_info")[key];
+            let userInfo = sessionStorage.getItem("current_login_user");
+            if (userInfo) {
+              userInfo = JSON.parse(userInfo);
+            }
+            item.value = userInfo?.[key];
           }
         } else if (item.value?.value_type) {
           if (item.value?.value_type === "constant") {
