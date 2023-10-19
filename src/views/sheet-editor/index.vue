@@ -55,8 +55,15 @@
           size="mini"
           type="primary"
           @click="saveData"
-          :disabled="!calcReqData||calcReqData.length==0"
+          :disabled="!calcReqData || calcReqData.length == 0"
           >保存</el-button
+        >
+        <el-button
+          size="mini"
+          type="primary"
+          @click="saveColumnWidth"
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
+          >保存样式</el-button
         >
       </div>
     </div>
@@ -148,6 +155,7 @@ export default {
   },
   data() {
     return {
+      columnWidthMap: {}, //存储改变后的列宽
       ctop: "-100vh",
       cleft: "-100vw",
       changeParentdialogVisible: false,
@@ -249,6 +257,17 @@ export default {
       columnWidthResizeOption: {
         enable: true,
         minWidth: 30,
+        sizeChange: ({ column, differWidth, columnWidth }) => {
+          console.log({
+            column,
+            differWidth,
+            columnWidth,
+          });
+          this.$set(this.columnWidthMap, column.field, {
+            width: columnWidth,
+            fieldInfo: column.__field_info,
+          });
+        },
       },
       // 虚拟滚动配置
       virtualScrollOption: {
@@ -498,8 +517,38 @@ export default {
     };
   },
   computed: {
-    calcReqData(){
-      return this.buildReqParams()||[]
+    calcColumnWidthReq() {
+      if (Object.keys(this.columnWidthMap)?.length) {
+        const arr = [];
+        Object.keys(this.columnWidthMap).forEach((key) => {
+          if (
+            this.columnWidthMap[key]?.width &&
+            !isNaN(parseFloat(this.columnWidthMap[key].width))
+          ) {
+            arr.push({
+              serviceName: "srvsys_service_columns_query_update",
+              data: [{ list_min_width: this.columnWidthMap[key].width }],
+              condition: [
+                { colName: "columns", value: key, ruleType: "eq" },
+                {
+                  colName: "service_name",
+                  value: this.columnWidthMap[key].fieldInfo.service_name,
+                  ruleType: "eq",
+                },
+                {
+                  colName: "table_name",
+                  value: this.columnWidthMap[key].fieldInfo.table_name,
+                  ruleType: "eq",
+                },
+              ],
+            });
+          }
+        });
+        return arr;
+      }
+    },
+    calcReqData() {
+      return this.buildReqParams() || [];
     },
     // body 右键菜单配置
     contextmenuBodyOption() {
@@ -755,7 +804,7 @@ export default {
       let defaultConditions = [];
       if (query && Object.keys(query).length > 0) {
         Object.keys(query).forEach((key) => {
-          if (!["srvApp", "isTree", "topTreeData"].includes(key)) {
+          if (!["srvApp", "isTree", "topTreeData", "fixedCol"].includes(key)) {
             defaultConditions.push({
               colName: key,
               ruleType: "eq",
@@ -1094,10 +1143,21 @@ export default {
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
               __field_info: { ...item },
             };
-
-            if (index === 0 && this.isTree) {
-              // 首列 如果有下级则展示展开折叠图标
-              columnObj.isFirstCol = true;
+            if (index === 0) {
+              if (this.isTree) {
+                // 首列 如果有下级则展示展开折叠图标
+                columnObj.isFirstCol = true;
+              }
+            }
+            // 设置固定列
+            let fixedCol = Number(this.$route.query?.fixedCol || 1);
+            if (isNaN(fixedCol)) {
+              fixedCol = 1;
+            }
+            for (let fIndex = 0; fIndex < fixedCol; fIndex++) {
+              if (index === fIndex) {
+                columnObj.fixed = "left";
+              }
             }
 
             if (this.defaultConditions?.length) {
@@ -1548,7 +1608,7 @@ export default {
           } else if (this.fkCondition?.colName) {
             addObj[this.fkCondition.colName] = this.fkCondition.value;
           }
-          
+
           Object.keys(addObj).forEach((key) => {
             if (ignoreKeys.includes(key) || key.indexOf("__") === 0) {
               delete addObj[key];
@@ -1578,7 +1638,7 @@ export default {
     },
     refreshData() {
       this.sortState = [];
-      const reqData = this.buildReqParams() 
+      const reqData = this.buildReqParams();
       if (reqData?.length === 0) {
         this.getList();
         return;
@@ -1623,12 +1683,27 @@ export default {
         });
       }
     },
+    saveColumnWidth() {
+      const url = `/${this.srvApp}/operate/srvsys_service_columns_query_update`;
+      const req = this.calcColumnWidthReq;
+      $http.post(url, req).then((res) => {
+        if (res?.data?.state === "SUCCESS") {
+          this.$message.success(res.data.resultMessage);
+          this.loading = true;
+          this.getV2Data().then(() => {
+            this.loading = false;
+          });
+        } else {
+          this.$message.error(res.data.resultMessage);
+        }
+      });
+    },
     saveData() {
       // const reqData = this.buildReqParams;
       const reqData = this.buildReqParams();
-      if(!reqData?.length){
-        this.$message.error('没有需要保存的操作！')
-        return
+      if (!reqData?.length) {
+        this.$message.error("没有需要保存的操作！");
+        return;
       }
       if (
         Array.isArray(reqData) &&
@@ -1863,7 +1938,6 @@ export default {
               this.v2data?.rowButton,
               item
             );
-
             return item;
           });
         }
@@ -1892,39 +1966,16 @@ export default {
         }
       }
     },
-    async getV2Data() {
+    async getV2Data(force = false) {
       const res = await getServiceV2(
         this.serviceName,
         this.listType,
         this.srvApp,
-        this.pageNo
+        this.pageNo,
+        force
       );
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
-        // if(this.v2data?.is_tree===true){
-        //   this.listType = 'treelist'
-        // }
-        // let addChildButton = this.v2data?.rowButton?.find((item) =>
-        //   item.button_type.includes("addchild")
-        // );
-        // if (addChildButton) {
-        //   const treeMenus = [
-        //     {
-        //       type: "addchild",
-        //       label: "添加下级节点",
-        //     },
-        //     {
-        //       type: "changeParent",
-        //       label: "更改父节点",
-        //     },
-        //     {
-        //       type: "SEPARATOR",
-        //     },
-        //   ];
-        //   this.contextmenuBodyOption.contextmenus.unshift(...treeMenus);
-        //   // this.contextmenuBodyOption.contextmenus = [];
-        // } else {
-        // }
         const editBtn = res.data?.rowButton?.find(
           (item) => item.button_type === "edit"
         );

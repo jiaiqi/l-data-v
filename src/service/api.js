@@ -23,12 +23,14 @@ const getItem = (key) => {
  * @param {String} use_type - 方法名称
  * @param {*} app - 应用
  * @param {Boolean} isTree - 是否树型列表  true/false
+ * @param {Boolean} forceFeth - 是否强制刷新，否的话会从缓存中读取
  */
 const getServiceV2 = async (
   serviceName,
   use_type = "list",
   app = "health",
-  pageNo = null
+  pageNo = null,
+  forceFeth=false
 ) => {
   if (serviceName) {
     // const v2FromStore = metaStore.metaMap[`${service}-${use_type}`];
@@ -117,17 +119,6 @@ export const onDelete = async (ids, service, app) => {
   }
 };
 export const onBatchOperate = async (reqData, service = "", app = "") => {
-  // let { add, del, update } = data;
-  // let reqData = []
-  // if (Array.isArray(add?.data) && add.data.length > 0) {
-  //   add.forEach((item) => {
-  //     let obj = {
-  //       data: [item],
-  //       serviceName: serviceName.replace(operate, "add"),
-  //     };
-  //     reqArr.push(obj);
-  //   });
-  // }
   if (service && app) {
     if (Array.isArray(reqData) && reqData.length > 0) {
       // const url = `/${app}/operate/${service}`;

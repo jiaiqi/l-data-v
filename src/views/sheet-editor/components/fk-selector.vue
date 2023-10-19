@@ -155,9 +155,9 @@ export default {
     }
   },
   methods: {
-    onFocus(){
-      console.log('onfocus');
-      this.$emit('onfocus')
+    onFocus() {
+      console.log("onfocus");
+      this.$emit("onfocus");
     },
     toFilter(query) {
       this.pageNo = 1;
@@ -263,6 +263,9 @@ export default {
     },
     getTableData() {
       this.tableloading = true;
+      setTimeout(() => {
+        this.tableloading = false;
+      }, 5000);
       const srvInfo = JSON.parse(JSON.stringify(this.srvInfo));
       if (this.filterText) {
         srvInfo;
@@ -309,6 +312,9 @@ export default {
       //   if (query !== "") {
       if (!this.options?.length) {
         this.loading = true;
+        setTimeout(() => {
+          this.loading = false;
+        }, 5000);
       }
       let option = JSON.parse(JSON.stringify(this.srvInfo));
       let relation_condition = {
@@ -355,6 +361,4 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
