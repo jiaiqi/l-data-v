@@ -114,7 +114,7 @@ export default {
       tableColumns: [],
       tableData: [],
       pageNo: 1,
-      rownumber: 5,
+      rownumber: 10,
       total: 0,
       tableloading: false,
       filterText: "",

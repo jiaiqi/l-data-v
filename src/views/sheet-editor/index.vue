@@ -518,8 +518,8 @@ export default {
     };
   },
   computed: {
-    // 更新表字段的最小列宽的请求参数 
-    calcTableColumnWidthReq(){
+    // 更新表字段的最小列宽的请求参数
+    calcTableColumnWidthReq() {
       if (Object.keys(this.columnWidthMap)?.length) {
         const arr = [];
         Object.keys(this.columnWidthMap).forEach((key) => {
@@ -544,7 +544,7 @@ export default {
         return arr;
       }
     },
-    // 更新服务列最小列宽的请求参数 
+    // 更新服务列最小列宽的请求参数
     calcColumnWidthReq() {
       if (Object.keys(this.columnWidthMap)?.length) {
         const arr = [];
@@ -1256,12 +1256,20 @@ export default {
             if (!columnObj.disabled) {
               if (item.col_type === "User") {
                 item.bx_col_type = "fk";
-                item.option_list_v2 = {
-                  refed_col: "user_no",
-                  srv_app: "sso",
-                  serviceName: "srvsso_user_select",
-                  key_disp_col: "user_disp",
-                };
+                if (this.updateColsMap[item.columns]?.option_list_v2) {
+                  item.option_list_v2 =
+                    this.updateColsMap[item.columns]?.option_list_v2;
+                } else if (this.addColsMap[item.columns]?.option_list_v2) {
+                  item.addColsMap =
+                    this.updateColsMap[item.columns]?.option_list_v2;
+                } else if (!item.option_list_v2) {
+                  item.option_list_v2 = {
+                    refed_col: "user_no",
+                    srv_app: "sso",
+                    serviceName: "srvsso_user_select",
+                    key_disp_col: "user_disp",
+                  };
+                }
               }
               if (true) {
                 // if (item.bx_col_type === "fk") {
@@ -1722,8 +1730,8 @@ export default {
       $http.post(url, req).then((res) => {
         if (res?.data?.state === "SUCCESS") {
           this.$message.success(res.data.resultMessage);
-          this.updateTableColumn()
-          this.columnWidthMap = {}
+          this.updateTableColumn();
+          this.columnWidthMap = {};
           this.getV2Data(true).then(() => {
             this.loading = false;
           });
@@ -1733,9 +1741,9 @@ export default {
       });
     },
     // 更新表字段的最小宽度
-    updateTableColumn(){
+    updateTableColumn() {
       const url = `/${this.srvApp}/operate/srvsys_table_columns_update`;
-      const req = this.calcTableColumnWidthReq
+      const req = this.calcTableColumnWidthReq;
       this.loading = true;
       setTimeout(() => {
         this.loading = false;
