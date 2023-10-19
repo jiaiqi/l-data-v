@@ -518,6 +518,33 @@ export default {
     };
   },
   computed: {
+    // 更新表字段的最小列宽的请求参数 
+    calcTableColumnWidthReq(){
+      if (Object.keys(this.columnWidthMap)?.length) {
+        const arr = [];
+        Object.keys(this.columnWidthMap).forEach((key) => {
+          if (
+            this.columnWidthMap[key]?.width &&
+            !isNaN(parseFloat(this.columnWidthMap[key].width))
+          ) {
+            arr.push({
+              serviceName: "srvsys_table_columns_update",
+              data: [{ list_min_width: this.columnWidthMap[key].width }],
+              condition: [
+                { colName: "column_name", value: key, ruleType: "eq" },
+                {
+                  colName: "table_name",
+                  value: this.columnWidthMap[key].fieldInfo.table_name,
+                  ruleType: "eq",
+                },
+              ],
+            });
+          }
+        });
+        return arr;
+      }
+    },
+    // 更新服务列最小列宽的请求参数 
     calcColumnWidthReq() {
       if (Object.keys(this.columnWidthMap)?.length) {
         const arr = [];
@@ -1684,18 +1711,42 @@ export default {
         });
       }
     },
+    // 更新服务列的最小宽度
     saveColumnWidth() {
       const url = `/${this.srvApp}/operate/srvsys_service_columns_query_update`;
       const req = this.calcColumnWidthReq;
+      this.loading = true;
+      setTimeout(() => {
+        this.loading = false;
+      }, 5000);
       $http.post(url, req).then((res) => {
         if (res?.data?.state === "SUCCESS") {
           this.$message.success(res.data.resultMessage);
-          this.loading = true;
-          this.getV2Data().then(() => {
+          this.updateTableColumn()
+          this.columnWidthMap = {}
+          this.getV2Data(true).then(() => {
             this.loading = false;
           });
         } else {
           this.$message.error(res.data.resultMessage);
+        }
+      });
+    },
+    // 更新表字段的最小宽度
+    updateTableColumn(){
+      const url = `/${this.srvApp}/operate/srvsys_table_columns_update`;
+      const req = this.calcTableColumnWidthReq
+      this.loading = true;
+      setTimeout(() => {
+        this.loading = false;
+      }, 5000);
+      $http.post(url, req).then((res) => {
+        this.loading = false;
+        if (res?.data?.state === "SUCCESS") {
+          // this.$message.success(res.data.resultMessage);
+        } else {
+          console.error(`更新表字段失败：${res.data.resultMessage}`);
+          this.$message.error(`更新表字段失败：${res.data.resultMessage}`);
         }
       });
     },

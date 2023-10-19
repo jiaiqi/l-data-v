@@ -34,7 +34,7 @@ const getServiceV2 = async (
 ) => {
   if (serviceName) {
     // const v2FromStore = metaStore.metaMap[`${service}-${use_type}`];
-    if (getItem(`${serviceName}-${use_type}`)) {
+    if (getItem(`${serviceName}-${use_type}`)&&!forceFeth) {
       return getItem(`${serviceName}-${use_type}`);
     }
     const req = {
@@ -221,7 +221,7 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
       if (typeof item.value === "string" && item.value) {
         if (item.value.indexOf("data.") !== -1) {
           let colName = item.value.slice(item.value.indexOf("data.") + 5);
-          if (row[colName]) {
+          if (row&&row[colName]) {
             item.value = row[colName];
           } else {
             item.value = undefined;
@@ -239,7 +239,7 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
         } else if (item.value?.value_type) {
           if (item.value?.value_type === "constant") {
             item.value = item.value?.value;
-          } else if (item.value?.value_key) {
+          } else if (item.value?.value_key&&row) {
             item.value = row[item.value?.value_key];
           }
         } else if (

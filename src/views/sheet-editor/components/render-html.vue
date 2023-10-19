@@ -52,6 +52,7 @@
         v-model="innerHtml"
         style="height: 500px; overflow-y: hidden; border-bottom: 1px solid #ccc"
         :defaultConfig="editorConfig"
+        :disabled="!editable"
         :mode="mode"
         @click.stop
         @onCreated="onCreated"
@@ -66,6 +67,7 @@
         v-else
       >
       </el-input>
+      <div class="text-orange text-center" v-if="!editable">当前字段不可编辑</div>
       <div class="text-center m-t-5" v-if="editable">
         <el-button
           type="primary"
@@ -185,6 +187,7 @@ export default {
       if (this.useEditor || this.column.col_type === "MultilineText") {
         this.dialogTableVisible = true;
         this.innerHtml = this.html;
+       
         this.editor?.focus();
         this.$emit("onfocus");
         // 阻止冒泡 拦截表格组件的双击事件
