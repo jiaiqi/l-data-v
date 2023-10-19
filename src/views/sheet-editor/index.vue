@@ -517,6 +517,18 @@ export default {
       },
     };
   },
+  watch: {
+    tableData: {
+      deep:true,
+      handler(newValue, oldValue){
+        const currentSelection = this.$refs?.tableRef?.getRangeCellSelection()
+        console.log(currentSelection);
+        if(currentSelection?.selectionRangeIndexes){
+          this.triggerEditCell(currentSelection?.selectionRangeIndexes)
+        }
+      }
+    }
+  },
   computed: {
     // 更新表字段的最小列宽的请求参数
     calcTableColumnWidthReq() {
@@ -1076,6 +1088,7 @@ export default {
       startColIndex,
       endColIndex,
     }) {
+      // 触发编辑事件
       const columns = this.columns.filter(
         (item) =>
           !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
