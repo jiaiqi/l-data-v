@@ -4,6 +4,21 @@
     class="flex justify-between items-center"
     @dblclick.stop=""
   >
+    <div style="width: 100%;" v-if="isTree && !options.length" @click="remoteMethod">
+      {{ modelValue }}
+    </div>
+    <el-cascader
+      placeholder="输入关键词搜索"
+      :options="options"
+      filterable
+      :disabled="setDisabled"
+      clearable
+      :props="props"
+      v-model="modelValue"
+      @click.native="remoteMethod"
+      @change="onSelectChange"
+      v-else-if="isTree"
+    ></el-cascader>
     <el-select
       v-model="modelValue"
       remote
@@ -18,6 +33,7 @@
       @focus="onFocus"
       clearable
       :disabled="setDisabled"
+      v-else
     >
       <el-option
         v-for="item in options"
@@ -31,6 +47,7 @@
       class="el-icon-arrow-right cursor-pointer p-l-2 text-#C0C4CC"
       :class="{ 'cursor-not-allowed': setDisabled }"
       @click="openDialog"
+      v-if="!isTree"
     ></i>
 
     <el-dialog
@@ -88,7 +105,7 @@
 </template>
 
 <script>
-import { getFkOptions } from "../../../service/api";
+import { getFkOptions, onSelect } from "../../../service/api";
 
 export default {
   props: {
@@ -118,9 +135,27 @@ export default {
       total: 0,
       tableloading: false,
       filterText: "",
+      props: {
+        emitPath: false,
+        checkStrictly: true,
+        value: "value",
+        label: "label",
+        lazy: true,
+        lazyLoad: (node, resolve) => {
+          this.loadTree(node).then((res) => {
+            resolve(res);
+          });
+        },
+      },
     };
   },
   computed: {
+    srvApp() {
+      return this.srvInfo?.srv_app || this.app;
+    },
+    isTree() {
+      return this.srvInfo?.is_tree && this.srvInfo?.parent_col ? true : false;
+    },
     setDisabled() {
       if (
         this.row?.__flag !== "add" &&
@@ -134,7 +169,7 @@ export default {
   watch: {
     value: {
       immediate: true,
-      handler(newValue, oldValue) {
+      handler(newValue) {
         if (this.modelValue !== newValue) {
           this.modelValue = newValue;
         }
@@ -142,7 +177,7 @@ export default {
     },
     modelValue: {
       immediate: true,
-      handler(newValue, oldValue) {
+      handler(newValue) {
         if (newValue !== this.value) {
           this.$emit("input", newValue);
         }
@@ -155,6 +190,34 @@ export default {
     }
   },
   methods: {
+    async loadTree(node) {
+      if (node?.value) {
+        const option = this.srvInfo;
+        const condition = [
+          {
+            colName: this.srvInfo.parent_col,
+            ruleType: "eq",
+            value: node.value,
+          },
+        ];
+        const res = await onSelect(
+          this.srvInfo.serviceName,
+          this.srvApp,
+          condition,
+          {
+            rownumber: 100,
+            pageNo: 1,
+          }
+        );
+        if (res?.data) {
+          return res.data.map((item) => {
+            item.label = item[option.key_disp_col];
+            item.value = item[option.refed_col];
+            return item;
+          });
+        } else return [];
+      }
+    },
     onFocus() {
       console.log("onfocus");
       this.$emit("onfocus");
@@ -294,6 +357,10 @@ export default {
       if (this.setDisabled) {
         return;
       }
+      if(this.isTree){
+        this.remoteMethod()
+        return
+      }
       this.filterText = "";
       this.dialogVisible = true;
       this.pageNo = 1;
@@ -304,6 +371,7 @@ export default {
         this.getFkColumns();
       }
     },
+    filterMethod(node, query) {},
     remoteMethod(query) {
       let queryString = this.value;
       if (query && typeof query === "string") {

@@ -225,6 +225,8 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
             item.value = row[colName];
           } else {
             item.value = undefined;
+            // 容错
+            item.ruleType='like'
           }
         } else if (item.value.indexOf("top.user") !== -1) {
           let key = item.value.split("top.user.");

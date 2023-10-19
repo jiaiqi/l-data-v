@@ -437,6 +437,9 @@ export default {
           // if(column?.__field_info?.bx_col_type==='fk'){
           //   return false
           // }
+          let oldRowData = this.oldTableData.find(
+            (item) => item.__id === row.__id
+          );
           if (row.__flag === "add") {
             // 新增行 处理in_add
             if (this.addColsMap[column.field]?.in_add !== 1) {
@@ -458,8 +461,20 @@ export default {
           }
           // let editBtnIndex = this.v2data.rowButton?.findIndex(item=>item.button_type==='edit')
           // if (row.__flag !== "add" && !row?._buttons[editBtnIndex]) {
-          if (row.__flag !== "add" && !row?.__button_auth?.edit) {
+          if (
+            row.__flag !== "add" &&
+            !row?.__button_auth?.edit &&
+            oldRowData?.[column.field] !== row[column.field]
+          ) {
             Message.error("没有当前行的编辑权限！");
+            if (oldRowData) {
+              // 恢复原来的值
+              const index = this.tableData.findIndex(
+                (item) => item.__id === row.__id
+              );
+              let rowData = this.tableData[index];
+              this.$set(rowData, column.field, oldRowData[column.field]);
+            }
             this.$nextTick(() => {
               this.$refs["tableRef"].stopEditingCell();
             });
@@ -519,15 +534,18 @@ export default {
   },
   watch: {
     tableData: {
-      deep:true,
-      handler(newValue, oldValue){
-        const currentSelection = this.$refs?.tableRef?.getRangeCellSelection()
+      deep: true,
+      handler(newValue, oldValue) {
+        const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         console.log(currentSelection);
-        if(currentSelection?.selectionRangeIndexes){
-          this.triggerEditCell(currentSelection?.selectionRangeIndexes)
+        if (
+          currentSelection?.selectionRangeIndexes?.startRowIndex &&
+          currentSelection?.selectionRangeIndexes?.startRowIndex !== -1
+        ) {
+          this.triggerEditCell(currentSelection?.selectionRangeIndexes);
         }
-      }
-    }
+      },
+    },
   },
   computed: {
     // 更新表字段的最小列宽的请求参数
@@ -1317,7 +1335,9 @@ export default {
                       attrs: {
                         value: row[column.field],
                         size: "mini",
-                        srvInfo: item.option_list_v2,
+                        srvInfo:
+                          this.updateColsMap[column.field]?.option_list_v2 ||
+                          item.option_list_v2,
                         app: this.srvApp,
                         row,
                         column,
