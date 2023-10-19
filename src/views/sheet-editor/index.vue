@@ -58,13 +58,14 @@
           :disabled="!calcReqData || calcReqData.length == 0"
           >保存</el-button
         >
-        <!-- <el-button
+        <el-button
           size="mini"
           type="primary"
           @click="saveColumnWidth"
           :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
+          v-if="calcColumnWidthReq && calcColumnWidthReq.length > 0"
           >保存样式</el-button
-        > -->
+        >
       </div>
     </div>
     <ve-table
@@ -1778,6 +1779,17 @@ export default {
               ) {
                 // 数字类型 初始值处理
                 val = Number(val);
+              }
+              if (val?.includes("top.user.")) {
+                let key = val.split("top.user.");
+                key = key.length > 1 ? key[1] : "";
+                if (key) {
+                  let userInfo = sessionStorage.getItem("current_login_user");
+                  if (userInfo) {
+                    userInfo = JSON.parse(userInfo);
+                  }
+                  val = userInfo?.[key];
+                }
               }
             }
             dataItem[field.columns] = val;
