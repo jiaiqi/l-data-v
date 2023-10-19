@@ -626,14 +626,19 @@ export default {
             this.showChangeParent(startRow);
           } else if (["insertRowBelow", "insertRowsBelow"].includes(type)) {
             //下方插入行
-            let lastChildIndex = this.tableData.findLastIndex(
-              (item) =>
-                item[this.treeInfo.pidCol] === startRow[this.treeInfo.idCol]
-            );
-            // 如果当前行有子节点 则新增行在子节点之后
-            if (lastChildIndex != -1) {
-              startRowIndex = lastChildIndex;
+            let lastChildIndex = -1;
+            if (this.listType === "treelist" && this.treeInfo?.pidCol) {
+              // 树列表 下方插入行时判断当前行有没有子节点 有的话则新增行在子节点之后
+              lastChildIndex = this.tableData.findLastIndex(
+                (item) =>
+                  item[this.treeInfo.pidCol] === startRow[this.treeInfo.idCol]
+              );
+              // 如果当前行有子节点 则新增行在子节点之后
+              if (lastChildIndex != -1) {
+                startRowIndex = lastChildIndex;
+              }
             }
+
             let aNumber = 1;
             if (type === "insertRowsBelow") {
               // 下方插入多行
