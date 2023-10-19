@@ -58,13 +58,13 @@
           :disabled="!calcReqData || calcReqData.length == 0"
           >保存</el-button
         >
-        <el-button
+        <!-- <el-button
           size="mini"
           type="primary"
           @click="saveColumnWidth"
           :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
           >保存样式</el-button
-        >
+        > -->
       </div>
     </div>
     <ve-table
@@ -251,7 +251,7 @@ export default {
           }
         },
       },
-      insertRowNumber: 0,
+      insertRowNumber: 1,
       startRowIndex: 0,
       // 是否开启列宽可变
       columnWidthResizeOption: {
@@ -1811,7 +1811,7 @@ export default {
           this.insert2Rows(0);
         }
       }
-      this.insertRowNumber = 0;
+      this.insertRowNumber = 1;
     },
     loadTree(load, row, rowIndex, callback) {
       if (load) {
