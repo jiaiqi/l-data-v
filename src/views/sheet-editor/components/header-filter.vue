@@ -54,17 +54,27 @@
           v-else-if="['时间', '日期', '时间日期'].includes(colType)"
         >
           <div class="label">选择日期范围：</div>
-          <el-date-picker
-            v-model="min"
-            :type="colType === '日期' ? 'date' : 'datetime'"
-          >
-          </el-date-picker>
-          <div>至</div>
-          <el-date-picker
-            v-model="max"
-            :type="colType === '日期' ? 'date' : 'datetime'"
-          >
-          </el-date-picker>
+          <div class="flex flex-col">
+            <div class="w-[100%] m-y-2">
+              <el-button size="mini" v-for="item in datePickerShortcuts" :key="item.text" @click="item.onClick">{{item.text}}</el-button>
+            </div>
+            <div class="flex items-center">
+              <el-date-picker
+                v-model="min"
+                valueFormat="yyyy-MM-dd HH:mm:ss"
+                :pickerOptions="pickerOptions"
+                :type="colType === '日期' ? 'date' : 'datetime'"
+              >
+              </el-date-picker>
+              <div class="m-x-2">至</div>
+              <el-date-picker
+                v-model="max"
+                valueFormat="yyyy-MM-dd HH:mm:ss"
+                :type="colType === '日期' ? 'date' : 'datetime'"
+              >
+              </el-date-picker>
+            </div>
+          </div>
         </div>
         <div
           class="input-box"
@@ -126,7 +136,7 @@
 
 <script>
 import { getFkOptions } from "../../../service/api";
-
+import dayjs from "dayjs";
 export default {
   props: {
     column: {
@@ -207,6 +217,130 @@ export default {
         pageNo: 1,
       },
       fkOptions: [],
+      datePickerShortcuts: [
+        {
+          text: "今日",
+          onClick: () => {
+            const date = dayjs().format("YYYY-MM-DD");
+            this.min = date;
+            this.max = date;
+          },
+        },
+        {
+          text: "昨日",
+          onClick: () => {
+            const date = dayjs().subtract(1,'day').format("YYYY-MM-DD");
+            this.min = date;
+            this.max = date;
+          },
+        },
+        {
+          text: "明日",
+          onClick: () => {
+            const date =  dayjs().add(1,'day').format("YYYY-MM-DD");
+            this.min = date;
+            this.max = date;
+          },
+        },
+        {
+          text: "本周",
+          onClick: () => {
+            const end = dayjs().endOf("week").add(1,'day').format("YYYY-MM-DD");
+            const start = dayjs().startOf("week").add(1,'day').format("YYYY-MM-DD");
+            this.min = start;
+            this.max = end;
+          },
+        },
+        {
+          text: "上周",
+          onClick: () => {
+            const start =dayjs().startOf("week").subtract(1, "week").add(1,'day').format("YYYY-MM-DD");
+            const end = dayjs(start).add(6, "day").format("YYYY-MM-DD");
+            this.min = start;
+            this.max = end;
+          },
+        },
+        {
+          text: "下周",
+          onClick: () => {
+            const start = dayjs().startOf("week").add(1, "week").add(1,'day').format("YYYY-MM-DD");
+            const end = dayjs(start).add(6, "day").format("YYYY-MM-DD");
+            this.min = start;
+            this.max = end;
+          },
+        },
+      ],
+      pickerOptions: {
+        shortcuts: [
+          {
+            text: "今天",
+            onClick: (picker) => {
+              const end = new Date();
+              const start = new Date();
+              // start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+              this.min = start;
+              this.max = end;
+              // picker.$emit('pick', [start, end]);
+            },
+          },
+          {
+            text: "昨天",
+            onClick: (picker) => {
+              const end = new Date();
+              const start = new Date();
+              start.setTime(start.getTime() - 3600 * 1000 * 24 * 1);
+              this.min = start;
+              this.max = start;
+              // picker.$emit('pick', [start, end]);
+            },
+          },
+          {
+            text: "明天",
+            onClick: (picker) => {
+              const end = new Date();
+              const start = new Date();
+              start.setTime(start.getTime() + 3600 * 1000 * 24 * 1);
+              this.min = start;
+              this.max = start;
+              // picker.$emit('pick', [start, end]);
+            },
+          },
+
+          {
+            text: "最近一周",
+            onClick: (picker) => {
+              const end = new Date();
+              const start = new Date();
+              start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+              this.min = start;
+              this.max = end;
+              // picker.$emit('pick', [start, end]);
+            },
+          },
+          {
+            text: "最近一个月",
+            onClick: (picker) => {
+              const end = new Date();
+              const start = new Date();
+              start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+              this.min = start;
+              this.max = end;
+              // picker.$emit('pick', [start, end]);
+            },
+          },
+          {
+            text: "最近三个月",
+            onClick: (picker) => {
+              const end = new Date();
+              const start = new Date();
+              start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+              this.min = start;
+              this.max = end;
+              // picker.$emit('pick', [start, end]);
+            },
+          },
+        ],
+      },
     };
   },
   methods: {
