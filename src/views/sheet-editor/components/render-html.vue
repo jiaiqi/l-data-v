@@ -19,7 +19,7 @@
         class="prefix-icon cursor-initial"
         v-else-if="column.isFirstCol"
       ></div>
-      <div v-html="html"></div>
+      <div v-html="html" style="min-height: 50px;"></div>
     </div>
     <el-button
       size="mini"
@@ -27,6 +27,14 @@
       circle
       @click.stop="showRichEditor"
       v-if="useEditor"
+      ><i class="el-icon-edit"></i
+    ></el-button>
+    <el-button
+      size="mini"
+      class="edit-btn"
+      circle
+      @click.stop="showTextarea"
+      v-if="'MultilineText' === column.col_type"
       ><i class="el-icon-edit"></i
     ></el-button>
 
@@ -67,7 +75,9 @@
         v-else
       >
       </el-input>
-      <div class="text-orange text-center" v-if="!editable">当前字段不可编辑</div>
+      <div class="text-orange text-center" v-if="!editable">
+        当前字段不可编辑
+      </div>
       <div class="text-center m-t-5" v-if="editable">
         <el-button
           type="primary"
@@ -183,11 +193,15 @@ export default {
         this.unfold = !this.unfold;
       });
     },
+    showTextarea() {
+      this.dialogTableVisible = true;
+      this.innerHtml = this.html;
+      this.$emit("onfocus");
+    },
     showRichEditor(event) {
-      if (this.useEditor || this.column.col_type === "MultilineText") {
+      if (this.useEditor) {
         this.dialogTableVisible = true;
         this.innerHtml = this.html;
-       
         this.editor?.focus();
         this.$emit("onfocus");
         // 阻止冒泡 拦截表格组件的双击事件

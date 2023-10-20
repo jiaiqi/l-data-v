@@ -34,7 +34,7 @@ const getServiceV2 = async (
 ) => {
   if (serviceName) {
     // const v2FromStore = metaStore.metaMap[`${service}-${use_type}`];
-    if (getItem(`${serviceName}-${use_type}`)&&!forceFeth) {
+    if (getItem(`${serviceName}-${use_type}`) && !forceFeth) {
       return getItem(`${serviceName}-${use_type}`);
     }
     const req = {
@@ -66,6 +66,7 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
         rownumber: params?.rownumber || 100,
         pageNo: params?.pageNo || 1,
       },
+      use_type: "list",
     };
     if (params?.vpage_no) {
       req.vpage_no = params.vpage_no;
@@ -74,6 +75,7 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
       req.order = params.order;
     }
     if (params.isTree) {
+      req.use_type = "treelist";
       // rdt: Return Data Type  ttd: top tree data
       if (req.condition?.length || params.forceUseTTD) {
         req["rdt"] = "ttd";
@@ -83,6 +85,9 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
           ruleType: "isnull",
         });
       }
+    }
+    if (params.use_type) {
+      req.use_type = params.use_type;
     }
     const url = `${app}/select/${serviceName}`;
     const res = await http.post(url, req);
@@ -221,12 +226,12 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
       if (typeof item.value === "string" && item.value) {
         if (item.value.indexOf("data.") !== -1) {
           let colName = item.value.slice(item.value.indexOf("data.") + 5);
-          if (row&&row[colName]) {
+          if (row && row[colName]) {
             item.value = row[colName];
           } else {
             item.value = undefined;
             // 容错
-            item.ruleType='like'
+            item.ruleType = "like";
           }
         } else if (item.value.indexOf("top.user") !== -1) {
           let key = item.value.split("top.user.");
@@ -241,7 +246,7 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
         } else if (item.value?.value_type) {
           if (item.value?.value_type === "constant") {
             item.value = item.value?.value;
-          } else if (item.value?.value_key&&row) {
+          } else if (item.value?.value_key && row) {
             item.value = row[item.value?.value_key];
           }
         } else if (

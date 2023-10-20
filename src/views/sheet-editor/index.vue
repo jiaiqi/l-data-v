@@ -1470,7 +1470,7 @@ export default {
                           this.loadTree(event, row, rowIndex, callback);
                         },
                         change: (event) => {
-                          // self.$set(row, column.field, event);
+                          this.$set(row, column.field, event);
                           this.$refs["tableRef"].startEditingCell({
                             rowKey: row.rowKey,
                             colKey: column.field,
@@ -1942,6 +1942,8 @@ export default {
             pageNo: this.page.pageNo,
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
+            use_type:
+              this.isTree && this.listType === "treelist" ? "treelist" : "list",
           }
         ).then((res) => {
           loadingInstance.close();
