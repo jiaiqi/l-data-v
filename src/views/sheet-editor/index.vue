@@ -1877,7 +1877,7 @@ export default {
                 // 数字类型 初始值处理
                 val = Number(val);
               }
-              if (val?.includes("top.user.")) {
+              if (typeof val==='string' && val?.includes("top.user.")) {
                 let key = val.split("top.user.");
                 key = key.length > 1 ? key[1] : "";
                 if (key) {
