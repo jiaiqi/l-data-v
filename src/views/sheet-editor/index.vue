@@ -134,6 +134,7 @@ import { Message, MessageBox } from "element-ui"; // 引入elementUI的Message�
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
+import FileUpload from "./components/file-upload.vue";
 import selectParentNode from "./components/select-parent-node.vue";
 import { RecordManager } from "./util/recordManager.js";
 import { Loading } from "element-ui";
@@ -156,6 +157,7 @@ export default {
   },
   data() {
     return {
+      calcReqData:null,
       columnWidthMap: {}, //存储改变后的列宽
       ctop: "-100vh",
       cleft: "-100vw",
@@ -538,6 +540,7 @@ export default {
       handler(newValue, oldValue) {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         console.log(currentSelection);
+        this.calcReqData = this.buildReqParams()
         if (
           currentSelection?.selectionRangeIndexes?.startRowIndex &&
           currentSelection?.selectionRangeIndexes?.startRowIndex !== -1
@@ -605,9 +608,14 @@ export default {
         return arr;
       }
     },
-    calcReqData() {
-      return this.buildReqParams() || [];
-    },
+    // calcReqData: {
+    //   get() {
+    //     return this.buildReqParams() || [];
+    //   },
+    //   set(val) {
+
+    //   },
+    // },
     // body 右键菜单配置
     contextmenuBodyOption() {
       return {
@@ -1435,7 +1443,49 @@ export default {
                         });
                       })
                     );
-                  } else {
+                  } 
+                  // else if (item.col_type === "FileList") {
+                  //   // 文件
+                  //   let editable = true;
+                  //   if (row.__flag === "add") {
+                  //     // 新增行 处理in_add
+                  //     if (this.addColsMap[column.field]?.in_add !== 1) {
+                  //       editable = false;
+                  //     }
+                  //   } else {
+                  //     // 编辑行 处理in_update
+                  //     if (this.updateColsMap[column.field]?.in_update !== 1) {
+                  //       editable = false;
+                  //     }
+                  //   }
+                  //   if (row.__flag !== "add" && !row?.__button_auth?.edit) {
+                  //     editable = false;
+                  //   }
+                  //   return h(FileUpload, {
+                  //     attrs: {
+                  //       row,
+                  //       column: setColumn,
+                  //       disabled: !editable,
+                  //       value: row[column.field],
+                  //       app: this.srvApp,
+                  //     },
+                  //     on: {
+                  //       change: (event) => {
+                  //         this.$set(row, column.field, event);
+                  //         this.$set(row,'__flag', row.__flag==='add'?'add':'update');
+                  //         console.log("data-change:", row, column.field, event);
+                  //         this.$refs["tableRef"].startEditingCell({
+                  //           rowKey: row.rowKey,
+                  //           colKey: column.field,
+                  //           defaultValue: event || null,
+                  //         });
+                  //         this.$refs["tableRef"].stopEditingCell();
+                  //         // this.calcReqData = this.buildReqParams()
+                  //       },
+                  //     },
+                  //   });
+                  // }
+                   else {
                     let editable = true;
                     if (row.__flag === "add") {
                       // 新增行 处理in_add
@@ -1459,6 +1509,7 @@ export default {
                         editable: editable,
                         html: row[column.field],
                         listType: this.listType,
+                        app: this.srvApp,
                       },
                       on: {
                         onfocus: () => {
@@ -1471,6 +1522,7 @@ export default {
                         },
                         change: (event) => {
                           this.$set(row, column.field, event);
+                          console.log("data-change:", row, column.field, event);
                           this.$refs["tableRef"].startEditingCell({
                             rowKey: row.rowKey,
                             colKey: column.field,
@@ -1708,7 +1760,7 @@ export default {
           data: addDatas,
         });
       }
-      return reqData;
+      return reqData?.length ? reqData : null;
     },
     refreshData() {
       this.sortState = [];
@@ -1877,7 +1929,7 @@ export default {
                 // 数字类型 初始值处理
                 val = Number(val);
               }
-              if (typeof val==='string' && val?.includes("top.user.")) {
+              if (typeof val === "string" && val?.includes("top.user.")) {
                 let key = val.split("top.user.");
                 key = key.length > 1 ? key[1] : "";
                 if (key) {

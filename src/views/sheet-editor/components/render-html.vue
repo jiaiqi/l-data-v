@@ -19,7 +19,7 @@
         class="prefix-icon cursor-initial"
         v-else-if="column.isFirstCol"
       ></div>
-      <div v-html="html" style="min-height: 50px;"></div>
+      <div v-html="html" style="min-height: 50px"></div>
     </div>
     <el-button
       size="mini"
@@ -105,8 +105,12 @@ export default {
     row: Object,
     column: Object,
     listType: String,
+    app: String,
   },
   computed: {
+    colType() {
+      return this.column?.col_type;
+    },
     setStyle() {
       let str = "";
       if (this.useEditor) {
@@ -216,20 +220,20 @@ export default {
       let text = event.clipboardData.getData("text/plain"); // 获取粘贴的纯文本
       // editor.dangerouslyInsertHtml(text);
       // return false
-      if (/<[^>]+>/.test(text)) {
-        // 包含html标签
-        // editor.insertText(text);
-        text = `<p><br></p>${text}<p><br></p>`;
-        console.log(editor.getHtml());
-        editor.dangerouslyInsertHtml(text);
-        console.log(editor.getHtml());
-        event.preventDefault();
-        // 阻止默认的粘贴行为
-        return false;
-      } else {
-        // 继续执行默认的粘贴行为
-        return true;
-      }
+      // if (/<[^>]+>/.test(text)) {
+      //   // 包含html标签
+      //   // editor.insertText(text);
+      //   text = `<p><br></p>${text}<p><br></p>`;
+      //   console.log(editor.getHtml());
+      //   editor.dangerouslyInsertHtml(text);
+      //   console.log(editor.getHtml());
+      //   event.preventDefault();
+      //   // 阻止默认的粘贴行为
+      //   return false;
+      // } else {
+      //   // 继续执行默认的粘贴行为
+      //   return true;
+      // }
     },
     onCreated(editor) {
       this.editor = Object.seal(editor); // 一定要用 Object.seal() ，否则会报错
