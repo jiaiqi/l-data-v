@@ -96,6 +96,7 @@ export default {
             name: item.src_name,
             file_type: item.file_type,
             url: `${window.backendIpAddr}/file/download?filePath=${item.fileurl}`,
+            fileurl:item.fileurl
           };
         });
       }
@@ -112,7 +113,7 @@ export default {
     },
     handlePreview(file) {
       console.log(file);
-          window.open(file.url);
+      window.open(file.url);
 
       // switch (file.file_type) {
       //   case "pdf":
@@ -138,7 +139,26 @@ export default {
       );
     },
     beforeRemove(file, fileList) {
-      return this.$confirm(`确定移除 ${file.name}？`);
+      return this.$confirm(`确定移除 ${file.name}？`)
+        .then(() => {
+          debugger
+          const url = `/file/delete`;
+          const req = { fileurl: file.fileurl };
+          $http.post(url, req).then((res) => {
+            if (res?.data?.resultCode === "SUCCESS") {
+              this.$message.success(`删除成功！`);
+              this.getFileList()
+            } else {
+              this.$message.error(res.data.resultMessage||res.data.state);
+            }
+          });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除",
+          });
+        });
     },
   },
 };
