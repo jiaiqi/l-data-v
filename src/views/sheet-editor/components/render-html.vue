@@ -19,8 +19,8 @@
         class="prefix-icon cursor-initial"
         v-else-if="column.isFirstCol"
       ></div>
-      <div v-html="html" style="min-height: 50px"></div>
-      <div class="old-value" v-if="!html&&oldValue" v-html="oldValue"></div>
+      <div v-html="html" style="min-height: 50px" v-if="html"></div>
+      <div class="old-value" v-else-if="!html&&oldValue" v-html="oldValue"></div>
     </div>
     <el-button
       size="mini"
