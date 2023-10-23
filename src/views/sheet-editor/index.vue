@@ -157,7 +157,7 @@ export default {
   },
   data() {
     return {
-      calcReqData:null,
+      calcReqData: null,
       columnWidthMap: {}, //存储改变后的列宽
       ctop: "-100vh",
       cleft: "-100vw",
@@ -249,6 +249,9 @@ export default {
               (item) => item.__id && item.__id === row.__id
             );
             if (row[column.field] !== oldRowData[column.field]) {
+              if (row[column.field] === null || row[column.field] === "") {
+                return "table-body-cell__update null-value";
+              }
               return "table-body-cell__update";
             }
           }
@@ -540,7 +543,7 @@ export default {
       handler(newValue, oldValue) {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         console.log(currentSelection);
-        this.calcReqData = this.buildReqParams()
+        this.calcReqData = this.buildReqParams();
         if (
           currentSelection?.selectionRangeIndexes?.startRowIndex &&
           currentSelection?.selectionRangeIndexes?.startRowIndex !== -1
@@ -1318,6 +1321,9 @@ export default {
               if (true) {
                 // if (item.bx_col_type === "fk") {
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                 const oldRowData =  this.oldTableData.find(
+                    (item) => item.__id && item.__id === row.__id
+                  );
                   let setColumn =
                     row.__flag === "add"
                       ? this.addColsMap[column.field]
@@ -1443,8 +1449,7 @@ export default {
                         });
                       })
                     );
-                  } 
-                  else if (item.col_type === "FileList") {
+                  } else if (item.col_type === "FileList") {
                     // 文件
                     let editable = true;
                     if (row.__flag === "add") {
@@ -1472,7 +1477,11 @@ export default {
                       on: {
                         change: (event) => {
                           this.$set(row, column.field, event);
-                          this.$set(row,'__flag', row.__flag==='add'?'add':'update');
+                          this.$set(
+                            row,
+                            "__flag",
+                            row.__flag === "add" ? "add" : "update"
+                          );
                           console.log("data-change:", row, column.field, event);
                           this.$refs["tableRef"].startEditingCell({
                             rowKey: row.rowKey,
@@ -1484,8 +1493,7 @@ export default {
                         },
                       },
                     });
-                  }
-                   else {
+                  } else {
                     let editable = true;
                     if (row.__flag === "add") {
                       // 新增行 处理in_add
@@ -1508,6 +1516,7 @@ export default {
                         column: setColumn,
                         editable: editable,
                         html: row[column.field],
+                        oldValue:oldRowData?.[column.field],
                         listType: this.listType,
                         app: this.srvApp,
                       },
@@ -2251,11 +2260,11 @@ export default {
 }
 .table-body-cell__update {
   // color: #2087cc !important;
-  color: #cc0000 !important;
+  color: #f00 !important;
   .el-input {
     .el-input__inner {
       // color: #2087cc !important;
-      color: #cc0000 !important;
+      color: #f00 !important;
     }
   }
   // background-color: #2087CC !important;

@@ -20,6 +20,7 @@
         v-else-if="column.isFirstCol"
       ></div>
       <div v-html="html" style="min-height: 50px"></div>
+      <div class="old-value" v-if="!html&&oldValue" v-html="oldValue"></div>
     </div>
     <el-button
       size="mini"
@@ -101,6 +102,7 @@ export default {
   components: { Editor, Toolbar },
   props: {
     html: [String, Number],
+    oldValue: [String, Number],
     editable: Boolean,
     row: Object,
     column: Object,
@@ -257,6 +259,10 @@ export default {
   --w-e-textarea-bg-color: transparent;
   max-height: 200px;
   position: relative;
+  .old-value{
+    text-decoration: line-through;
+    color: #f00;
+  }
   // overflow-y: auto;
   .is-rich-text {
     overflow: hidden;
