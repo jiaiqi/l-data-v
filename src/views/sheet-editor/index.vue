@@ -1444,47 +1444,47 @@ export default {
                       })
                     );
                   } 
-                  // else if (item.col_type === "FileList") {
-                  //   // 文件
-                  //   let editable = true;
-                  //   if (row.__flag === "add") {
-                  //     // 新增行 处理in_add
-                  //     if (this.addColsMap[column.field]?.in_add !== 1) {
-                  //       editable = false;
-                  //     }
-                  //   } else {
-                  //     // 编辑行 处理in_update
-                  //     if (this.updateColsMap[column.field]?.in_update !== 1) {
-                  //       editable = false;
-                  //     }
-                  //   }
-                  //   if (row.__flag !== "add" && !row?.__button_auth?.edit) {
-                  //     editable = false;
-                  //   }
-                  //   return h(FileUpload, {
-                  //     attrs: {
-                  //       row,
-                  //       column: setColumn,
-                  //       disabled: !editable,
-                  //       value: row[column.field],
-                  //       app: this.srvApp,
-                  //     },
-                  //     on: {
-                  //       change: (event) => {
-                  //         this.$set(row, column.field, event);
-                  //         this.$set(row,'__flag', row.__flag==='add'?'add':'update');
-                  //         console.log("data-change:", row, column.field, event);
-                  //         this.$refs["tableRef"].startEditingCell({
-                  //           rowKey: row.rowKey,
-                  //           colKey: column.field,
-                  //           defaultValue: event || null,
-                  //         });
-                  //         this.$refs["tableRef"].stopEditingCell();
-                  //         // this.calcReqData = this.buildReqParams()
-                  //       },
-                  //     },
-                  //   });
-                  // }
+                  else if (item.col_type === "FileList") {
+                    // 文件
+                    let editable = true;
+                    if (row.__flag === "add") {
+                      // 新增行 处理in_add
+                      if (this.addColsMap[column.field]?.in_add !== 1) {
+                        editable = false;
+                      }
+                    } else {
+                      // 编辑行 处理in_update
+                      if (this.updateColsMap[column.field]?.in_update !== 1) {
+                        editable = false;
+                      }
+                    }
+                    if (row.__flag !== "add" && !row?.__button_auth?.edit) {
+                      editable = false;
+                    }
+                    return h(FileUpload, {
+                      attrs: {
+                        row,
+                        column: setColumn,
+                        disabled: !editable,
+                        value: row[column.field],
+                        app: this.srvApp,
+                      },
+                      on: {
+                        change: (event) => {
+                          this.$set(row, column.field, event);
+                          this.$set(row,'__flag', row.__flag==='add'?'add':'update');
+                          console.log("data-change:", row, column.field, event);
+                          this.$refs["tableRef"].startEditingCell({
+                            rowKey: row.rowKey,
+                            colKey: column.field,
+                            defaultValue: event || null,
+                          });
+                          this.$refs["tableRef"].stopEditingCell();
+                          // this.calcReqData = this.buildReqParams()
+                        },
+                      },
+                    });
+                  }
                    else {
                     let editable = true;
                     if (row.__flag === "add") {

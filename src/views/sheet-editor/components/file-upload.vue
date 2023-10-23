@@ -24,6 +24,8 @@
 </template>
 
 <script>
+import { $http } from "../../../common/http";
+
 export default {
   props: {
     limit: {
@@ -53,30 +55,55 @@ export default {
         table_name: this.column?.table_name,
         columns: this.column?.columns,
       };
-      if (this.html) {
-        data.file_no = this.html;
+      if (this.modelValue) {
+        data.file_no = this.modelValue;
       }
       return data;
     },
-    modelValue:{
-      set(val){
-        this.$emit('change',val)
+    modelValue: {
+      set(val) {
+        this.$emit("change", val);
       },
-      get(){
-        return this.value
-      }
-    }
+      get() {
+        return this.value;
+      },
+    },
   },
   data() {
     return {
       fileList: [],
     };
   },
-
+  created() {
+    if (this.modelValue) {
+      this.getFileList();
+    }
+  },
   methods: {
+    async getFileList() {
+      const url = `/file/select/srvfile_attachment_select?srvfile_attachment_select`;
+      const req = {
+        serviceName: "srvfile_attachment_select",
+        colNames: ["*"],
+        condition: [
+          { colName: "file_no", value: this.modelValue, ruleType: "eq" },
+        ],
+      };
+      const res = await $http.post(url, req);
+      if (res?.data?.state === "SUCCESS") {
+        this.fileList = res.data.data.map((item) => {
+          return {
+            name: item.src_name,
+            file_type: item.file_type,
+            url: `${window.backendIpAddr}/file/download?filePath=${item.fileurl}`,
+          };
+        });
+      }
+    },
     handleUploadSuccess(response, file, fileList) {
       if (response?.file_no) {
-        this.innerHtml = response?.file_no;
+        this.modelValue = response?.file_no;
+        this.getFileList();
         this.$emit("change", response?.file_no);
       }
     },
@@ -85,6 +112,23 @@ export default {
     },
     handlePreview(file) {
       console.log(file);
+          window.open(file.url);
+
+      // switch (file.file_type) {
+      //   case "pdf":
+      //     this.$message({
+      //       dangerouslyUseHTMLString: true,
+      //       message: `<iframe
+      //         src="${file.url}?bx_auth_ticket=${sessionStorage.getItem('bx_auth_ticket')}"
+      //         frameborder="0"
+      //         style="height: 800px; width: 100%"
+      //       ></iframe>`,
+      //     });
+      //     break;
+
+      //   default:
+      //     break;
+      // }
     },
     handleExceed(files, fileList) {
       this.$message.warning(
@@ -100,4 +144,8 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss">
+.el-upload-list__item-name {
+  text-align: left;
+}
+</style>
