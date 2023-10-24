@@ -90,6 +90,7 @@
       :event-custom-option="eventCustomOption"
       :columnHiddenOption="columnHiddenOption"
     />
+    <div class="empty-data" v-if="page.total === 0 && !loading">暂无数据</div>
     <div class="text-center">
       <el-pagination
         @size-change="handleSizeChange"
@@ -1259,7 +1260,7 @@ export default {
                         this.$set(this.filterState, event.colName, event);
                       }
                       this.$nextTick(() => {
-                        this.getList();
+                        this.getList(false);
                       });
                     }
                   },
@@ -1321,7 +1322,7 @@ export default {
               if (true) {
                 // if (item.bx_col_type === "fk") {
                 columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-                 const oldRowData =  this.oldTableData.find(
+                  const oldRowData = this.oldTableData.find(
                     (item) => item.__id && item.__id === row.__id
                   );
                   let setColumn =
@@ -1516,7 +1517,7 @@ export default {
                         column: setColumn,
                         editable: editable,
                         html: row[column.field],
-                        oldValue:oldRowData?.[column.field],
+                        oldValue: oldRowData?.[column.field],
                         listType: this.listType,
                         app: this.srvApp,
                       },
@@ -2085,7 +2086,7 @@ export default {
       }
       return obj;
     },
-    async getList() {
+    async getList(insertNewRows = true) {
       if (this.serviceName) {
         this.loading = true;
         const res = await onSelect(
@@ -2133,7 +2134,7 @@ export default {
         this.oldTableData = JSON.parse(JSON.stringify(tableData));
         this.recordManager = new RecordManager();
         this.recordManager?.push(cloneDeep(this.oldTableData));
-        if (tableData.length === 0) {
+        if (tableData.length === 0 && insertNewRows) {
           this.insert2Rows(0);
         }
       }
@@ -2244,6 +2245,17 @@ export default {
 };
 </script>
 <style lang="scss">
+.empty-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  width: 100%;
+  color: #666;
+  font-size: 16px;
+  border: 1px solid #eee;
+  border-top: 0;
+}
 .table-body-cell__add {
   background-color: #a4da89 !important;
   .el-select .el-input {

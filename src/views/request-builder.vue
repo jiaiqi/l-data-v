@@ -606,27 +606,27 @@ export default {
       }
       this.endList = endList;
     },
-    setEndData(){
+    setEndData() {
       let endData = {
-        group:[],
-        order:[],
-        condition:[],
-        aggregation:[]
-      }
-      if(Array.isArray(this.listData)&&this.listData.length>0){
-        this.listData.forEach(item=>{
-          Object.keys(endData).forEach(key=>{
-            if(item.type===key&&item?.list?.length){
-              endData[key].push(...item.list.map(d=>d[`_${key}`]))
+        group: [],
+        order: [],
+        condition: [],
+        aggregation: [],
+      };
+      if (Array.isArray(this.listData) && this.listData.length > 0) {
+        this.listData.forEach((item) => {
+          Object.keys(endData).forEach((key) => {
+            if (item.type === key && item?.list?.length) {
+              endData[key].push(...item.list.map((d) => d[`_${key}`]));
             }
-          })
-        })
+          });
+        });
       }
-      this.endData = endData
-      return endData
+      this.endData = endData;
+      return endData;
     },
     previewData() {
-      this.setEndData()
+      this.setEndData();
       // 根据组装的条件 发送请求 预览数据
       this.reqData = {
         group:
@@ -684,7 +684,7 @@ export default {
     saveConfig() {
       // 保存配置到服务器
       // return;
-      this.setEndData()
+      this.setEndData();
       const saveData = this.buildSaveData();
       const child_data_list = this.buildChildData();
       // if (this.srv_call_no) {
@@ -997,10 +997,10 @@ export default {
             service_name: this.reqConfig.service_name,
             srv_type: this.reqConfig.srv_type, //接口类型
           };
-          if (this.$route.query?.srvApp) {
+          if (this.$route.query?.srvApp && !this.ruleForm.mapp) {
             this.ruleForm.mapp = this.$route.query?.srvApp;
-            await this.getServiceName();
           }
+          await this.getServiceName();
           initData = new Array(4);
           if (reqConfig?.order_json) {
             try {
@@ -1021,7 +1021,6 @@ export default {
           if (reqConfig?.group_json) {
             try {
               const groupJson = JSON.parse(reqConfig.group_json);
-              debugger;
               if (Array.isArray(groupJson)) {
                 initData[2] = groupJson.map((item) => {
                   if (!item.alias_name) {
