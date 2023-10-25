@@ -1479,6 +1479,7 @@ export default {
                       },
                       on: {
                         change: (event) => {
+                          debugger
                           this.$set(row, column.field, event);
                           this.$set(
                             row,

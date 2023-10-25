@@ -1,11 +1,7 @@
 <template>
   <div class="file-list">
     <div class="edit-icon">
-      <el-button
-        size="mini"
-        class="edit-btn"
-        circle
-        @click="dialogVisible = true"
+      <el-button size="mini" class="edit-btn" circle @click="showDialog"
         ><i class="el-icon-upload2"></i
       ></el-button>
     </div>
@@ -86,12 +82,14 @@ export default {
       dialogVisible: false,
     };
   },
-  created() {
-    if (this.modelValue) {
-      this.getFileList();
-    }
-  },
+  created() {},
   methods: {
+    showDialog() {
+      if (this.modelValue) {
+        this.getFileList();
+      }
+      this.dialogVisible = true;
+    },
     async getFileList() {
       const url = `/file/select/srvfile_attachment_select?srvfile_attachment_select`;
       const req = {
@@ -101,6 +99,9 @@ export default {
           { colName: "file_no", value: this.modelValue, ruleType: "eq" },
         ],
       };
+      console.log(this.value);
+      console.log(this.modelValue);
+      debugger;
       const res = await $http.post(url, req);
       if (res?.data?.state === "SUCCESS") {
         this.fileList = res.data.data.map((item) => {
@@ -111,6 +112,7 @@ export default {
             fileurl: item.fileurl,
           };
         });
+        debugger;
         if (this.fileList.length === 0) {
           this.$emit("change", null);
         }
@@ -119,12 +121,16 @@ export default {
     handleUploadSuccess(response, file, fileList) {
       if (response?.file_no) {
         this.modelValue = response?.file_no;
-        this.getFileList();
-        this.$emit("change", response?.file_no);
+        this.$nextTick(()=>{
+          // this.getFileList();
+        })
       }
     },
     handleRemove(file, fileList) {
       console.log(file, fileList);
+      if(!fileList?.length){
+        this.modelValue = null
+      }
     },
     handlePreview(file) {
       console.log(file);
