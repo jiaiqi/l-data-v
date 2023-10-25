@@ -1,6 +1,11 @@
 <template>
   <div class="header-filter" v-if="colType">
-    <el-popover placement="bottom" trigger="click" v-model="filterVisible">
+    <el-popover
+      placement="bottom"
+      trigger="click"
+      v-model="filterVisible"
+      @show="showPopover"
+    >
       <div class="filter-box">
         <!-- Enum、Set -->
         <div class="option-list" v-if="['枚举', '集合'].includes(colType)">
@@ -56,7 +61,13 @@
           <div class="label">选择日期范围：</div>
           <div class="flex flex-col">
             <div class="w-[100%] m-y-2">
-              <el-button size="mini" v-for="item in datePickerShortcuts" :key="item.text" @click="item.onClick">{{item.text}}</el-button>
+              <el-button
+                size="mini"
+                v-for="item in datePickerShortcuts"
+                :key="item.text"
+                @click="item.onClick"
+                >{{ item.text }}</el-button
+              >
             </div>
             <div class="flex items-center">
               <el-date-picker
@@ -96,12 +107,9 @@
             @change="getFkOptions"
           ></el-input>
           <el-checkbox-group v-model="modelValue">
-            <el-checkbox
-              v-for="item in optionList"
-              :label="item.value"
-              :key="item.value"
-              >{{ item.label }}</el-checkbox
-            >
+            <el-checkbox v-for="item in optionList" :label="item" :key="item">{{
+              item
+            }}</el-checkbox>
           </el-checkbox-group>
         </div>
         <div class="handler-bar flex justify-end m-t-2">
@@ -144,6 +152,7 @@ export default {
     },
     app: String,
     list: Array,
+    service: String,
   },
   computed: {
     colType() {
@@ -191,19 +200,27 @@ export default {
       let res = null;
       if (this.colType === "枚举") {
         res = this.column?.option_list_v2;
+      } else if (this.filterOptions?.length) {
+        res = [...new Set(this.filterOptions)];
+        if(this.filterText){
+          res = res.filter(item=>item.includes(this.filterText))
+        }
       } else if (this.colType === "外键") {
         res = this.fkOptions || [];
-      } else if (this.colType === "字符串" && this.list?.length) {
-        res = this.list
-          .map((item) => item[this.column.columns])
-          .filter((item) => !!item);
-        res = [...new Set(res)];
+      } else if (this.colType === "字符串") {
+        if (this.list?.length) {
+          res = this.list
+            .map((item) => item[this.column.columns])
+            .filter((item) => !!item);
+          res = [...new Set(res)];
+        }
       }
       return res;
     },
   },
   data() {
     return {
+      filterOptions: null,
       filterVisible: false,
       modelValue: null,
       filterText: "",
@@ -229,7 +246,7 @@ export default {
         {
           text: "昨日",
           onClick: () => {
-            const date = dayjs().subtract(1,'day').format("YYYY-MM-DD");
+            const date = dayjs().subtract(1, "day").format("YYYY-MM-DD");
             this.min = date;
             this.max = date;
           },
@@ -237,7 +254,7 @@ export default {
         {
           text: "明日",
           onClick: () => {
-            const date =  dayjs().add(1,'day').format("YYYY-MM-DD");
+            const date = dayjs().add(1, "day").format("YYYY-MM-DD");
             this.min = date;
             this.max = date;
           },
@@ -245,8 +262,14 @@ export default {
         {
           text: "本周",
           onClick: () => {
-            const end = dayjs().endOf("week").add(1,'day').format("YYYY-MM-DD");
-            const start = dayjs().startOf("week").add(1,'day').format("YYYY-MM-DD");
+            const end = dayjs()
+              .endOf("week")
+              .add(1, "day")
+              .format("YYYY-MM-DD");
+            const start = dayjs()
+              .startOf("week")
+              .add(1, "day")
+              .format("YYYY-MM-DD");
             this.min = start;
             this.max = end;
           },
@@ -254,7 +277,11 @@ export default {
         {
           text: "上周",
           onClick: () => {
-            const start =dayjs().startOf("week").subtract(1, "week").add(1,'day').format("YYYY-MM-DD");
+            const start = dayjs()
+              .startOf("week")
+              .subtract(1, "week")
+              .add(1, "day")
+              .format("YYYY-MM-DD");
             const end = dayjs(start).add(6, "day").format("YYYY-MM-DD");
             this.min = start;
             this.max = end;
@@ -263,7 +290,11 @@ export default {
         {
           text: "下周",
           onClick: () => {
-            const start = dayjs().startOf("week").add(1, "week").add(1,'day').format("YYYY-MM-DD");
+            const start = dayjs()
+              .startOf("week")
+              .add(1, "week")
+              .add(1, "day")
+              .format("YYYY-MM-DD");
             const end = dayjs(start).add(6, "day").format("YYYY-MM-DD");
             this.min = start;
             this.max = end;
@@ -344,6 +375,34 @@ export default {
     };
   },
   methods: {
+    showPopover() {
+      if(['外键','字符串'].includes(this.colType)){
+        this.getFilterOptions();
+      }
+    },
+    getFilterOptions() {
+      // 查找筛选项列表
+      const url = `/${this.app}/select/${this.service}`;
+      const req = {
+        serviceName: this.service,
+        colNames: ["*"],
+        condition: [],
+        use_type: "list",
+        group: [
+          {
+            colName: this.column.columns,
+            type: "by",
+          },
+        ],
+      };
+      this.$http.post(url, req).then((res) => {
+        if (res?.data?.data?.length) {
+          this.filterOptions = res.data.data.map(
+            (item) => item[this.column.columns]||'null'
+          );
+        }
+      });
+    },
     getFkOptions(val) {
       console.log(val);
       const srvInfo = JSON.parse(JSON.stringify(this.column.option_list_v2));
@@ -506,11 +565,11 @@ export default {
   },
   created() {
     this.initModelValue();
-    setTimeout(() => {
-      if (this.colType === "外键") {
-        this.getFkOptions();
-      }
-    }, 1000);
+    // setTimeout(() => {
+    //   if (this.colType === "外键") {
+    //     this.getFkOptions();
+    //   }
+    // }, 1000);
   },
 };
 </script>

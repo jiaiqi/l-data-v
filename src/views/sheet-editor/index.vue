@@ -1250,6 +1250,7 @@ export default {
                   list: this.tableData,
                   column: { ...item, edit: columnObj.edit },
                   sortState: this.setSortState,
+                  service:this.serviceName,
                 },
                 on: {
                   "filter-change": (event) => {

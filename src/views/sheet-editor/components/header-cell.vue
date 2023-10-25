@@ -27,6 +27,7 @@
         :column="column"
         :app="app"
         :list="list"
+        :service="service"
         @filter-change="filterChange"
       ></header-filter>
       <!-- <el-popover
@@ -105,6 +106,7 @@ export default {
     column: Object,
     sortState: Object,
     app: String,
+    service: String,
     list: Array,
   },
   data() {

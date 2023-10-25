@@ -20,7 +20,11 @@
         v-else-if="column.isFirstCol"
       ></div>
       <div v-html="html" style="min-height: 50px" v-if="html"></div>
-      <div class="old-value" v-else-if="!html&&oldValue" v-html="oldValue"></div>
+      <div
+        class="old-value"
+        v-else-if="!html && oldValue"
+        v-html="oldValue"
+      ></div>
     </div>
     <el-button
       size="mini"
@@ -208,6 +212,9 @@ export default {
       if (this.useEditor) {
         this.dialogTableVisible = true;
         this.innerHtml = this.html;
+        this.$nextTick(() => {
+          this.editor?.setHtml(this.html);
+        });
         this.editor?.focus();
         this.$emit("onfocus");
         // 阻止冒泡 拦截表格组件的双击事件
@@ -220,6 +227,7 @@ export default {
       // const html = event.clipboardData.getData('text/html') // 获取粘贴的 html
       // event.preventDefault();
       let text = event.clipboardData.getData("text/plain"); // 获取粘贴的纯文本
+      return true
       // editor.dangerouslyInsertHtml(text);
       // return false
       // if (/<[^>]+>/.test(text)) {
@@ -259,7 +267,7 @@ export default {
   --w-e-textarea-bg-color: transparent;
   max-height: 200px;
   position: relative;
-  .old-value{
+  .old-value {
     text-decoration: line-through;
     color: #f00;
   }
