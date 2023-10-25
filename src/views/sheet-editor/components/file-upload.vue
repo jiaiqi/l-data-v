@@ -1,25 +1,35 @@
 <template>
   <div class="file-list">
-    <el-upload
-      class="upload-demo"
-      :action="uploadAction"
-      :on-preview="handlePreview"
-      :on-remove="handleRemove"
-      :before-remove="beforeRemove"
-      :on-success="handleUploadSuccess"
-      :headers="uploadHeaders"
-      :data="uploadData"
-      :limit="limit"
-      :on-exceed="handleExceed"
-      :file-list="fileList"
-    >
-      <el-button size="small" type="primary" v-if="!disabled"
-        >点击上传</el-button
+    <div class="edit-icon">
+      <el-button
+        size="mini"
+        class="edit-btn"
+        circle
+        @click="dialogVisible = true"
+        ><i class="el-icon-upload2"></i
+      ></el-button>
+    </div>
+    <div class="file-no">{{ value || "" }}</div>
+
+    <el-dialog title="文件上传" :visible.sync="dialogVisible">
+      <el-upload
+        class="upload-demo"
+        :action="uploadAction"
+        :on-preview="handlePreview"
+        :on-remove="handleRemove"
+        :before-remove="beforeRemove"
+        :on-success="handleUploadSuccess"
+        :headers="uploadHeaders"
+        :data="uploadData"
+        :limit="limit"
+        :on-exceed="handleExceed"
+        :file-list="fileList"
       >
-      <!-- <div slot="tip" class="el-upload__tip">
-            只能上传jpg/png文件，且不超过500kb
-          </div> -->
-    </el-upload>
+        <el-button size="small" type="primary" v-if="!disabled"
+          >点击上传</el-button
+        >
+      </el-upload>
+    </el-dialog>
   </div>
 </template>
 
@@ -72,6 +82,7 @@ export default {
   data() {
     return {
       fileList: [],
+      dialogVisible: false,
     };
   },
   created() {
@@ -96,9 +107,12 @@ export default {
             name: item.src_name,
             file_type: item.file_type,
             url: `${window.backendIpAddr}/file/download?filePath=${item.fileurl}`,
-            fileurl:item.fileurl
+            fileurl: item.fileurl,
           };
         });
+        if (this.fileList.length === 0) {
+          this.$emit("change", null);
+        }
       }
     },
     handleUploadSuccess(response, file, fileList) {
@@ -141,15 +155,15 @@ export default {
     beforeRemove(file, fileList) {
       return this.$confirm(`确定移除 ${file.name}？`)
         .then(() => {
-          debugger
+          debugger;
           const url = `/file/delete`;
           const req = { fileurl: file.fileurl };
           $http.post(url, req).then((res) => {
             if (res?.data?.resultCode === "SUCCESS") {
               this.$message.success(`删除成功！`);
-              this.getFileList()
+              this.getFileList();
             } else {
-              this.$message.error(res.data.resultMessage||res.data.state);
+              this.$message.error(res.data.resultMessage || res.data.state);
             }
           });
         })
@@ -165,7 +179,32 @@ export default {
 </script>
 
 <style lang="scss">
-.el-upload-list__item-name {
+.file-list {
   text-align: left;
+  min-height: 30px;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .edit-icon {
+    position: absolute;
+    bottom: 10px;
+    right: 20px;
+    // top: calc(50% - 20px);
+    // right: calc(50% - 10px);
+    width: 20px;
+    height: 20px;
+    display: none;
+  }
+  &:hover {
+    .edit-icon {
+      cursor: pointer;
+      display: block;
+    }
+  }
+  .el-upload-list__item-name {
+    text-align: left;
+  }
 }
 </style>

@@ -19,7 +19,12 @@
         class="prefix-icon cursor-initial"
         v-else-if="column.isFirstCol"
       ></div>
-      <div v-html="html" style="min-height: 50px" v-if="html"></div>
+      <div
+        v-html="html"
+        style="min-height: 50px"
+        v-if="useEditor && html"
+      ></div>
+      <div style="min-height: 50px" v-else-if="html">{{ html }}</div>
       <div
         class="old-value"
         v-else-if="!html && oldValue"
@@ -227,7 +232,7 @@ export default {
       // const html = event.clipboardData.getData('text/html') // 获取粘贴的 html
       // event.preventDefault();
       let text = event.clipboardData.getData("text/plain"); // 获取粘贴的纯文本
-      return true
+      return true;
       // editor.dangerouslyInsertHtml(text);
       // return false
       // if (/<[^>]+>/.test(text)) {
