@@ -28,6 +28,7 @@
         <el-button size="small" type="primary" v-if="!disabled"
           >点击上传</el-button
         >
+        <div class="" v-else @click.prevent.stop="">没有编辑权限</div>
       </el-upload>
     </el-dialog>
   </div>
