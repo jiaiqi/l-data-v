@@ -1261,6 +1261,7 @@ export default {
                         this.$set(this.filterState, event.colName, event);
                       }
                       this.$nextTick(() => {
+                        this.page.pageNo = 1;
                         this.getList(false);
                       });
                     }
@@ -1292,7 +1293,7 @@ export default {
                         orderType: "ASC",
                       });
                     }
-
+                    this.page.pageNo = 1;
                     this.getList();
                   },
                 },
@@ -1776,7 +1777,9 @@ export default {
     refreshData() {
       this.sortState = [];
       const reqData = this.buildReqParams();
-      if (reqData?.length === 0) {
+      
+      if (reqData?.length === 0||!reqData) {
+        this.page.pageNo = 1;
         this.getList();
         return;
       }
@@ -1786,6 +1789,7 @@ export default {
         type: "warning",
       })
         .then(() => {
+          this.page.pageNo = 1;
           this.getList();
         })
         .catch(() => {
