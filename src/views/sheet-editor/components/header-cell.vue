@@ -25,6 +25,7 @@
     <div class="filter-icon cursor-pointer">
       <header-filter
         :column="column"
+        :condition="condition"
         :app="app"
         :list="list"
         :service="service"
@@ -108,6 +109,7 @@ export default {
     app: String,
     service: String,
     list: Array,
+    condition:Array
   },
   data() {
     return {

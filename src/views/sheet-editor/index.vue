@@ -1251,6 +1251,7 @@ export default {
                   column: { ...item, edit: columnObj.edit },
                   sortState: this.setSortState,
                   service:this.serviceName,
+                  condition:this.defaultConditions
                 },
                 on: {
                   "filter-change": (event) => {

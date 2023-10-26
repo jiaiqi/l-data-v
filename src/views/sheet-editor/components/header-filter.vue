@@ -93,7 +93,7 @@
         >
           <div class="label">内容过滤：</div>
           <el-input v-model="modelValue" clearable></el-input>
-          <el-checkbox-group v-model="strList" v-if="colType === '字符串'">
+          <el-checkbox-group style="width: 100%;overflow-x: auto;" v-model="strList" v-if="colType === '字符串'">
             <el-checkbox v-for="item in optionList" :label="item" :key="item">{{
               item
             }}</el-checkbox>
@@ -147,9 +147,8 @@ import { getFkOptions } from "../../../service/api";
 import dayjs from "dayjs";
 export default {
   props: {
-    column: {
-      type: Object,
-    },
+    column: Object,
+    condition: Array,
     app: String,
     list: Array,
     service: String,
@@ -202,8 +201,8 @@ export default {
         res = this.column?.option_list_v2;
       } else if (this.filterOptions?.length) {
         res = [...new Set(this.filterOptions)];
-        if(this.filterText){
-          res = res.filter(item=>item.includes(this.filterText))
+        if (this.filterText) {
+          res = res.filter((item) => item.includes(this.filterText));
         }
       } else if (this.colType === "外键") {
         res = this.fkOptions || [];
@@ -376,7 +375,7 @@ export default {
   },
   methods: {
     showPopover() {
-      if(['外键','字符串'].includes(this.colType)){
+      if (["外键", "字符串"].includes(this.colType)) {
         this.getFilterOptions();
       }
     },
@@ -395,10 +394,15 @@ export default {
           },
         ],
       };
+      if (Array.isArray(this.condition) && this.condition.length) {
+        req.condition = this.condition.filter(
+          (item) => item.colName !== this.column.columns
+        );
+      }
       this.$http.post(url, req).then((res) => {
         if (res?.data?.data?.length) {
           this.filterOptions = res.data.data.map(
-            (item) => item[this.column.columns]||'null'
+            (item) => item[this.column.columns] || "null"
           );
         }
       });
