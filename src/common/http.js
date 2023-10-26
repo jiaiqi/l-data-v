@@ -4,7 +4,7 @@ let bx_auth_ticket = "";
 // let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
 let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
-const devTicket = 'xabxdzkj-0a43945f-7e15-48a0-bf56-c684ef53c956'
+const devTicket = 'xabxdzkj-aab9009f-5f86-4119-8988-0ab988fcfcfe'
 if (top?.pathConfig?.gateway) {
   baseURL = top?.pathConfig?.gateway;
 }

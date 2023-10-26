@@ -874,12 +874,50 @@ export default {
         };
       }
     },
+    initCond() {
+      if (this.$route?.query?.initCond) {
+        let str = this.$route?.query?.initCond;
+        try {
+          str = JSON.parse(decodeURIComponent(str));
+          if (Array.isArray(str) && str?.length) {
+            str = str.map((item) => {
+              debugger;
+              if (item?.value?.includes("top.user")) {
+                let key = item.value.split("top.user.");
+                key = key.length > 1 ? key[1] : "";
+                if (key) {
+                  let userInfo = sessionStorage.getItem("current_login_user");
+                  if (userInfo) {
+                    userInfo = JSON.parse(userInfo);
+                  }
+                  item.value = userInfo?.[key];
+                }
+              } else if (item?.value?.includes("new Date()")) {
+                item.value = dayjs().format("YYYY-MM-DD");
+              }
+              return item;
+            });
+          }
+          return str;
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    },
     defaultConditions() {
       const query = this.$route.query;
       let defaultConditions = [];
       if (query && Object.keys(query).length > 0) {
         Object.keys(query).forEach((key) => {
-          if (!["srvApp", "isTree", "topTreeData", "fixedCol"].includes(key)) {
+          if (
+            ![
+              "srvApp",
+              "isTree",
+              "topTreeData",
+              "fixedCol",
+              "initCond",
+            ].includes(key)
+          ) {
             defaultConditions.push({
               colName: key,
               ruleType: "eq",
@@ -1250,8 +1288,8 @@ export default {
                   list: this.tableData,
                   column: { ...item, edit: columnObj.edit },
                   sortState: this.setSortState,
-                  service:this.serviceName,
-                  condition:this.defaultConditions
+                  service: this.serviceName,
+                  condition: this.defaultConditions,
                 },
                 on: {
                   "filter-change": (event) => {
@@ -1480,7 +1518,7 @@ export default {
                       },
                       on: {
                         change: (event) => {
-                          debugger
+                          debugger;
                           this.$set(row, column.field, event);
                           this.$set(
                             row,
@@ -1779,8 +1817,8 @@ export default {
     refreshData() {
       this.sortState = [];
       const reqData = this.buildReqParams();
-      
-      if (reqData?.length === 0||!reqData) {
+
+      if (reqData?.length === 0 || !reqData) {
         this.page.pageNo = 1;
         this.getList();
         return;
@@ -2096,10 +2134,32 @@ export default {
     async getList(insertNewRows = true) {
       if (this.serviceName) {
         this.loading = true;
+        const condition = [...this.defaultConditions]
+        if(this.initCond?.length){
+          this.initCond.forEach(item=>{
+            if(!condition.find(c=>c.colName===item.colName)){
+              if(item.ruleType==='eq'&&item.value===undefined){
+                // 变量值不存在的默认条件忽略掉
+                return
+              }
+              condition.push(item)
+            }
+          })
+        }
+        condition = condition.map(item=>{
+          if(item.value==='null'){
+            if(item.ruleType==='eq'){
+              item.ruleType = 'isnull'
+            }else{
+              item.ruleType = 'notnull'
+            }
+          }
+          return item
+        })
         const res = await onSelect(
           this.serviceName,
           this.srvApp,
-          this.defaultConditions,
+          condition,
           {
             rownumber: this.page.rownumber,
             pageNo: this.page.pageNo,
