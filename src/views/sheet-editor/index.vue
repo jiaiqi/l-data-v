@@ -881,7 +881,6 @@ export default {
           str = JSON.parse(decodeURIComponent(str));
           if (Array.isArray(str) && str?.length) {
             str = str.map((item) => {
-              debugger;
               if (item?.value?.includes("top.user")) {
                 let key = item.value.split("top.user.");
                 key = key.length > 1 ? key[1] : "";
@@ -1518,7 +1517,6 @@ export default {
                       },
                       on: {
                         change: (event) => {
-                          debugger;
                           this.$set(row, column.field, event);
                           this.$set(
                             row,
@@ -2134,7 +2132,7 @@ export default {
     async getList(insertNewRows = true) {
       if (this.serviceName) {
         this.loading = true;
-        const condition = [...this.defaultConditions]
+        let condition = [...this.defaultConditions]
         if(this.initCond?.length){
           this.initCond.forEach(item=>{
             if(!condition.find(c=>c.colName===item.colName)){
