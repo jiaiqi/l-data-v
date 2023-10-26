@@ -55,4 +55,12 @@ module.exports = [
     password: "Bxaliyun46;",
     path: "/bxstorage/155yxjd/dataview",
   },
+  {
+    title: "外网 西乡劳动",
+    host: "139.196.209.46",
+    port: 22,
+    username: "root",
+    password: "Bxaliyun46;",
+    path: "/bxsoft/xxpages/dataview",
+  },
 ];
