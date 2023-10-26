@@ -1245,6 +1245,7 @@ export default {
                     "RichText",
                     "MultilineText",
                     "Enum",
+                    "Set",
                     "Integer",
                     "Float",
                     "Money",
@@ -1476,6 +1477,47 @@ export default {
                               rowKey: row.rowKey,
                               colKey: column.field,
                               defaultValue: event,
+                            });
+                            this.$refs["tableRef"].stopEditingCell();
+                          },
+                        },
+                      },
+                      item.option_list_v2.map((op) => {
+                        return h("el-option", {
+                          attrs: {
+                            key: op.value,
+                            label: op.label,
+                            value: op.value,
+                          },
+                        });
+                      })
+                    );
+                  } else if (item.col_type === "Set") {
+                    let value = []
+                    if( row[column.field]){
+                      value = row[column.field].split(',')
+                    }
+                    return h(
+                      "el-select",
+                      {
+                        attrs: {
+                          collapseTags:true,
+                          multiple:true,
+                          disabled:
+                            !columnObj.edit ||
+                            (row.__flag !== "add" &&
+                              row?.__button_auth?.edit === false),
+                          value: value,
+                          size: "mini",
+                          clearable: true,
+                        },
+                        on: {
+                          input: (event) => {
+                            // this.$set(row, column.field, event.toString());
+                            this.$refs["tableRef"].startEditingCell({
+                              rowKey: row.rowKey,
+                              colKey: column.field,
+                              defaultValue: event.toString(),
                             });
                             this.$refs["tableRef"].stopEditingCell();
                           },
