@@ -112,7 +112,6 @@ export default {
             fileurl: item.fileurl,
           };
         });
-        debugger;
         if (this.fileList.length === 0) {
           this.$emit("change", null);
         }

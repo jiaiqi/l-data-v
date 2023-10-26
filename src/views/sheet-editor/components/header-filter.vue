@@ -576,6 +576,8 @@ export default {
 
 <style lang="scss" scoped>
 .filter-box {
+  max-height: 50vh;
+  overflow-y: auto;
   .option-list {
     width: 200px;
   }
