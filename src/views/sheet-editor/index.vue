@@ -875,12 +875,13 @@ export default {
       }
     },
     initCond() {
+      let arr = []
       if (this.$route?.query?.initCond) {
         let str = this.$route?.query?.initCond;
         try {
           str = JSON.parse(decodeURIComponent(str));
           if (Array.isArray(str) && str?.length) {
-            str = str.map((item) => {
+            str.forEach((item) => {
               if (item?.value?.includes("top.user")) {
                 let key = item.value.split("top.user.");
                 key = key.length > 1 ? key[1] : "";
@@ -894,14 +895,14 @@ export default {
               } else if (item?.value?.includes("new Date()")) {
                 item.value = dayjs().format("YYYY-MM-DD");
               }
-              return item;
+              arr.push(item)
             });
           }
-          return str;
         } catch (error) {
           console.log(error);
         }
       }
+      return arr
     },
     defaultConditions() {
       const query = this.$route.query;
@@ -1288,7 +1289,7 @@ export default {
                   column: { ...item, edit: columnObj.edit },
                   sortState: this.setSortState,
                   service: this.serviceName,
-                  condition: this.defaultConditions,
+                  condition: [...this.initCond,...this.defaultConditions],
                 },
                 on: {
                   "filter-change": (event) => {
