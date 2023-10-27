@@ -1538,7 +1538,7 @@ export default {
                         });
                       })
                     );
-                  } else if (item.col_type === "FileList") {
+                  } else if (item.col_type === "FileList"||item.col_type === "Image") {
                     // 文件
                     let editable = true;
                     if (row.__flag === "add") {

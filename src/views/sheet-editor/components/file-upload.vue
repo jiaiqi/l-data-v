@@ -5,7 +5,16 @@
         ><i class="el-icon-upload2"></i
       ></el-button>
     </div>
-    <div class="file-no">{{ value || "" }}</div>
+    <div v-if="isImage&&getImageUrl">
+      <el-image
+        style="width: 100px; height: 100px"
+        :src="getImageUrl"
+        :preview-src-list="srcList"
+        @click.native="getFileList()"
+      >
+      </el-image>
+    </div>
+    <div class="file-no" v-else>{{ value || "" }}</div>
 
     <el-dialog title="文件上传" :visible.sync="dialogVisible">
       <el-upload
@@ -20,6 +29,7 @@
         :limit="limit"
         :on-exceed="handleExceed"
         :file-list="fileList"
+        :list-type="isImage?'picture-card':'text'"
       >
         <el-button size="small" type="primary" v-if="!disabled"
           >点击上传</el-button
@@ -46,6 +56,26 @@ export default {
     value: [String, Number],
   },
   computed: {
+    srcList() {
+      if (this.fileList?.length) {
+        return this.fileList.map((item) => item.url).reverse();
+      } else if (this.getImageUrl) {
+        return [this.getImageUrl];
+      }
+    },
+    getImageUrl() {
+      if (this.value) {
+        return (
+          window.backendIpAddr +
+          `/file/download?fileNo=${
+            this.value
+          }&bx_auth_ticket=${sessionStorage.getItem("bx_auth_ticket")}`
+        );
+      }
+    },
+    isImage() {
+      return this.column?.col_type === "Image";
+    },
     uploadAction() {
       return window.backendIpAddr + "/file/upload";
     },
@@ -75,6 +105,7 @@ export default {
         return this.value;
       },
     },
+   
   },
   data() {
     return {
@@ -99,16 +130,13 @@ export default {
           { colName: "file_no", value: this.modelValue, ruleType: "eq" },
         ],
       };
-      console.log(this.value);
-      console.log(this.modelValue);
-      debugger;
       const res = await $http.post(url, req);
       if (res?.data?.state === "SUCCESS") {
         this.fileList = res.data.data.map((item) => {
           return {
             name: item.src_name,
             file_type: item.file_type,
-            url: `${window.backendIpAddr}/file/download?filePath=${item.fileurl}`,
+            url: `${window.backendIpAddr}/file/download?filePath=${item.fileurl}&bx_auth_ticket=${sessionStorage.getItem('bx_auth_ticket')}`,
             fileurl: item.fileurl,
           };
         });
@@ -120,15 +148,15 @@ export default {
     handleUploadSuccess(response, file, fileList) {
       if (response?.file_no) {
         this.modelValue = response?.file_no;
-        this.$nextTick(()=>{
+        this.$nextTick(() => {
           // this.getFileList();
-        })
+        });
       }
     },
     handleRemove(file, fileList) {
       console.log(file, fileList);
-      if(!fileList?.length){
-        this.modelValue = null
+      if (!fileList?.length) {
+        this.modelValue = null;
       }
     },
     handlePreview(file) {

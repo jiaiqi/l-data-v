@@ -24,10 +24,10 @@
         style="min-height: 50px"
         v-if="useEditor && html"
       ></div>
-      <div style="min-height: 50px" v-else-if="html">{{ html }}</div>
+      <div style="min-height: 50px" v-else-if="![null,undefined,''].includes(html)">{{ html }}</div>
       <div
         class="old-value"
-        v-else-if="!html && oldValue"
+        v-else-if="[null,undefined,''].includes(html) && oldValue"
         v-html="oldValue"
       ></div>
     </div>
