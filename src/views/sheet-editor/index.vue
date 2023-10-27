@@ -875,7 +875,7 @@ export default {
       }
     },
     initCond() {
-      let arr = []
+      let arr = [];
       if (this.$route?.query?.initCond) {
         let str = this.$route?.query?.initCond;
         try {
@@ -895,14 +895,14 @@ export default {
               } else if (item?.value?.includes("new Date()")) {
                 item.value = dayjs().format("YYYY-MM-DD");
               }
-              arr.push(item)
+              arr.push(item);
             });
           }
         } catch (error) {
           console.log(error);
         }
       }
-      return arr
+      return arr;
     },
     defaultConditions() {
       const query = this.$route.query;
@@ -1236,28 +1236,30 @@ export default {
               field: item.columns,
               key: item.columns,
               width: width,
-              edit:
-                ((item.editable === true || item.canAdd == true) &&
-                  [
-                    "String",
-                    "User",
-                    "Note",
-                    "RichText",
-                    "MultilineText",
-                    "Enum",
-                    "Set",
-                    "Integer",
-                    "Float",
-                    "Money",
-                    "Date",
-                    "DateTime",
-                    "int",
-                  ].includes(item.col_type)) ||
-                item?.col_type?.includes("decimal") ||
-                item?.bx_col_type == "fk",
+              edit: item.editable === true || item.canAdd == true, // 不再根据字段类型控制是否可编辑，所有类型字段都可以编辑，未适配的类型当作String处理
+              // ((item.editable === true || item.canAdd == true) &&
+              //   [
+              //     "String",
+              //     "User",
+              //     "Note",
+              //     "RichText",
+              //     "MultilineText",
+              //     "Enum","Dict",
+              //     "Set",
+              //     "Integer",
+              //     "Float",
+              //     "Money",
+              //     "Date",
+              //     "DateTime",
+              //     "int",
+              //   ].includes(item.col_type)) ||
+              // item?.col_type?.includes("decimal") ||
+              // item?.bx_col_type == "fk",
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
               __field_info: { ...item },
             };
+
+            // Image
             if (index === 0) {
               if (this.isTree) {
                 // 首列 如果有下级则展示展开折叠图标
@@ -1290,7 +1292,7 @@ export default {
                   column: { ...item, edit: columnObj.edit },
                   sortState: this.setSortState,
                   service: this.serviceName,
-                  condition: [...this.initCond,...this.defaultConditions],
+                  condition: [...this.initCond, ...this.defaultConditions],
                 },
                 on: {
                   "filter-change": (event) => {
@@ -1457,7 +1459,10 @@ export default {
                         },
                       },
                     });
-                  } else if (item.col_type === "Enum") {
+                  } else if (
+                    item.col_type === "Enum" ||
+                    item.col_type === "Dict"
+                  ) {
                     return h(
                       "el-select",
                       {
@@ -1493,16 +1498,16 @@ export default {
                       })
                     );
                   } else if (item.col_type === "Set") {
-                    let value = []
-                    if( row[column.field]){
-                      value = row[column.field].split(',')
+                    let value = [];
+                    if (row[column.field]) {
+                      value = row[column.field].split(",");
                     }
                     return h(
                       "el-select",
                       {
                         attrs: {
-                          collapseTags:true,
-                          multiple:true,
+                          collapseTags: true,
+                          multiple: true,
                           disabled:
                             !columnObj.edit ||
                             (row.__flag !== "add" &&
@@ -2175,42 +2180,37 @@ export default {
     async getList(insertNewRows = true) {
       if (this.serviceName) {
         this.loading = true;
-        let condition = [...this.defaultConditions]
-        if(this.initCond?.length){
-          this.initCond.forEach(item=>{
-            if(!condition.find(c=>c.colName===item.colName)){
-              if(item.ruleType==='eq'&&item.value===undefined){
+        let condition = [...this.defaultConditions];
+        if (this.initCond?.length) {
+          this.initCond.forEach((item) => {
+            if (!condition.find((c) => c.colName === item.colName)) {
+              if (item.ruleType === "eq" && item.value === undefined) {
                 // 变量值不存在的默认条件忽略掉
-                return
+                return;
               }
-              condition.push(item)
+              condition.push(item);
             }
-          })
+          });
         }
-        condition = condition.map(item=>{
-          if(item.value==='null'){
-            if(item.ruleType==='eq'){
-              item.ruleType = 'isnull'
-            }else{
-              item.ruleType = 'notnull'
+        condition = condition.map((item) => {
+          if (item.value === "null") {
+            if (item.ruleType === "eq") {
+              item.ruleType = "isnull";
+            } else {
+              item.ruleType = "notnull";
             }
           }
-          return item
-        })
-        const res = await onSelect(
-          this.serviceName,
-          this.srvApp,
-          condition,
-          {
-            rownumber: this.page.rownumber,
-            pageNo: this.page.pageNo,
-            vpage_no: this.v2data?.vpage_no,
-            order: this.sortState,
-            isTree: this.isTree && this.listType === "treelist",
-            pidCol: this.treeInfo?.pidCol,
-            forceUseTTD: this.$route?.query?.topTreeData,
-          }
-        );
+          return item;
+        });
+        const res = await onSelect(this.serviceName, this.srvApp, condition, {
+          rownumber: this.page.rownumber,
+          pageNo: this.page.pageNo,
+          vpage_no: this.v2data?.vpage_no,
+          order: this.sortState,
+          isTree: this.isTree && this.listType === "treelist",
+          pidCol: this.treeInfo?.pidCol,
+          forceUseTTD: this.$route?.query?.topTreeData,
+        });
         this.loading = false;
 
         if (res?.data?.length) {
