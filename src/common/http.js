@@ -1,10 +1,10 @@
 import axios from "axios";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 let bx_auth_ticket = "";
-let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
-// let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
+// let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
+let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
-const devTicket = 'xabxdzkj-a778e302-4cb6-4004-8d47-52f548135d81'
+const devTicket = 'xabxdzkj-09544c52-6fd0-43ce-ad51-c154eb988dac'
 if (top?.pathConfig?.gateway) {
   baseURL = top?.pathConfig?.gateway;
 }

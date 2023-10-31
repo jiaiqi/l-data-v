@@ -93,7 +93,11 @@
         >
           <div class="label">内容过滤：</div>
           <el-input v-model="modelValue" clearable></el-input>
-          <el-checkbox-group style="width: 100%;overflow-x: auto;" v-model="strList" v-if="colType === '字符串'">
+          <el-checkbox-group
+            style="width: 100%; overflow-x: auto"
+            v-model="strList"
+            v-if="colType === '字符串'"
+          >
             <el-checkbox v-for="item in optionList" :label="item" :key="item">{{
               item
             }}</el-checkbox>
@@ -237,7 +241,7 @@ export default {
         {
           text: "今日",
           onClick: () => {
-            const date = dayjs().format("YYYY-MM-DD");
+            const date = new Date();
             this.min = date;
             this.max = date;
           },
@@ -245,7 +249,7 @@ export default {
         {
           text: "昨日",
           onClick: () => {
-            const date = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+            const date = new Date(dayjs().subtract(1, "day"));
             this.min = date;
             this.max = date;
           },
@@ -253,7 +257,7 @@ export default {
         {
           text: "明日",
           onClick: () => {
-            const date = dayjs().add(1, "day").format("YYYY-MM-DD");
+            const date = new Date(dayjs().add(1, "day"));
             this.min = date;
             this.max = date;
           },
@@ -261,14 +265,8 @@ export default {
         {
           text: "本周",
           onClick: () => {
-            const end = dayjs()
-              .endOf("week")
-              .add(1, "day")
-              .format("YYYY-MM-DD");
-            const start = dayjs()
-              .startOf("week")
-              .add(1, "day")
-              .format("YYYY-MM-DD");
+            const end = new Date(dayjs().endOf("week").add(1, "day"));
+            const start = new Date(dayjs().startOf("week").add(1, "day"));
             this.min = start;
             this.max = end;
           },
@@ -276,12 +274,10 @@ export default {
         {
           text: "上周",
           onClick: () => {
-            const start = dayjs()
-              .startOf("week")
-              .subtract(1, "week")
-              .add(1, "day")
-              .format("YYYY-MM-DD");
-            const end = dayjs(start).add(6, "day").format("YYYY-MM-DD");
+            const start = new Date(
+              dayjs().startOf("week").subtract(1, "week").add(1, "day")
+            );
+            const end = new Date(dayjs(start).add(6, "day"));
             this.min = start;
             this.max = end;
           },
@@ -289,12 +285,10 @@ export default {
         {
           text: "下周",
           onClick: () => {
-            const start = dayjs()
-              .startOf("week")
-              .add(1, "week")
-              .add(1, "day")
-              .format("YYYY-MM-DD");
-            const end = dayjs(start).add(6, "day").format("YYYY-MM-DD");
+            const start = new Date(
+              dayjs().startOf("week").add(1, "week").add(1, "day")
+            );
+            const end = new Date(dayjs(start).add(6, "day"));
             this.min = start;
             this.max = end;
           },
@@ -505,25 +499,31 @@ export default {
         case "日期":
         case "数字":
           val.condition = [];
-          if (this.min) {
+          let min = this.min;
+          let max = this.max;
+          if (this.colType === "日期") {
+            min = dayjs(this.min).format("YYYY-MM-DD");
+            max = dayjs(this.max).format("YYYY-MM-DD");
+          }
+          if (min) {
             val.condition.push({
               colName: this.column.columns,
               ruleType: "ge",
-              value: this.min,
+              value: min,
             });
           }
-          if (this.max) {
+          if (max) {
             val.condition.push({
               colName: this.column.columns,
               ruleType: "le",
-              value: this.max,
+              value: max,
             });
           }
           val.remove = !this.min && !this.max;
           if (val.remove) {
             delete val.condition;
           }
-          this.onFilter = this.min || this.max;
+          this.onFilter = (this.min || this.max) && true;
           break;
         case "字符串":
           if (this.strList?.length) {
