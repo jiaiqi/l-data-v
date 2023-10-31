@@ -580,15 +580,13 @@ export default {
 
 <style lang="scss" scoped>
 .filter-box {
-  max-height: 50vh;
-  overflow-y: auto;
   .option-list {
     width: 200px;
   }
   .el-checkbox-group {
-    .el-checkbox {
-      // width: 100%;
-    }
+    max-height: 50vh;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   .input-box {
     max-width: 300px;

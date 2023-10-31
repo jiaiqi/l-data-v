@@ -1438,7 +1438,10 @@ export default {
                         style: `width:${
                           item.col_type === "DateTime" ? 180 : 130
                         }px;`,
-                        valueFormat: "yyyy-MM-dd HH:mm:ss",
+                        valueFormat:
+                          item.col_type === "DateTime"
+                            ? "yyyy-MM-dd HH:mm:ss"
+                            : "yyyy-MM-dd",
                       },
                       nativeOn: {
                         click: (event) => {
@@ -1538,7 +1541,10 @@ export default {
                         });
                       })
                     );
-                  } else if (item.col_type === "FileList"||item.col_type === "Image") {
+                  } else if (
+                    item.col_type === "FileList" ||
+                    item.col_type === "Image"
+                  ) {
                     // 文件
                     let editable = true;
                     if (row.__flag === "add") {
@@ -1825,7 +1831,7 @@ export default {
           });
           if (this.defaultConditions?.length) {
             this.defaultConditions.forEach((item) => {
-              if (item.value) {
+              if (item.value && !addObj[item.colName]) {
                 addObj[item.colName] = item.value;
               }
             });
@@ -2387,6 +2393,9 @@ export default {
       color: #f00 !important;
     }
   }
+  .el-tag {
+    color: #f00 !important;
+  }
   // background-color: #2087CC !important;
 }
 // .table-body-cell__update_border {
@@ -2404,6 +2413,8 @@ export default {
   .el-select .el-input__inner {
     border: none !important;
     background-color: transparent !important;
+    padding-left: 0;
+    padding-right: 25px;
   }
   .el-select .el-icon-arrow-right {
   }
