@@ -130,8 +130,8 @@ import {
 import dayjs from "dayjs";
 import { buildSrvCols } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
-import { isEmpty, uniqueId, cloneDeep, cond } from "lodash-es";
-import { Message, MessageBox } from "element-ui"; // 引入elementUI的Message组件
+import { uniqueId, cloneDeep } from "lodash-es";
+import { Message } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
@@ -140,6 +140,15 @@ import selectParentNode from "./components/select-parent-node.vue";
 import { RecordManager } from "./util/recordManager.js";
 import { Loading } from "element-ui";
 import { $http } from "../../common/http";
+const ignoreKeys = [
+  "__id",
+  "__flag",
+  "rowKey",
+  "id",
+  "__button_auth",
+  "_buttons",
+  "__unfold",
+];
 
 export default {
   name: "SheetEditor",
@@ -243,7 +252,7 @@ export default {
           }
           if (
             row?.__flag === "update" &&
-            !["__flag", "rowKey", "__id"].includes(column.field)
+            !["__flag", "rowKey", "__id", "__unfold"].includes(column.field)
           ) {
             // 某行某列绑定的值跟备份的数据中此行此列绑定的值不同时  增加class
             const oldRowData = this.oldTableData.find(
@@ -1781,14 +1790,7 @@ export default {
       const tableData = JSON.parse(JSON.stringify(this.tableData));
       const reqData = [];
       const addDatas = [];
-      const ignoreKeys = [
-        "__id",
-        "__flag",
-        "rowKey",
-        "id",
-        "__button_auth",
-        "_buttons",
-      ];
+
       tableData.forEach((item, index) => {
         if (
           item.__flag === "update" &&
@@ -1967,18 +1969,90 @@ export default {
         reqData.length > 0 &&
         this.updateButton?.service_name
       ) {
-        onBatchOperate(
-          reqData,
-          this.updateButton.service_name,
-          this.srvApp
-        ).then((res) => {
+        let service = reqData.every(
+          (item) => item.serviceName === this.addButton?.service_name
+        )
+          ? this.addButton?.service_name
+          : this.updateButton.service_name;
+        onBatchOperate(reqData, service, this.srvApp).then((res) => {
           if (res?.state === "SUCCESS") {
             Message({
               showClose: true,
               message: res.resultMessage,
               type: "success",
             });
+            console.log(res);
+            if (this.listType === "treelist" && this.treeInfo.idCol) {
+              let unfoldIds = this.tableData
+                .filter((item) => !!item?.__unfold)
+                .map((item) => item[this.treeInfo.idCol]);
+              if (unfoldIds?.length) {
+                this.getList(true, unfoldIds);
+                return;
+              }
+            }
             this.getList();
+            // if (res?.response?.length) {
+            //   res?.response.forEach((item) => {
+            //     if (item?.serviceName?.includes("_update")) {
+            //       const __id = item?.response?.effect_data?.[0]?.id;
+            //       if (__id) {
+            //         const __index = this.tableData.findIndex(
+            //           (item) => item.id == __id
+            //         );
+            //         if (__index !== -1) {
+            //           const dataItem = {
+            //             ...this.tableData[__index],
+            //             ...item?.response?.effect_data?.[0],
+            //             __flag: null,
+            //           };
+            //           this.$set(this.tableData, __index, dataItem);
+            //         }
+            //       }
+            //     } else if (item?.serviceName?.includes("_add")) {
+            //       if (item?.response?.effect_data?.length) {
+            //         item?.response?.effect_data.forEach((iitem) => {
+            //           const __id = uniqueId("table_item_");
+            //           let dataItem = {
+            //             rowKey: __id,
+            //             __id,
+            //             __flag: null,
+            //             ...iitem,
+            //             __flag: null,
+            //           };
+            //           if (iitem[this.treeInfo?.pidCol]) {
+            //             // 在当前列表中有父节点
+            //             let __index = this.tableData.findIndex(
+            //               (e) =>
+            //                 e[this.treeInfo.idCol] ===
+            //                 iitem[this.treeInfo?.pidCol]
+            //             );
+            //             if (__index !== -1) {
+            //               // 父行数据
+            //               const row = this.tableData[__index];
+            //               let __indent = 40;
+            //               if (row.__indent === 0 || row.__indent > 0) {
+            //                 __indent = row.__indent + 40;
+            //               }
+            //               dataItem = {
+            //                 ...dataItem,
+            //                 __indent,
+            //                 // 给每一行子数据存储它的父数据
+            //                 __parent_row: cloneDeep(row),
+            //               };
+            //               // 插入父节点下面
+            //               this.tableData.splice(__index+1, 0, dataItem);
+            //               return;
+            //             }
+            //           }
+            //           this.tableData.unshift(dataItem);
+            //         });
+            //         this.tableData = this.tableData.filter(item=>!item.__flag)
+            //       }
+            //     }
+            //   });
+            //   this.oldTableData = cloneDeep(this.tableData);
+            // }
           } else if (res?.resultMessage) {
             Message({
               showClose: true,
@@ -2081,11 +2155,78 @@ export default {
       }
       this.insertRowNumber = 1;
     },
+    async loadChildren(ids, tableData) {
+      if (!ids?.length) {
+        return tableData;
+      }
+      tableData = cloneDeep(tableData);
+      let loadingInstance = Loading.service({ fullscreen: true });
+      const res = await onSelect(
+        this.serviceName,
+        this.srvApp,
+        [
+          {
+            colName: this.treeInfo.pidCol,
+            ruleType: "in",
+            value: ids.toString(),
+          },
+        ],
+        {
+          rownumber: 100000,
+          pageNo: 1,
+          vpage_no: this.v2data?.vpage_no,
+          order: this.sortState,
+          use_type:
+            this.isTree && this.listType === "treelist" ? "treelist" : "list",
+        }
+      );
+      loadingInstance.close();
+      if (res?.state === "SUCCESS") {
+        for (let index = 0; index < tableData.length; index++) {
+          const row = tableData[index];
+          if(row?.__children){
+            break;
+          }
+          let children = res.data.filter(
+            (e) => e[this.treeInfo.pidCol] === row[this.treeInfo.idCol]
+          );
+          if (children?.length) {
+            children = children.map((child) => {
+              const __id = uniqueId("table_item_");
+              child.__button_auth = this.setButtonAuth(
+                this.v2data?.rowButton,
+                child
+              );
+              let __indent = 40;
+              if (row.__indent === 0 || row.__indent > 0) {
+                __indent = row.__indent + 40;
+              }
+
+              let dataItem = {
+                rowKey: __id,
+                __id,
+                __flag: null,
+                ...child,
+                __indent,
+                // 给每一行子数据存储它的父数据
+                __parent_row: cloneDeep(row),
+              };
+              return dataItem;
+            });
+            this.$set(row, "__children", cloneDeep(children));
+            this.$set(row, "__unfold", true);
+            tableData.splice(index+1, 0, ...children);
+          }
+        }
+      }
+      return tableData;
+    },
     loadTree(load, row, rowIndex, callback) {
+      // 将展开状态存储到行数据
+      this.$set(this.tableData[rowIndex], "__unfold", load);
       if (load) {
         // 加载当前数据的子数据
         let loadingInstance = Loading.service({ fullscreen: true });
-
         onSelect(
           this.serviceName,
           this.srvApp,
@@ -2140,9 +2281,11 @@ export default {
             );
             oldTableData.splice(oldRowDataIndex + 1, 0, ...cloneDeep(resData));
             this.oldTableData = cloneDeep(oldTableData);
-            callback(true);
+            // this.$set(this.tableData[rowIndex], "__unfold", load);
+            callback?.(true);
           } else {
-            callback(false);
+            // this.$set(this.tableData[rowIndex], "__unfold", load);
+            callback?.(false);
           }
         });
       } else {
@@ -2183,7 +2326,7 @@ export default {
       }
       return obj;
     },
-    async getList(insertNewRows = true) {
+    async getList(insertNewRows = true, unfoldIds) {
       if (this.serviceName) {
         this.loading = true;
         let condition = [...this.defaultConditions];
@@ -2240,15 +2383,23 @@ export default {
             ...res.data[i],
             // __flag: "update",
           };
+          if (unfoldIds && unfoldIds?.includes(res.data[i].id)) {
+            dataItem.__unfold = true;
+          }
           tableData.push(dataItem);
         }
 
-        this.tableData = tableData;
+        if(unfoldIds?.length){
+          this.tableData = await this.loadChildren(unfoldIds, tableData);
+        }else{
+          this.tableData = tableData;
+        }
 
-        this.oldTableData = JSON.parse(JSON.stringify(tableData));
+        this.oldTableData = JSON.parse(JSON.stringify(this.tableData));
         this.recordManager = new RecordManager();
         this.recordManager?.push(cloneDeep(this.oldTableData));
-        if (tableData.length === 0 && insertNewRows) {
+
+        if (this.tableData?.length === 0 && insertNewRows) {
           this.insert2Rows(0);
         }
       }

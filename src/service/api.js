@@ -127,7 +127,8 @@ export const onBatchOperate = async (reqData, service = "", app = "") => {
   if (service && app) {
     if (Array.isArray(reqData) && reqData.length > 0) {
       // const url = `/${app}/operate/${service}`;
-      const url = `/${app}/operate/multi`;
+      const url = `/${app}/operate/${service}`;
+      // const url = `/${app}/operate/multi`;
       const res = await http.post(url, reqData);
       return res.data;
     }

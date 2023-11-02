@@ -118,6 +118,16 @@ export default {
     listType: String,
     app: String,
   },
+  watch:{
+    row:{
+      deep:true,
+      immediate:true,
+      handler(newVal){
+        this.unfold = newVal?.__unfold?true:false
+        this.loadingFold = false
+      }
+    }
+  },
   computed: {
     colType() {
       return this.column?.col_type;
