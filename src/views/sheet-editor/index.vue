@@ -1509,7 +1509,7 @@ export default {
                       "el-select",
                       {
                         attrs: {
-                          collapseTags: true,
+                          collapseTags: false,
                           multiple: true,
                           disabled:
                             !columnObj.edit ||
