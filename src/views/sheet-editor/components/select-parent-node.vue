@@ -32,6 +32,7 @@ export default {
     options: Array,
     optionInfo: Object,
     srvApp: String,
+    topTreeData:Boolean
   },
   computed: {
     currentText() {
@@ -91,16 +92,19 @@ export default {
       this.setOptions = [];
     },
     loadParent() {
-      const condition = [
+      let condition = [
         {
           colName: this.optionInfo.parent_col,
           ruleType: "isnull",
         },
       ];
+      if(this.topTreeData){
+        condition = null
+      }
       onSelect(this.optionInfo.serviceName, this.srvApp, condition, {
         rownumber: 100,
         pageNo: 1,
-        // forceUseTTD:true,
+        forceUseTTD:!!this.topTreeData,
         isTree: true,
       }).then((res) => {
         if (res?.data) {

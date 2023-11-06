@@ -1,37 +1,17 @@
 <template>
   <div class="spreadsheet" v-loading="loading">
-    <div
-      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5"
-    >
-      <div
-        class="flex flex-1 items-center text-sm"
-        v-if="addButton && addButton.service_name"
-      >
+    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5">
+      <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
         <div class="m-r-2">添加</div>
-        <el-input-number
-          size="mini"
-          v-model="insertRowNumber"
-          style="width: 100px"
-        />
+        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
         <div class="m-x-2">行</div>
-        <el-button
-          size="mini"
-          type="primary"
-          @click="batchInsertRows"
-          :disabled="insertRowNumber === 0"
-          >添加</el-button
-        >
+        <el-button size="mini" type="primary" @click="batchInsertRows" :disabled="insertRowNumber === 0">添加</el-button>
       </div>
       <div class="text-sm text-gray cursor-not-allowed" v-else>
         没有添加权限
       </div>
       <div flex-1>
-        <el-radio-group
-          v-model="listType"
-          @input="listTypeChange"
-          size="mini"
-          v-if="isTree"
-        >
+        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
@@ -48,71 +28,31 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <el-button size="mini" type="primary" @click="refreshData"
-          >刷新</el-button
-        >
-        <el-button
-          size="mini"
-          type="primary"
-          @click="saveData"
-          :disabled="!calcReqData || calcReqData.length == 0"
-          >保存</el-button
-        >
-        <el-button
-          size="mini"
-          type="primary"
-          @click="saveColumnWidth"
+        <el-button size="mini" type="primary" @click="refreshData">刷新</el-button>
+        <el-button size="mini" type="primary" @click="saveData"
+          :disabled="!calcReqData || calcReqData.length == 0">保存</el-button>
+        <el-button size="mini" type="primary" @click="saveColumnWidth"
           :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
-          v-if="calcColumnWidthReq && calcColumnWidthReq.length > 0"
-          >保存样式</el-button
-        >
+          v-if="calcColumnWidthReq && calcColumnWidthReq.length > 0">保存样式</el-button>
       </div>
     </div>
-    <ve-table
-      ref="tableRef"
-      style="word-break: break-word; width: 100vw"
-      fixed-header
-      :scroll-width="0"
-      max-height="calc(100vh - 80px)"
-      border-y
-      :columns="columns"
-      :table-data="tableData"
-      row-key-field-name="rowKey"
-      :virtual-scroll-option="virtualScrollOption"
-      :cell-autofill-option="cellAutofillOption"
-      :cell-style-option="cellStyleOption"
-      :edit-option="editOption"
-      :clipboard-option="clipboardOption"
-      :contextmenu-body-option="contextmenuBodyOption"
-      :contextmenu-header-option="contextmenuHeaderOption"
-      :row-style-option="rowStyleOption"
-      :column-width-resize-option="columnWidthResizeOption"
-      :event-custom-option="eventCustomOption"
-      :columnHiddenOption="columnHiddenOption"
-    />
+    <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" fixed-header :scroll-width="0"
+      max-height="calc(100vh - 80px)" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
+      :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
+      :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
+      :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
+      :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
+      :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
     <div class="empty-data" v-if="page.total === 0 && !loading">暂无数据</div>
     <div class="text-center">
-      <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]"
-        :page-size="page.rownumber"
-        layout="total, sizes, pager,  jumper"
-        :total="page.total"
-      >
+      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
+        :total="page.total">
       </el-pagination>
     </div>
 
-    <select-parent-node
-      ref="changeParentRef"
-      :srvApp="srvApp"
-      :options="
-        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-      "
-      :option-info="parentColOption"
-      @confirm="updateParentNo"
-    ></select-parent-node>
+    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+      " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
 
     <!-- <div class="custom-contextmenu" :style="{top:ctop,left: cleft}">
       111111111
@@ -564,6 +504,9 @@ export default {
     },
   },
   computed: {
+    topTreeData(){
+      return !!this.$route?.query?.topTreeData
+    },
     // 更新表字段的最小列宽的请求参数
     calcTableColumnWidthReq() {
       if (Object.keys(this.columnWidthMap)?.length) {
@@ -738,19 +681,16 @@ export default {
             });
 
             // 删除选中行数据
-            let text = `此操作将永久删除该第${
-              selectionRangeIndexes.startRowIndex + 1
-            }至第${
-              selectionRangeIndexes.endRowIndex + 1
-            }行数据，是否继续操作？`;
+            let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
+              }至第${selectionRangeIndexes.endRowIndex + 1
+              }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
-                selectionRangeIndexes.startRowIndex ==
+              selectionRangeIndexes.startRowIndex ==
               0
             ) {
-              text = `此操作将永久删除该第${
-                selectionRangeIndexes.startRowIndex + 1
-              }行数据，是否继续操作？`;
+              text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
+                }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -925,6 +865,7 @@ export default {
               "topTreeData",
               "fixedCol",
               "initCond",
+              'colSrv' // 用来查找显示的列的服务
             ].includes(key)
           ) {
             defaultConditions.push({
@@ -980,102 +921,14 @@ export default {
         item.button_type?.includes("edit")
       );
     },
-    // buildReqParams() {
-    //   const tableData = JSON.parse(JSON.stringify(this.tableData));
-    //   const reqData = [];
-    //   const addDatas = [];
-    //   const ignoreKeys = [
-    //     "__id",
-    //     "__flag",
-    //     "rowKey",
-    //     "id",
-    //     "__button_auth",
-    //     "_buttons",
-    //   ];
-    //   tableData.forEach((item, index) => {
-    //     if (
-    //       item.__flag === "update" &&
-    //       item.id &&
-    //       this.updateButton?.service_name
-    //     ) {
-    //       const oldItem = this.oldTableData.find((d) => d.__id === item.__id);
-    //       const updateObj = {};
-    //       if (oldItem) {
-    //         Object.keys(oldItem).forEach((key) => {
-    //           if (
-    //             key.indexOf("_") !== 0 &&
-    //             !ignoreKeys.includes(key) &&
-    //             this.updateColsMap?.[key]?.in_update !== 0
-    //           ) {
-    //             if (oldItem[key] !== item[key]) {
-    //               if (!item[key]) {
-    //                 item[key] = null;
-    //               }
-    //               updateObj[key] = item[key];
-    //             }
-    //           }
-    //         });
-    //         if (Object.keys(updateObj)?.length) {
-    //           reqData.push({
-    //             serviceName: this.updateButton.service_name,
-    //             condition: [{ colName: "id", ruleType: "eq", value: item.id }],
-    //             data: [updateObj],
-    //           });
-    //         }
-    //       }
-    //     } else if (item.__flag === "add" && this.addButton?.service_name) {
-    //       const addObj = {
-    //         ...item,
-    //       };
-    //       Object.keys(addObj).forEach((key) => {
-    //         if (addObj[key] === null || this.addColsMap?.[key]?.in_add !== 1) {
-    //           delete addObj[key];
-    //         }
-    //       });
-    //       if (this.defaultConditions?.length) {
-    //         this.defaultConditions.forEach((item) => {
-    //           if (item.value) {
-    //             addObj[item.colName] = item.value;
-    //           }
-    //         });
-    //       } else if (this.fkCondition?.colName) {
-    //         addObj[this.fkCondition.colName] = this.fkCondition.value;
-    //       }
-    //       delete addObj.__id;
-    //       delete addObj.__flag;
-    //       delete addObj.rowKey;
-    //       Object.keys(addObj).forEach((key) => {
-    //         if (ignoreKeys.includes(key) || key.indexOf("_") === 0) {
-    //           delete addObj[key];
-    //         }
-    //       });
-    //       if (
-    //         Object.keys(addObj).length > 0 &&
-    //         Object.keys(addObj).some(
-    //           (key) =>
-    //             addObj[key] !== undefined &&
-    //             addObj[key] !== null &&
-    //             addObj[key] !== ""
-    //         )
-    //       ) {
-    //         addDatas.push(addObj);
-    //       }
-    //     }
-    //   });
-    //   if (addDatas?.length) {
-    //     reqData.push({
-    //       serviceName: this.addButton.service_name,
-    //       data: addDatas,
-    //     });
-    //   }
-    //   return reqData;
-    // },
-
     tableHeader() {
       return this.v2data?.allFields;
     },
     serviceName() {
       return this.$route.params?.service || this.$route.query?.service;
+    },
+    colSrv() {
+      return this.$route.params?.colSrv || this.$route.query?.colSrv;
     },
     isTree() {
       return this.treeInfo && this.v2data?.is_tree === true;
@@ -1444,9 +1297,8 @@ export default {
                           : "",
                         size: "mini",
                         type: item.col_type.toLowerCase(),
-                        style: `width:${
-                          item.col_type === "DateTime" ? 180 : 130
-                        }px;`,
+                        style: `width:${item.col_type === "DateTime" ? 180 : 130
+                          }px;`,
                         valueFormat:
                           item.col_type === "DateTime"
                             ? "yyyy-MM-dd HH:mm:ss"
@@ -1660,9 +1512,8 @@ export default {
                         : "",
                       size: "mini",
                       type: item.col_type.toLowerCase(),
-                      style: `width:${
-                        item.col_type === "DateTime" ? 180 : 130
-                      }px;`,
+                      style: `width:${item.col_type === "DateTime" ? 180 : 130
+                        }px;`,
                       valueFormat: "yyyy-MM-dd HH:mm:ss",
                     },
                     nativeOn: {
@@ -2184,7 +2035,7 @@ export default {
       if (res?.state === "SUCCESS") {
         for (let index = 0; index < tableData.length; index++) {
           const row = tableData[index];
-          if(row?.__children){
+          if (row?.__children) {
             break;
           }
           let children = res.data.filter(
@@ -2215,7 +2066,7 @@ export default {
             });
             this.$set(row, "__children", cloneDeep(children));
             this.$set(row, "__unfold", true);
-            tableData.splice(index+1, 0, ...children);
+            tableData.splice(index + 1, 0, ...children);
           }
         }
       }
@@ -2327,6 +2178,11 @@ export default {
       return obj;
     },
     async getList(insertNewRows = true, unfoldIds) {
+      if (!unfoldIds && this.listType === "treelist" && this.treeInfo.idCol) {
+        unfoldIds = this.tableData
+          .filter((item) => !!item?.__unfold)
+          .map((item) => item[this.treeInfo.idCol]);
+      }
       if (this.serviceName) {
         this.loading = true;
         let condition = [...this.defaultConditions];
@@ -2389,9 +2245,9 @@ export default {
           tableData.push(dataItem);
         }
 
-        if(unfoldIds?.length){
+        if (unfoldIds?.length) {
           this.tableData = await this.loadChildren(unfoldIds, tableData);
-        }else{
+        } else {
           this.tableData = tableData;
         }
 
@@ -2404,14 +2260,33 @@ export default {
         }
       }
     },
+    async getColsV2() {
+      if (this.colSrv) {
+        const use_type = this.colSrv?.includes('_add') ? 'add' : this.colSrv?.includes('_update') ? 'update' : 'list'
+        const res = await getServiceV2(
+          this.colSrv,
+          use_type,
+          this.srvApp,
+          true
+        );
+        if (res?.state === "SUCCESS") {
+          return res?.data?.srv_cols?.map(item => {
+            // 列表字段显示隐藏默认用的in_list控制 在使用自定义的服务来显示列时使用对应的use_type控制
+            item.in_list = item[`in_${use_type}`] === 1 ? 1 : item[`in_${use_type}`]
+            return item
+          })
+        }
+      }
+    },
     async getV2Data(force = false) {
       const res = await getServiceV2(
         this.serviceName,
         this.listType,
         this.srvApp,
-        this.pageNo,
         force
       );
+
+
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
         const editBtn = res.data?.rowButton?.find(
@@ -2437,20 +2312,25 @@ export default {
             addBtn.service_name,
             "add",
             this.srvApp,
-            this.pageNo
           );
           this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
             return pre;
           }, {});
         }
-
+        if (this.colSrv) {
+          const srv_cols = await this.getColsV2()
+          if (srv_cols?.length) {
+            this.v2data.srv_cols = srv_cols
+          }
+        }
         this.v2data.allFields = buildSrvCols(
           this.v2data.srv_cols,
           this.updateColsMap,
           this.addColsMap
         );
         this.allFields = this.v2data.allFields;
+
         this.listColsMap = this.allFields?.reduce((pre, cur) => {
           pre[cur.columns] = cur;
           return pre;
@@ -2521,34 +2401,43 @@ export default {
   border: 1px solid #eee;
   border-top: 0;
 }
+
 .table-body-cell__add {
   background-color: #a4da89 !important;
+
   .el-select .el-input {
     .el-select__caret {
       color: #fff;
     }
+
     .el-input__inner::placeholder {
       color: #fff;
     }
   }
+
   .el-icon-arrow-right {
     color: #fff;
   }
 }
+
 .table-body-cell__update {
   // color: #2087cc !important;
   color: #f00 !important;
+
   .el-input {
     .el-input__inner {
       // color: #2087cc !important;
       color: #f00 !important;
     }
   }
+
   .el-tag {
     color: #f00 !important;
   }
+
   // background-color: #2087CC !important;
 }
+
 // .table-body-cell__update_border {
 //   border: 1px solid #2087cc !important;
 // }
@@ -2556,9 +2445,11 @@ export default {
 .ve-table-body-td {
   padding: 10px 0 !important;
 }
+
 .spreadsheet {
   width: 100vw;
   height: 100vh;
+
   // padding: 0 10px;
   // margin: 20px 0;
   .el-select .el-input__inner {
@@ -2567,13 +2458,14 @@ export default {
     padding-left: 0;
     padding-right: 25px;
   }
-  .el-select .el-icon-arrow-right {
-  }
+
+  .el-select .el-icon-arrow-right {}
 }
 
 .ve-table-container {
   min-height: 60px;
 }
+
 .custom-contextmenu {
   position: fixed;
   background-color: #fff;

@@ -29,7 +29,6 @@ const getServiceV2 = async (
   serviceName,
   use_type = "list",
   app = "health",
-  pageNo = null,
   forceFeth = false
 ) => {
   if (serviceName) {
