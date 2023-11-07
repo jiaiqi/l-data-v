@@ -54,9 +54,7 @@
     <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
       " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
 
-    <!-- <div class="custom-contextmenu" :style="{top:ctop,left: cleft}">
-      111111111
-    </div> -->
+    <login-dialog ref="loginRef"></login-dialog>
   </div>
 </template>
 
@@ -80,6 +78,7 @@ import selectParentNode from "./components/select-parent-node.vue";
 import { RecordManager } from "./util/recordManager.js";
 import { Loading } from "element-ui";
 import { $http } from "../../common/http";
+import loginDialog from '../../components/login-dialog/index.vue'
 const ignoreKeys = [
   "__id",
   "__flag",
@@ -95,15 +94,15 @@ export default {
   mounted() {
     this.bindKeyboardEvent(this.undo, this.redo);
     this.initPage().then(() => {
-      if (this.v2data?.is_tree === true) {
+      if (this.v2data?.is_tree === true && this.listType !== "treelist") {
         this.listType = "treelist";
         this.initPage();
       }
-      this.getList();
     });
   },
   components: {
     selectParentNode,
+    loginDialog
   },
   data() {
     return {
@@ -504,7 +503,7 @@ export default {
     },
   },
   computed: {
-    topTreeData(){
+    topTreeData() {
       return !!this.$route?.query?.topTreeData
     },
     // 更新表字段的最小列宽的请求参数
@@ -992,16 +991,19 @@ export default {
     async initPage() {
       if (this.serviceName) {
         this.loading = true;
-        await this.getV2Data();
+       const v2Data =  await this.getV2Data();
         this.loading = false;
+        console.log(this.v2data,v2Data);
+        debugger
+        setTimeout(() => {
+          this.getList();
+        }, 500);
         return;
       }
     },
     listTypeChange(val) {
       console.log(val);
-      this.initPage().then(() => {
-        this.getList();
-      });
+      this.initPage()
     },
     handleCurrentChange(val) {
       this.page.pageNo = val;
@@ -2226,6 +2228,12 @@ export default {
             );
             return item;
           });
+        } else if (res?.resultCode === '0011') {
+          this.$message.error('登录超时请重新登录')
+          this.$refs?.loginRef?.open(() => {
+            this.initPage()
+          })
+          return
         }
         this.page.total = res.page.total;
 
@@ -2286,7 +2294,6 @@ export default {
         force
       );
 
-
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
         const editBtn = res.data?.rowButton?.find(
@@ -2337,6 +2344,7 @@ export default {
         }, {});
         document.title = res.data.service_view_name;
         this.columns = this.buildColumns();
+        return res.data
       }
     },
     scrolling({ startRowIndex }) {

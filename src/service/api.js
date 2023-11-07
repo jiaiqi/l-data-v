@@ -33,9 +33,9 @@ const getServiceV2 = async (
 ) => {
   if (serviceName) {
     // const v2FromStore = metaStore.metaMap[`${service}-${use_type}`];
-    if (getItem(`${serviceName}-${use_type}`) && !forceFeth) {
-      return getItem(`${serviceName}-${use_type}`);
-    }
+    // if (getItem(`${serviceName}-${use_type}`) && !forceFeth) {
+    //   return getItem(`${serviceName}-${use_type}`);
+    // }
     const req = {
       serviceName: "srvsys_service_columnex_v2_select",
       colNames: ["*"],
@@ -91,6 +91,8 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     const url = `${app}/select/${serviceName}`;
     const res = await http.post(url, req);
     if (res?.data?.state === "SUCCESS") {
+      return res.data;
+    }else{
       return res.data;
     }
   }

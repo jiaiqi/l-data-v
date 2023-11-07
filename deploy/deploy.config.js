@@ -18,7 +18,7 @@ module.exports = [
   {
     title: "西乡项目 内网 180端口",
     host: "192.168.0.155",
-    port: 22,
+    port: 180,
     username: "root",
     password: "%TGB6yhn&UJM",
     path: "/home/bxdev/front2/dataview",

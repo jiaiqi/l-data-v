@@ -1,5 +1,7 @@
 import axios from "axios";
-import { Message } from "element-ui"; // 引入elementUI的Message组件
+import {h} from 'vue'
+import loginDialog from '../components/login-dialog/index.vue'
+import { Message,MessageBox } from "element-ui"; // 引入elementUI的Message组件
 let bx_auth_ticket = "";
 let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
 // let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
@@ -40,7 +42,7 @@ $axios.interceptors.request.use(
   function (config) {
     // 在发送请求之前做些什么
     bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
-    if (import.meta?.env?.DEV === true) {
+    if (import.meta?.env?.DEV === true&&!sessionStorage.logined) {
       bx_auth_ticket = devTicket
       sessionStorage.setItem('bx_auth_ticket',devTicket)
     }
@@ -102,6 +104,8 @@ $axios.interceptors.response.use(
                 }
               } catch (exception) {}
               window.location.href = window.location.origin + login_page;
+            }else {
+              
             }
           }
         } else if (response.data.resultCode == "0000") {
