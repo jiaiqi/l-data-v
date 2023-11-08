@@ -825,6 +825,7 @@ export default {
     initCond() {
       let arr = [];
       let initExprFields = this.allFields.filter(item => !!item.init_expr)
+      // 只有init_expr 使用init_expr
       if (initExprFields?.length) {
         initExprFields.forEach(item => {
           let obj = {
@@ -832,7 +833,7 @@ export default {
             ruleType: 'eq'
           }
           if (item.init_expr?.indexOf("'") === 0) {
-            obj.value = item.init_expr.replaceAll("'",'')
+            obj.value = item.init_expr.replaceAll("'", '')
           }
           if (obj.value) {
             arr.push(obj)
@@ -858,6 +859,8 @@ export default {
               } else if (item?.value?.includes("new Date()")) {
                 item.value = dayjs().format("YYYY-MM-DD");
               }
+              // init_expr跟initCond都有 使用initCond
+              arr = arr.filter(e => e.colName !== item.colName)
               arr.push(item);
             });
           }
@@ -1008,8 +1011,6 @@ export default {
         this.loading = true;
         const v2Data = await this.getV2Data();
         this.loading = false;
-        console.log(this.v2data, v2Data);
-        debugger
         setTimeout(() => {
           this.getList();
         }, 500);
@@ -1996,7 +1997,9 @@ export default {
             this.defaultConditionsMap &&
             this.defaultConditionsMap[field.columns]
           ) {
-            dataItem[field.columns] = this.defaultConditionsMap[field.columns];
+            if (!['Date', "DateTime"].includes(field.col_type)) {
+              dataItem[field.columns] = this.defaultConditionsMap[field.columns];
+            }
           }
         });
         if (this.defaultConditions?.length) {
