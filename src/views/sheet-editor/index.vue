@@ -824,6 +824,21 @@ export default {
     },
     initCond() {
       let arr = [];
+      let initExprFields = this.allFields.filter(item => !!item.init_expr)
+      if (initExprFields?.length) {
+        initExprFields.forEach(item => {
+          let obj = {
+            colName: item.columns,
+            ruleType: 'eq'
+          }
+          if (item.init_expr?.indexOf("'") === 0) {
+            obj.value = item.init_expr.replaceAll("'",'')
+          }
+          if (obj.value) {
+            arr.push(obj)
+          }
+        })
+      }
       if (this.$route?.query?.initCond) {
         let str = this.$route?.query?.initCond;
         try {
@@ -991,9 +1006,9 @@ export default {
     async initPage() {
       if (this.serviceName) {
         this.loading = true;
-       const v2Data =  await this.getV2Data();
+        const v2Data = await this.getV2Data();
         this.loading = false;
-        console.log(this.v2data,v2Data);
+        console.log(this.v2data, v2Data);
         debugger
         setTimeout(() => {
           this.getList();

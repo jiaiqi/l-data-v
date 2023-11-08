@@ -1,21 +1,11 @@
 <template>
   <div class="header-filter" v-if="colType">
-    <el-popover
-      placement="bottom"
-      trigger="click"
-      v-model="filterVisible"
-      @show="showPopover"
-    >
+    <el-popover placement="bottom" trigger="click" v-model="filterVisible" @show="showPopover">
       <div class="filter-box">
         <!-- Enum、Set -->
         <div class="option-list" v-if="['枚举', '集合'].includes(colType)">
           <el-checkbox-group v-model="modelValue">
-            <el-checkbox
-              v-for="item in optionList"
-              :label="item.value"
-              :key="item.value"
-              >{{ item.label }}</el-checkbox
-            >
+            <el-checkbox v-for="item in optionList" :label="item.value" :key="item.value">{{ item.label }}</el-checkbox>
           </el-checkbox-group>
         </div>
 
@@ -29,75 +19,61 @@
         </div>
         <div class="date-range" v-else-if="['时间'].includes(colType)">
           <div class="label">选择时间范围：</div>
-          <el-time-select
-            v-model="min"
-            :picker-options="{
-              start: '00:00',
-              step: '00:15',
-              end: '23:59',
-              selectableRange: '00:00:00 - 23:59:59',
-            }"
-            placeholder="选择开始时间"
-          >
+          <el-time-select v-model="min" :picker-options="{
+            start: '00:00',
+            step: '00:15',
+            end: '23:59',
+            selectableRange: '00:00:00 - 23:59:59',
+          }" placeholder="选择开始时间">
           </el-time-select>
           <div>至</div>
-          <el-time-select
-            v-model="max"
-            :picker-options="{
-              start: '00:00',
-              step: '00:15',
-              end: '23:59',
-              // selectableRange: '18:30:00 - 20:30:00',
-            }"
-            placeholder="选择结束时间"
-          >
+          <el-time-select v-model="max" :picker-options="{
+            start: '00:00',
+            step: '00:15',
+            end: '23:59',
+            // selectableRange: '18:30:00 - 20:30:00',
+          }" placeholder="选择结束时间">
           </el-time-select>
         </div>
 
-        <div
-          class="date-range"
-          v-else-if="['时间', '日期', '时间日期'].includes(colType)"
-        >
-          <div class="label">选择日期范围：</div>
+        <div class="date-range" v-else-if="['时间', '日期', '时间日期'].includes(colType)">
+          <!-- <div class="label">选择日期范围：</div> -->
           <div class="flex flex-col">
+            <div class="text-bold">快捷筛选：</div>
+            <div class="m-b-2">
+              日：<el-button size="mini" v-for="item in dateShortcuts.day" :key="item" @click="shortFilter(item)">{{
+                item }}</el-button>
+            </div>
+            <div class="m-b-2">
+              周：<el-button size="mini" v-for="item in dateShortcuts.week" :key="item" @click="shortFilter(item)">{{
+                item }}</el-button>
+            </div>
+            <div class="m-b-2">
+              月：<el-button size="mini" v-for="item in dateShortcuts.month" :key="item" @click="shortFilter(item)">{{
+                item }}</el-button>
+            </div>
+          </div>
+          <div class="flex flex-col">
+            <div class="text-bold">选择日期范围：</div>
             <div class="w-[100%] m-y-2">
-              <el-button
-                size="mini"
-                v-for="item in datePickerShortcuts"
-                :key="item.text"
-                @click="item.onClick"
-                >{{ item.text }}</el-button
-              >
+              <el-button size="mini" v-for="item in datePickerShortcuts" :key="item.text" @click="item.onClick">{{
+                item.text }}</el-button>
             </div>
             <div class="flex items-center">
-              <el-date-picker
-                v-model="min"
-                valueFormat="yyyy-MM-dd HH:mm:ss"
-                :pickerOptions="pickerOptions"
-                :type="colType === '日期' ? 'date' : 'datetime'"
-              >
+              <el-date-picker v-model="min" valueFormat="yyyy-MM-dd HH:mm:ss" :pickerOptions="pickerOptions"
+                :type="colType === '日期' ? 'date' : 'datetime'">
               </el-date-picker>
               <div class="m-x-2">至</div>
-              <el-date-picker
-                v-model="max"
-                valueFormat="yyyy-MM-dd HH:mm:ss"
-                :type="colType === '日期' ? 'date' : 'datetime'"
-              >
+              <el-date-picker v-model="max" valueFormat="yyyy-MM-dd HH:mm:ss"
+                :type="colType === '日期' ? 'date' : 'datetime'">
               </el-date-picker>
             </div>
           </div>
         </div>
-        <div
-          class="input-box"
-          v-else-if="['富文本', '字符串'].includes(colType)"
-        >
+        <div class="input-box" v-else-if="['富文本', '字符串'].includes(colType)">
           <div class="label">内容过滤：</div>
           <el-input v-model="modelValue" clearable></el-input>
-          <el-checkbox-group
-            style="width: 100%; overflow-x: auto"
-            v-model="strList"
-            v-if="colType === '字符串'"
-          >
+          <el-checkbox-group style="width: 100%; overflow-x: auto" v-model="strList" v-if="colType === '字符串'">
             <el-checkbox v-for="item in optionList" :label="item" :key="item">{{
               item
             }}</el-checkbox>
@@ -105,11 +81,7 @@
         </div>
         <div class="input-box" v-else-if="colType === '外键'">
           <div class="label">内容过滤：</div>
-          <el-input
-            v-model="filterText"
-            clearable
-            @change="getFkOptions"
-          ></el-input>
+          <el-input v-model="filterText" clearable @change="getFkOptions"></el-input>
           <el-checkbox-group v-model="modelValue">
             <el-checkbox v-for="item in optionList" :label="item" :key="item">{{
               item
@@ -117,30 +89,15 @@
           </el-checkbox-group>
         </div>
         <div class="handler-bar flex justify-end m-t-2">
-          <el-button
-            class="text-gray"
-            size="mini"
-            @click="filterVisible = false"
-            >取消</el-button
-          >
+          <el-button class="text-gray" size="mini" @click="filterVisible = false">取消</el-button>
           <el-button size="mini" @click="resetFilter">重置</el-button>
-          <el-button size="mini" @click="toFilter" type="primary"
-            >筛选</el-button
-          >
+          <el-button size="mini" @click="toFilter" type="primary">筛选</el-button>
         </div>
       </div>
 
-      <svg
-        slot="reference"
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 16 16"
-      >
-        <path
-          :fill="onFilter ? '#409eff' : 'currentColor'"
-          d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"
-        />
+      <svg slot="reference" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16">
+        <path :fill="onFilter ? '#409eff' : 'currentColor'"
+          d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z" />
       </svg>
     </el-popover>
   </div>
@@ -237,6 +194,11 @@ export default {
         pageNo: 1,
       },
       fkOptions: [],
+      dateShortcuts: {
+        day: ['当天', '昨天', '明天', '过去3天', '未来3天'],
+        week: ['本周', '上周', '下周', '过去1周', '未来1周'],
+        month: ['本月', '上月', '下月', '过去1月', '未来1月']
+      },
       datePickerShortcuts: [
         {
           text: "今日",
@@ -368,6 +330,7 @@ export default {
     };
   },
   methods: {
+
     showPopover() {
       if (["外键", "字符串"].includes(this.colType)) {
         this.getFilterOptions();
@@ -466,6 +429,30 @@ export default {
         colName: this.column.columns,
         remove: true, //移除当前筛选条件
       });
+    },
+    shortFilter(key) {
+      // 快捷筛选
+      this.modelValue = key
+      this.onFilter = !!key;
+      this.filterVisible = false;
+      this.min = null
+      this.max = null
+      let val = {
+        colName: this.column.columns,
+        remove: true, //移除当前筛选条件
+      };
+      if (this.onFilter) {
+        val.condition = [
+          {
+            colName: this.column.columns,
+            ruleType: "eq",
+            value: key,
+          },
+        ]
+        val.remove = false
+      }
+
+      this.$emit("filter-change", val);
     },
     toFilter() {
       this.filterVisible = false;
@@ -583,15 +570,17 @@ export default {
   .option-list {
     width: 200px;
   }
+
   .el-checkbox-group {
     max-height: 50vh;
     overflow-y: auto;
     overflow-x: hidden;
   }
+
   .input-box {
     max-width: 300px;
   }
 }
-.number-range {
-}
+
+.number-range {}
 </style>

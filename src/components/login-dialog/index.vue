@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-dialog title="登录" center :visible.sync="dialogVisible" append-to-body>
+    <el-dialog title="登录" center :visible.sync="dialogVisible" append-to-body width="400px">
       <el-form ref="loginForm" :model="loginForm" label-width="80px">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="loginForm.username"></el-input>
