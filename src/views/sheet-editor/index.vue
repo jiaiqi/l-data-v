@@ -814,13 +814,13 @@ export default {
     },
     columnHiddenOption() {
       // 隐藏作为条件传入的列
-      if (this.defaultConditions?.length) {
-        return {
-          defaultHiddenColumnKeys: this.defaultConditions.map(
-            (item) => item.colName
-          ),
-        };
-      }
+      // if (this.defaultConditions?.length) {
+      //   return {
+      //     defaultHiddenColumnKeys: this.defaultConditions.map(
+      //       (item) => item.colName
+      //     ),
+      //   };
+      // }
     },
     initCond() {
       let arr = [];

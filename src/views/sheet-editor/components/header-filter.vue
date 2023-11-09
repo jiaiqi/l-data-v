@@ -195,13 +195,13 @@ export default {
       },
       fkOptions: [],
       dateShortcuts: {
-        day: ['当天', '昨天', '明天', '过去3天', '未来3天'],
+        day: ['今天', '昨天', '明天', '过去3天', '未来3天'],
         week: ['本周', '上周', '下周', '过去1周', '未来1周'],
         month: ['本月', '上月', '下月', '过去1月', '未来1月']
       },
       datePickerShortcuts: [
         {
-          text: "今日",
+          text: "今天",
           onClick: () => {
             const date = new Date();
             this.min = date;
@@ -209,7 +209,7 @@ export default {
           },
         },
         {
-          text: "昨日",
+          text: "昨天",
           onClick: () => {
             const date = new Date(dayjs().subtract(1, "day"));
             this.min = date;
@@ -217,7 +217,7 @@ export default {
           },
         },
         {
-          text: "明日",
+          text: "明天",
           onClick: () => {
             const date = new Date(dayjs().add(1, "day"));
             this.min = date;
