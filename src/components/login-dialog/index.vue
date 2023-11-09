@@ -6,7 +6,7 @@
           <el-input v-model="loginForm.username"></el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input type="password" v-model="loginForm.password" show-password  @keyup.native.prevent="submitForm('loginForm')"></el-input>
+          <el-input type="password" v-model="loginForm.password" show-password  @keyup.enter.native.prevent="submitForm('loginForm')"></el-input>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">

@@ -1,10 +1,8 @@
 import axios from "axios";
-import {h} from 'vue'
-import loginDialog from '../components/login-dialog/index.vue'
-import { Message,MessageBox } from "element-ui"; // 引入elementUI的Message组件
+import { Message } from "element-ui"; // 引入elementUI的Message组件
 let bx_auth_ticket = "";
-let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
-// let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
+// let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
+let baseURL = window.backendIpAddr || `https://srvms.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
 const devTicket = 'xabxdzkj-8c3acf73-31ab-4408-a9c8-58c3926282c6'
 if (top?.pathConfig?.gateway) {

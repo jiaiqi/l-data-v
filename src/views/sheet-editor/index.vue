@@ -1923,6 +1923,11 @@ export default {
             //   this.oldTableData = cloneDeep(this.tableData);
             // }
           } else if (res?.resultMessage) {
+            if (res.resultCode === '0011') {
+              this.$refs?.loginRef?.open(() => {
+                this.initPage()
+              })
+            }
             Message({
               showClose: true,
               message: res.resultMessage,

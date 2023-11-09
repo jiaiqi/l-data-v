@@ -41,15 +41,15 @@
           <div class="flex flex-col">
             <div class="text-bold">快捷筛选：</div>
             <div class="m-b-2">
-              日：<el-button size="mini" v-for="item in dateShortcuts.day" :key="item" @click="shortFilter(item)">{{
+              日：<el-button size="mini" :type="modelValue===item?'primary':''" plain v-for="item in dateShortcuts.day" :key="item" @click="shortFilter(item)">{{
                 item }}</el-button>
             </div>
             <div class="m-b-2">
-              周：<el-button size="mini" v-for="item in dateShortcuts.week" :key="item" @click="shortFilter(item)">{{
+              周：<el-button size="mini" :type="modelValue===item?'primary':''" plain v-for="item in dateShortcuts.week" :key="item" @click="shortFilter(item)">{{
                 item }}</el-button>
             </div>
             <div class="m-b-2">
-              月：<el-button size="mini" v-for="item in dateShortcuts.month" :key="item" @click="shortFilter(item)">{{
+              月：<el-button size="mini" :type="modelValue===item?'primary':''" plain v-for="item in dateShortcuts.month" :key="item" @click="shortFilter(item)">{{
                 item }}</el-button>
             </div>
           </div>
