@@ -5,7 +5,8 @@
         <!-- Enum、Set -->
         <div class="option-list" v-if="['枚举', '集合'].includes(colType)">
           <el-checkbox-group v-model="modelValue">
-            <el-checkbox v-for="item in optionList" :label="item.value" :key="item.value">{{ item.label }}</el-checkbox>
+            <el-checkbox class="el-checkbox" v-for="item in optionList" :label="item.value" :key="item.value">{{
+              item.label }}</el-checkbox>
           </el-checkbox-group>
         </div>
 
@@ -77,7 +78,7 @@
           <div class="label">内容过滤：</div>
           <el-input v-model="modelValue" clearable></el-input>
           <el-checkbox-group style="width: 100%; overflow-x: auto" v-model="strList" v-if="colType === '字符串'">
-            <el-checkbox v-for="item in optionList" :label="item" :key="item">{{
+            <el-checkbox class="el-checkbox" v-for="item in optionList" :label="item" :key="item">{{
               item
             }}</el-checkbox>
           </el-checkbox-group>
@@ -86,7 +87,7 @@
           <div class="label">内容过滤：</div>
           <el-input v-model="filterText" clearable @change="getFkOptions"></el-input>
           <el-checkbox-group v-model="modelValue">
-            <el-checkbox v-for="item in optionList" :label="item" :key="item">{{
+            <el-checkbox class="el-checkbox" v-for="item in optionList" :label="item" :key="item">{{
               item
             }}</el-checkbox>
           </el-checkbox-group>
@@ -581,6 +582,8 @@ export default {
 
 <style lang="scss" scoped>
 .filter-box {
+  min-width: 500px;
+
   .option-list {
     width: 200px;
   }
@@ -592,9 +595,18 @@ export default {
   }
 
   .input-box {
-    max-width: 300px;
+    // max-width: 300px;
   }
 }
 
 .number-range {}
+
+.el-checkbox {
+  padding: 5px 10px;
+  min-width: 90px;
+
+  ::v-deep .el-checkbox__label:hover {
+    color: #409eff;
+  }
+}
 </style>
