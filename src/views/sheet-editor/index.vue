@@ -1006,14 +1006,16 @@ export default {
       // this.changeParentdialogVisible = true
       this.$refs?.changeParentRef?.open(row);
     },
-    async initPage() {
+    async initPage(refresh = true) {
       if (this.serviceName) {
         this.loading = true;
         const v2Data = await this.getV2Data();
         this.loading = false;
-        setTimeout(() => {
-          this.getList();
-        }, 500);
+        if (refresh) {
+          setTimeout(() => {
+            this.getList();
+          }, 500);
+        }
         return;
       }
     },
@@ -1925,7 +1927,7 @@ export default {
           } else if (res?.resultMessage) {
             if (res.resultCode === '0011') {
               this.$refs?.loginRef?.open(() => {
-                this.initPage()
+                this.initPage(false)
               })
             }
             Message({
@@ -2254,7 +2256,7 @@ export default {
         } else if (res?.resultCode === '0011') {
           this.$message.error('登录超时请重新登录')
           this.$refs?.loginRef?.open(() => {
-            this.initPage()
+            this.initPage(false)
           })
           return
         }

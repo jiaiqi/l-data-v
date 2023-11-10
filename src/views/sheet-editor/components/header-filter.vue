@@ -41,16 +41,19 @@
           <div class="flex flex-col">
             <div class="text-bold">快捷筛选：</div>
             <div class="m-b-2">
-              日：<el-button size="mini" :type="modelValue===item?'primary':''" plain v-for="item in dateShortcuts.day" :key="item" @click="shortFilter(item)">{{
-                item }}</el-button>
+              日：<el-button size="mini" :type="modelValue === item ? 'primary' : ''" plain
+                v-for="item in dateShortcuts.day" :key="item" @click="shortFilter(item)">{{
+                  item }}</el-button>
             </div>
             <div class="m-b-2">
-              周：<el-button size="mini" :type="modelValue===item?'primary':''" plain v-for="item in dateShortcuts.week" :key="item" @click="shortFilter(item)">{{
-                item }}</el-button>
+              周：<el-button size="mini" :type="modelValue === item ? 'primary' : ''" plain
+                v-for="item in dateShortcuts.week" :key="item" @click="shortFilter(item)">{{
+                  item }}</el-button>
             </div>
             <div class="m-b-2">
-              月：<el-button size="mini" :type="modelValue===item?'primary':''" plain v-for="item in dateShortcuts.month" :key="item" @click="shortFilter(item)">{{
-                item }}</el-button>
+              月：<el-button size="mini" :type="modelValue === item ? 'primary' : ''" plain
+                v-for="item in dateShortcuts.month" :key="item" @click="shortFilter(item)">{{
+                  item }}</el-button>
             </div>
           </div>
           <div class="flex flex-col">
@@ -410,6 +413,17 @@ export default {
       });
     },
     initModelValue() {
+      if (this.condition?.length) {
+        for (let i = 0; i < this.condition.length; i++) {
+          let item = this.condition[i];
+          if (item.colName === this.column.columns && item.ruleType === 'eq' && item.value) {
+            this.$nextTick(() => {
+              this.modelValue = item.value
+              this.onFilter = true
+            });
+          }
+        }
+      }
       //枚举类型 多选 绑定值默认为空数组
       if (["枚举", "集合", "外键"].includes(this.colType)) {
         this.modelValue = [];
