@@ -828,16 +828,19 @@ export default {
       // 只有init_expr 使用init_expr
       if (initExprFields?.length) {
         initExprFields.forEach(item => {
-          let obj = {
-            colName: item.columns,
-            ruleType: 'eq'
+          if (this.filterState[item.columns] !== null&&!this.filterState[item.columns]) {
+            let obj = {
+              colName: item.columns,
+              ruleType: 'eq'
+            }
+            if (item.init_expr?.indexOf("'") === 0) {
+              obj.value = item.init_expr.replaceAll("'", '')
+            }
+            if (obj.value) {
+              arr.push(obj)
+            }
           }
-          if (item.init_expr?.indexOf("'") === 0) {
-            obj.value = item.init_expr.replaceAll("'", '')
-          }
-          if (obj.value) {
-            arr.push(obj)
-          }
+
         })
       }
       if (this.$route?.query?.initCond) {
@@ -1927,7 +1930,11 @@ export default {
           } else if (res?.resultMessage) {
             if (res.resultCode === '0011') {
               this.$refs?.loginRef?.open(() => {
-                this.initPage(false)
+                this.initPage(false).then(() => {
+                  if (!this.tableData.length) {
+                    this.getList()
+                  }
+                })
               })
             }
             Message({

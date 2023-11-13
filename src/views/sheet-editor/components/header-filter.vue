@@ -433,20 +433,26 @@ export default {
       }
     },
     resetFilter() {
-      this.filterVisible = false;
-      this.onFilter = false;
-      this.min = null;
-      this.max = null;
-      this.strList = [];
-      this.initModelValue();
-
       this.$emit("filter-change", {
         colName: this.column.columns,
         remove: true, //移除当前筛选条件
       });
+      this.$nextTick(() => {
+        this.filterVisible = false;
+        this.onFilter = false;
+        this.min = null;
+        this.max = null;
+        this.strList = [];
+        this.initModelValue();
+      })
     },
     shortFilter(key) {
       // 快捷筛选
+      if (this.modelValue === key) {
+        // 取消此筛选条件
+        this.resetFilter();
+        return
+      }
       this.modelValue = key
       this.onFilter = !!key;
       this.filterVisible = false;
@@ -583,6 +589,7 @@ export default {
 <style lang="scss" scoped>
 .filter-box {
   min-width: 500px;
+  max-width: 1000px;
 
   .option-list {
     width: 200px;
