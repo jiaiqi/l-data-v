@@ -45,7 +45,7 @@
       </el-option>
     </el-select>
     <i
-      class="el-icon-arrow-right cursor-pointer p-r-2 m-l-[-5px] text-#C0C4CC"
+      class="el-icon-arrow-right cursor-pointer  m-l-[-5px] text-#C0C4CC"
       :class="{ 'cursor-not-allowed': setDisabled }"
       @click="openDialog"
       v-if="!isTree"

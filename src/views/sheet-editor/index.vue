@@ -75,6 +75,7 @@ import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
 import FileUpload from "./components/file-upload.vue";
 import selectParentNode from "./components/select-parent-node.vue";
+import fkAutocomplate from "./components/fk-autocomplate.vue";
 import { RecordManager } from "./util/recordManager.js";
 import { Loading } from "element-ui";
 import { $http } from "../../common/http";
@@ -1260,6 +1261,9 @@ export default {
                 if (!setColumn) {
                   setColumn = column.__field_info;
                 }
+                if (column.__field_info?.redundant_options) {
+                  setColumn.redundant_options = column.__field_info.redundant_options
+                }
                 if (columnObj.isFirstCol === true) {
                   setColumn.isFirstCol = true;
                   // 首列 判断是否是叶子节点 不是则显示展开收起
@@ -1273,7 +1277,50 @@ export default {
                     // }
                   }
                 }
-                if (item.bx_col_type === "fk") {
+                if (setColumn.redundant_options) {
+                  return h(fkAutocomplate, {
+                    attrs: {
+                      row,
+                      column: setColumn,
+                      disabled: !columnObj.edit ||
+                        (row.__flag !== "add" &&
+                          row?.__button_auth?.edit === false),
+                      app: this.srvApp,
+                      value: row[column.field],
+                    },
+                    on: {
+                      input: (event) => {
+                        row[column.field] = event;
+                        this.$set(this.tableData, rowIndex, row);
+                        this.$refs["tableRef"].startEditingCell({
+                          rowKey: row.rowKey,
+                          colKey: column.field,
+                          defaultValue: event,
+                        });
+                        this.$refs["tableRef"].stopEditingCell();
+                      },
+                      select: (rawData) => {
+                        // 对应的fk字段
+                        const fkColumn = setColumn.redundant_options._target_column
+                        if (fkColumn) {
+                          const fkColumnInfo = this.allFields.find(item => item.columns === fkColumn)
+                          if (fkColumnInfo) {
+                            row[fkColumn] = rawData[setColumn.redundant_options.refed_col];
+                            this.$set(this.tableData, rowIndex, row);
+                            console.log(fkColumnInfo);
+                            this.$refs["tableRef"].startEditingCell({
+                              rowKey: row.rowKey,
+                              colKey: fkColumn,
+                              defaultValue: row[fkColumn],
+                            });
+                            this.$refs["tableRef"].stopEditingCell();
+                            this.handlerRedundant(rawData, fkColumn, row.rowKey, rowIndex);
+                          }
+                        }
+                      }
+                    }
+                  })
+                } else if (item.bx_col_type === "fk") {
                   return h(fkSelector, {
                     attrs: {
                       value: row[column.field],
@@ -1285,7 +1332,9 @@ export default {
                       row,
                       column,
                       listType: this.listType,
-                      disabled: !columnObj.edit,
+                      disabled: !columnObj.edit ||
+                        (row.__flag !== "add" &&
+                          row?.__button_auth?.edit === false),
                     },
                     on: {
                       onfocus: () => {
@@ -1537,6 +1586,23 @@ export default {
         })
       );
       return columns;
+    },
+    handlerRedundant(rawData, fkColumn, rowKey, rowIndex) {
+      // 处理冗余
+      const row = this.tableData[rowIndex];
+      let columns = this.allFields.filter(item => fkColumn && item?.redundant?.dependField === fkColumn && item.redundant.refedCol)
+      if (columns?.length) {
+        columns.forEach(item => {
+          row[item.columns] = rawData[item.redundant.refedCol]
+          this.$set(this.tableData, rowIndex, row);
+          this.$refs["tableRef"].startEditingCell({
+            rowKey: rowKey,
+            colKey: item.columns,
+            defaultValue: rawData[item.redundant.refedCol],
+          });
+          this.$refs["tableRef"].stopEditingCell();
+        })
+      }
     },
     buildReqParams() {
       const tableData = JSON.parse(JSON.stringify(this.tableData));
@@ -2370,14 +2436,30 @@ export default {
 
   // padding: 0 10px;
   // margin: 20px 0;
-  .el-select .el-input__inner {
-    border: none !important;
-    background-color: transparent !important;
-    padding-left: 0;
-    padding-right: 25px;
+  .el-select,
+  .el-autocomplete {
+    .el-input__inner {
+      border: none !important;
+      background-color: transparent !important;
+      padding-left: 0;
+      padding-right: 25px;
+    }
+
+    .el-icon-arrow-right {
+      color: #fff;
+    }
+
+    .el-select__caret {
+      color: #fff;
+    }
+
+    .el-input__inner::placeholder {
+      color: #fff;
+    }
+
   }
 
-  .el-select .el-icon-arrow-right {}
+
 }
 
 .ve-table-container {
