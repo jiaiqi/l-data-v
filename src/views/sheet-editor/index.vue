@@ -828,7 +828,7 @@ export default {
       // 只有init_expr 使用init_expr
       if (initExprFields?.length) {
         initExprFields.forEach(item => {
-          if (this.filterState[item.columns] !== null&&!this.filterState[item.columns]) {
+          if (this.filterState[item.columns] !== null && !this.filterState[item.columns]) {
             let obj = {
               colName: item.columns,
               ruleType: 'eq'
@@ -1162,12 +1162,12 @@ export default {
               }
             }
 
-            if (this.defaultConditions?.length) {
-              columnObj.disabled = this.defaultConditions.some(
-                (col) => col.colName === item.columns
-              );
-              columnObj.edit = !columnObj.disabled && columnObj.edit;
-            }
+            // if (this.defaultConditions?.length) {
+            //   columnObj.disabled = this.defaultConditions.some(
+            //     (col) => col.colName === item.columns
+            //   );
+            //   columnObj.edit = !columnObj.disabled && columnObj.edit;
+            // }
 
             columnObj.renderHeaderCell = ({ column }, h) => {
               return h(HeaderCell, {
@@ -1248,282 +1248,66 @@ export default {
                   };
                 }
               }
-              if (true) {
-                // if (item.bx_col_type === "fk") {
-                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-                  const oldRowData = this.oldTableData.find(
-                    (item) => item.__id && item.__id === row.__id
-                  );
-                  let setColumn =
-                    row.__flag === "add"
-                      ? this.addColsMap[column.field]
-                      : this.updateColsMap[column.field];
-                  if (!setColumn) {
-                    setColumn = column.__field_info;
+              // if (item.bx_col_type === "fk") {
+              columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                const oldRowData = this.oldTableData.find(
+                  (item) => item.__id && item.__id === row.__id
+                );
+                let setColumn =
+                  row.__flag === "add"
+                    ? this.addColsMap[column.field]
+                    : this.updateColsMap[column.field];
+                if (!setColumn) {
+                  setColumn = column.__field_info;
+                }
+                if (columnObj.isFirstCol === true) {
+                  setColumn.isFirstCol = true;
+                  // 首列 判断是否是叶子节点 不是则显示展开收起
+                  if (row?.is_leaf === "否") {
+                    // 有下级节点
+                    // if(row?.__indent){
+                    //   row?.__indent+=50
+                    //   this.$set()
+                    // }else{
+                    //   row?.__indent = 50
+                    // }
                   }
-                  if (columnObj.isFirstCol === true) {
-                    setColumn.isFirstCol = true;
-                    // 首列 判断是否是叶子节点 不是则显示展开收起
-                    if (row?.is_leaf === "否") {
-                      // 有下级节点
-                      // if(row?.__indent){
-                      //   row?.__indent+=50
-                      //   this.$set()
-                      // }else{
-                      //   row?.__indent = 50
-                      // }
-                    }
-                  }
-                  if (item.bx_col_type === "fk") {
-                    return h(fkSelector, {
-                      attrs: {
-                        value: row[column.field],
-                        size: "mini",
-                        srvInfo:
-                          this.updateColsMap[column.field]?.option_list_v2 ||
-                          item.option_list_v2,
-                        app: this.srvApp,
-                        row,
-                        column,
-                        listType: this.listType,
-                        disabled: !columnObj.edit,
+                }
+                if (item.bx_col_type === "fk") {
+                  return h(fkSelector, {
+                    attrs: {
+                      value: row[column.field],
+                      size: "mini",
+                      srvInfo:
+                        this.updateColsMap[column.field]?.option_list_v2 ||
+                        item.option_list_v2,
+                      app: this.srvApp,
+                      row,
+                      column,
+                      listType: this.listType,
+                      disabled: !columnObj.edit,
+                    },
+                    on: {
+                      onfocus: () => {
+                        this.$refs[
+                          "tableRef"
+                        ].clearCellSelectionCurrentCell();
                       },
-                      on: {
-                        onfocus: () => {
-                          this.$refs[
-                            "tableRef"
-                          ].clearCellSelectionCurrentCell();
-                        },
-                        input: (event) => {
-                          // self.$set(row, column.field, event);
-                          console.log(row, column.field, event);
-                          row[column.field] = event;
-                          this.$set(this.tableData, rowIndex, row);
-                          this.$refs["tableRef"].startEditingCell({
-                            rowKey: row.rowKey,
-                            colKey: column.field,
-                            defaultValue: event,
-                          });
-                          this.$refs["tableRef"].stopEditingCell();
-                        },
-                      },
-                    });
-                  } else if (["Date", "DateTime"].includes(item.col_type)) {
-                    return h("el-date-picker", {
-                      attrs: {
-                        disabled:
-                          !columnObj.edit ||
-                          (row.__flag !== "add" &&
-                            row?.__button_auth?.edit === false),
-                        value: row[column.field]
-                          ? new Date(row[column.field])
-                          : "",
-                        size: "mini",
-                        type: item.col_type.toLowerCase(),
-                        style: `width:${item.col_type === "DateTime" ? 180 : 130
-                          }px;`,
-                        valueFormat:
-                          item.col_type === "DateTime"
-                            ? "yyyy-MM-dd HH:mm:ss"
-                            : "yyyy-MM-dd",
-                      },
-                      nativeOn: {
-                        click: (event) => {
-                          event.stopPropagation();
-                          event.preventDefault();
-                        },
-                      },
-                      on: {
-                        input: (event) => {
-                          console.log;
-                          // self.$set(row, column.field, event);
-                          this.$refs["tableRef"].startEditingCell({
-                            rowKey: row.rowKey,
-                            colKey: column.field,
-                            defaultValue: event || null,
-                          });
-                          this.$refs["tableRef"].stopEditingCell();
-                        },
-                      },
-                    });
-                  } else if (
-                    item.col_type === "Enum" ||
-                    item.col_type === "Dict"
-                  ) {
-                    return h(
-                      "el-select",
-                      {
-                        attrs: {
-                          disabled:
-                            !columnObj.edit ||
-                            (row.__flag !== "add" &&
-                              row?.__button_auth?.edit === false),
-                          value: row[column.field],
-                          size: "mini",
-                          clearable: true,
-                        },
-                        on: {
-                          input: (event) => {
-                            // self.$set(row, column.field, event);
-                            this.$refs["tableRef"].startEditingCell({
-                              rowKey: row.rowKey,
-                              colKey: column.field,
-                              defaultValue: event,
-                            });
-                            this.$refs["tableRef"].stopEditingCell();
-                          },
-                        },
-                      },
-                      item.option_list_v2.map((op) => {
-                        return h("el-option", {
-                          attrs: {
-                            key: op.value,
-                            label: op.label,
-                            value: op.value,
-                          },
+                      input: (event) => {
+                        // self.$set(row, column.field, event);
+                        console.log(row, column.field, event);
+                        row[column.field] = event;
+                        this.$set(this.tableData, rowIndex, row);
+                        this.$refs["tableRef"].startEditingCell({
+                          rowKey: row.rowKey,
+                          colKey: column.field,
+                          defaultValue: event,
                         });
-                      })
-                    );
-                  } else if (item.col_type === "Set") {
-                    let value = [];
-                    if (row[column.field]) {
-                      value = row[column.field].split(",");
-                    }
-                    return h(
-                      "el-select",
-                      {
-                        attrs: {
-                          collapseTags: false,
-                          multiple: true,
-                          disabled:
-                            !columnObj.edit ||
-                            (row.__flag !== "add" &&
-                              row?.__button_auth?.edit === false),
-                          value: value,
-                          size: "mini",
-                          clearable: true,
-                        },
-                        on: {
-                          input: (event) => {
-                            // this.$set(row, column.field, event.toString());
-                            this.$refs["tableRef"].startEditingCell({
-                              rowKey: row.rowKey,
-                              colKey: column.field,
-                              defaultValue: event.toString(),
-                            });
-                            this.$refs["tableRef"].stopEditingCell();
-                          },
-                        },
+                        this.$refs["tableRef"].stopEditingCell();
                       },
-                      item.option_list_v2.map((op) => {
-                        return h("el-option", {
-                          attrs: {
-                            key: op.value,
-                            label: op.label,
-                            value: op.value,
-                          },
-                        });
-                      })
-                    );
-                  } else if (
-                    item.col_type === "FileList" ||
-                    item.col_type === "Image"
-                  ) {
-                    // 文件
-                    let editable = true;
-                    if (row.__flag === "add") {
-                      // 新增行 处理in_add
-                      if (this.addColsMap[column.field]?.in_add !== 1) {
-                        editable = false;
-                      }
-                    } else {
-                      // 编辑行 处理in_update
-                      if (this.updateColsMap[column.field]?.in_update !== 1) {
-                        editable = false;
-                      }
-                    }
-                    if (row.__flag !== "add" && !row?.__button_auth?.edit) {
-                      editable = false;
-                    }
-                    return h(FileUpload, {
-                      attrs: {
-                        row,
-                        column: setColumn,
-                        disabled: !editable,
-                        value: row[column.field],
-                        app: this.srvApp,
-                      },
-                      on: {
-                        change: (event) => {
-                          this.$set(row, column.field, event);
-                          this.$set(
-                            row,
-                            "__flag",
-                            row.__flag === "add" ? "add" : "update"
-                          );
-                          console.log("data-change:", row, column.field, event);
-                          this.$refs["tableRef"].startEditingCell({
-                            rowKey: row.rowKey,
-                            colKey: column.field,
-                            defaultValue: event || null,
-                          });
-                          this.$refs["tableRef"].stopEditingCell();
-                          // this.calcReqData = this.buildReqParams()
-                        },
-                      },
-                    });
-                  } else {
-                    let editable = true;
-                    if (row.__flag === "add") {
-                      // 新增行 处理in_add
-                      if (this.addColsMap[column.field]?.in_add !== 1) {
-                        editable = false;
-                      }
-                    } else {
-                      // 编辑行 处理in_update
-                      if (this.updateColsMap[column.field]?.in_update !== 1) {
-                        editable = false;
-                      }
-                    }
-                    if (row.__flag !== "add" && !row?.__button_auth?.edit) {
-                      editable = false;
-                    }
-                    return h(RenderHtml, {
-                      attrs: {
-                        treeInfo: this.treeInfo,
-                        row,
-                        column: setColumn,
-                        editable: editable,
-                        html: row[column.field],
-                        oldValue: oldRowData?.[column.field],
-                        listType: this.listType,
-                        app: this.srvApp,
-                      },
-                      on: {
-                        onfocus: () => {
-                          this.$refs[
-                            "tableRef"
-                          ].clearCellSelectionCurrentCell();
-                        },
-                        unfold: (event, callback) => {
-                          this.loadTree(event, row, rowIndex, callback);
-                        },
-                        change: (event) => {
-                          this.$set(row, column.field, event);
-                          console.log("data-change:", row, column.field, event);
-                          this.$refs["tableRef"].startEditingCell({
-                            rowKey: row.rowKey,
-                            colKey: column.field,
-                            defaultValue: event || null,
-                          });
-                          this.$refs["tableRef"].stopEditingCell();
-                        },
-                      },
-                    });
-                  }
-                };
-              } else if (["Date", "DateTime"].includes(item.col_type)) {
-                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                    },
+                  });
+                } else if (["Date", "DateTime"].includes(item.col_type)) {
                   return h("el-date-picker", {
                     attrs: {
                       disabled:
@@ -1537,7 +1321,10 @@ export default {
                       type: item.col_type.toLowerCase(),
                       style: `width:${item.col_type === "DateTime" ? 180 : 130
                         }px;`,
-                      valueFormat: "yyyy-MM-dd HH:mm:ss",
+                      valueFormat:
+                        item.col_type === "DateTime"
+                          ? "yyyy-MM-dd HH:mm:ss"
+                          : "yyyy-MM-dd",
                     },
                     nativeOn: {
                       click: (event) => {
@@ -1558,10 +1345,9 @@ export default {
                       },
                     },
                   });
-                };
-              } else if (item.col_type === "Enum") {
-                // columnObj.width = 120;
-                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                } else if (
+                  ['Enum', 'Dict'].includes(item.col_type)
+                ) {
                   return h(
                     "el-select",
                     {
@@ -1596,11 +1382,94 @@ export default {
                       });
                     })
                   );
-                };
-              } else {
-                // } else if (["Note", "RichText"].includes(item.col_type)) {
-                // 富文本 暂时只能展示 不能编辑 可以从别的地方复制然后粘进来
-                columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+                } else if (['Set'].includes(item.col_type)) {
+                  let value = [];
+                  if (row[column.field]) {
+                    value = row[column.field].split(",");
+                  }
+                  return h(
+                    "el-select",
+                    {
+                      attrs: {
+                        collapseTags: false,
+                        multiple: true,
+                        disabled:
+                          !columnObj.edit ||
+                          (row.__flag !== "add" &&
+                            row?.__button_auth?.edit === false),
+                        value: value,
+                        size: "mini",
+                        clearable: true,
+                      },
+                      on: {
+                        input: (event) => {
+                          // this.$set(row, column.field, event.toString());
+                          this.$refs["tableRef"].startEditingCell({
+                            rowKey: row.rowKey,
+                            colKey: column.field,
+                            defaultValue: event.toString(),
+                          });
+                          this.$refs["tableRef"].stopEditingCell();
+                        },
+                      },
+                    },
+                    item.option_list_v2.map((op) => {
+                      return h("el-option", {
+                        attrs: {
+                          key: op.value,
+                          label: op.label,
+                          value: op.value,
+                        },
+                      });
+                    })
+                  );
+                } else if (
+                  ["FileList", "Image"].includes(item.col_type)
+                ) {
+                  // 文件
+                  let editable = true;
+                  if (row.__flag === "add") {
+                    // 新增行 处理in_add
+                    if (this.addColsMap[column.field]?.in_add !== 1) {
+                      editable = false;
+                    }
+                  } else {
+                    // 编辑行 处理in_update
+                    if (this.updateColsMap[column.field]?.in_update !== 1) {
+                      editable = false;
+                    }
+                  }
+                  if (row.__flag !== "add" && !row?.__button_auth?.edit) {
+                    editable = false;
+                  }
+                  return h(FileUpload, {
+                    attrs: {
+                      row,
+                      column: setColumn,
+                      disabled: !editable,
+                      value: row[column.field],
+                      app: this.srvApp,
+                    },
+                    on: {
+                      change: (event) => {
+                        this.$set(row, column.field, event);
+                        this.$set(
+                          row,
+                          "__flag",
+                          row.__flag === "add" ? "add" : "update"
+                        );
+                        console.log("data-change:", row, column.field, event);
+                        this.$refs["tableRef"].startEditingCell({
+                          rowKey: row.rowKey,
+                          colKey: column.field,
+                          defaultValue: event || null,
+                        });
+                        this.$refs["tableRef"].stopEditingCell();
+                        // this.calcReqData = this.buildReqParams()
+                      },
+                    },
+                  });
+                } else {
                   let editable = true;
                   if (row.__flag === "add") {
                     // 新增行 处理in_add
@@ -1620,16 +1489,25 @@ export default {
                     attrs: {
                       treeInfo: this.treeInfo,
                       row,
-                      column:
-                        row.__flag === "add"
-                          ? this.addColsMap[column.field]
-                          : this.updateColsMap[column.field],
+                      column: setColumn,
                       editable: editable,
                       html: row[column.field],
+                      oldValue: oldRowData?.[column.field],
+                      listType: this.listType,
+                      app: this.srvApp,
                     },
                     on: {
+                      onfocus: () => {
+                        this.$refs[
+                          "tableRef"
+                        ].clearCellSelectionCurrentCell();
+                      },
+                      unfold: (event, callback) => {
+                        this.loadTree(event, row, rowIndex, callback);
+                      },
                       change: (event) => {
-                        // self.$set(row, column.field, event);
+                        this.$set(row, column.field, event);
+                        console.log("data-change:", row, column.field, event);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
                           colKey: column.field,
@@ -1639,8 +1517,8 @@ export default {
                       },
                     },
                   });
-                };
-              }
+                }
+              };
             }
             return columnObj;
           })

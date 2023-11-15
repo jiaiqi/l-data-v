@@ -4,9 +4,6 @@
     @dragenter="dragDefFn($event)"
     @dragover="dragDefFn($event)"
   >
-    <!-- <div class="customhome-header">
-      <div>head</div>
-    </div> -->
     <div class="page-header">
       <div class="left"></div>
       <div class="right" @click="openFullscreen">
