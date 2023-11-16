@@ -266,7 +266,7 @@ export default {
       if (!req.serviceName || !appName) {
         return
       }
-      const loginUser = sessionStorage.getItem('current_login_user') || {};
+      let loginUser = JSON.parse(sessionStorage.getItem('current_login_user')||'{}') ;
       if (srvInfo?.conditions?.length) {
         for (let i = 0; i < srvInfo.conditions.length; i++) {
           const obj = {
