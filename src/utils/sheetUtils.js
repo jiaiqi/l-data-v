@@ -12,13 +12,13 @@ const buildSrvCols = (cols, updateColsMap, addColsMap) => {
         res[cur.columns] = {
           ...cur.option_list_v2,
           _target_column: cur.columns,
+          init_expr: cur.init_expr,
         };
       }
       return res;
     }, {});
 
 
-    cols = cols.filter((item) => item.in_list === 1);
 
     for (let index = 0; index < cols.length; index++) {
       const col = cols[index];
@@ -64,6 +64,7 @@ const buildSrvCols = (cols, updateColsMap, addColsMap) => {
           break;
       }
     }
+    cols = cols.filter((item) => item.in_list === 1);
   }
   return cols;
 };

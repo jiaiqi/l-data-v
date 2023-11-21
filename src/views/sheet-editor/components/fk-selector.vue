@@ -1,103 +1,34 @@
 <template>
-  <div
-    v-loading="loading"
-    class="flex justify-between items-center"
-    @dblclick.stop=""
-  >
+  <div v-loading="loading" class="flex justify-between items-center" @dblclick.stop="">
     <div style="width: 100%;" v-if="isTree && !options.length" @click="remoteMethod">
       {{ modelValue }}
     </div>
-    <el-cascader
-      placeholder="输入关键词搜索"
-      :options="options"
-      filterable
-      :disabled="setDisabled"
-      clearable
-      :props="props"
-      v-model="modelValue"
-      @click.native="remoteMethod"
-      @change="onSelectChange"
-      v-else-if="isTree"
-    ></el-cascader>
-    <el-select
-      v-model="modelValue"
-      remote
-      filterable
-      reserve-keyword
-      placeholder="请输入关键词"
-      :remote-method="remoteMethod"
-      :loading="loading"
-      :value-key="srvInfo.refed_col"
-      @click.native="remoteMethod"
-      @dblclick.native="openDialog"
-      @change="onSelectChange"
-      @focus="onFocus"
-      clearable
-      :disabled="setDisabled"
-      v-else
-    >
-      <el-option
-        v-for="item in options"
-        :key="item.value"
-        :label="item.label"
-        :value="item.value"
-      >
+    <el-cascader placeholder="输入关键词搜索" :options="options" filterable :disabled="setDisabled" clearable :props="props"
+      v-model="modelValue" @click.native="remoteMethod" @change="onSelectChange" v-else-if="isTree"></el-cascader>
+    <el-select ref="inputRef" v-model="modelValue" remote filterable reserve-keyword placeholder="请输入关键词" :remote-method="remoteMethod"
+      :loading="loading" :value-key="srvInfo.refed_col" @click.native="remoteMethod" @dblclick.native="openDialog"
+      @change="onSelectChange" @focus="onFocus" clearable :disabled="setDisabled" v-else>
+      <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value">
       </el-option>
     </el-select>
-    <i
-      class="el-icon-arrow-right cursor-pointer  m-l-[-5px] text-#C0C4CC"
-      :class="{ 'cursor-not-allowed': setDisabled }"
-      @click="openDialog"
-      v-if="!isTree"
-    ></i>
+    <i class="el-icon-arrow-right cursor-pointer  m-l-[-5px] text-#C0C4CC" :class="{ 'cursor-not-allowed': setDisabled }"
+      @click="openDialog" v-if="!isTree"></i>
 
-    <el-dialog
-      title="选择"
-      :visible.sync="dialogVisible"
-      width="80%"
-      append-to-body
-      v-loading="tableloading"
-    >
+    <el-dialog title="选择" :visible.sync="dialogVisible" width="80%" append-to-body v-loading="tableloading">
       <div @click.stop="">
         <div class="filter-box">
           <div class="text-bold">输入文字进行筛选:</div>
-          <el-input
-            placeholder="输入文字进行筛选"
-            @change="toFilter"
-            v-model="filterText"
-            clearable
-          ></el-input>
+          <el-input placeholder="输入文字进行筛选" @change="toFilter" v-model="filterText" clearable></el-input>
         </div>
-        <el-table
-          :data="tableData"
-          style="width: 100%"
-          v-if="tableData.length"
-          @row-dblclick="onDBClick"
-        >
-          <el-table-column
-            :prop="column.columns"
-            :label="column.label"
-            width="180"
-            show-overflow-tooltip
-            border
-            v-for="column in tableColumns"
-          >
+        <el-table :data="tableData" style="width: 100%" v-if="tableData.length" @row-dblclick="onDBClick">
+          <el-table-column :prop="column.columns" :label="column.label" width="180" show-overflow-tooltip border
+            v-for="column in tableColumns">
           </el-table-column>
         </el-table>
-        <el-pagination
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-          :page-sizes="[5, 10, 20, 30]"
-          :page-size="rownumber"
-          :total="total"
-          :current-page="pageNo"
-          layout="total, sizes, prev, pager, next"
-        >
+        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :page-sizes="[5, 10, 20, 30]"
+          :page-size="rownumber" :total="total" :current-page="pageNo" layout="total, sizes, prev, pager, next">
         </el-pagination>
-        <div
-          class="text-red text-center m-t-4"
-          v-if="tableData && tableData.length"
-        >
+        <div class="text-red text-center m-t-4" v-if="tableData && tableData.length">
           双击列表进行选择
         </div>
       </div>
@@ -173,6 +104,14 @@ export default {
       handler(newValue) {
         if (this.modelValue !== newValue) {
           this.modelValue = newValue;
+          // this.remoteMethod(this.value);
+          if(this.row?.__flag==='add'||this.row?.__flag==='update'){
+            this.$refs?.inputRef?.focus()
+          }
+        }
+        if (newValue && this.row?.__flag === 'add') {
+          // 新增数据 如果是fk字段并且有默认值 自动查找fk选项
+          this.remoteMethod(newValue);
         }
       },
     },
@@ -186,13 +125,15 @@ export default {
     },
   },
   created() {
-    if(this.value&&this.row?.__flag==='add'){
-      // 新增数据 如果是fk字段并且有默认值 自动查找fk选项
-      this.remoteMethod(this.value);
-    }
+    
+    // if(this.value&&this.row?.__flag==='add'){
+    //   // 新增数据 如果是fk字段并且有默认值 自动查找fk选项
+    //   this.remoteMethod(this.value);
+    // }
     if (this.defaultOptions?.length) {
       this.options = [...this.defaultOptions];
     }
+
   },
   methods: {
     async loadTree(node) {
@@ -291,7 +232,15 @@ export default {
     },
     onSelectChange(val) {
       this.modelValue = val;
-      this.$emit("input", val);
+      let currentValue = this.options.find(item => item[this.srvInfo.refed_col] === this.modelValue);
+      if (currentValue) {
+        this.$emit('select', {
+          value: this.modelValue,
+          rawData: currentValue
+        })
+      }else{
+        this.$emit("input", val);
+      }
     },
     onDBClick(row, column, cell, event) {
       this.modelValue = row[this.srvInfo.refed_col];
@@ -362,7 +311,7 @@ export default {
       if (this.setDisabled) {
         return;
       }
-      if(this.isTree){
+      if (this.isTree) {
         this.remoteMethod()
         return
       }
@@ -376,7 +325,7 @@ export default {
         this.getFkColumns();
       }
     },
-    filterMethod(node, query) {},
+    filterMethod(node, query) { },
     remoteMethod(query) {
       let queryString = this.value;
       if (query && typeof query === "string") {
@@ -423,12 +372,12 @@ export default {
             item.value = item[option.refed_col];
             return item;
           });
-          if(this.modelValue){
-            let currentValue = this.options.find(item=>item[option.refed_col]===this.modelValue);
-            if(currentValue){
-              this.$emit('select',{
-                value:this.modelValue,
-                rawData:currentValue
+          if (this.modelValue) {
+            let currentValue = this.options.find(item => item[option.refed_col] === this.modelValue);
+            if (currentValue) {
+              this.$emit('select', {
+                value: this.modelValue,
+                rawData: currentValue
               })
             }
           }

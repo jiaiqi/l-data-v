@@ -470,7 +470,7 @@ export default {
               // 清空值后，对应fk字段的值也要清空
               const col = column?.__field_info?.redundant_options?._target_column;
 
-              const fkColumnInfo = this.allFields.find(item => item.columns === col)
+              const fkColumnInfo = this.setAllFields.find(item => item.columns === col)
               if (fkColumnInfo && row[col]) {
                 row[col] = null;
                 this.$set(this.tableData, rowIndex, row);
@@ -1329,17 +1329,20 @@ export default {
                         // 对应的fk字段
                         const fkColumn = setColumn.redundant_options._target_column
                         if (fkColumn) {
-                          const fkColumnInfo = this.allFields.find(item => item.columns === fkColumn)
+                          const fkColumnInfo = this.setAllFields.find(item => item.columns === fkColumn)
                           if (fkColumnInfo) {
                             row[fkColumn] = rawData[setColumn.redundant_options.refed_col];
+                            row[`_${fkColumn}_data`] = rawData
                             this.$set(this.tableData, rowIndex, row);
-                            console.log(fkColumnInfo);
-                            this.$refs["tableRef"].startEditingCell({
-                              rowKey: row.rowKey,
-                              colKey: fkColumn,
-                              defaultValue: row[fkColumn],
-                            });
-                            this.$refs["tableRef"].stopEditingCell();
+                            if (this.allFields.find(e => e.columns === fkColumn)) {
+                              this.$refs["tableRef"].startEditingCell({
+                                rowKey: row.rowKey,
+                                colKey: fkColumn,
+                                defaultValue: row[fkColumn],
+                              });
+                              this.$refs["tableRef"].stopEditingCell();
+                            }
+
                             this.handlerRedundant(rawData, fkColumn, row.rowKey, rowIndex);
                           }
                         }
@@ -1389,6 +1392,7 @@ export default {
                           defaultValue: event,
                         });
                         this.$refs["tableRef"].stopEditingCell();
+                        this.handlerRedundant({}, column.field, row.rowKey, rowIndex);
                       },
                     },
                   });
@@ -1631,12 +1635,15 @@ export default {
         columns.forEach(item => {
           row[item.columns] = rawData[item.redundant.refedCol] || null
           this.$set(this.tableData, rowIndex, row);
-          this.$refs["tableRef"].startEditingCell({
-            rowKey: rowKey,
-            colKey: item.columns,
-            defaultValue: rawData[item.redundant.refedCol] || null,
-          });
-          this.$refs["tableRef"].stopEditingCell();
+          if (this.allFields.find(e => e.columns === item.columns)) {
+            this.$refs["tableRef"].startEditingCell({
+              rowKey: rowKey,
+              colKey: item.columns,
+              defaultValue: rawData[item.redundant.refedCol] || null,
+            });
+            this.$refs["tableRef"].stopEditingCell();
+          }
+
         })
       }
     },
@@ -1941,12 +1948,35 @@ export default {
           __flag: "add",
           __parent_row: cloneDeep(parentRow),
         };
+        // 冗余字段auto complete特性
+        const fkCols = this.setAllFields.reduce((res, cur) => {
+          if (cur?.option_list_v2?.serviceName) {
+            res[cur.columns] = {
+              ...cur.option_list_v2,
+              _target_column: cur.columns,
+              init_expr: cur.init_expr || this.addColsMap?.[cur.columns]?.init_expr,
+            };
+          }
+          return res;
+        }, {});
         this.allFields.forEach((field) => {
           if (field.editable) {
             dataItem[field.columns] = null;
+            let init_expr = null
+            let fk_init_expr = null
+            let fk_column = null
+            if (field.subtype === "autocomplete") {
+            }
             if (this.addColsMap[field.columns]?.init_expr) {
+              init_expr = this.addColsMap[field.columns]?.init_expr;
+            } else if (field.subtype === "autocomplete" &&
+              field.redundant?.dependField && fkCols[field.redundant?.dependField]?.init_expr) {
+              fk_init_expr = fkCols[field.redundant?.dependField]?.init_expr
+              init_expr = fk_init_expr
+              fk_column = fkCols[field.redundant?.dependField]?._target_column
+            }
+            if (init_expr) {
               // 初始值
-              let init_expr = this.addColsMap[field.columns]?.init_expr;
               let val = null;
               if (init_expr) {
                 init_expr = init_expr.replace(/\'|\"/g, "");
@@ -1984,7 +2014,11 @@ export default {
                   }
                 }
               }
-              dataItem[field.columns] = val;
+              if (fk_init_expr) {
+                dataItem[`_${fk_column}_init_val`] = val;
+              } else {
+                dataItem[field.columns] = val;
+              }
             }
           }
           if (

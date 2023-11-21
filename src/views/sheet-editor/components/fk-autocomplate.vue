@@ -1,6 +1,6 @@
 <template>
   <div @dblclick.stop="" class="flex items-center">
-    <el-autocomplete class="inline-input" v-model="modelValue" :value-key="redundant.refedCol"
+    <el-autocomplete ref="inputRef" class="inline-input" v-model="modelValue" :value-key="redundant.refedCol"
       :fetch-suggestions="querySearch" placeholder="请输入内容" @select="handleSelect" @click.native="" v-if="!disabled">
     </el-autocomplete>
     <span v-else>{{ modelValue }}</span>
@@ -46,6 +46,7 @@ export default {
       total: 0,
       tableloading: false,
       filterText: "",
+      modelValue: ""
     }
   },
   props: {
@@ -87,14 +88,35 @@ export default {
     srvInfo() {
       return this.column?.redundant_options
     },
-    modelValue: {
-      get() {
-        return this.value
+    // modelValue: {
+    //   get() {
+    //     return this.value
+    //   },
+    //   set(val) {
+    //     // let data = this.options.find(item => item.value == val)
+    //     // this.$emit('input', val, data)
+    //   }
+    // }
+  },
+  watch: {
+    value: {
+      immediate: true,
+      handler(newValue, oldValue) {
+        if (newValue !== this.modelValue) {
+          this.modelValue = newValue;
+          if ((this.row?.__flag === 'add' || this.row?.__flag === 'update') && newValue) {
+            this.$nextTick(() => {
+              this.$refs?.inputRef?.focus()
+            })
+          }
+        }
+
       },
-      set(val) {
-        // let data = this.options.find(item => item.value == val)
-        // this.$emit('input', val, data)
-      }
+    },
+  },
+  created() {
+    if (!this.value && this.row?.__flag === 'add' && this.row[`_${this.column?.redundant?.dependField}_init_val`]) {
+      this.loadOptions(null,this.row[`_${this.column?.redundant?.dependField}_init_val`]);
     }
   },
   methods: {
@@ -250,7 +272,7 @@ export default {
         callback(res)
       })
     },
-    async loadOptions(queryString) {
+    async loadOptions(queryString, initValue) {
       // 查询选项
       const srvInfo = this.srvInfo
       const req = {
@@ -303,13 +325,27 @@ export default {
           }
         ]
       }
+      if(initValue){
+        req.condition = [
+         ...req.condition,
+          {
+            colName: this.srvInfo.refed_col,
+            ruleType: 'eq',
+            value: initValue
+          }
+        ]
+      }
       if (srvInfo?.relation_condition) {
         req.relation_condition = srvInfo?.relation_condition
       }
+    
       const url = `/${appName}/select/${srvInfo?.serviceName}`
       const res = await $http.post(url, req)
       if (res.data.state === 'SUCCESS') {
         this.options = res.data.data
+        if(initValue&&this.options?.length){
+          this.$emit('select', cloneDeep(this.options[0]))
+        }
         return res.data.data
       } else {
         this.options = []
