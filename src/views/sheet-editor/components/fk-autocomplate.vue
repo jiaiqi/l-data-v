@@ -91,10 +91,10 @@ export default {
       get() {
         return this.value
       },
-      // set(val) {
-      //   let data = this.options.find(item => item.value == val)
-      //   this.$emit('input', val, data)
-      // }
+      set(val) {
+        // let data = this.options.find(item => item.value == val)
+        // this.$emit('input', val, data)
+      }
     }
   },
   methods: {
@@ -266,7 +266,7 @@ export default {
       if (!req.serviceName || !appName) {
         return
       }
-      let loginUser = JSON.parse(sessionStorage.getItem('current_login_user')||'{}') ;
+      let loginUser = JSON.parse(sessionStorage.getItem('current_login_user') || '{}');
       if (srvInfo?.conditions?.length) {
         for (let i = 0; i < srvInfo.conditions.length; i++) {
           const obj = {
@@ -309,23 +309,8 @@ export default {
       const url = `/${appName}/select/${srvInfo?.serviceName}`
       const res = await $http.post(url, req)
       if (res.data.state === 'SUCCESS') {
-        const options = res.data.data.map(item => {
-          // item.value = srvInfo.refed_col ? item[srvInfo.refed_col] : '';
-          // let label = `${item[srvInfo?.key_disp_col]}`
-          // const refedCol = this.redundant?.refedCol
-          // if (refedCol && item[refedCol] && label !== item[refedCol]) {
-          //   label = `${item[refedCol]}(${item[srvInfo?.key_disp_col]})`
-          // }
-          // if (label) {
-          //   item.text = label
-          //   item.value = label
-          // } else {
-          //   // item.text = item.value
-          // }
-          return item
-        })
-        this.options = options
-        return options
+        this.options = res.data.data
+        return res.data.data
       } else {
         this.options = []
         return []
@@ -335,6 +320,8 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
-.el-autocomplete {}
+<style lang="scss" >
+.el-autocomplete-suggestion.el-popper {
+  min-width: 200px !important;
+}
 </style>

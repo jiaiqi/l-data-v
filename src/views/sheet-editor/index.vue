@@ -352,7 +352,7 @@ export default {
       editOption: {
         beforeCellValueChange: ({ row, column, changeValue }) => {
           const colType = column?.__field_info?.col_type;
-          console.log(row, column, changeValue);
+          // console.log(row, column, changeValue);
           if (row.__flag === "add") {
             // 新增行 处理in_add
             if (this.addColsMap[column.field]?.in_add !== 1) {
@@ -385,9 +385,10 @@ export default {
               return false;
             }
           }
+
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
-          console.log("beforeStartCellEditing：", cellValue);
+          // console.log("beforeStartCellEditing：",row,column, cellValue);
           // const colType = column?.__field_info?.col_type;
           // if(column?.__field_info?.bx_col_type==='fk'){
           //   return false
@@ -462,6 +463,27 @@ export default {
           if (row.__id && row.__flag !== "add") {
             row.__flag = "update";
           }
+          if (column?.__field_info?.redundant_options?._target_column) {
+            // 处理autocomplete对应的fk字段
+            console.log('changeValue:', changeValue);
+            if (!changeValue) {
+              // 清空值后，对应fk字段的值也要清空
+              const col = column?.__field_info?.redundant_options?._target_column;
+
+              const fkColumnInfo = this.allFields.find(item => item.columns === col)
+              if (fkColumnInfo && row[col]) {
+                row[col] = null;
+                this.$set(this.tableData, rowIndex, row);
+                // this.$refs["tableRef"].startEditingCell({
+                //   rowKey: row.rowKey,
+                //   colKey: col,
+                //   defaultValue: null,
+                // });
+                // this.$refs["tableRef"].stopEditingCell();
+                this.handlerRedundant({}, col, row.rowKey, rowIndex);
+              }
+            }
+          }
           this.recordManager?.push(cloneDeep(this.tableData));
         },
       },
@@ -504,6 +526,10 @@ export default {
     },
   },
   computed: {
+    setAllFields() {
+      // 所有字段
+      return this.v2data?.srv_cols || []
+    },
     topTreeData() {
       return !!this.$route?.query?.topTreeData
     },
@@ -1342,9 +1368,19 @@ export default {
                           "tableRef"
                         ].clearCellSelectionCurrentCell();
                       },
+                      select: (event) => {
+                        // fk选项发生变化
+                        row[column.field] = event.value;
+                        this.$set(this.tableData, rowIndex, row);
+                        this.$refs["tableRef"].startEditingCell({
+                          rowKey: row.rowKey,
+                          colKey: column.field,
+                          defaultValue: row[column.field],
+                        });
+                        this.$refs["tableRef"].stopEditingCell();
+                        this.handlerRedundant(event?.rawData, column.field, row.rowKey, rowIndex);
+                      },
                       input: (event) => {
-                        // self.$set(row, column.field, event);
-                        console.log(row, column.field, event);
                         row[column.field] = event;
                         this.$set(this.tableData, rowIndex, row);
                         this.$refs["tableRef"].startEditingCell({
@@ -1587,18 +1623,18 @@ export default {
       );
       return columns;
     },
-    handlerRedundant(rawData, fkColumn, rowKey, rowIndex) {
+    handlerRedundant(rawData = {}, fkColumn, rowKey, rowIndex) {
       // 处理冗余
       const row = this.tableData[rowIndex];
-      let columns = this.allFields.filter(item => fkColumn && item?.redundant?.dependField === fkColumn && item.redundant.refedCol)
+      let columns = this.setAllFields.filter(item => fkColumn && item?.redundant?.dependField === fkColumn && item.redundant.refedCol)
       if (columns?.length) {
         columns.forEach(item => {
-          row[item.columns] = rawData[item.redundant.refedCol]
+          row[item.columns] = rawData[item.redundant.refedCol] || null
           this.$set(this.tableData, rowIndex, row);
           this.$refs["tableRef"].startEditingCell({
             rowKey: rowKey,
             colKey: item.columns,
-            defaultValue: rawData[item.redundant.refedCol],
+            defaultValue: rawData[item.redundant.refedCol] || null,
           });
           this.$refs["tableRef"].stopEditingCell();
         })
@@ -1908,48 +1944,48 @@ export default {
         this.allFields.forEach((field) => {
           if (field.editable) {
             dataItem[field.columns] = null;
-          }
-          if (this.addColsMap[field.columns]?.init_expr && field.editable) {
-            // 初始值
-            let init_expr = this.addColsMap[field.columns]?.init_expr;
-            let val = null;
-            if (init_expr) {
-              init_expr = init_expr.replace(/\'|\"/g, "");
-              if (
-                init_expr.indexOf("'") == -1 &&
-                init_expr.lastIndexOf("'") === init_expr.length - 1
-              ) {
-                // 变量
-                val = eval(init_expr);
-              } else {
-                val = init_expr;
-              }
-              const colType = field?.col_type;
-              // 日期
-              if (val === "new Date()" || val?.indexOf("new Da") > -1) {
-                // 兼容单词书写错误的情况
-                val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
-              }
-              if (
-                ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
-                colType.includes("decimal")
-              ) {
-                // 数字类型 初始值处理
-                val = Number(val);
-              }
-              if (typeof val === "string" && val?.includes("top.user.")) {
-                let key = val.split("top.user.");
-                key = key.length > 1 ? key[1] : "";
-                if (key) {
-                  let userInfo = sessionStorage.getItem("current_login_user");
-                  if (userInfo) {
-                    userInfo = JSON.parse(userInfo);
+            if (this.addColsMap[field.columns]?.init_expr) {
+              // 初始值
+              let init_expr = this.addColsMap[field.columns]?.init_expr;
+              let val = null;
+              if (init_expr) {
+                init_expr = init_expr.replace(/\'|\"/g, "");
+                if (
+                  init_expr.indexOf("'") == -1 &&
+                  init_expr.lastIndexOf("'") === init_expr.length - 1
+                ) {
+                  // 变量
+                  val = eval(init_expr);
+                } else {
+                  val = init_expr;
+                }
+                const colType = field?.col_type;
+                // 日期
+                if (val === "new Date()" || val?.indexOf("new Da") > -1) {
+                  // 兼容单词书写错误的情况
+                  val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
+                }
+                if (
+                  ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
+                  colType.includes("decimal")
+                ) {
+                  // 数字类型 初始值处理
+                  val = Number(val);
+                }
+                if (typeof val === "string" && val?.includes("top.user.")) {
+                  let key = val.split("top.user.");
+                  key = key.length > 1 ? key[1] : "";
+                  if (key) {
+                    let userInfo = sessionStorage.getItem("current_login_user");
+                    if (userInfo) {
+                      userInfo = JSON.parse(userInfo);
+                    }
+                    val = userInfo?.[key];
                   }
-                  val = userInfo?.[key];
                 }
               }
+              dataItem[field.columns] = val;
             }
-            dataItem[field.columns] = val;
           }
           if (
             this.defaultConditionsMap &&
@@ -1968,6 +2004,7 @@ export default {
           });
         }
         if (parentRow && parentRow[this.treeInfo.idCol]) {
+          // 树型数据
           dataItem[this.treeInfo.pidCol] = parentRow[this.treeInfo.idCol];
           dataItem.__indent = parentRow.__indent ? parentRow.__indent + 40 : 40;
         }

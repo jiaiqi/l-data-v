@@ -186,6 +186,10 @@ export default {
     },
   },
   created() {
+    if(this.value&&this.row?.__flag==='add'){
+      // 新增数据 如果是fk字段并且有默认值 自动查找fk选项
+      this.remoteMethod(this.value);
+    }
     if (this.defaultOptions?.length) {
       this.options = [...this.defaultOptions];
     }
@@ -393,7 +397,6 @@ export default {
       if (!option.key_disp_col && !option.refed_col) {
         return;
       }
-      console.log(query);
       if (option.key_disp_col && queryString) {
         relation_condition.data.push({
           colName: option.key_disp_col,
@@ -420,6 +423,15 @@ export default {
             item.value = item[option.refed_col];
             return item;
           });
+          if(this.modelValue){
+            let currentValue = this.options.find(item=>item[option.refed_col]===this.modelValue);
+            if(currentValue){
+              this.$emit('select',{
+                value:this.modelValue,
+                rawData:currentValue
+              })
+            }
+          }
         } else {
           this.options = [];
         }
