@@ -1367,9 +1367,7 @@ export default {
                     },
                     on: {
                       onfocus: () => {
-                        this.$refs[
-                          "tableRef"
-                        ].clearCellSelectionCurrentCell();
+                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                       },
                       select: (event) => {
                         // fk选项发生变化

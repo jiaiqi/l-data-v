@@ -5,10 +5,11 @@
       {{ modelValue }}
     </div>
     <div v-if="isTree" style="width: 100%;">
-      <el-popover placement="bottom-center" ref="treePopover" trigger="click" @show="remoteMethod,filterText=modelValue">
-        <span slot="reference" v-if="modelValue && !setDisabled" class="cursor-pointer">{{ modelLabel || modelValue || '' }}</span>
+      <el-popover placement="bottom-center" ref="treePopover" trigger="click" @show="onPopoverShow" >
+        <span slot="reference" v-if="modelValue && !setDisabled" class="cursor-pointer">{{ modelLabel || modelValue || ''
+        }}</span>
         <span slot="reference" class="text-gray cursor-pointer" v-else-if="!setDisabled">点击进行选择</span>
-        <el-input placeholder="输入关键字进行过滤" v-model="filterText" @focus="onFocus" @change="remoteMethod" style="max-width: 300px;margin-bottom: 5px;">
+        <el-input placeholder="输入关键字进行过滤" clearable v-model="filterText" @focus="onFocus"  @input="onFilterInput" @clear="onFilterClear" style="max-width: 300px;margin-bottom: 5px;">
         </el-input>
         <el-cascader-panel :props="props" :is-border="false" :options="options" @change="onSelectChange" :emitPath="false"
           checkStrictly></el-cascader-panel>
@@ -66,7 +67,7 @@ export default {
   },
   data() {
     return {
-      allOptions:[],
+      allOptions: [],
       loading: false,
       options: [],
       modelValue: null,
@@ -93,19 +94,19 @@ export default {
     };
   },
   computed: {
-    setoptions(){
+    setoptions() {
       // 根据搜索值动态得到匹配的选项
       return this.options?.filter(item => {
         return item?.label?.indexOf(this.filterText) > -1;
       });
     },
-    currentModel(){
-      if(this.modelValue){
+    currentModel() {
+      if (this.modelValue) {
         return this.allOptions.find(item => item.value === this.modelValue);
       }
     },
-    modelLabel(){
-      if(this.currentModel){
+    modelLabel() {
+      if (this.currentModel) {
         return this.currentModel.label;
       }
     },
@@ -133,7 +134,12 @@ export default {
           this.modelValue = newValue;
           // this.remoteMethod(this.value);
           if (this.row?.__flag === 'add' || this.row?.__flag === 'update') {
-            this.$refs?.inputRef?.focus()
+            if (this.isTree) {
+              this.$refs?.treePopover?.doShow()
+              // this.remoteMethod(newValue);
+            } else {
+              this.$refs?.inputRef?.focus()
+            }
           }
         }
         if (newValue && this.row?.__flag === 'add') {
@@ -163,6 +169,21 @@ export default {
 
   },
   methods: {
+    onFilterClear() {
+      this.filterText = ''
+      this.$emit('input', '')
+      this.remoteMethod()
+    },
+    onFilterInput(value) {
+      // this.$emit('input',value)
+      this.modelValue = value
+      this.remoteMethod()
+    },
+    onPopoverShow() {
+      // this.onFocus()
+      this.filterText = this.value
+      this.remoteMethod(this.filterText)
+    },
     async loadTree(node) {
       if (node?.value) {
         const option = this.srvInfo;
@@ -183,10 +204,10 @@ export default {
           }
         );
         if (res?.data) {
-          const result =  res.data.map((item) => {
+          const result = res.data.map((item) => {
             item.label = item[option.key_disp_col];
             item.value = item[option.refed_col];
-            item.leaf = item.is_leaf==='是'
+            item.leaf = item.is_leaf === '是'
             return item;
           });
           this.allOptions.push(...result)
@@ -242,7 +263,7 @@ export default {
           this.tableData = res.data.map((item) => {
             item.label = item[option.key_disp_col];
             item.value = item[option.refed_col];
-            item.leaf = item.is_leaf==='是'
+            item.leaf = item.is_leaf === '是'
             return item;
           });
           this.allOptions.push(...this.tableData)
@@ -335,7 +356,7 @@ export default {
           this.tableData = res.data.map((item) => {
             item.label = item[this.srvInfo.key_disp_col];
             item.value = item[this.srvInfo.refed_col];
-            item.leaf = item.is_leaf==='是'
+            item.leaf = item.is_leaf === '是'
             return item;
           });
           this.allOptions.push(...this.tableData)
@@ -410,7 +431,7 @@ export default {
           this.options = res.data.map((item) => {
             item.label = item[option.key_disp_col];
             item.value = item[option.refed_col];
-            item.leaf = item.is_leaf==='是'
+            item.leaf = item.is_leaf === '是'
             return item;
           });
           this.allOptions.push(...this.options)
@@ -434,7 +455,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-::v-deep .el-cascader-node{
+::v-deep .el-cascader-node {
   max-width: 300px;
 }
 </style>
