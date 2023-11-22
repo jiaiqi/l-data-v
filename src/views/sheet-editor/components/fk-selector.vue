@@ -1,13 +1,23 @@
 <template>
   <div v-loading="loading" class="flex justify-between items-center" @dblclick.stop="">
-    <div style="width: 100%;" v-if="isTree && !options.length" @click="remoteMethod">
+
+    <div style="width: 100%;" v-if="isTree && setDisabled" @click="remoteMethod">
       {{ modelValue }}
     </div>
-    <el-cascader placeholder="输入关键词搜索" :options="options" filterable :disabled="setDisabled" clearable :props="props"
-      v-model="modelValue" @click.native="remoteMethod" @change="onSelectChange" v-else-if="isTree"></el-cascader>
-    <el-select ref="inputRef" v-model="modelValue" remote filterable reserve-keyword placeholder="请输入关键词" :remote-method="remoteMethod"
-      :loading="loading" :value-key="srvInfo.refed_col" @click.native="remoteMethod" @dblclick.native="openDialog"
-      @change="onSelectChange" @focus="onFocus" clearable :disabled="setDisabled" v-else>
+    <div v-if="isTree" style="width: 100%;">
+      <el-popover placement="bottom-center" ref="treePopover" trigger="click" @show="remoteMethod,filterText=modelValue">
+        <span slot="reference" v-if="modelValue && !setDisabled" class="cursor-pointer">{{ modelLabel || modelValue || '' }}</span>
+        <span slot="reference" class="text-gray cursor-pointer" v-else-if="!setDisabled">点击进行选择</span>
+        <el-input placeholder="输入关键字进行过滤" v-model="filterText" @focus="onFocus" @change="remoteMethod" style="max-width: 300px;margin-bottom: 5px;">
+        </el-input>
+        <el-cascader-panel :props="props" :is-border="false" :options="options" @change="onSelectChange" :emitPath="false"
+          checkStrictly></el-cascader-panel>
+      </el-popover>
+    </div>
+
+    <el-select ref="inputRef" v-model="modelValue" remote filterable reserve-keyword placeholder="请输入关键词"
+      :remote-method="remoteMethod" :loading="loading" :value-key="srvInfo.refed_col" @click.native="remoteMethod"
+      @dblclick.native="openDialog" @change="onSelectChange" @focus="onFocus" clearable :disabled="setDisabled" v-else>
       <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value">
       </el-option>
     </el-select>
@@ -56,6 +66,7 @@ export default {
   },
   data() {
     return {
+      allOptions:[],
       loading: false,
       options: [],
       modelValue: null,
@@ -82,6 +93,22 @@ export default {
     };
   },
   computed: {
+    setoptions(){
+      // 根据搜索值动态得到匹配的选项
+      return this.options?.filter(item => {
+        return item?.label?.indexOf(this.filterText) > -1;
+      });
+    },
+    currentModel(){
+      if(this.modelValue){
+        return this.allOptions.find(item => item.value === this.modelValue);
+      }
+    },
+    modelLabel(){
+      if(this.currentModel){
+        return this.currentModel.label;
+      }
+    },
     srvApp() {
       return this.srvInfo?.srv_app || this.app;
     },
@@ -105,7 +132,7 @@ export default {
         if (this.modelValue !== newValue) {
           this.modelValue = newValue;
           // this.remoteMethod(this.value);
-          if(this.row?.__flag==='add'||this.row?.__flag==='update'){
+          if (this.row?.__flag === 'add' || this.row?.__flag === 'update') {
             this.$refs?.inputRef?.focus()
           }
         }
@@ -125,7 +152,7 @@ export default {
     },
   },
   created() {
-    
+
     // if(this.value&&this.row?.__flag==='add'){
     //   // 新增数据 如果是fk字段并且有默认值 自动查找fk选项
     //   this.remoteMethod(this.value);
@@ -156,11 +183,14 @@ export default {
           }
         );
         if (res?.data) {
-          return res.data.map((item) => {
+          const result =  res.data.map((item) => {
             item.label = item[option.key_disp_col];
             item.value = item[option.refed_col];
+            item.leaf = item.is_leaf==='是'
             return item;
           });
+          this.allOptions.push(...result)
+          return result
         } else return [];
       }
     },
@@ -212,8 +242,11 @@ export default {
           this.tableData = res.data.map((item) => {
             item.label = item[option.key_disp_col];
             item.value = item[option.refed_col];
+            item.leaf = item.is_leaf==='是'
             return item;
           });
+          this.allOptions.push(...this.tableData)
+
           this.total = res?.page?.total;
         } else {
           this.options = [];
@@ -231,6 +264,10 @@ export default {
       this.getTableData();
     },
     onSelectChange(val) {
+      if (Array.isArray(val) && val?.length) {
+        val = val[0]
+      }
+      this.$refs?.treePopover?.doClose()
       this.modelValue = val;
       let currentValue = this.options.find(item => item[this.srvInfo.refed_col] === this.modelValue);
       if (currentValue) {
@@ -238,7 +275,7 @@ export default {
           value: this.modelValue,
           rawData: currentValue
         })
-      }else{
+      } else {
         this.$emit("input", val);
       }
     },
@@ -298,8 +335,11 @@ export default {
           this.tableData = res.data.map((item) => {
             item.label = item[this.srvInfo.key_disp_col];
             item.value = item[this.srvInfo.refed_col];
+            item.leaf = item.is_leaf==='是'
             return item;
           });
+          this.allOptions.push(...this.tableData)
+
           this.total = res?.page?.total;
         } else {
           this.tableData = [];
@@ -370,8 +410,10 @@ export default {
           this.options = res.data.map((item) => {
             item.label = item[option.key_disp_col];
             item.value = item[option.refed_col];
+            item.leaf = item.is_leaf==='是'
             return item;
           });
+          this.allOptions.push(...this.options)
           if (this.modelValue) {
             let currentValue = this.options.find(item => item[option.refed_col] === this.modelValue);
             if (currentValue) {
@@ -391,4 +433,8 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+::v-deep .el-cascader-node{
+  max-width: 300px;
+}
+</style>
