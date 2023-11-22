@@ -13,12 +13,11 @@ const buildSrvCols = (cols, updateColsMap, addColsMap) => {
           ...cur.option_list_v2,
           _target_column: cur.columns,
           init_expr: cur.init_expr,
+          // redundant:cur.redundant||updateColsMap?.[cur.columns]?.redundant||addColsMap?.[cur.columns]?.redundant,
         };
       }
       return res;
     }, {});
-
-
 
     for (let index = 0; index < cols.length; index++) {
       const col = cols[index];
@@ -40,15 +39,19 @@ const buildSrvCols = (cols, updateColsMap, addColsMap) => {
         col?.validators?.includes("required") ||
         updateColsMap?.[col.columns]?.validators?.includes("required") ||
         addColsMap?.[col.columns]?.validators?.includes("required");
-
+   
+      const dependField =
+        col.redundant?.dependField ||
+        updateColsMap?.[col.columns]?.redundant?.dependField ||
+        addColsMap?.[col.columns]?.redundant?.dependField;
       if (
         col.subtype === "autocomplete" &&
-        col.redundant?.dependField &&
-        fkCols[col.redundant?.dependField]
+        dependField &&
+        fkCols[dependField]
       ) {
         // 冗余字段auto complete特性
         col.redundant_options = {
-          ...fkCols[col.redundant?.dependField],
+          ...fkCols[dependField],
         };
       }
       switch (col.bx_col_type) {

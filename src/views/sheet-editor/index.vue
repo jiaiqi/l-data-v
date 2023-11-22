@@ -312,6 +312,7 @@ export default {
                         defaultValue: data[0][selectionRangeKeys.startColKey],
                       });
                       this.$refs["tableRef"].stopEditingCell();
+                      this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                     }
                   }
                   return false;
@@ -344,6 +345,7 @@ export default {
                 defaultValue: row[col.field],
               });
               this.$refs["tableRef"].stopEditingCell();
+              this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
             }
           }
         },
@@ -433,6 +435,7 @@ export default {
             }
             this.$nextTick(() => {
               this.$refs["tableRef"].stopEditingCell();
+              this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
             });
             return false;
           }
@@ -466,9 +469,10 @@ export default {
           if (column?.__field_info?.redundant_options?._target_column) {
             // 处理autocomplete对应的fk字段
             console.log('changeValue:', changeValue);
+              const col = column?.__field_info?.redundant_options?._target_column;
+
             if (!changeValue) {
               // 清空值后，对应fk字段的值也要清空
-              const col = column?.__field_info?.redundant_options?._target_column;
 
               const fkColumnInfo = this.setAllFields.find(item => item.columns === col)
               if (fkColumnInfo && row[col]) {
@@ -482,6 +486,9 @@ export default {
                 // this.$refs["tableRef"].stopEditingCell();
                 this.handlerRedundant({}, col, row.rowKey, rowIndex);
               }
+            }else{
+              // this.handlerRedundant({}, col, row.rowKey, rowIndex);
+
             }
           }
           this.recordManager?.push(cloneDeep(this.tableData));
@@ -1085,6 +1092,7 @@ export default {
             defaultValue: row[col.field],
           });
           this.$refs["tableRef"].stopEditingCell();
+          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
         }
       }
     },
@@ -1324,6 +1332,7 @@ export default {
                           defaultValue: event,
                         });
                         this.$refs["tableRef"].stopEditingCell();
+                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                       },
                       select: (rawData) => {
                         // 对应的fk字段
@@ -1341,6 +1350,7 @@ export default {
                                 defaultValue: row[fkColumn],
                               });
                               this.$refs["tableRef"].stopEditingCell();
+                              this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                             }
 
                             this.handlerRedundant(rawData, fkColumn, row.rowKey, rowIndex);
@@ -1379,6 +1389,7 @@ export default {
                           defaultValue: row[column.field],
                         });
                         this.$refs["tableRef"].stopEditingCell();
+                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                         this.handlerRedundant(event?.rawData, column.field, row.rowKey, rowIndex);
                       },
                       input: (event) => {
@@ -1390,6 +1401,7 @@ export default {
                           defaultValue: event,
                         });
                         this.$refs["tableRef"].stopEditingCell();
+                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                         this.handlerRedundant({}, column.field, row.rowKey, rowIndex);
                       },
                     },
@@ -1429,6 +1441,7 @@ export default {
                           defaultValue: event || null,
                         });
                         this.$refs["tableRef"].stopEditingCell();
+                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                       },
                     },
                   });
@@ -1456,6 +1469,7 @@ export default {
                             defaultValue: event,
                           });
                           this.$refs["tableRef"].stopEditingCell();
+                          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                         },
                       },
                     },
@@ -1497,6 +1511,7 @@ export default {
                             defaultValue: event.toString(),
                           });
                           this.$refs["tableRef"].stopEditingCell();
+                          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                         },
                       },
                     },
@@ -1552,6 +1567,7 @@ export default {
                           defaultValue: event || null,
                         });
                         this.$refs["tableRef"].stopEditingCell();
+                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                         // this.calcReqData = this.buildReqParams()
                       },
                     },
@@ -1601,6 +1617,7 @@ export default {
                           defaultValue: event || null,
                         });
                         this.$refs["tableRef"].stopEditingCell();
+                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                       },
                     },
                   });
@@ -1640,6 +1657,7 @@ export default {
               defaultValue: rawData[item.redundant.refedCol] || null,
             });
             this.$refs["tableRef"].stopEditingCell();
+            this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
           }
 
         })

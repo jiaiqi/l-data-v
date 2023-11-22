@@ -1,5 +1,5 @@
 <template>
-  <div @dblclick.stop="" class="flex items-center">
+  <div @dblclick.stop="" class="flex items-center autocomplete-box">
     <el-autocomplete ref="inputRef" class="inline-input" v-model="modelValue" :value-key="redundant.refedCol"
       :fetch-suggestions="querySearch" placeholder="请输入内容" @select="handleSelect" @click.native="" v-if="!disabled">
     </el-autocomplete>
@@ -106,7 +106,25 @@ export default {
           this.modelValue = newValue;
           if ((this.row?.__flag === 'add' || this.row?.__flag === 'update') && newValue) {
             this.$nextTick(() => {
-              this.$refs?.inputRef?.focus()
+              // this.$refs?.inputRef?.focus()
+              this.loadOptions(newValue).then(res => {
+                if (res?.length > 1) {
+                  // 模糊匹配结果数量大于1
+                  let matchedVal = res.find(item => item.value === this.value)
+                  if (matchedVal) {
+                    this.$emit('select', cloneDeep(matchedVal))
+                  }
+                  this.$refs?.inputRef?.focus()
+                } else if (res?.length) {
+                  // 模糊匹配结果数量为1
+                  this.$emit('select', cloneDeep(res[0]))
+                  if (this.$refs?.inputRef?.activated) {
+                    this.$nextTick(() => {
+                      this.$refs.inputRef.activated = false
+                    })
+                  }
+                }
+              })
             })
           }
         }
@@ -115,8 +133,8 @@ export default {
     },
   },
   created() {
-    if (!this.value && this.row?.__flag === 'add' && this.row[`_${this.column?.redundant?.dependField}_init_val`]) {
-      this.loadOptions(null,this.row[`_${this.column?.redundant?.dependField}_init_val`]);
+    if ((!this.value || this.options.length === 0) && this.row?.__flag === 'add' && this.row[`_${this.column?.redundant?.dependField}_init_val`]) {
+      this.loadOptions(null, this.row[`_${this.column?.redundant?.dependField}_init_val`]);
     }
   },
   methods: {
@@ -189,6 +207,11 @@ export default {
       this.options = JSON.parse(JSON.stringify(this.tableData));
       this.dialogVisible = false;
       this.filterText = "";
+      if (this.$refs?.inputRef?.activated) {
+        this.$nextTick(() => {
+          this.$refs.inputRef.activated = false
+        })
+      }
     },
     getFkColumns() {
       const req = {
@@ -267,7 +290,6 @@ export default {
     },
     querySearch(queryString, callback) {
       // 关键词搜索
-      console.log(queryString);
       this.loadOptions(queryString).then(res => {
         callback(res)
       })
@@ -325,9 +347,9 @@ export default {
           }
         ]
       }
-      if(initValue){
+      if (initValue) {
         req.condition = [
-         ...req.condition,
+          ...req.condition,
           {
             colName: this.srvInfo.refed_col,
             ruleType: 'eq',
@@ -338,13 +360,40 @@ export default {
       if (srvInfo?.relation_condition) {
         req.relation_condition = srvInfo?.relation_condition
       }
-    
+
       const url = `/${appName}/select/${srvInfo?.serviceName}`
       const res = await $http.post(url, req)
       if (res.data.state === 'SUCCESS') {
         this.options = res.data.data
-        if(initValue&&this.options?.length){
+        if (initValue && this.options?.length) {
           this.$emit('select', cloneDeep(this.options[0]))
+        } else if (queryString && this.options?.length) {
+
+          // let matchedVal = this.options.filter(item => item[this.srvInfo.refed_col] === queryString)
+          // if (matchedVal?.length) {
+          //   this.$emit('select', cloneDeep(matchedVal[0]))
+          //   if (matchedVal?.length === 1) {
+          //     // 有唯一精确匹配结果
+          //     if (this.$refs?.inputRef) {
+          //       this.$nextTick(() => {
+          //         this.$refs.inputRef.activated = false
+          //       })
+          //     }
+          //   }
+          // } else {
+          //   let fuzzyMatchedVal = this.options.filter(item => item[this.srvInfo.refed_col]?.includes(queryString))
+          //   if (fuzzyMatchedVal?.length) {
+          //     if (fuzzyMatchedVal?.length === 1) {
+          //       // 有唯一模糊匹配结果
+          //       this.$emit('select', cloneDeep(fuzzyMatchedVal[0]))
+          //       if (this.$refs?.inputRef) {
+          //         this.$nextTick(() => {
+          //           this.$refs.inputRef.activated = false
+          //         })
+          //       }
+          //     }
+          //   }
+          // }
         }
         return res.data.data
       } else {
@@ -359,5 +408,13 @@ export default {
 <style lang="scss" >
 .el-autocomplete-suggestion.el-popper {
   min-width: 200px !important;
+}
+
+.autocomplete-box {
+  .el-input {
+    .el-input__inner {
+      padding-right: 0 !important;
+    }
+  }
 }
 </style>

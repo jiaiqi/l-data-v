@@ -5,11 +5,12 @@
       {{ modelValue }}
     </div>
     <div v-if="isTree" style="width: 100%;">
-      <el-popover placement="bottom-center" ref="treePopover" trigger="click" @show="onPopoverShow" >
+      <el-popover placement="bottom-center" ref="treePopover" trigger="click" @show="onPopoverShow">
         <span slot="reference" v-if="modelValue && !setDisabled" class="cursor-pointer">{{ modelLabel || modelValue || ''
         }}</span>
         <span slot="reference" class="text-gray cursor-pointer" v-else-if="!setDisabled">点击进行选择</span>
-        <el-input placeholder="输入关键字进行过滤" clearable v-model="filterText" @focus="onFocus"  @input="onFilterInput" @clear="onFilterClear" style="max-width: 300px;margin-bottom: 5px;">
+        <el-input placeholder="输入关键字进行过滤" clearable v-model="filterText" @focus="onFocus" @input="onFilterInput"
+          @clear="onFilterClear" style="max-width: 300px;margin-bottom: 5px;">
         </el-input>
         <el-cascader-panel :props="props" :is-border="false" :options="options" @change="onSelectChange" :emitPath="false"
           checkStrictly></el-cascader-panel>
@@ -138,7 +139,11 @@ export default {
               this.$refs?.treePopover?.doShow()
               // this.remoteMethod(newValue);
             } else {
-              this.$refs?.inputRef?.focus()
+              this.remoteMethod(newValue).then(res => {
+                if (res?.length > 1) {
+                  this.$refs?.inputRef?.focus()
+                }else{}
+              });
             }
           }
         }
@@ -422,33 +427,37 @@ export default {
         });
       }
       option.relation_condition = relation_condition;
-      getFkOptions(
-        { ...this.column, option_list_v2: option },
-        this.row,
-        this.app
-      ).then((res) => {
-        if (res?.data?.length) {
-          this.options = res.data.map((item) => {
-            item.label = item[option.key_disp_col];
-            item.value = item[option.refed_col];
-            item.leaf = item.is_leaf === '是'
-            return item;
-          });
-          this.allOptions.push(...this.options)
-          if (this.modelValue) {
-            let currentValue = this.options.find(item => item[option.refed_col] === this.modelValue);
-            if (currentValue) {
-              this.$emit('select', {
-                value: this.modelValue,
-                rawData: currentValue
-              })
+      return new Promise((resolve) => {
+        getFkOptions(
+          { ...this.column, option_list_v2: option },
+          this.row,
+          this.app
+        ).then((res) => {
+          if (res?.data?.length) {
+            this.options = res.data.map((item) => {
+              item.label = item[option.key_disp_col];
+              item.value = item[option.refed_col];
+              item.leaf = item.is_leaf === '是'
+              return item;
+            });
+            this.allOptions.push(...this.options)
+            if (this.modelValue) {
+              let currentValue = this.options.find(item => item[option.refed_col] === this.modelValue);
+              if (currentValue) {
+                this.$emit('select', {
+                  value: this.modelValue,
+                  rawData: currentValue
+                })
+              }
             }
+            resolve(this.options)
+          } else {
+            this.options = [];
           }
-        } else {
-          this.options = [];
-        }
-        this.loading = false;
+          this.loading = false;
+        });
       });
+
     },
   },
 };
