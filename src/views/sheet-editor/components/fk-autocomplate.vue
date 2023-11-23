@@ -12,9 +12,9 @@
           checkStrictly></el-cascader-panel>
       </el-popover>
     </div>
-    <el-autocomplete clearable ref="inputRef" @focus="onFocus" class="inline-input" v-model="modelValue" :value-key="redundant.refedCol"
-      :fetch-suggestions="querySearch" @clear="onFilterClear" placeholder="请输入" @select="handleSelect" @click.native=""
-      v-else-if="!setDisabled">
+    <el-autocomplete clearable ref="inputRef" @focus="onFocus" class="inline-input" v-model="modelValue"
+      :value-key="redundant.refedCol" :fetch-suggestions="querySearch" @clear="onFilterClear" placeholder="请输入"
+      @select="handleSelect" @click.native="" v-else-if="!setDisabled">
     </el-autocomplete>
     <span v-else>{{ modelValue }}</span>
     <i class="el-icon-arrow-right cursor-pointer  text-#C0C4CC" :class="{ 'cursor-not-allowed': setDisabled }"
@@ -98,6 +98,7 @@ export default {
       type: String,
       default: '请选择'
     },
+    defaultConditionsMap: Object
   },
   computed: {
     srvApp() {
@@ -168,7 +169,7 @@ export default {
     },
   },
   created() {
-    if ((!this.value || this.options.length === 0) && this.row?.__flag === 'add' && this.row[`_${this.column?.redundant?.dependField}_init_val`]) {
+    if (!this.defaultConditionsMap?.[this.column.columns] && (!this.value || this.options.length === 0) && this.row?.__flag === 'add' && this.row[`_${this.column?.redundant?.dependField}_init_val`]) {
       this.loadOptions(null, this.row[`_${this.column?.redundant?.dependField}_init_val`]);
     }
   },
@@ -567,13 +568,16 @@ export default {
 .el-autocomplete-suggestion.el-popper {
   min-width: 200px !important;
 }
-.text-gray{
+
+.text-gray {
   font-size: 12px;
 
 }
+
 .table-body-cell__add {
   .autocomplete-box {}
-  .text-gray{
+
+  .text-gray {
     color: #fff;
   }
 }
@@ -587,11 +591,11 @@ export default {
     .el-input__inner {
       padding-right: 0 !important;
     }
+
     .el-input__inner::placeholder {
-      color: #fff!important;
+      color: #fff !important;
       font-size: 12px;
     }
   }
- 
-}
-</style>
+
+}</style>

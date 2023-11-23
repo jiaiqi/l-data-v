@@ -36,7 +36,7 @@ export default {
   },
   computed: {
     currentText() {
-      if(this.optionInfo.key_disp_col&&this.currentRow?.[this.optionInfo.key_disp_col]){
+      if(this.optionInfo?.key_disp_col&&this.currentRow?.[this.optionInfo.key_disp_col]){
         return this.currentRow?.[this.optionInfo.key_disp_col]
       }
     }

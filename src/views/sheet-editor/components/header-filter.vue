@@ -533,7 +533,22 @@ export default {
           }
           this.onFilter = (this.min || this.max) && true;
           break;
-        case "字符串":
+
+        case "外键":
+          if (this.modelValue?.length) {
+            val.condition = [
+              {
+                colName: this.column.columns,
+                ruleType: "in",
+                value: this.modelValue.toString(),
+              },
+            ];
+            this.onFilter = true;
+          } else {
+            this.onFilter = false;
+          }
+          break;
+        default:
           if (this.strList?.length) {
             val.condition = [
               {
@@ -550,20 +565,6 @@ export default {
                 colName: this.column.columns,
                 ruleType: "like",
                 value: this.modelValue,
-              },
-            ];
-            this.onFilter = true;
-          } else {
-            this.onFilter = false;
-          }
-          break;
-        case "外键":
-          if (this.modelValue?.length) {
-            val.condition = [
-              {
-                colName: this.column.columns,
-                ruleType: "in",
-                value: this.modelValue.toString(),
               },
             ];
             this.onFilter = true;

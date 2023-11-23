@@ -1,7 +1,7 @@
 import { getFkOptions } from "@/service/api";
 
 // 组装srvCols数据
-const buildSrvCols = (cols, updateColsMap, addColsMap) => {
+const buildSrvCols = (cols, updateColsMap = {}, addColsMap = {}) => {
   if (Array.isArray(cols) && cols.length > 0) {
     // cols = cols.filter(item => item.in_add == 1 || item.in_update == 1)
     // cols = cols.filter((item) => item.in_list === 1);
@@ -11,8 +11,8 @@ const buildSrvCols = (cols, updateColsMap, addColsMap) => {
       if (cur?.option_list_v2?.serviceName) {
         // fk优先使用add服务的option_list_v2
         const optionListV2 =
-          addColsMap[cur.columns]?.option_list_v2 ||
-          updateColsMap[cur.columns]?.option_list_v2 ||
+          addColsMap?.[cur.columns]?.option_list_v2 ||
+          updateColsMap?.[cur.columns]?.option_list_v2 ||
           cur.option_list_v2 ||
           {};
         res[cur.columns] = {

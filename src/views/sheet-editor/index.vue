@@ -468,7 +468,7 @@ export default {
           }
           if (column?.__field_info?.redundant_options?._target_column) {
             // 处理autocomplete对应的fk字段
-            console.log('changeValue:', changeValue);
+            console.log('changeValue:', changeValue,column.field);
               const col = column?.__field_info?.redundant_options?._target_column;
 
             if (!changeValue) {
@@ -1321,6 +1321,7 @@ export default {
                           row?.__button_auth?.edit === false),
                       app: this.srvApp,
                       value: row[column.field],
+                      defaultConditionsMap:this.defaultConditionsMap,
                     },
                     on: {
                       onfocus: () => {
