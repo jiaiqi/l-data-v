@@ -4,7 +4,7 @@
       <el-popover placement="bottom-center" ref="treePopover" trigger="click" @show="onPopoverShow">
         <span slot="reference" v-if="modelValue && !setDisabled" class="cursor-pointer">{{ modelLabel || modelValue || ''
         }}</span>
-        <span slot="reference" class="text-gray cursor-pointer" v-else-if="!setDisabled">点击进行选择</span>
+        <span slot="reference" class="text-gray cursor-pointer" v-else-if="!setDisabled">请选择</span>
         <el-input placeholder="输入关键字进行过滤" clearable v-model="modelValue" @focus="onFocus" @input="onFilterInput"
           @clear="onFilterClear" style="max-width: 300px;margin-bottom: 5px;">
         </el-input>
@@ -13,7 +13,7 @@
       </el-popover>
     </div>
     <el-autocomplete clearable ref="inputRef" @focus="onFocus" class="inline-input" v-model="modelValue" :value-key="redundant.refedCol"
-      :fetch-suggestions="querySearch" @clear="onFilterClear" placeholder="请输入内容" @select="handleSelect" @click.native=""
+      :fetch-suggestions="querySearch" @clear="onFilterClear" placeholder="请输入" @select="handleSelect" @click.native=""
       v-else-if="!setDisabled">
     </el-autocomplete>
     <span v-else>{{ modelValue }}</span>
@@ -567,11 +567,14 @@ export default {
 .el-autocomplete-suggestion.el-popper {
   min-width: 200px !important;
 }
+.text-gray{
+  font-size: 12px;
 
+}
 .table-body-cell__add {
   .autocomplete-box {}
   .text-gray{
-    color: #eee;
+    color: #fff;
   }
 }
 
@@ -584,6 +587,11 @@ export default {
     .el-input__inner {
       padding-right: 0 !important;
     }
+    .el-input__inner::placeholder {
+      color: #fff!important;
+      font-size: 12px;
+    }
   }
+ 
 }
 </style>

@@ -2486,9 +2486,10 @@ export default {
     }
 
     .el-input__inner::placeholder {
-      color: #eee;
+      color: #fff;
     }
   }
+
 
   .el-icon-arrow-right {
     color: #eee;
@@ -2545,7 +2546,7 @@ export default {
     }
 
     .el-input__inner::placeholder {
-      color: #eee;
+      color: #ccc;
     }
 
   }
