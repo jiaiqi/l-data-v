@@ -1323,6 +1323,9 @@ export default {
                       value: row[column.field],
                     },
                     on: {
+                      onfocus: () => {
+                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                      },
                       input: (event) => {
                         row[column.field] = event;
                         this.$set(this.tableData, rowIndex, row);
@@ -1340,7 +1343,8 @@ export default {
                         if (fkColumn) {
                           const fkColumnInfo = this.setAllFields.find(item => item.columns === fkColumn)
                           if (fkColumnInfo) {
-                            row[fkColumn] = rawData[setColumn.redundant_options.refed_col];
+                            let data = rawData||{}
+                            row[fkColumn] = data[setColumn.redundant_options.refed_col];
                             row[`_${fkColumn}_data`] = rawData
                             this.$set(this.tableData, rowIndex, row);
                             if (this.allFields.find(e => e.columns === fkColumn)) {
@@ -1353,7 +1357,7 @@ export default {
                               this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                             }
 
-                            this.handlerRedundant(rawData, fkColumn, row.rowKey, rowIndex);
+                            this.handlerRedundant(data, fkColumn, row.rowKey, rowIndex);
                           }
                         }
                       }
@@ -2478,16 +2482,16 @@ export default {
 
   .el-select .el-input {
     .el-select__caret {
-      color: #fff;
+      color: #eee;
     }
 
     .el-input__inner::placeholder {
-      color: #fff;
+      color: #eee;
     }
   }
 
   .el-icon-arrow-right {
-    color: #fff;
+    color: #eee;
   }
 }
 
@@ -2533,15 +2537,15 @@ export default {
     }
 
     .el-icon-arrow-right {
-      color: #fff;
+      color: #eee;
     }
 
     .el-select__caret {
-      color: #fff;
+      color: #eee;
     }
 
     .el-input__inner::placeholder {
-      color: #fff;
+      color: #eee;
     }
 
   }
@@ -2553,8 +2557,5 @@ export default {
   min-height: 60px;
 }
 
-.custom-contextmenu {
-  position: fixed;
-  background-color: #fff;
-}
+
 </style>

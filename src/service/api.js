@@ -92,7 +92,7 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     const res = await http.post(url, req);
     if (res?.data?.state === "SUCCESS") {
       return res.data;
-    }else{
+    } else {
       return res.data;
     }
   }
@@ -265,6 +265,9 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
     });
   }
   req.condition = conditions;
+  if (option_list_v2?.is_tree === true) {
+    req.rdt = "ttd";
+  }
   if (option_list_v2.serviceName) {
     let url = `${app}/select/${option_list_v2.serviceName}`;
     let res = await http.post(url, req);

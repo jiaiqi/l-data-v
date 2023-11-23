@@ -1,11 +1,24 @@
 <template>
   <div @dblclick.stop="" class="flex items-center autocomplete-box">
-    <el-autocomplete ref="inputRef" class="inline-input" v-model="modelValue" :value-key="redundant.refedCol"
-      :fetch-suggestions="querySearch" placeholder="请输入内容" @select="handleSelect" @click.native="" v-if="!disabled">
+    <div v-if="isTree && !setDisabled" style="width: 100%;">
+      <el-popover placement="bottom-center" ref="treePopover" trigger="click" @show="onPopoverShow">
+        <span slot="reference" v-if="modelValue && !setDisabled" class="cursor-pointer">{{ modelLabel || modelValue || ''
+        }}</span>
+        <span slot="reference" class="text-gray cursor-pointer" v-else-if="!setDisabled">点击进行选择</span>
+        <el-input placeholder="输入关键字进行过滤" clearable v-model="modelValue" @focus="onFocus" @input="onFilterInput"
+          @clear="onFilterClear" style="max-width: 300px;margin-bottom: 5px;">
+        </el-input>
+        <el-cascader-panel :props="props" :is-border="false" :options="options" @change="onSelectChange" :emitPath="false"
+          checkStrictly></el-cascader-panel>
+      </el-popover>
+    </div>
+    <el-autocomplete clearable ref="inputRef" @focus="onFocus" class="inline-input" v-model="modelValue" :value-key="redundant.refedCol"
+      :fetch-suggestions="querySearch" @clear="onFilterClear" placeholder="请输入内容" @select="handleSelect" @click.native=""
+      v-else-if="!setDisabled">
     </el-autocomplete>
     <span v-else>{{ modelValue }}</span>
-    <i class="el-icon-arrow-right cursor-pointer  p-l-2 text-#C0C4CC" :class="{ 'cursor-not-allowed': setDisabled }"
-      @click="openDialog" v-if="!disabled"></i>
+    <i class="el-icon-arrow-right cursor-pointer  text-#C0C4CC" :class="{ 'cursor-not-allowed': setDisabled }"
+      @click="openDialog" v-if="!setDisabled"></i>
 
     <el-dialog title="选择" :visible.sync="dialogVisible" width="80%" append-to-body v-loading="tableloading">
       <div @click.stop="">
@@ -37,6 +50,7 @@ import { getFkOptions, onSelect } from "../../../service/api";
 export default {
   data() {
     return {
+      allOptions: [],
       options: [],
       dialogVisible: false,
       tableColumns: [],
@@ -46,7 +60,20 @@ export default {
       total: 0,
       tableloading: false,
       filterText: "",
-      modelValue: ""
+      modelValue: "",
+      props: {
+        emitPath: false,
+        checkStrictly: true,
+        value: "value",
+        label: "label",
+        lazy: true,
+        leaf: 'leaf',
+        lazyLoad: (node, resolve) => {
+          this.loadTree(node).then((res) => {
+            resolve(res);
+          });
+        },
+      },
     }
   },
   props: {
@@ -73,6 +100,22 @@ export default {
     },
   },
   computed: {
+    srvApp() {
+      return this.srvInfo?.srv_app || this.app;
+    },
+    currentModel() {
+      if (this.modelValue) {
+        return this.allOptions.find(item => item.value === this.modelValue);
+      }
+    },
+    modelLabel() {
+      if (this.currentModel) {
+        return this.currentModel.label;
+      }
+    },
+    isTree() {
+      return this.srvInfo?.is_tree && this.srvInfo?.parent_col ? true : false;
+    },
     setDisabled() {
       if (
         this.row?.__flag !== "add" &&
@@ -88,15 +131,7 @@ export default {
     srvInfo() {
       return this.column?.redundant_options
     },
-    // modelValue: {
-    //   get() {
-    //     return this.value
-    //   },
-    //   set(val) {
-    //     // let data = this.options.find(item => item.value == val)
-    //     // this.$emit('input', val, data)
-    //   }
-    // }
+
   },
   watch: {
     value: {
@@ -138,6 +173,132 @@ export default {
     }
   },
   methods: {
+    onFocus() {
+      console.log("onfocus");
+      this.$emit("onfocus");
+    },
+    onFilterClear() {
+      this.modelValue = ''
+      this.$emit('input', '')
+      this.$emit('select', null)
+      this.remoteMethod()
+    },
+    onFilterInput(value) {
+      // this.$emit('input',value)
+      this.modelValue = value
+      this.remoteMethod(value)
+    },
+    onPopoverShow() {
+      // this.onFocus()
+      this.modelValue = this.value
+      this.remoteMethod(this.modelValue)
+    },
+    async loadTree(node) {
+      if (node?.value) {
+        const option = this.srvInfo;
+        const condition = [
+          {
+            colName: this.srvInfo.parent_col,
+            ruleType: "eq",
+            value: node.value,
+          },
+        ];
+        const res = await onSelect(
+          this.srvInfo.serviceName,
+          this.srvApp,
+          condition,
+          {
+            rownumber: 100,
+            pageNo: 1,
+          }
+        );
+        if (res?.data) {
+          const result = res.data.map((item) => {
+            item.label = item[option.key_disp_col];
+            item.value = item[option.refed_col];
+            item.leaf = item.is_leaf === '是'
+            return item;
+          });
+          this.allOptions.push(...result)
+          return result
+        } else return [];
+      }
+    },
+    remoteMethod(query) {
+      let queryString = this.modelValue;
+      if (query && typeof query === "string") {
+        queryString = query;
+      }
+      //   if (query !== "") {
+      if (!this.options?.length) {
+        this.loading = true;
+        setTimeout(() => {
+          this.loading = false;
+        }, 5000);
+      }
+      let option = JSON.parse(JSON.stringify(this.srvInfo));
+      let relation_condition = {
+        relation: "OR",
+        data: [],
+      };
+      if (!option.key_disp_col && !option.refed_col) {
+        return;
+      }
+      if (option.key_disp_col && queryString) {
+        relation_condition.data.push({
+          colName: option.key_disp_col,
+          value: queryString,
+          ruleType: "[like]",
+        });
+      }
+      if (option.refed_col && queryString) {
+        relation_condition.data.push({
+          colName: option.refed_col,
+          value: queryString,
+          ruleType: "[like]",
+        });
+      }
+      option.relation_condition = relation_condition;
+      return new Promise((resolve) => {
+        getFkOptions(
+          { ...this.column, option_list_v2: option },
+          this.row,
+          this.app
+        ).then((res) => {
+          if (res?.data?.length) {
+            this.options = res.data.map((item) => {
+              item.label = item[option.key_disp_col];
+              item.value = item[option.refed_col];
+              item.leaf = item.is_leaf === '是'
+              return item;
+            });
+            this.allOptions.push(...this.options)
+            // if (this.modelValue) {
+            //   let currentValue = this.options.find(item => item[option.refed_col] === this.modelValue);
+            //   if (currentValue) {
+            //     this.$emit('select', currentValue)
+            //   }
+            // }
+            resolve(this.options)
+          } else {
+            this.options = [];
+          }
+          this.loading = false;
+        });
+      });
+    },
+    onSelectChange(val) {
+      if (Array.isArray(val) && val?.length) {
+        val = val[0]
+      }
+      this.$refs?.treePopover?.doClose()
+      let currentValue = this.allOptions.find(item => item[this.srvInfo.refed_col] === val);
+      if (currentValue) {
+        this.$emit('select', currentValue)
+        this.modelValue = currentValue.label;
+      }
+      this.$emit("input", this.modelValue);
+    },
     toFilter(query) {
       this.pageNo = 1;
       this.total = 0;
@@ -248,11 +409,8 @@ export default {
         this.tableloading = false;
       }, 5000);
       const srvInfo = JSON.parse(JSON.stringify(this.srvInfo));
-      if (this.filterText) {
-        srvInfo;
-      }
       getFkOptions(
-        { ...this.column, option_list_v2: this.srvInfo },
+        { ...this.column, option_list_v2: srvInfo },
         this.row,
         this.app,
         this.pageNo,
@@ -410,7 +568,18 @@ export default {
   min-width: 200px !important;
 }
 
+.table-body-cell__add {
+  .autocomplete-box {}
+  .text-gray{
+    color: #eee;
+  }
+}
+
 .autocomplete-box {
+  .el-cascader-node .el-icon-arrow-right {
+    color: #ccc;
+  }
+
   .el-input {
     .el-input__inner {
       padding-right: 0 !important;

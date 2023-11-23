@@ -9,8 +9,14 @@ const buildSrvCols = (cols, updateColsMap, addColsMap) => {
     // 冗余字段auto complete特性
     const fkCols = cols.reduce((res, cur) => {
       if (cur?.option_list_v2?.serviceName) {
+        // fk优先使用add服务的option_list_v2
+        const optionListV2 =
+          addColsMap[cur.columns]?.option_list_v2 ||
+          updateColsMap[cur.columns]?.option_list_v2 ||
+          cur.option_list_v2 ||
+          {};
         res[cur.columns] = {
-          ...cur.option_list_v2,
+          ...optionListV2,
           _target_column: cur.columns,
           init_expr: cur.init_expr,
           // redundant:cur.redundant||updateColsMap?.[cur.columns]?.redundant||addColsMap?.[cur.columns]?.redundant,
@@ -18,7 +24,6 @@ const buildSrvCols = (cols, updateColsMap, addColsMap) => {
       }
       return res;
     }, {});
-
     for (let index = 0; index < cols.length; index++) {
       const col = cols[index];
       // if (updateColsMap?.[col.columns]?.updatable) {
@@ -39,7 +44,7 @@ const buildSrvCols = (cols, updateColsMap, addColsMap) => {
         col?.validators?.includes("required") ||
         updateColsMap?.[col.columns]?.validators?.includes("required") ||
         addColsMap?.[col.columns]?.validators?.includes("required");
-   
+
       const dependField =
         col.redundant?.dependField ||
         updateColsMap?.[col.columns]?.redundant?.dependField ||

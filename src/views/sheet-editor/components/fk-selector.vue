@@ -95,12 +95,6 @@ export default {
     };
   },
   computed: {
-    setoptions() {
-      // 根据搜索值动态得到匹配的选项
-      return this.options?.filter(item => {
-        return item?.label?.indexOf(this.filterText) > -1;
-      });
-    },
     currentModel() {
       if (this.modelValue) {
         return this.allOptions.find(item => item.value === this.modelValue);
@@ -295,7 +289,7 @@ export default {
       }
       this.$refs?.treePopover?.doClose()
       this.modelValue = val;
-      let currentValue = this.options.find(item => item[this.srvInfo.refed_col] === this.modelValue);
+      let currentValue = this.allOptions.find(item => item[this.srvInfo.refed_col] === this.modelValue);
       if (currentValue) {
         this.$emit('select', {
           value: this.modelValue,
@@ -457,7 +451,6 @@ export default {
           this.loading = false;
         });
       });
-
     },
   },
 };
