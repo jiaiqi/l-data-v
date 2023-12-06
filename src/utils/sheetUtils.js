@@ -44,7 +44,12 @@ const buildSrvCols = (cols, updateColsMap = {}, addColsMap = {}) => {
         col?.validators?.includes("required") ||
         updateColsMap?.[col.columns]?.validators?.includes("required") ||
         addColsMap?.[col.columns]?.validators?.includes("required");
-
+      if (!col.redundant) {
+        col.redundant =
+          addColsMap[col.columns]?.redundant ||
+          updateColsMap[col.columns]?.redundant ||
+          null;
+      }
       const dependField =
         col.redundant?.dependField ||
         updateColsMap?.[col.columns]?.redundant?.dependField ||

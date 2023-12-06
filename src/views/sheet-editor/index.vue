@@ -1340,6 +1340,7 @@ export default {
                       },
                       select: (rawData) => {
                         // 对应的fk字段
+
                         const fkColumn = setColumn.redundant_options._target_column
                         if (fkColumn) {
                           const fkColumnInfo = this.setAllFields.find(item => item.columns === fkColumn)
@@ -1650,7 +1651,14 @@ export default {
     handlerRedundant(rawData = {}, fkColumn, rowKey, rowIndex) {
       // 处理冗余
       const row = this.tableData[rowIndex];
-      let columns = this.setAllFields.filter(item => fkColumn && item?.redundant?.dependField === fkColumn && item.redundant.refedCol)
+      let columns = this.setAllFields.filter(item => {
+        if(fkColumn){
+          let redundant = item?.redundant||this.addColsMap[item.columns]?.redundant||this.updateColsMap[item.columns]?.redundant||{}
+          if(redundant?.dependField === fkColumn&&redundant.refedCol){
+            return true
+          }
+        }
+      })
       if (columns?.length) {
         columns.forEach(item => {
           row[item.columns] = rawData[item.redundant.refedCol] || null

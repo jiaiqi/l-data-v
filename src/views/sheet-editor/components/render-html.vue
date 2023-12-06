@@ -188,6 +188,8 @@ export default {
         if (res.fileurl) {
           const url = `${window.backendIpAddr}/file/download?filePath=${res.fileurl}`;
           insertFn(url);
+        }else{
+          debugger
         }
       },
     };
