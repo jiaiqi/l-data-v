@@ -1,102 +1,39 @@
 <template>
-  <div
-    class="render-html"
-    :class="{ 'is-rich-text': useEditor }"
-    :style="setStyle"
-    v-loading="loadingFold"
-    @dblclick="showRichEditor"
-  >
+  <div class="render-html" :class="{ 'is-rich-text': useEditor }" :style="setStyle" v-loading="loadingFold"
+    @dblclick="showRichEditor">
     <div class="flex">
-      <div
-        class="prefix-icon"
-        v-if="showUnfold && column.isFirstCol"
-        @click="changeFold"
-      >
+      <div class="prefix-icon" v-if="showUnfold && column.isFirstCol" @click="changeFold">
         <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
         <div class="unfold-icon el-icon-plus" v-else></div>
       </div>
-      <div
-        class="prefix-icon cursor-initial"
-        v-else-if="column.isFirstCol"
-      ></div>
-      <div
-        v-html="html"
-        style="min-height:30px"
-        v-if="useEditor && html"
-      ></div>
-      <div style="min-height:30px" v-else-if="![null,undefined,''].includes(html)">{{ html }}</div>
-      <div
-        class="old-value"
-        v-else-if="[null,undefined,''].includes(html) && oldValue"
-        v-html="oldValue"
-      ></div>
+      <div class="prefix-icon cursor-initial" v-else-if="column.isFirstCol"></div>
+      <div v-html="html" style="min-height:30px" v-if="useEditor && html"></div>
+      <div style="min-height:30px" v-else-if="![null, undefined, ''].includes(html)">{{ html }}</div>
+      <div class="old-value" v-else-if="[null, undefined, ''].includes(html) && oldValue" v-html="oldValue"></div>
     </div>
-    <el-button
-      size="mini"
-      class="edit-btn"
-      circle
-      @click.stop="showRichEditor"
-      v-if="useEditor"
-      ><i class="el-icon-edit"></i
-    ></el-button>
-    <el-button
-      size="mini"
-      class="edit-btn"
-      circle
-      @click.stop="showTextarea"
-      v-if="'MultilineText' === column.col_type"
-      ><i class="el-icon-edit"></i
-    ></el-button>
+    <el-button size="mini" class="edit-btn" circle @click.stop="showRichEditor" v-if="useEditor"><i
+        class="el-icon-edit"></i></el-button>
+    <el-button size="mini" class="edit-btn" circle @click.stop="showTextarea"
+      v-if="'MultilineText' === column.col_type"><i class="el-icon-edit"></i></el-button>
 
-    <el-dialog
-      :title="editable ? '编辑' : '详情'"
-      :visible.sync="dialogTableVisible"
-      :close-on-press-escape="false"
-      :close-on-click-modal="false"
-      :destroy-on-close="true"
-      append-to-body
-      width="80vw"
-      custom-class="editor-dialog"
-    >
-      <Toolbar
-        style="border-bottom: 1px solid #ccc"
-        :editor="editor"
-        :defaultConfig="toolbarConfig"
-        :mode="mode"
-        v-if="editable && useEditor"
-      />
-      <Editor
-        v-if="useEditor"
-        v-model="innerHtml"
-        style="height: 500px; overflow-y: hidden; border-bottom: 1px solid #ccc"
-        :defaultConfig="editorConfig"
-        :disabled="!editable"
-        :mode="mode"
-        @click.stop
-        @onCreated="onCreated"
-        @customPaste="customPaste"
-      />
-      <el-input
-        type="textarea"
-        :rows="10"
-        :disabled="!editable"
-        placeholder="请输入内容"
-        v-model="innerHtml"
-        v-else
-      >
+    <el-dialog :title="editable ? '编辑' : '详情'" :visible.sync="dialogTableVisible" :close-on-press-escape="false"
+      :close-on-click-modal="false" :destroy-on-close="true" append-to-body width="80vw" custom-class="editor-dialog"
+      :key="ticket">
+      <Toolbar style="border-bottom: 1px solid #ccc" :editor="editor" :defaultConfig="toolbarConfig" :mode="mode"
+        v-if="editable && useEditor" :key="ticket" />
+      <Editor v-if="useEditor" v-model="innerHtml"
+        style="height: 500px; overflow-y: hidden; border-bottom: 1px solid #ccc" :defaultConfig="editorConfig"
+        :disabled="!editable" :mode="mode" @click.stop @onCreated="onCreated" @customPaste="customPaste" :key="ticket" />
+      <el-input type="textarea" :rows="10" :disabled="!editable" placeholder="请输入内容" v-model="innerHtml" v-else>
       </el-input>
       <div class="text-orange text-center" v-if="!editable">
         当前字段不可编辑
       </div>
       <div class="text-center m-t-5" v-if="editable">
-        <el-button
-          type="primary"
-          @click="
-            $emit('change', innerHtml);
-            dialogTableVisible = false;
-          "
-          >确认</el-button
-        >
+        <el-button type="primary" @click="
+          $emit('change', innerHtml);
+        dialogTableVisible = false;
+        ">确认</el-button>
       </div>
     </el-dialog>
   </div>
@@ -118,15 +55,18 @@ export default {
     listType: String,
     app: String,
   },
-  watch:{
-    row:{
-      deep:true,
-      immediate:true,
-      handler(newVal){
-        this.unfold = newVal?.__unfold?true:false
+  watch: {
+    row: {
+      deep: true,
+      immediate: true,
+      handler(newVal) {
+        this.unfold = newVal?.__unfold ? true : false
         this.loadingFold = false
       }
     }
+  },
+  created() {
+    this.ticket = sessionStorage.getItem('bx_auth_ticket')
   },
   computed: {
     colType() {
@@ -149,60 +89,71 @@ export default {
       // 显示展开收起图标
       return this.listType === "treelist" && this.row?.is_leaf === "否";
     },
-  },
-  data() {
-    const uploadConfig = {
-      server:
-        window.backendIpAddr +
-        "/file/upload?bx_auth_ticket=" +
-        sessionStorage.bx_auth_ticket,
-      // form-data fieldName ，默认值 'wangeditor-uploaded-image'
-      fieldName: "file",
-      // 单个文件的最大体积限制，默认为 2M
-      maxFileSize: 10 * 1024 * 1024, // 10M
-      // 最多可上传几个文件，默认为 100
-      maxNumberOfFiles: 1,
-      // 选择文件时的类型限制，默认为 ['image/*'] 。如不想限制，则设置为 []
-      // allowedFileTypes: ["image/*"],
-      // 自定义上传参数，例如传递验证的 token 等。参数会被添加到 formData 中，一起上传到服务端。
-      meta: {
-        serviceName: "srv_bxfile_service",
-        interfaceName: "add",
-        app_no:
-          top?.pathConfig?.application ||
-          sessionStorage.getItem("current_app") ||
-          "oa",
-      },
-      // 自定义增加 http  header
-      headers: {
-        bx_auth_ticket: sessionStorage.getItem("bx_auth_ticket"),
-      },
-      // 跨域是否传递 cookie ，默认为 false
-      withCredentials: true,
-      // 超时时间，默认为 10 秒
-      timeout: 100 * 1000, //100 秒
-      customInsert(res, insertFn) {
-        // JS 语法
-        // res 即服务端的返回结果
-        // 从 res 中找到 url alt href ，然后插入图片
-        if (res.fileurl) {
-          const url = `${window.backendIpAddr}/file/download?filePath=${res.fileurl}`;
-          insertFn(url);
-        }else{
-          debugger
-        }
-      },
-    };
-    return {
-      dialogTableVisible: false,
-      editorConfig: {
+    editorConfig() {
+      return {
         placeholder: "",
         readOnly: !this.editable,
         MENU_CONF: {
-          uploadImage: uploadConfig,
-          uploadVideo: uploadConfig,
+          uploadImage: this.uploadConfig,
+          uploadVideo: this.uploadConfig,
         },
-      },
+      }
+    },
+    uploadConfig() {
+      const self = this
+      return {
+        server:
+          window.backendIpAddr +
+          "/file/upload?bx_auth_ticket=" + this.ticket,
+        // form-data fieldName ，默认值 'wangeditor-uploaded-image'
+        fieldName: "file",
+        // 单个文件的最大体积限制，默认为 2M
+        maxFileSize: 10 * 1024 * 1024, // 10M
+        // 最多可上传几个文件，默认为 100
+        maxNumberOfFiles: 1,
+        // 选择文件时的类型限制，默认为 ['image/*'] 。如不想限制，则设置为 []
+        // allowedFileTypes: ["image/*"],
+        // 自定义上传参数，例如传递验证的 token 等。参数会被添加到 formData 中，一起上传到服务端。
+        meta: {
+          serviceName: "srv_bxfile_service",
+          interfaceName: "add",
+          app_no:
+            top?.pathConfig?.application ||
+            sessionStorage.getItem("current_app") ||
+            "oa",
+        },
+        // 自定义增加 http  header
+        headers: {
+          bx_auth_ticket: this.ticket,
+        },
+        // 跨域是否传递 cookie ，默认为 false
+        withCredentials: true,
+        // 超时时间，默认为 10 秒
+        timeout: 100 * 1000, //100 秒
+        customInsert(res, insertFn) {
+          // JS 语法
+          // res 即服务端的返回结果
+          // 从 res 中找到 url alt href ，然后插入图片
+          if (res.fileurl) {
+            const url = `${window.backendIpAddr}/file/download?filePath=${res.fileurl}`;
+            insertFn(url);
+          } else {
+            if (res?.resultCode === '0011') {
+              //登录超时
+              self.$message.error(res.resultMessage);
+              self.$emit('needLogin', () => {
+                self.ticket = sessionStorage.getItem('bx_auth_ticket')
+              })
+            }
+          }
+        },
+      }
+    }
+  },
+  data() {
+    return {
+      dialogTableVisible: false,
+      ticket: null,
       toolbarConfig: {},
       editor: null,
 
@@ -221,12 +172,14 @@ export default {
       });
     },
     showTextarea() {
+      this.ticket = sessionStorage.getItem("bx_auth_ticket");
       this.dialogTableVisible = true;
       this.innerHtml = this.html;
       this.$emit("onfocus");
     },
     showRichEditor(event) {
       if (this.useEditor) {
+        this.ticket = sessionStorage.getItem("bx_auth_ticket");
         this.dialogTableVisible = true;
         this.innerHtml = this.html;
         this.$nextTick(() => {
@@ -273,10 +226,12 @@ export default {
 .prefix-icon {
   width: 20px;
   cursor: pointer;
+
   &.cursor-initial {
     cursor: initial;
   }
 }
+
 .render-html {
   margin-left: var(--row_indent);
   // min-height: 40px;
@@ -284,10 +239,12 @@ export default {
   --w-e-textarea-bg-color: transparent;
   max-height: 200px;
   position: relative;
+
   .old-value {
     text-decoration: line-through;
     color: #f00;
   }
+
   // overflow-y: auto;
   .is-rich-text {
     overflow: hidden;
@@ -296,6 +253,7 @@ export default {
     -webkit-line-clamp: 10;
     -webkit-box-orient: vertical;
   }
+
   .detail-btn {
     position: absolute;
     top: 0;
@@ -303,17 +261,20 @@ export default {
     display: none;
     z-index: 9999;
   }
+
   &:hover {
     .detail-btn {
       display: block;
     }
   }
+
   &:hover {
     .edit-btn {
       display: block;
     }
   }
 }
+
 .edit-btn {
   position: absolute;
   top: 0;
@@ -321,6 +282,7 @@ export default {
   display: none;
   z-index: 9999;
 }
+
 .editor-dialog {
   z-index: 999;
 }

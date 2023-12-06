@@ -468,8 +468,8 @@ export default {
           }
           if (column?.__field_info?.redundant_options?._target_column) {
             // 处理autocomplete对应的fk字段
-            console.log('changeValue:', changeValue,column.field);
-              const col = column?.__field_info?.redundant_options?._target_column;
+            console.log('changeValue:', changeValue, column.field);
+            const col = column?.__field_info?.redundant_options?._target_column;
 
             if (!changeValue) {
               // 清空值后，对应fk字段的值也要清空
@@ -486,7 +486,7 @@ export default {
                 // this.$refs["tableRef"].stopEditingCell();
                 this.handlerRedundant({}, col, row.rowKey, rowIndex);
               }
-            }else{
+            } else {
               // this.handlerRedundant({}, col, row.rowKey, rowIndex);
 
             }
@@ -1321,7 +1321,7 @@ export default {
                           row?.__button_auth?.edit === false),
                       app: this.srvApp,
                       value: row[column.field],
-                      defaultConditionsMap:this.defaultConditionsMap,
+                      defaultConditionsMap: this.defaultConditionsMap,
                     },
                     on: {
                       onfocus: () => {
@@ -1345,7 +1345,7 @@ export default {
                         if (fkColumn) {
                           const fkColumnInfo = this.setAllFields.find(item => item.columns === fkColumn)
                           if (fkColumnInfo) {
-                            let data = rawData||{}
+                            let data = rawData || {}
                             row[fkColumn] = data[setColumn.redundant_options.refed_col];
                             row[`_${fkColumn}_data`] = rawData
                             this.$set(this.tableData, rowIndex, row);
@@ -1606,6 +1606,11 @@ export default {
                       app: this.srvApp,
                     },
                     on: {
+                      needLogin: (callback) => {
+                        this.$refs?.loginRef?.open(() => {
+                          callback?.(true)
+                        })
+                      },
                       onfocus: () => {
                         this.$refs[
                           "tableRef"
@@ -1652,9 +1657,9 @@ export default {
       // 处理冗余
       const row = this.tableData[rowIndex];
       let columns = this.setAllFields.filter(item => {
-        if(fkColumn){
-          let redundant = item?.redundant||this.addColsMap[item.columns]?.redundant||this.updateColsMap[item.columns]?.redundant||{}
-          if(redundant?.dependField === fkColumn&&redundant.refedCol){
+        if (fkColumn) {
+          let redundant = item?.redundant || this.addColsMap[item.columns]?.redundant || this.updateColsMap[item.columns]?.redundant || {}
+          if (redundant?.dependField === fkColumn && redundant.refedCol) {
             return true
           }
         }
@@ -2566,6 +2571,4 @@ export default {
 .ve-table-container {
   min-height: 60px;
 }
-
-
 </style>
