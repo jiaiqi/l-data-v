@@ -1,99 +1,31 @@
 <template>
   <div class="header-cell">
-    <el-tooltip
-      class="item"
-      effect="dark"
-      content="必填"
-      placement="bottom-center"
-      v-if="column.isRequired"
-    >
-      <span class="required color-red m-r-2 font-bold">*</span>
-    </el-tooltip>
-    <el-tooltip effect="dark" :content="column.label">
-      <div class="label">{{ column.label }}</div>
-    </el-tooltip>
-    <el-tooltip
-      class="item"
-      effect="dark"
-      content="当前列可编辑"
-      placement="bottom-end"
-      v-if="column.editable"
-    >
-      <i class="el-icon-edit-outline"></i>
-      <!-- <img src="@/assets/img/edit.png" alt="" class="right-icon" /> -->
-    </el-tooltip>
-    <div class="filter-icon cursor-pointer">
-      <header-filter
-        :column="column"
-        :condition="condition"
-        :app="app"
-        :list="list"
-        :service="service"
-        @filter-change="filterChange"
-      ></header-filter>
-      <!-- <el-popover
-        placement="bottom"
-        width="200"
-        trigger="click"
-        v-model="filterVisible"
-      >
-        <div class="filter-box">
-          <div class="option-list">
-            <el-checkbox-group
-              v-model="checkedOption"
-              @change="handleCheckedChange"
-            >
-              <el-checkbox
-                v-for="item in optionList"
-                :label="item.value"
-                :key="item.value"
-                >{{ item.label }}</el-checkbox
-              >
-            </el-checkbox-group>
-          </div>
-          <div class="handler-bar flex justify-end m-t-2">
-            <el-button
-              class="text-gray"
-              size="mini"
-              @click="filterVisible = false"
-              >取消</el-button
-            >
-            <el-button size="mini" @click="toFilter">确定</el-button>
-          </div>
-        </div>
+    <div class="flex items-center justify-end w-full">
+      <div class="filter-icon cursor-pointer">
+        <header-filter :column="column" :condition="condition" :app="app" :list="list" :service="service"
+          @filter-change="filterChange"></header-filter>
+      </div>
+      <div class="sort-icon" @click="onSrotChange" v-if="!['MultilineText', 'File', 'Image', 'RichText'].includes(
+        column.col_type
+      )
+        ">
+        <i class="el-icon-caret-top cursor-pointer" :class="{ active: curSort === 'ASC' }"></i>
+        <i class="el-icon-caret-bottom" :class="{ active: curSort === 'DESC' }"></i>
+      </div>
+    </div>
+    <div class="flex items-center w-full justify-center">
+      <el-tooltip class="item" effect="dark" content="必填" placement="bottom-center" v-if="column.isRequired">
+        <span class="required color-red m-r-2 font-bold">*</span>
+      </el-tooltip>
+      <el-tooltip effect="dark" :content="column.label">
+        <div class="label">{{ column.label }}</div>
+      </el-tooltip>
+      <el-tooltip class="item" effect="dark" content="当前列可编辑" placement="bottom-end" v-if="column.editable">
+        <i class="el-icon-edit-outline"></i>
+        <!-- <img src="@/assets/img/edit.png" alt="" class="right-icon" /> -->
+      </el-tooltip>
+    </div>
 
-        <svg
-          slot="reference"
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 16 16"
-        >
-          <path
-            :fill="onFilter?'#409eff':'currentColor'"
-            d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"
-          />
-        </svg>
-      </el-popover> -->
-    </div>
-    <div
-      class="sort-icon"
-      @click="onSrotChange"
-      v-if="
-        !['MultilineText', 'File', 'Image', 'RichText'].includes(
-          column.col_type
-        )
-      "
-    >
-      <i
-        class="el-icon-caret-top cursor-pointer"
-        :class="{ active: curSort === 'ASC' }"
-      ></i>
-      <i
-        class="el-icon-caret-bottom"
-        :class="{ active: curSort === 'DESC' }"
-      ></i>
-    </div>
   </div>
 </template>
 
@@ -109,7 +41,7 @@ export default {
     app: String,
     service: String,
     list: Array,
-    condition:Array
+    condition: Array
   },
   data() {
     return {
@@ -165,32 +97,37 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  // color: #fff;
   .label {
     max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
   .right-icon {
     // position: absolute;
     // right: 10px;
     width: 20px;
     height: 20px;
   }
+
   .filter-icon {
-    position: absolute;
-    right: 20px;
+    // position: absolute;
+    // right: 20px;
     display: inline-block;
-    position: absolute;
-    right: 0;
+    // right: 0;
   }
+
   .filter-box {
     .handler-bar {
       text-align: center;
-      .el-button {
-      }
+
+      .el-button {}
     }
   }
+
   .sort-icon {
     width: 20px;
     height: 20px;
@@ -202,6 +139,7 @@ export default {
     .el-icon-caret-bottom {
       margin: -6px;
     }
+
     .active {
       color: #409eff;
     }

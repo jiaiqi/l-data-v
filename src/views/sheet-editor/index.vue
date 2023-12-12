@@ -1702,7 +1702,7 @@ export default {
                 this.updateColsMap?.[key]?.in_update !== 0
               ) {
                 if (oldItem[key] !== item[key]) {
-                  if (!item[key]) {
+                  if (item[key] === '' || item[key] == undefined) {
                     item[key] = null;
                   }
                   updateObj[key] = item[key];
@@ -2536,6 +2536,10 @@ export default {
   padding: 10px 0 !important;
 }
 
+.ve-table-header-th {
+  background-color: #e5e7ea !important;
+}
+
 .spreadsheet {
   width: 100vw;
   height: 100vh;
@@ -2569,6 +2573,6 @@ export default {
 }
 
 .ve-table-container {
-  min-height: 60px;
+  min-height: 80px;
 }
 </style>
