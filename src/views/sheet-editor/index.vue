@@ -2282,7 +2282,7 @@ export default {
         }
         condition = condition.map((item) => {
           if (item.value === "null") {
-            if (item.ruleType === "eq") {
+            if (item.ruleType === "eq"||item.ruleType === "isnull") {
               item.ruleType = "isnull";
             } else {
               item.ruleType = "notnull";
