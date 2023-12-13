@@ -136,7 +136,9 @@ export default {
               this.remoteMethod(newValue).then(res => {
                 if (res?.length > 1) {
                   this.$refs?.inputRef?.focus()
-                }else{}
+                } else {
+                  this.onSelectChange(res.map(item => item[this.srvInfo.refed_col]))
+                }
               });
             }
           }
@@ -181,7 +183,11 @@ export default {
     onPopoverShow() {
       // this.onFocus()
       this.filterText = this.value
-      this.remoteMethod(this.filterText)
+      this.remoteMethod(this.filterText).then(res => {
+        if (res?.length === 1) {
+          this.onSelectChange(res.map(item => item[this.srvInfo.refed_col]))
+        }
+      })
     },
     async loadTree(node) {
       if (node?.value) {
