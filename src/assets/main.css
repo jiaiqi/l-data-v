@@ -1,7 +1,9 @@
 @font-face {
   font-family: "iconfont";
-  src: url("./iconfont/") format("woff2"),
+  /* src: url("./iconfont/") format("woff2"),
     url("./iconfont//iconfont.woff?t=1681386805916") format("woff"),
+    url("./iconfont//iconfont.ttf?t=1681386805916") format("truetype"); */
+    src: url("./iconfont//iconfont.woff?t=1681386805916") format("woff"),
     url("./iconfont//iconfont.ttf?t=1681386805916") format("truetype");
 }
 

@@ -28,7 +28,8 @@
     "vue-grid-layout": "^2.4.0",
     "vue-router": "^3.5.4",
     "vuedraggable": "^2.24.3",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "vue-easytable": "^2.27.1"
   },
   "devDependencies": {
     "@vitejs/plugin-legacy": "^2.0.0",
@@ -44,7 +45,9 @@
     "ssh2": "^1.14.0",
     "terser": "^5.14.2",
     "unocss": "^0.54.1",
-    "vite": "^3.0.2",
-    "vue-easytable": "^2.27.1"
+    "vite": "^3.0.2"
+  },
+  "volta": {
+    "node": "20.10.0"
   }
 }

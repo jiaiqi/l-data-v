@@ -638,6 +638,8 @@ export default {
               this.$message.error("新增行不能直接添加下级节点,请先保存操作!");
               return;
             }
+            // 添加下级节点后展开当前节点
+            this.$set(this.tableData[startRowIndex], "__unfold", true);
             this.insert2Rows(startRowIndex + 1, startRow);
           } else if (type === "changeParent") {
             // 更改父节点
@@ -2282,7 +2284,7 @@ export default {
         }
         condition = condition.map((item) => {
           if (item.value === "null") {
-            if (item.ruleType === "eq"||item.ruleType === "isnull") {
+            if (item.ruleType === "eq" || item.ruleType === "isnull") {
               item.ruleType = "isnull";
             } else {
               item.ruleType = "notnull";
