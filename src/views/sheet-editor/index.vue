@@ -1224,10 +1224,12 @@ export default {
                       } else {
                         this.$set(this.filterState, event.colName, event);
                       }
-                      this.$nextTick(() => {
-                        this.page.pageNo = 1;
-                        this.getList(false);
-                      });
+                      if (event?.refresh !== false) {
+                        this.$nextTick(() => {
+                          this.page.pageNo = 1;
+                          this.getList(false);
+                        });
+                      }
                     }
                   },
                   "sort-change": (event) => {
@@ -2538,7 +2540,7 @@ export default {
 }
 
 .ve-table-header-th {
-  padding: 2px 0!important;
+  padding: 2px 0 !important;
   background-color: #e5e7ea !important;
 }
 

@@ -40,19 +40,26 @@
         <div class="date-range" v-else-if="['时间', '日期', '时间日期'].includes(colType)">
           <!-- <div class="label">选择日期范围：</div> -->
           <div class="flex flex-col">
-            <div class="text-bold">快捷筛选：</div>
+            <div class="text-bold p-y-2">
+              快捷筛选：
+              <el-switch v-model="multiple" active-text="多选" inactive-text="单选" @change="changeMultiple">
+              </el-switch>
+            </div>
             <div class="m-b-2">
-              日：<el-button size="mini" :type="modelValue === item ? 'primary' : ''" plain
+              日：<el-button size="mini"
+                :type="modelValue === item || (multiple && multipleValMap[item] == true) ? 'primary' : ''" plain
                 v-for="item in dateShortcuts.day" :key="item" @click="shortFilter(item)">{{
                   item }}</el-button>
             </div>
             <div class="m-b-2">
-              周：<el-button size="mini" :type="modelValue === item ? 'primary' : ''" plain
+              周：<el-button size="mini"
+                :type="modelValue === item || (multiple && multipleValMap[item] == true) ? 'primary' : ''" plain
                 v-for="item in dateShortcuts.week" :key="item" @click="shortFilter(item)">{{
                   item }}</el-button>
             </div>
             <div class="m-b-2">
-              月：<el-button size="mini" :type="modelValue === item ? 'primary' : ''" plain
+              月：<el-button size="mini"
+                :type="modelValue === item || (multiple && multipleValMap[item] == true) ? 'primary' : ''" plain
                 v-for="item in dateShortcuts.month" :key="item" @click="shortFilter(item)">{{
                   item }}</el-button>
             </div>
@@ -185,6 +192,8 @@ export default {
   },
   data() {
     return {
+      multiple: false,//是否多选 默认否
+      multipleValMap: {},//存储多选的值
       filterOptions: null,
       filterVisible: false,
       modelValue: null,
@@ -335,6 +344,22 @@ export default {
     };
   },
   methods: {
+    changeMultiple() {
+      // 允许多选状态改变 清空当前选中的状态
+      this.$emit("filter-change", {
+        colName: this.column.columns,
+        remove: true, //移除当前筛选条件
+        refresh: false,//是否刷新页面，默认刷新
+      });
+      this.$nextTick(() => {
+        this.onFilter = false;
+        this.min = null;
+        this.max = null;
+        this.strList = [];
+        this.multipleValMap = {}
+        this.initModelValue();
+      })
+    },
     showPopover() {
       if (["外键", "字符串"].includes(this.colType)) {
         this.getFilterOptions();
@@ -419,7 +444,7 @@ export default {
         this.strList = []
         for (let i = 0; i < this.condition.length; i++) {
           let item = this.condition[i];
-          if (item.colName === this.column.columns && ['in','eq','like'].includes(item.ruleType)&& item.value) {
+          if (item.colName === this.column.columns && ['in', 'eq', 'like'].includes(item.ruleType) && item.value) {
             this.$nextTick(() => {
               this.modelValue = item.value
               this.strList.push(item.value)
@@ -449,8 +474,14 @@ export default {
         this.initModelValue();
       })
     },
+
     shortFilter(key) {
       // 快捷筛选
+      if (this.multiple === true) {
+        //允许多选
+        this.$set(this.multipleValMap, key, !this.multipleValMap[key])
+        return
+      }
       if (this.modelValue === key) {
         // 取消此筛选条件
         this.resetFilter();
@@ -475,7 +506,6 @@ export default {
         ]
         val.remove = false
       }
-
       this.$emit("filter-change", val);
     },
     toFilter() {
@@ -484,6 +514,25 @@ export default {
         colName: this.column.columns,
         remove: false, //移除当前筛选条件
       };
+      if (this.multiple === true && Object.keys(this.multipleValMap)?.length) {
+        let modelValue = []
+        Object.keys(this.multipleValMap).forEach(key => {
+          if (this.multipleValMap[key] === true) {
+            modelValue.push(key)
+          }
+        })
+        val.condition = [
+          {
+            colName: this.column.columns,
+            ruleType: "in",
+            value: modelValue.toString(),
+          },
+        ];
+        val.remove = !modelValue?.length;
+        this.onFilter = !!modelValue?.length;
+        this.$emit("filter-change", val);
+        return
+      }
       switch (this.colType) {
         case "集合":
           val.condition = [
@@ -591,7 +640,7 @@ export default {
   max-width: 1000px;
 
   .option-list {
-    width: 200px;
+    min-width: 200px;
   }
 
   .el-checkbox-group {
