@@ -99,7 +99,8 @@
         </div>
       </div>
 
-      <svg slot="reference" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" style="display: flex;">
+      <svg slot="reference" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16"
+        style="display: flex;">
         <path :fill="onFilter ? '#409eff' : 'currentColor'"
           d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z" />
       </svg>
@@ -334,11 +335,11 @@ export default {
     };
   },
   methods: {
-
     showPopover() {
       if (["外键", "字符串"].includes(this.colType)) {
         this.getFilterOptions();
       }
+      this.initModelValue()
     },
     getFilterOptions() {
       // 查找筛选项列表
@@ -415,11 +416,13 @@ export default {
     },
     initModelValue() {
       if (this.condition?.length) {
+        this.strList = []
         for (let i = 0; i < this.condition.length; i++) {
           let item = this.condition[i];
-          if (item.colName === this.column.columns && item.ruleType === 'eq' && item.value) {
+          if (item.colName === this.column.columns && ['in','eq','like'].includes(item.ruleType)&& item.value) {
             this.$nextTick(() => {
               this.modelValue = item.value
+              this.strList.push(item.value)
               this.onFilter = true
             });
           }
@@ -578,11 +581,6 @@ export default {
   },
   created() {
     this.initModelValue();
-    // setTimeout(() => {
-    //   if (this.colType === "外键") {
-    //     this.getFkOptions();
-    //   }
-    // }, 1000);
   },
 };
 </script>

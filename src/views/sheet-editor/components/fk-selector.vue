@@ -34,7 +34,7 @@
         </div>
         <el-table :data="tableData" style="width: 100%" v-if="tableData.length" @row-dblclick="onDBClick">
           <el-table-column :prop="column.columns" :label="column.label" width="180" show-overflow-tooltip border
-            v-for="column in tableColumns">
+            v-for="column in tableColumns" :key="column.columns">
           </el-table-column>
         </el-table>
         <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :page-sizes="[5, 10, 20, 30]"

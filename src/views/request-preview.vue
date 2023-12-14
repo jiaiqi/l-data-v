@@ -10,7 +10,7 @@
         <div class="group-box" v-if="groupByCols">
           <div class="group-box-item" v-for="(groupItem, key) in groupByCols">
             <el-radio-group @input="changeGroup($event, groupItem.list, key)" v-model="groupItem.value">
-              <el-radio :label="index" :value="item.col_name" v-for="(item, index) in groupItem.list"
+              <el-radio :label="index" :value="item.col_name" :key="index" v-for="(item, index) in groupItem.list"
                 @click.native="clickRadio($event, key, index)">
                 <span>{{ item.label }}</span>
               </el-radio>
