@@ -2533,12 +2533,12 @@ export default {
 // .table-body-cell__update_border {
 //   border: 1px solid #2087cc !important;
 // }
-.ve-table-header-th,
 .ve-table-body-td {
   padding: 10px 0 !important;
 }
 
 .ve-table-header-th {
+  padding: 2px 0!important;
   background-color: #e5e7ea !important;
 }
 

@@ -1,31 +1,34 @@
 <template>
   <div class="header-cell">
-    <div class="flex items-center justify-end w-full">
-      <div class="filter-icon cursor-pointer">
-        <header-filter :column="column" :condition="condition" :app="app" :list="list" :service="service"
-          @filter-change="filterChange"></header-filter>
+    <div class="flex items-center justify-between w-full flex-row-reverse truncate">
+      <div class="flex items-center">
+        <div class="filter-icon cursor-pointer">
+          <header-filter :column="column" :condition="condition" :app="app" :list="list" :service="service"
+            @filter-change="filterChange"></header-filter>
+        </div>
+        <div class="sort-icon" @click="onSrotChange" v-if="!['MultilineText', 'File', 'Image', 'RichText'].includes(
+          column.col_type
+        )
+          ">
+          <i class="el-icon-caret-top cursor-pointer" :class="{ active: curSort === 'ASC' }"></i>
+          <i class="el-icon-caret-bottom" :class="{ active: curSort === 'DESC' }"></i>
+        </div>
       </div>
-      <div class="sort-icon" @click="onSrotChange" v-if="!['MultilineText', 'File', 'Image', 'RichText'].includes(
-        column.col_type
-      )
-        ">
-        <i class="el-icon-caret-top cursor-pointer" :class="{ active: curSort === 'ASC' }"></i>
-        <i class="el-icon-caret-bottom" :class="{ active: curSort === 'DESC' }"></i>
+      <div class="flex items-center">
+        <el-tooltip class="item" effect="dark" content="必填" placement="bottom-center" v-if="column.isRequired">
+          <span class="required color-red m-r-2 font-bold">*</span>
+        </el-tooltip>
+        <el-tooltip class="item" effect="dark" content="当前列可编辑" placement="bottom-end" v-if="column.editable">
+          <i class="el-icon-edit-outline"></i>
+        </el-tooltip>
       </div>
+
     </div>
     <div class="flex items-center w-full justify-center">
-      <el-tooltip class="item" effect="dark" content="必填" placement="bottom-center" v-if="column.isRequired">
-        <span class="required color-red m-r-2 font-bold">*</span>
-      </el-tooltip>
       <el-tooltip effect="dark" :content="column.label">
-        <div class="label">{{ column.label }}</div>
-      </el-tooltip>
-      <el-tooltip class="item" effect="dark" content="当前列可编辑" placement="bottom-end" v-if="column.editable">
-        <i class="el-icon-edit-outline"></i>
-        <!-- <img src="@/assets/img/edit.png" alt="" class="right-icon" /> -->
+        <div class="label truncate">{{ column.label }}</div>
       </el-tooltip>
     </div>
-
   </div>
 </template>
 
@@ -98,12 +101,11 @@ export default {
   align-items: center;
   justify-content: center;
   flex-direction: column;
+
   // color: #fff;
   .label {
     max-width: 150px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 16px;
   }
 
   .right-icon {
