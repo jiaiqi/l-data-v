@@ -850,13 +850,13 @@ export default {
     },
     columnHiddenOption() {
       // 隐藏作为条件传入的列
-      // if (this.defaultConditions?.length) {
-      //   return {
-      //     defaultHiddenColumnKeys: this.defaultConditions.map(
-      //       (item) => item.colName
-      //     ),
-      //   };
-      // }
+      if (this.defaultConditions?.length) {
+        return {
+          defaultHiddenColumnKeys: this.defaultConditions.map(
+            (item) => item.colName
+          ),
+        };
+      }
     },
     initCond() {
       let arr = [];
@@ -1670,6 +1670,11 @@ export default {
       })
       if (columns?.length) {
         columns.forEach(item => {
+          if (item.redundant.trigger === "isnull") {
+            if (row[item.columns]) {
+              return
+            }
+          }
           row[item.columns] = rawData[item.redundant.refedCol] || null
           this.$set(this.tableData, rowIndex, row);
           if (this.allFields.find(e => e.columns === item.columns)) {
@@ -1742,6 +1747,9 @@ export default {
 
           Object.keys(addObj).forEach((key) => {
             if (ignoreKeys.includes(key) || key.indexOf("__") === 0) {
+              delete addObj[key];
+            }
+            if (addObj[key] === '' || addObj[key] === undefined || addObj[key] === null) {
               delete addObj[key];
             }
           });
