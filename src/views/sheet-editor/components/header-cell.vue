@@ -104,7 +104,7 @@ export default {
 
   // color: #fff;
   .label {
-    max-width: 150px;
+    // max-width: 150px;
     font-size: 16px;
   }
 
