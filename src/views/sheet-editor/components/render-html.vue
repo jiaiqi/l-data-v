@@ -56,6 +56,9 @@ export default {
     app: String,
   },
   watch: {
+    dialogTableVisible(newVal) {
+      this.$emit('onpopup', newVal)
+    },
     row: {
       deep: true,
       immediate: true,

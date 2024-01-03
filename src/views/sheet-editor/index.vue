@@ -107,6 +107,7 @@ export default {
   },
   data() {
     return {
+      onPopup: false,//弹窗是否打开状态
       calcReqData: null,
       columnWidthMap: {}, //存储改变后的列宽
       ctop: "-100vh",
@@ -134,6 +135,15 @@ export default {
       allFields: [], //所有字段
       columns: [], //表头字段
       eventCustomOption: {
+        beforeAutofill: ({
+          direction,
+          sourceSelectionRangeIndexes,
+          targetSelectionRangeIndexes,
+          sourceSelectionData,
+          targetSelectionData,
+        }) => { 
+
+        },
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
             // click: (event) => {
@@ -854,7 +864,7 @@ export default {
         return {
           defaultHiddenColumnKeys: this.defaultConditions.map(
             (item) => item.colName
-          ),
+          ).filter(item=>!this.setFilterState.find(e=>e.colName===item)),
         };
       }
     },
@@ -1619,6 +1629,9 @@ export default {
                         this.$refs[
                           "tableRef"
                         ].clearCellSelectionCurrentCell();
+                      },
+                      onpopup: (val) => {
+                        this.onPopup = val
                       },
                       unfold: (event, callback) => {
                         this.loadTree(event, row, rowIndex, callback);
@@ -2443,6 +2456,10 @@ export default {
     scrolling({ startRowIndex }) {
       this.startRowIndex = startRowIndex;
     },
+    // 取消监听撤销重做事件
+    unbindKeyboardEvent() {
+
+    },
     /**
      * @description 绑定ctrl+z ctrl+y事件
      * @param {*} callBackCZ 撤销/回退事件
@@ -2459,7 +2476,7 @@ export default {
         if (e.key === "Shift") {
           shiftDown = true;
         }
-        if (ctrlDown) {
+        if (ctrlDown && !this.onPopup) {
           if (
             (shiftDown && ["z", "Z"].includes(e.key)) ||
             (!shiftDown && ["Y", "y"].includes(e.key))
