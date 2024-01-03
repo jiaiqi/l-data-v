@@ -135,15 +135,6 @@ export default {
       allFields: [], //所有字段
       columns: [], //表头字段
       eventCustomOption: {
-        beforeAutofill: ({
-          direction,
-          sourceSelectionRangeIndexes,
-          targetSelectionRangeIndexes,
-          sourceSelectionData,
-          targetSelectionData,
-        }) => { 
-
-        },
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
             // click: (event) => {
@@ -247,6 +238,57 @@ export default {
         afterAutofill: ({ targetSelectionRangeIndexes }) => {
           //targetSelectionRangeIndexes 自动填充目标的行和列索引
           this.triggerEditCell(targetSelectionRangeIndexes);
+        },
+        beforeAutofill: ({
+          direction,
+          sourceSelectionRangeIndexes,
+          targetSelectionRangeIndexes,
+          sourceSelectionData,
+          targetSelectionData,
+        }) => {
+          console.log(direction,
+            sourceSelectionRangeIndexes,
+            targetSelectionRangeIndexes,
+            sourceSelectionData,
+            targetSelectionData);
+          if (sourceSelectionRangeIndexes.startRowIndex !== targetSelectionRangeIndexes.endRowIndex) {
+            if (sourceSelectionData?.length > 1) {
+              let val = null
+              let key = Object.keys(sourceSelectionData[0]).find(e => e !== 'rowKey')
+              let customFill = sourceSelectionData.every((item, index) => {
+                if (index <= sourceSelectionData.length - 1 && index > 0 && !isNaN(Number(item[key]))) {
+                  val = item[key] - sourceSelectionData[index - 1][key]
+                  if (val === item[key] - sourceSelectionData[index - 1][key]) {
+                    return true
+                  }
+                  return false
+                }
+                return true
+              })
+              if(sourceSelectionData.length===2&&sourceSelectionData[0][key]!==sourceSelectionData[1][key]){
+                if(!isNaN(sourceSelectionData[1][key] -sourceSelectionData[0][key])){
+                  customFill=true
+                  val = sourceSelectionData[1][key] - sourceSelectionData[0][key]
+                }
+              }
+              if (customFill) {
+                let lastVal = sourceSelectionData[sourceSelectionData.length - 1][key]
+                this.tableData.forEach((item) => {
+                  let index = targetSelectionData.findIndex(e => e.rowKey && e.rowKey === item.rowKey)
+                  if (index>-1) {
+                    // 等差递增
+                    let curVal = Number(lastVal) + val*(index+1)
+                    if (typeof lastVal === 'string') {
+                      curVal = curVal + ''
+                    }
+                    this.$set(item, key, curVal)
+                  }
+                })
+                this.triggerEditCell(targetSelectionRangeIndexes)
+                return false
+              }
+            }
+          }
         },
       },
       // 剪贴板配置
@@ -864,7 +906,7 @@ export default {
         return {
           defaultHiddenColumnKeys: this.defaultConditions.map(
             (item) => item.colName
-          ).filter(item=>!this.setFilterState.find(e=>e.colName===item)),
+          ).filter(item => !this.setFilterState.find(e => e.colName === item)),
         };
       }
     },
