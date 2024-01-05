@@ -89,6 +89,9 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     if (params.use_type) {
       req.use_type = params.use_type;
     }
+    if(params.relation_condition){
+      req.relation_condition = params.relation_condition
+    }
     const url = `${app}/select/${serviceName}`;
     const res = await http.post(url, req);
     if (res?.data?.state === "SUCCESS") {

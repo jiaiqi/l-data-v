@@ -1,5 +1,5 @@
 <template>
-  <div style="border: 1px solid #ccc">
+  <!-- <div style="border: 1px solid #ccc">
     <Toolbar
       style="border-bottom: 1px solid #ccc"
       :editor="editor"
@@ -14,16 +14,16 @@
       @onCreated="onCreated"
       @customPaste="customPaste"
     />
-  </div>
+  </div> -->
 </template>
 
 <script>
 import Vue from "vue";
-import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
-import "@wangeditor/editor/dist/css/style.css";
+// import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
+// import "@wangeditor/editor/dist/css/style.css";
 
 export default Vue.extend({
-  components: { Editor, Toolbar },
+  // components: { Editor, Toolbar },
   data() {
     return {
       editor: null,

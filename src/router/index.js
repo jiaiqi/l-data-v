@@ -55,11 +55,11 @@ const router = new VueRouter({
       name: "h5Page",
       component: () => import("@/views/webview.vue"),
     },
-    {
-      path: "/test",
-      name: "test",
-      component: () => import("@/views/test.vue"),
-    },
+    // {
+    //   path: "/test",
+    //   name: "test",
+    //   component: () => import("@/views/test.vue"),
+    // },
     ...routers,
   ],
   // routes: [
