@@ -70,8 +70,9 @@ export default {
       }
       this.$refs?.treePopover?.doClose()
       this.modelValue = val;
-      this.keyword = this.allOptions.find(item => item[this.srvInfo.refed_col] === val)?.label
-      this.$emit("select", val);
+      let current = this.allOptions.find(item => item[this.srvInfo.refed_col] === val)
+      this.keyword = current?.label
+      this.$emit("select", val,current);
       // let currentValue = this.allOptions.find(item => item[this.srvInfo.refed_col] === this.modelValue);
       // if (currentValue) {
       //   this.$emit('select', {
