@@ -16,6 +16,7 @@
         v-model="currentVal"
         :options="setOptions"
         :props="props"
+        filterable
         clearable
       ></el-cascader>
       <el-button type="primary" class="m-l-5" @click="confirm">确定</el-button>
@@ -35,6 +36,11 @@ export default {
     topTreeData:Boolean
   },
   computed: {
+    currentValue(){
+      if(this.optionInfo?.refed_col&&this.currentRow?.[this.optionInfo.refed_col]){
+        return this.currentRow?.[this.optionInfo.refed_col]
+      }
+    },
     currentText() {
       if(this.optionInfo?.key_disp_col&&this.currentRow?.[this.optionInfo.key_disp_col]){
         return this.currentRow?.[this.optionInfo.key_disp_col]
@@ -93,16 +99,21 @@ export default {
     },
     loadParent() {
       let condition = [
+        // {
+        //   colName: this.optionInfo.parent_col,
+        //   ruleType: "isnull",
+        // },
         {
-          colName: this.optionInfo.parent_col,
-          ruleType: "isnull",
-        },
+          colName: this.optionInfo.refed_col,
+          ruleType: "ne",
+          value: this.currentRow[this.optionInfo.refed_col],
+        }
       ];
       if(this.topTreeData){
         condition = null
       }
       onSelect(this.optionInfo.serviceName, this.srvApp, condition, {
-        rownumber: 100,
+        rownumber:99999,
         pageNo: 1,
         forceUseTTD:!!this.topTreeData,
         isTree: true,

@@ -78,6 +78,7 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
       // rdt: Return Data Type  ttd: top tree data
       if (req.condition?.length || params.forceUseTTD) {
         req["rdt"] = "ttd";
+        delete req.page
       } else if (params.pidCol) {
         req.condition.push({
           colName: params.pidCol,

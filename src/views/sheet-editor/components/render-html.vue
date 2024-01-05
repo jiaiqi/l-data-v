@@ -20,10 +20,10 @@
       :close-on-click-modal="false" :destroy-on-close="true" append-to-body width="80vw" custom-class="editor-dialog"
       :key="ticket">
       <Toolbar style="border-bottom: 1px solid #ccc" :editor="editor" :defaultConfig="toolbarConfig" :mode="mode"
-        v-if="editable && useEditor" :key="ticket" />
+        v-if="editable && useEditor" :key="ticket+1" />
       <Editor v-if="useEditor" v-model="innerHtml"
         style="height: 500px; overflow-y: hidden; border-bottom: 1px solid #ccc" :defaultConfig="editorConfig"
-        :disabled="!editable" :mode="mode" @click.stop @onCreated="onCreated" @customPaste="customPaste" :key="ticket" />
+        :disabled="!editable" :mode="mode" @click.stop @onCreated="onCreated" @customPaste="customPaste" :key="ticket+2" />
       <el-input type="textarea" :rows="10" :disabled="!editable" placeholder="请输入内容" v-model="innerHtml" v-else>
       </el-input>
       <div class="text-orange text-center" v-if="!editable">

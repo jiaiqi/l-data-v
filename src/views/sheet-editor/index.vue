@@ -1146,7 +1146,7 @@ export default {
             defaultValue: row[col.field],
           });
           this.$refs["tableRef"].stopEditingCell();
-          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+          // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
         }
       }
     },
@@ -1741,7 +1741,6 @@ export default {
             this.$refs["tableRef"].stopEditingCell();
             this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
           }
-
         })
       }
     },

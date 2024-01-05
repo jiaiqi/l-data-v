@@ -176,9 +176,8 @@ export default {
       this.remoteMethod()
     },
     onFilterInput(value) {
-      // this.$emit('input',value)
       this.modelValue = value
-      this.remoteMethod()
+      this.remoteMethod(value)
     },
     onPopoverShow() {
       // this.onFocus()
