@@ -1,6 +1,6 @@
 <template>
-  <div class="spreadsheet" v-loading="loading">
-    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5">
+  <div class="spreadsheet flex flex-col" v-loading="loading">
+    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full">
       <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
         <div class="m-r-2">添加</div>
         <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
@@ -36,13 +36,15 @@
           v-if="calcColumnWidthReq && calcColumnWidthReq.length > 0">保存样式</el-button>
       </div>
     </div>
-    <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" fixed-header :scroll-width="0"
-      max-height="calc(100vh - 80px)" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-      :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-      :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-      :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-      :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-      :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+    <div class="flex-1">
+      <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" fixed-header :scroll-width="0" border-y
+        :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
+        :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
+        :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
+        :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
+        :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
+        :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+    </div>
     <div class="empty-data" v-if="page.total === 0 && !loading">暂无数据</div>
     <div class="text-center">
       <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
@@ -93,6 +95,10 @@ const ignoreKeys = [
 export default {
   name: "SheetEditor",
   mounted() {
+    this.tableMaxHeight = document.body.clientHeight - 80
+    window.addEventListener('resize', () => {
+      this.tableMaxHeight = document.body.clientHeight - 80
+    })
     this.bindKeyboardEvent(this.undo, this.redo);
     this.initPage().then(() => {
       if (this.v2data?.is_tree === true && this.listType !== "treelist") {
@@ -107,6 +113,7 @@ export default {
   },
   data() {
     return {
+      tableMaxHeight: 1000,
       onPopup: false,//弹窗是否打开状态
       calcReqData: null,
       columnWidthMap: {}, //存储改变后的列宽
@@ -265,9 +272,9 @@ export default {
                 }
                 return true
               })
-              if(sourceSelectionData.length===2&&sourceSelectionData[0][key]!==sourceSelectionData[1][key]){
-                if(!isNaN(sourceSelectionData[1][key] -sourceSelectionData[0][key])){
-                  customFill=true
+              if (sourceSelectionData.length === 2 && sourceSelectionData[0][key] !== sourceSelectionData[1][key]) {
+                if (!isNaN(sourceSelectionData[1][key] - sourceSelectionData[0][key])) {
+                  customFill = true
                   val = sourceSelectionData[1][key] - sourceSelectionData[0][key]
                 }
               }
@@ -275,9 +282,9 @@ export default {
                 let lastVal = sourceSelectionData[sourceSelectionData.length - 1][key]
                 this.tableData.forEach((item) => {
                   let index = targetSelectionData.findIndex(e => e.rowKey && e.rowKey === item.rowKey)
-                  if (index>-1) {
+                  if (index > -1) {
                     // 等差递增
-                    let curVal = Number(lastVal) + val*(index+1)
+                    let curVal = Number(lastVal) + val * (index + 1)
                     if (typeof lastVal === 'string') {
                       curVal = curVal + ''
                     }
@@ -958,6 +965,30 @@ export default {
         } catch (error) {
           console.log(error);
         }
+      }
+      let query_init_value_lsit = this.v2data.srv_cols.filter(item => item.query_init_value?.value)
+      if (query_init_value_lsit?.length) {
+        query_init_value_lsit.forEach(item => {
+          let obj = {
+            colName: item.columns,
+            ruleType: 'eq',
+            value: item.query_init_value.value
+          }
+          if (obj?.value?.includes("top.user")) {
+            let key = obj.value.split("top.user.");
+            key = key.length > 1 ? key[1] : "";
+            if (key) {
+              let userInfo = sessionStorage.getItem("current_login_user");
+              if (userInfo) {
+                userInfo = JSON.parse(userInfo);
+              }
+              obj.value = userInfo?.[key];
+            }
+          } else if (obj?.value?.includes("new Date()")) {
+            obj.value = dayjs().format("YYYY-MM-DD");
+          }
+          arr.push(obj)
+        })
       }
       return arr;
     },
@@ -1726,7 +1757,7 @@ export default {
       if (columns?.length) {
         columns.forEach(item => {
           if (item.redundant.trigger === "isnull") {
-            if (row[item.columns]) {
+            if (row[item.columns] || row[item.columns] === 0 || row[item.columns] === false) {
               return
             }
           }
@@ -2477,6 +2508,24 @@ export default {
           if (srv_cols?.length) {
             this.v2data.srv_cols = srv_cols
           }
+        }
+        if (Array.isArray(this.v2data.srv_cols)) {
+          this.v2data.srv_cols = this.v2data.srv_cols.map(item => {
+            if (item.more_config) {
+              try {
+                const moreConfig = JSON.parse(item.more_config)
+                if (moreConfig?.query_init_value) {
+                  item.query_init_value = moreConfig.query_init_value
+                  if (item.col_type === 'fk') {
+                    item.option_list_v2.query_init_value = moreConfig.query_init_value
+                  }
+                }
+              } catch (error) {
+
+              }
+            }
+            return item
+          })
         }
         this.v2data.allFields = buildSrvCols(
           this.v2data.srv_cols,

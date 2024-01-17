@@ -15,6 +15,14 @@ const buildSrvCols = (cols, updateColsMap = {}, addColsMap = {}) => {
           updateColsMap?.[cur.columns]?.option_list_v2 ||
           cur.option_list_v2 ||
           {};
+        const query_init_value =
+          cur.option_list_v2?.query_init_value ||
+          addColsMap?.[cur.columns]?.option_list_v2?.query_init_value ||
+          updateColsMap?.[cur.columns]?.option_list_v2?.query_init_value;
+        if(query_init_value){
+          // 初始查询条件
+          optionListV2.query_init_value = query_init_value
+        }
         res[cur.columns] = {
           ...optionListV2,
           _target_column: cur.columns,
