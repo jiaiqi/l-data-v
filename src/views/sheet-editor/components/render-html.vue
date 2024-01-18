@@ -20,10 +20,11 @@
       :close-on-click-modal="false" :destroy-on-close="true" append-to-body width="80vw" custom-class="editor-dialog"
       :key="ticket">
       <Toolbar style="border-bottom: 1px solid #ccc" :editor="editor" :defaultConfig="toolbarConfig" :mode="mode"
-        v-if="editable && useEditor" :key="ticket+1" />
-      <Editor v-if="useEditor" v-model="innerHtml"
+        v-if="editable && useEditor && dialogTableVisible" :key="ticket + 1" />
+      <Editor v-if="useEditor && dialogTableVisible" v-model="innerHtml"
         style="height: 500px; overflow-y: hidden; border-bottom: 1px solid #ccc" :defaultConfig="editorConfig"
-        :disabled="!editable" :mode="mode" @click.stop @onCreated="onCreated" @customPaste="customPaste" :key="ticket+2" />
+        :disabled="!editable" :mode="mode" @click.stop @onCreated="onCreated" @customPaste="customPaste"
+        :key="ticket + 2" />
       <el-input type="textarea" :rows="10" :disabled="!editable" placeholder="请输入内容" v-model="innerHtml" v-else>
       </el-input>
       <div class="text-orange text-center" v-if="!editable">
@@ -36,6 +37,9 @@
         ">确认</el-button>
       </div>
     </el-dialog>
+    <el-image style="width: 0; height: 0;overflow: hidden;" :src="url" :preview-src-list="srcList"
+      :initial-index="initialIndex" id="imgPreview">
+    </el-image>
   </div>
 </template>
 
@@ -58,6 +62,14 @@ export default {
   watch: {
     dialogTableVisible(newVal) {
       this.$emit('onpopup', newVal)
+      if (newVal) {
+        window.addEventListener('dblclick', this.dblListener)
+      } else {
+        window.removeEventListener('dblclick', this.dblListener)
+        this.srcList = []
+        this.url = ''
+        this.initialIndex = 0
+      }
     },
     row: {
       deep: true,
@@ -155,6 +167,9 @@ export default {
   },
   data() {
     return {
+      url: "",
+      srcList: [],
+      initialIndex: 0,
       dialogTableVisible: false,
       ticket: null,
       toolbarConfig: {},
@@ -167,6 +182,32 @@ export default {
     };
   },
   methods: {
+    dblListener(eve) {
+      console.log(eve);
+      if (eve.target?.offsetParent?.className.indexOf('w-e-image-container') > -1 && eve.target.currentSrc) {
+        this.url = eve.target.currentSrc
+        const arr = []
+        let imgIndex = 0
+        document.querySelectorAll('.w-e-image-container').forEach((item, index) => {
+          item.children.forEach(iItem => {
+            if (iItem.tagName === 'IMG' && iItem.src) {
+              arr.push(iItem.src)
+              if (iItem.src === eve.target.currentSrc) {
+                imgIndex = index
+              }
+            }
+          })
+        })
+        this.srcList = arr
+        // 图片预览初始图片index
+        this.initialIndex = imgIndex
+        setTimeout(() => {
+          document.getElementById('imgPreview')?.click()
+        }, 200);
+        eve.stopPropagation()
+        eve.preventDefault()
+      }
+    },
     changeFold() {
       this.loadingFold = true;
       this.$emit("unfold", !this.unfold, (res) => {

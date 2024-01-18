@@ -1120,7 +1120,7 @@ export default {
       }
     },
     explainValue(value, column) {
-      let userInfo = sessionStorage.getItem("current_login_user") || {};
+      let userInfo = sessionStorage.getItem("current_login_user") || "";
       if (value?.includes("top.user.")) {
         let key = value.split("top.user.");
         key = key.length > 1 ? key[1] : "";
