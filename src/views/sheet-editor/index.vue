@@ -28,6 +28,7 @@
             <div class="text">更新</div>
           </div>
         </div>
+        <!-- <el-button size="mini" type="primary" @click="repari">修复</el-button> -->
         <el-button size="mini" type="primary" @click="refreshData">刷新</el-button>
         <el-button size="mini" type="primary" @click="saveData"
           :disabled="!calcReqData || calcReqData.length == 0">保存</el-button>
@@ -36,9 +37,9 @@
           v-if="calcColumnWidthReq && calcColumnWidthReq.length > 0">保存样式</el-button>
       </div>
     </div>
-    <div class="flex-1">
-      <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header :scroll-width="0" border-y
-        :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
+    <div class="flex-1" v-if="!loading">
+      <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
+        :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
         :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
         :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
         :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
@@ -1106,6 +1107,12 @@ export default {
     },
   },
   methods: {
+    repari(){
+      this.loading = true
+      setTimeout(() => {
+      this.loading = false
+      }, 10);
+    },
     isFk(column) {
       if (column?.col_type || column?.bx_col_type) {
         const fkTypes = ["User", "Dept", "bxsys_user", "bxsys_dept", 'fk'];
@@ -2797,5 +2804,8 @@ export default {
 
 .ve-table-container {
   min-height: 80px;
+  // height: calc(100vh - 80px)!important;
+  // overflow: auto;
 }
+
 </style>
