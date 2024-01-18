@@ -628,8 +628,19 @@ export default {
       this.$emit("filter-change", val);
     },
   },
+  watch: {
+    condition: {
+      immediate: true,
+      deep: true,
+      handler(newValue, oldValue) {
+        if(Array.isArray(newValue)){
+          this.initModelValue()
+        }
+      }
+    }
+  },
   created() {
-    this.initModelValue();
+    // this.initModelValue();
   },
 };
 </script>

@@ -37,7 +37,7 @@
       </div>
     </div>
     <div class="flex-1">
-      <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" fixed-header :scroll-width="0" border-y
+      <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header :scroll-width="0" border-y
         :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
         :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
         :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
@@ -113,6 +113,7 @@ export default {
   },
   data() {
     return {
+      initCond: [],
       tableMaxHeight: 1000,
       onPopup: false,//弹窗是否打开状态
       calcReqData: null,
@@ -917,81 +918,87 @@ export default {
         };
       }
     },
-    initCond() {
-      let arr = [];
-      let initExprFields = this.allFields.filter(item => !!item.init_expr)
-      // 只有init_expr 使用init_expr
-      if (initExprFields?.length) {
-        initExprFields.forEach(item => {
-          if (this.filterState[item.columns] !== null && !this.filterState[item.columns]) {
-            let obj = {
-              colName: item.columns,
-              ruleType: 'eq'
-            }
-            if (item.init_expr?.indexOf("'") === 0) {
-              obj.value = item.init_expr.replaceAll("'", '')
-            }
-            if (obj.value) {
-              arr.push(obj)
-            }
-          }
+    // initCond() {
+    //   let arr = [];
+    //   let initExprFields = this.allFields.filter(item => !!item.init_expr)
+    //   // 只有init_expr 使用init_expr
+    //   if (initExprFields?.length) {
+    //     initExprFields.forEach(item => {
+    //       if (this.filterState[item.columns] !== null && !this.filterState[item.columns]) {
+    //         let obj = {
+    //           colName: item.columns,
+    //           ruleType: 'eq'
+    //         }
+    //         if (item.init_expr?.indexOf("'") === 0) {
+    //           obj.value = item.init_expr.replaceAll("'", '')
+    //         }
+    //         if (obj.value) {
+    //           arr.push(obj)
+    //         }
+    //       }
 
-        })
-      }
-      if (this.$route?.query?.initCond) {
-        let str = this.$route?.query?.initCond;
-        try {
-          str = JSON.parse(decodeURIComponent(str));
-          if (Array.isArray(str) && str?.length) {
-            str.forEach((item) => {
-              if (item?.value?.includes("top.user")) {
-                let key = item.value.split("top.user.");
-                key = key.length > 1 ? key[1] : "";
-                if (key) {
-                  let userInfo = sessionStorage.getItem("current_login_user");
-                  if (userInfo) {
-                    userInfo = JSON.parse(userInfo);
-                  }
-                  item.value = userInfo?.[key];
-                }
-              } else if (item?.value?.includes("new Date()")) {
-                item.value = dayjs().format("YYYY-MM-DD");
-              }
-              // init_expr跟initCond都有 使用initCond
-              arr = arr.filter(e => e.colName !== item.colName)
-              arr.push(item);
-            });
-          }
-        } catch (error) {
-          console.log(error);
-        }
-      }
-      let query_init_value_lsit = this.v2data.srv_cols.filter(item => item.query_init_value?.value)
-      if (query_init_value_lsit?.length) {
-        query_init_value_lsit.forEach(item => {
-          let obj = {
-            colName: item.columns,
-            ruleType: 'eq',
-            value: item.query_init_value.value
-          }
-          if (obj?.value?.includes("top.user")) {
-            let key = obj.value.split("top.user.");
-            key = key.length > 1 ? key[1] : "";
-            if (key) {
-              let userInfo = sessionStorage.getItem("current_login_user");
-              if (userInfo) {
-                userInfo = JSON.parse(userInfo);
-              }
-              obj.value = userInfo?.[key];
-            }
-          } else if (obj?.value?.includes("new Date()")) {
-            obj.value = dayjs().format("YYYY-MM-DD");
-          }
-          arr.push(obj)
-        })
-      }
-      return arr;
-    },
+    //     })
+    //   }
+    //   if (this.$route?.query?.initCond) {
+    //     let str = this.$route?.query?.initCond;
+    //     try {
+    //       str = JSON.parse(decodeURIComponent(str));
+    //       if (Array.isArray(str) && str?.length) {
+    //         str.forEach((item) => {
+    //           if (item?.value?.includes("top.user")) {
+    //             let key = item.value.split("top.user.");
+    //             key = key.length > 1 ? key[1] : "";
+    //             if (key) {
+    //               let userInfo = sessionStorage.getItem("current_login_user");
+    //               if (userInfo) {
+    //                 userInfo = JSON.parse(userInfo);
+    //               }
+    //               item.value = userInfo?.[key];
+    //             }
+    //           } else if (item?.value?.includes("new Date()")) {
+    //             item.value = dayjs().format("YYYY-MM-DD");
+    //           }
+    //           // init_expr跟initCond都有 使用initCond
+    //           arr = arr.filter(e => e.colName !== item.colName)
+    //           arr.push(item);
+    //         });
+    //       }
+    //     } catch (error) {
+    //       console.log(error);
+    //     }
+    //   }
+    //   let query_init_value_lsit = this.v2data.srv_cols.filter(item => item.query_init_value?.value)
+    //   if (query_init_value_lsit?.length) {
+    //     query_init_value_lsit.forEach(item => {
+    //       let obj = {
+    //         colName: item.columns,
+    //         ruleType: 'eq',
+    //         value: item.query_init_value.value
+    //       }
+    //       if (obj?.value?.includes("top.user")) {
+    //         let key = obj.value.split("top.user.");
+    //         key = key.length > 1 ? key[1] : "";
+    //         if (key) {
+    //           let userInfo = sessionStorage.getItem("current_login_user");
+    //           if (userInfo) {
+    //             userInfo = JSON.parse(userInfo);
+    //           }
+    //           obj.value = userInfo?.[key];
+    //         }
+    //       } else if (obj?.value?.includes("new Date()")) {
+    //         obj.value = dayjs().format("YYYY-MM-DD");
+    //       }
+    //       if(Array.isArray(obj.value)&&obj.value.length===2){
+    //         obj.ruleType = 'between'
+    //       }else if(Array.isArray(obj.value)){
+    //         obj.ruleType = 'in'
+    //         obj.value = obj.value.join(',')
+    //       }
+    //       arr.push(obj)
+    //     })
+    //   }
+    //   return arr;
+    // },
     defaultConditions() {
       const query = this.$route.query;
       let defaultConditions = [];
@@ -1099,6 +1106,98 @@ export default {
     },
   },
   methods: {
+    isFk(column) {
+      if (column?.col_type || column?.bx_col_type) {
+        const fkTypes = ["User", "Dept", "bxsys_user", "bxsys_dept", 'fk'];
+        return fkTypes.includes(column.col_type) || column.bx_col_type === 'fk' || column.bx_col_type?.indexOf('bx') === 0
+      }
+    },
+    explainValue(value, column) {
+      let userInfo = sessionStorage.getItem("current_login_user") || {};
+      if (value?.includes("top.user.")) {
+        let key = value.split("top.user.");
+        key = key.length > 1 ? key[1] : "";
+        if (key) {
+          if (userInfo) {
+            userInfo = JSON.parse(userInfo);
+          }
+          value = userInfo?.[key];
+        }
+      } if (value?.includes("userInfo.")) {
+        let key = value.split("userInfo.");
+        key = key.length > 1 ? key[1] : "";
+        if (key) {
+          if (userInfo) {
+            userInfo = JSON.parse(userInfo);
+          }
+          value = userInfo?.[key];
+        }
+      } else if (value?.includes("new Date()")) {
+        value = dayjs().format("YYYY-MM-DD");
+      } else if (['本人'].includes(value) && column && this.isFk(column)) {
+        value = userInfo?.user_no;
+      }
+      return value
+    },
+    buildInitCond() {
+      let arr = [];
+      let initExprFields = this.allFields.filter(item => !!item.init_expr)
+      // 只有init_expr 使用init_expr
+      if (initExprFields?.length) {
+        initExprFields.forEach(item => {
+          if (this.filterState[item.columns] !== null && !this.filterState[item.columns]) {
+            let obj = {
+              colName: item.columns,
+              ruleType: 'eq'
+            }
+            if (item.init_expr?.indexOf("'") === 0) {
+              obj.value = item.init_expr.replaceAll("'", '')
+            }
+            if (obj.value) {
+              arr.push(obj)
+            }
+          }
+
+        })
+      }
+      if (this.$route?.query?.initCond) {
+        let str = this.$route?.query?.initCond;
+        try {
+          str = JSON.parse(decodeURIComponent(str));
+          if (Array.isArray(str) && str?.length) {
+            str.forEach((item) => {
+              item.value = this.explainValue(item.value)
+              // init_expr跟initCond都有 使用initCond
+              arr = arr.filter(e => e.colName !== item.colName)
+              arr.push(item);
+            });
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      }
+      let query_init_value_lsit = this.v2data.srv_cols.filter(item => item.query_init_value?.value)
+      if (query_init_value_lsit?.length) {
+        query_init_value_lsit.forEach(item => {
+          let obj = {
+            colName: item.columns,
+            ruleType: 'eq',
+            value: item.query_init_value.value
+          }
+          obj.value = this.explainValue(obj.value)
+          if (Array.isArray(obj.value) && obj.value.length === 2) {
+            obj.ruleType = 'between'
+          } else if (Array.isArray(obj.value)) {
+            obj.ruleType = 'in'
+            obj.value = obj.value.join(',')
+          }
+          // 优先使用query_init_value配置的初始查询条件
+          arr = arr.filter(e => e.colName !== obj.colName)
+          arr.push(obj)
+        })
+      }
+      this.initCond = arr
+    },
     updateParentNo(val, row) {
       if (this.updateButton?.service_name) {
         const url = `/${this.srvApp}/operate/${this.updateButton?.service_name}`;
@@ -1132,6 +1231,7 @@ export default {
       if (this.serviceName) {
         this.loading = true;
         const v2Data = await this.getV2Data();
+        this.buildInitCond()
         this.loading = false;
         if (refresh) {
           setTimeout(() => {
@@ -1304,6 +1404,10 @@ export default {
                     if (event?.colName) {
                       if (event.remove) {
                         this.$set(this.filterState, event.colName, null);
+                        if (this.initCond?.find(item => item.colName === event.colName)) {
+                          // 清空初始查询条件
+                          this.initCond = this.initCond.filter(item => item.colName !== event.colName)
+                        }
                       } else {
                         this.$set(this.filterState, event.colName, event);
                       }

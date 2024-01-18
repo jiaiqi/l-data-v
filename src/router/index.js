@@ -1,6 +1,7 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import HomeView from "@/views/page-editor/index.vue";
+// import HomeView from "@/views/page-editor/index.vue";
+import HomeView from "@/views/sheet-editor/index.vue";
 import { importRouters } from "./autoImportRouter";
 Vue.use(VueRouter);
 
@@ -12,19 +13,24 @@ const router = new VueRouter({
   routes: [
     {
       path: "/",
-      name: "pageEditor",
-      component: HomeView,
+      name: "Home",
+      component:HomeView
     },
-    {
-      path: "/dataview",
-      name: "dataview",
-      component: HomeView,
-    },
-    {
-      path: "/player",
-      name: "player",
-      component: () => import("@/views/video-player.vue"),
-    },
+    // {
+    //   path: "/",
+    //   name: "pageEditor",
+    //   component: HomeView,
+    // },
+    // {
+    //   path: "/dataview",
+    //   name: "dataview",
+    //   component: HomeView,
+    // },
+    // {
+    //   path: "/player",
+    //   name: "player",
+    //   component: () => import("@/views/video-player.vue"),
+    // },
     {
       path: "/request",
       name: "requestBuilder",
