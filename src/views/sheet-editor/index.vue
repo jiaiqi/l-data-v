@@ -2762,7 +2762,7 @@ export default {
 //   border: 1px solid #2087cc !important;
 // }
 .ve-table-body-td {
-  padding: 10px 0 !important;
+  padding:  0 !important;
 }
 
 .ve-table-header-th {
@@ -2783,6 +2783,8 @@ export default {
       background-color: transparent !important;
       padding-left: 0;
       padding-right: 25px;
+      height: 30px;
+      line-height: 30px;
     }
 
     .el-icon-arrow-right {
