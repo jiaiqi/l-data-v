@@ -5,8 +5,15 @@
         <!-- Enum、Set -->
         <div class="option-list" v-if="['枚举', '集合'].includes(colType)">
           <el-checkbox-group v-model="modelValue">
-            <el-checkbox class="el-checkbox" v-for="item in optionList" :label="item.value" :key="item.value">{{
-              item.label }}</el-checkbox>
+            <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item.value"
+              :key="item.value">
+
+              <!-- {{
+              item.label }} -->
+              <div class="checkbox-btn" :class="{ active: modelValue && modelValue.includes(item.value) }">{{ item.label }}
+              </div>
+
+            </el-checkbox>
           </el-checkbox-group>
         </div>
 
@@ -85,18 +92,25 @@
           <div class="label">内容过滤：</div>
           <el-input v-model="modelValue" clearable></el-input>
           <el-checkbox-group style="width: 100%; overflow-x: auto" v-model="strList" v-if="colType === '字符串'">
-            <el-checkbox class="el-checkbox" v-for="item in optionList" :label="item" :key="item">{{
+            <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item" :key="item">
+              <div class="checkbox-btn" :class="{ active: strList.includes(item) }">{{ item }}</div>
+              <!-- {{
               item
-            }}</el-checkbox>
+            }} -->
+            </el-checkbox>
+
           </el-checkbox-group>
         </div>
         <div class="input-box" v-else-if="colType === '外键'">
           <div class="label">内容过滤：</div>
           <el-input v-model="filterText" clearable @change="getFkOptions"></el-input>
           <el-checkbox-group v-model="modelValue">
-            <el-checkbox class="el-checkbox" v-for="item in optionList" :label="item" :key="item">{{
+            <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item" :key="item">
+              <!-- {{
               item
-            }}</el-checkbox>
+            }} -->
+              <div class="checkbox-btn" :class="{ active: modelValue && modelValue.includes(item) }">{{ item }}</div>
+            </el-checkbox>
           </el-checkbox-group>
         </div>
         <div class="handler-bar flex justify-end m-t-2">
@@ -447,7 +461,13 @@ export default {
           if (item.colName === this.column.columns && ['in', 'eq', 'like'].includes(item.ruleType) && item.value) {
             this.$nextTick(() => {
               this.modelValue = item.value
-              this.strList.push(item.value)
+              if (item.ruleType === 'in') {
+                this.strList.push(...item.value.split(','))
+                this.strList = Array.from(new Set(this.strList))
+              } else {
+                this.strList.push(item.value)
+
+              }
               this.onFilter = true
             });
           }
@@ -521,6 +541,7 @@ export default {
             modelValue.push(key)
           }
         })
+        modelValue = [...new Set(modelValue)]
         val.condition = [
           {
             colName: this.column.columns,
@@ -633,7 +654,7 @@ export default {
       immediate: true,
       deep: true,
       handler(newValue, oldValue) {
-        if(Array.isArray(newValue)){
+        if (Array.isArray(newValue)) {
           this.initModelValue()
         }
       }
@@ -658,6 +679,49 @@ export default {
     max-height: 50vh;
     overflow-y: auto;
     overflow-x: hidden;
+  }
+
+  .checkbox-btn {
+    display: inline-block;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    background: #FFF;
+    border: 1px solid #DCDFE6;
+    color: #606266;
+    -webkit-appearance: none;
+    text-align: center;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    outline: 0;
+    margin: 0;
+    -webkit-transition: .1s;
+    transition: .1s;
+    font-weight: 500;
+    padding: 7px 15px;
+    font-size: 14px;
+    border-radius: 4px;
+
+    &.active {
+      color: #409EFF;
+      background: #ecf5ff;
+      border-color: #b3d8ff;
+    }
+  }
+
+  ::v-deep .el-checkbox.str-checkbox {
+    margin-right: 0;
+    padding-left: 0;
+    min-width: 0;
+
+    .el-checkbox__input {
+      display: none;
+    }
+
+    .el-checkbox__label {
+      padding: 0;
+      min-width: 60px;
+    }
   }
 
   .input-box {
