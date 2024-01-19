@@ -7,8 +7,8 @@
         <div class="unfold-icon el-icon-plus" v-else></div>
       </div>
       <div class="prefix-icon cursor-initial" v-else-if="column.isFirstCol"></div>
-      <div v-html="html" style="min-height:30px" v-if="useEditor && html" class="p-1"></div>
-      <div style="min-height:30px" v-else-if="![null, undefined, ''].includes(html)" class="p-1">{{ html }}</div>
+      <div v-html="html" style="min-height:30px" v-if="useEditor && html" ></div>
+      <div style="min-height:30px" v-else-if="![null, undefined, ''].includes(html)" >{{ html }}</div>
       <div class="old-value" v-else-if="[null, undefined, ''].includes(html) && oldValue" v-html="oldValue"></div>
     </div>
     <el-button size="mini" class="edit-btn" circle @click.stop="showRichEditor" v-if="useEditor"><i
@@ -283,7 +283,7 @@ export default {
   --w-e-textarea-bg-color: transparent;
   max-height: 200px;
   position: relative;
-
+  display: flex;
   .old-value {
     text-decoration: line-through;
     color: #f00;

@@ -63,4 +63,12 @@ module.exports = [
     password: "Bxaliyun46;",
     path: "/bxsoft/xxpages/dataview",
   },
+  // {
+  //   title: "ai稽核 内网",
+  //   host: "192.168.0.151",
+  //   port: 22,
+  //   username: "root",
+  //   password: "123456;",
+  //   path: "/data/front/dataview",
+  // },
 ];

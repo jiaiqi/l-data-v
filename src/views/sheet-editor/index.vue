@@ -2762,7 +2762,7 @@ export default {
 //   border: 1px solid #2087cc !important;
 // }
 .ve-table-body-td {
-  padding:  0 !important;
+  padding:  5px!important;
 }
 
 .ve-table-header-th {
