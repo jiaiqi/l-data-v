@@ -2728,10 +2728,6 @@ export default {
     .el-select__caret {
       color: #eee;
     }
-    .el-input__inner{
-      height: unset;
-      line-height: unset;
-    }
     .el-input__inner::placeholder {
       color: #fff;
     }
@@ -2788,8 +2784,8 @@ export default {
       background-color: transparent !important;
       padding-left: 0;
       padding-right: 25px;
-      height: unset;
-      line-height: unset;
+      height: 25px;
+      line-height: 25px;
     }
 
     .el-icon-arrow-right {

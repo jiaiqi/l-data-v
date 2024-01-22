@@ -279,10 +279,10 @@ export default {
 .render-html {
   margin-left: var(--row_indent);
   height: 100%;
-  // min-height: 40px;
+  min-height: 20px;
   text-align: left;
   --w-e-textarea-bg-color: transparent;
-  max-height: 200px;
+  max-height: 100px;
   position: relative;
   display: flex;
   .old-value {
