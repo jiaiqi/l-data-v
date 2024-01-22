@@ -1,7 +1,7 @@
 <template>
   <div class="render-html" :class="{ 'is-rich-text': useEditor }" :style="setStyle" v-loading="loadingFold"
     @dblclick="showRichEditor">
-    <div class="flex w-full items-center">
+    <div class="flex w-full">
       <div class="prefix-icon" v-if="showUnfold && column.isFirstCol" @click="changeFold">
         <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
         <div class="unfold-icon el-icon-plus" v-else></div>

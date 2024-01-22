@@ -1107,10 +1107,10 @@ export default {
     },
   },
   methods: {
-    repari(){
+    repari() {
       this.loading = true
       setTimeout(() => {
-      this.loading = false
+        this.loading = false
       }, 10);
     },
     isFk(column) {
@@ -1378,16 +1378,16 @@ export default {
                 columnObj.isFirstCol = true;
               }
             }
-            // 设置固定列
-            let fixedCol = Number(this.$route.query?.fixedCol || 1);
-            if (isNaN(fixedCol)) {
-              fixedCol = 1;
-            }
-            for (let fIndex = 0; fIndex < fixedCol; fIndex++) {
-              if (index === fIndex) {
-                columnObj.fixed = "left";
-              }
-            }
+            // // 设置固定列
+            // let fixedCol = Number(this.$route.query?.fixedCol || 1);
+            // if (isNaN(fixedCol)) {
+            //   fixedCol = 1;
+            // }
+            // for (let fIndex = 0; fIndex < fixedCol; fIndex++) {
+            //   if (index === fIndex) {
+            //     columnObj.fixed = "left";
+            //   }
+            // }
 
             // if (this.defaultConditions?.length) {
             //   columnObj.disabled = this.defaultConditions.some(
@@ -1839,6 +1839,22 @@ export default {
             return columnObj;
           })
         );
+        // 设置固定列
+        let fixedCol = Number(this.$route.query?.fixedCol);
+        if (this.$route.query?.fixedCol) {
+          fixedCol = columns.filter((item, index) => index !== 0 && !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(item.key)).filter((item, index) => index < this.$route.query?.fixedCol).map(item => item.key)
+        } else {
+          fixedCol = columns.find((item, index) => {
+            return index !== 0 && !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(item.key)
+          })
+          fixedCol = [fixedCol?.key]
+        }
+        columns = columns.map((item) => {
+          if (fixedCol?.includes(item.key)) {
+            item.fixed = "left";
+          }
+          return item
+        })
         return columns;
       }
       columns = columns.concat(
@@ -2728,6 +2744,7 @@ export default {
     .el-select__caret {
       color: #eee;
     }
+
     .el-input__inner::placeholder {
       color: #fff;
     }
@@ -2761,11 +2778,14 @@ export default {
 //   border: 1px solid #2087cc !important;
 // }
 .ve-table-body-td {
-  padding:2px 5px!important;
+  padding: 2px 5px !important;
 }
-.ve-table-body-tr{
-  height: unset!important;;
+
+.ve-table-body-tr {
+  height: unset !important;
+  ;
 }
+
 .ve-table-header-th {
   padding: 2px 0 !important;
   background-color: #e5e7ea !important;
@@ -2810,5 +2830,4 @@ export default {
   // height: calc(100vh - 80px)!important;
   // overflow: auto;
 }
-
 </style>
