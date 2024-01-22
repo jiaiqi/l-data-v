@@ -1,14 +1,14 @@
 <template>
   <div class="render-html" :class="{ 'is-rich-text': useEditor }" :style="setStyle" v-loading="loadingFold"
     @dblclick="showRichEditor">
-    <div class="flex">
+    <div class="flex w-full items-center">
       <div class="prefix-icon" v-if="showUnfold && column.isFirstCol" @click="changeFold">
         <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
         <div class="unfold-icon el-icon-plus" v-else></div>
       </div>
       <div class="prefix-icon cursor-initial" v-else-if="column.isFirstCol"></div>
-      <div v-html="html" style="min-height:30px" v-if="useEditor && html" ></div>
-      <div style="min-height:30px" v-else-if="![null, undefined, ''].includes(html)" >{{ html }}</div>
+      <div v-html="html" style="" v-if="useEditor && html" ></div>
+      <div style="" v-else-if="![null, undefined, ''].includes(html)" >{{ html }}</div>
       <div class="old-value" v-else-if="[null, undefined, ''].includes(html) && oldValue" v-html="oldValue"></div>
     </div>
     <el-button size="mini" class="edit-btn" circle @click.stop="showRichEditor" v-if="useEditor"><i
@@ -90,7 +90,7 @@ export default {
     setStyle() {
       let str = "";
       if (this.useEditor) {
-        str += `min-height:40px;`;
+        // str += `min-height:40px;`;
       }
       if (this.row?.__indent && this.column.isFirstCol) {
         str += `--row_indent:${this.row?.__indent}px;`;
@@ -278,6 +278,7 @@ export default {
 
 .render-html {
   margin-left: var(--row_indent);
+  height: 100%;
   // min-height: 40px;
   text-align: left;
   --w-e-textarea-bg-color: transparent;

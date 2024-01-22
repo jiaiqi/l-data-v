@@ -2728,7 +2728,10 @@ export default {
     .el-select__caret {
       color: #eee;
     }
-
+    .el-input__inner{
+      height: unset;
+      line-height: unset;
+    }
     .el-input__inner::placeholder {
       color: #fff;
     }
@@ -2762,9 +2765,11 @@ export default {
 //   border: 1px solid #2087cc !important;
 // }
 .ve-table-body-td {
-  padding:  5px!important;
+  padding:2px 5px!important;
 }
-
+.ve-table-body-tr{
+  height: unset!important;;
+}
 .ve-table-header-th {
   padding: 2px 0 !important;
   background-color: #e5e7ea !important;
@@ -2783,8 +2788,8 @@ export default {
       background-color: transparent !important;
       padding-left: 0;
       padding-right: 25px;
-      height: 30px;
-      line-height: 30px;
+      height: unset;
+      line-height: unset;
     }
 
     .el-icon-arrow-right {
