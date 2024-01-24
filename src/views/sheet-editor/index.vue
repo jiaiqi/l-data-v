@@ -114,6 +114,7 @@ export default {
   },
   data() {
     return {
+      initExprCols:[],
       initCond: [],
       tableMaxHeight: 1000,
       onPopup: false,//弹窗是否打开状态
@@ -1148,7 +1149,8 @@ export default {
     },
     buildInitCond() {
       let arr = [];
-      let initExprFields = this.allFields.filter(item => !!item.init_expr)
+      let initExprFields = this.initExprCols 
+      // || this.allFields.filter(item => !!item.init_expr)
       // 只有init_expr 使用init_expr
       if (initExprFields?.length) {
         initExprFields.forEach(item => {
@@ -2609,6 +2611,13 @@ export default {
 
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
+        this.initExprCols = res.data.srv_cols.reduce((pre,cur)=>{
+          if(cur.init_expr){
+            pre.push(cur)
+          }
+          return pre
+        },[])
+
         const editBtn = res.data?.rowButton?.find(
           (item) => item.button_type === "edit"
         );
