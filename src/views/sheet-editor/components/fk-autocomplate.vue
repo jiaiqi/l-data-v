@@ -46,7 +46,7 @@
 import { $http } from '../../../common/http.js'
 import { cloneDeep } from 'lodash-es'
 import { getFkOptions, onSelect } from "../../../service/api";
-
+import { renderStr } from '../../../common/common'
 export default {
   data() {
     return {
@@ -469,6 +469,8 @@ export default {
       if (!req.serviceName || !appName) {
         return
       }
+      appName = renderStr(appName,{data:this.row})
+
       let loginUser = JSON.parse(sessionStorage.getItem('current_login_user') || '{}');
       if (srvInfo?.conditions?.length) {
         for (let i = 0; i < srvInfo.conditions.length; i++) {
@@ -598,4 +600,5 @@ export default {
     }
   }
 
-}</style>
+}
+</style>

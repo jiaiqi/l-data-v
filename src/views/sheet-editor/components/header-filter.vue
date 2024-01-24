@@ -10,7 +10,8 @@
 
               <!-- {{
               item.label }} -->
-              <div class="checkbox-btn" :class="{ active: modelValue && modelValue.includes(item.value) }">{{ item.label }}
+              <div class="checkbox-btn" :class="{ active: modelValue && modelValue.includes(item.value) }">{{ item.label
+              }}
               </div>
 
             </el-checkbox>
@@ -18,11 +19,11 @@
         </div>
 
         <div class="number-range" v-else-if="colType === '数字'">
-          <div class="label">输入数值范围：</div>
-          <div class="">
-            <el-input placeholder="请输入最小值" v-model="min"></el-input>
-            <div>至</div>
-            <el-input placeholder="请输入最大值" v-model="max"></el-input>
+          <div class="label m-b-2">输入数值范围：</div>
+          <div class="flex items-center">
+            <el-input placeholder="请输入最小值" v-model="min" type="number"></el-input>
+            <div class="m-x-2">至</div>
+            <el-input placeholder="请输入最大值" v-model="max" type="number"></el-input>
           </div>
         </div>
         <div class="date-range" v-else-if="['时间'].includes(colType)">
@@ -458,18 +459,28 @@ export default {
         this.strList = []
         for (let i = 0; i < this.condition.length; i++) {
           let item = this.condition[i];
-          if (item.colName === this.column.columns && ['in', 'eq', 'like'].includes(item.ruleType) && item.value) {
-            this.$nextTick(() => {
-              this.modelValue = item.value
-              if (item.ruleType === 'in') {
-                this.strList.push(...item.value.split(','))
-                this.strList = Array.from(new Set(this.strList))
-              } else {
-                this.strList.push(item.value)
-
-              }
-              this.onFilter = true
-            });
+          if (item.colName === this.column.columns && item.value) {
+            if (['in', 'eq', 'like'].includes(item.ruleType)) {
+              this.$nextTick(() => {
+                this.modelValue = item.value
+                if (item.ruleType === 'in') {
+                  this.strList.push(...item.value.split(','))
+                  this.strList = Array.from(new Set(this.strList))
+                } else {
+                  this.strList.push(item.value)
+                }
+                this.onFilter = true
+              });
+            } else if (['ge', 'le', 'gt', 'lt'].includes(item.ruleType)) {
+              this.$nextTick(() => {
+                if (['ge', 'gt'].includes(item.ruleType)) {
+                  this.min = item.value
+                } else {
+                  this.max = item.value
+                }
+                this.onFilter = true
+              })
+            }
           }
         }
       }

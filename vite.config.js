@@ -10,7 +10,7 @@ import UnoCSS from "unocss/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "/dataview",
+  base: "/dataview/",
   plugins: [
     vue2(),
     legacy({

@@ -33,4 +33,28 @@ const isJSON = (str) => {
   return false;
 };
 
+export const renderStr = (str, obj = {}) => {
+  if (typeof obj === 'object' && str && typeof str === 'string') {
+    str = str.replace(/\$\{(.*?)\}/g, (match, key) => {
+      key = key.trim()
+      let result = obj[key]
+      let arr = key.split('.')
+      if (arr?.length) {
+        result = obj
+        arr.forEach(item => {
+          try {
+            result = (result[item]||result[item]===false||result[item]===0) ? result[item] : '';
+            if (result === 0) {
+              result = '0'
+            }
+          } catch (e) {
+            //TODO handle the exception
+          }
+        })
+      }
+      return result
+    })
+  }
+  return str
+}
 export { formatStyleData };

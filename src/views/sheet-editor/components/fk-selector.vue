@@ -50,7 +50,6 @@
 
 <script>
 import { getFkOptions, onSelect } from "../../../service/api";
-
 export default {
   props: {
     app: {

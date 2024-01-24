@@ -3,6 +3,8 @@ import { Message } from "element-ui";
 import { $axios as http } from "../common/http";
 import { useMetaStore } from "../stores/colMeta.js";
 import { cloneDeep } from "lodash-es";
+import { renderStr } from "../common/common";
+
 // const metaStore = useMetaStore();
 const colMetaStore = {};
 const setItem = (key, data) => {
@@ -78,7 +80,7 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
       // rdt: Return Data Type  ttd: top tree data
       if (req.condition?.length || params.forceUseTTD) {
         req["rdt"] = "ttd";
-        delete req.page
+        delete req.page;
       } else if (params.pidCol) {
         req.condition.push({
           colName: params.pidCol,
@@ -89,8 +91,8 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
     if (params.use_type) {
       req.use_type = params.use_type;
     }
-    if(params.relation_condition){
-      req.relation_condition = params.relation_condition
+    if (params.relation_condition) {
+      req.relation_condition = params.relation_condition;
     }
     const url = `${app}/select/${serviceName}`;
     const res = await http.post(url, req);
@@ -211,7 +213,9 @@ const onBatchAdd = async (data = {}, serviceName = "", app = "daq") => {
 const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
   let { option_list_v2 } = col;
   app = option_list_v2?.srv_app || app || sessionStorage.getItem("current_app");
-
+  if (app && app.indexOf("${") > -1) {
+    app = renderStr(app, { data: row });
+  }
   let req = {
     serviceName: option_list_v2.serviceName,
     colNames: ["*"],
