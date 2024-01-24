@@ -1483,6 +1483,7 @@ export default {
               }
               // if (item.bx_col_type === "fk") {
               columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+     
                 const oldRowData = this.oldTableData.find(
                   (item) => item.__id && item.__id === row.__id
                 );
@@ -1652,6 +1653,9 @@ export default {
                 } else if (
                   ['Enum', 'Dict'].includes(item.col_type)
                 ) {
+                  if(!item.option_list_v2){
+                    item.option_list_v2 = []
+                  }
                   return h(
                     "el-select",
                     {
@@ -1691,6 +1695,9 @@ export default {
                   let value = [];
                   if (row[column.field]) {
                     value = row[column.field].split(",");
+                  }
+                  if(!item.option_list_v2){
+                    item.option_list_v2 = []
                   }
                   return h(
                     "el-select",
@@ -1834,6 +1841,7 @@ export default {
                     },
                   });
                 }
+
               };
             }
             return columnObj;
@@ -2534,7 +2542,7 @@ export default {
             return item;
           });
         } else if (res?.resultCode === '0011') {
-          this.$message.error('登录超时请重新登录')
+          // this.$message.error('登录超时请重新登录')
           this.$refs?.loginRef?.open(() => {
             this.initPage(false)
           })
