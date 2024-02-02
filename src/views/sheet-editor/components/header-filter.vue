@@ -92,15 +92,18 @@
         <div class="input-box" v-else-if="['富文本', '字符串'].includes(colType)">
           <div class="label">内容过滤：</div>
           <el-input v-model="modelValue" clearable></el-input>
-          <el-checkbox-group style="width: 100%; overflow-x: auto" v-model="strList" v-if="colType === '字符串'">
+          <div class="check-button-group">
+            <div class="check-button-item" :class="{ active: strList.includes(item) }" v-for="item in optionList"
+              :label="item" :key="item" @click="onCheckBtnChange(item)">
+              {{ item }}
+            </div>
+          </div>
+          <!-- <el-checkbox-group style="width: 100%; overflow-x: auto" v-model="strList" v-if="colType === '字符串'">
             <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item" :key="item">
               <div class="checkbox-btn" :class="{ active: strList.includes(item) }">{{ item }}</div>
-              <!-- {{
-              item
-            }} -->
             </el-checkbox>
 
-          </el-checkbox-group>
+          </el-checkbox-group> -->
         </div>
         <div class="input-box" v-else-if="colType === '外键'">
           <div class="label">内容过滤：</div>
@@ -359,6 +362,14 @@ export default {
     };
   },
   methods: {
+    onCheckBtnChange(item){
+      if(this.strList.includes(item)){
+        this.strList.splice(this.strList.indexOf(item),1)
+      }else{
+        this.strList.push(item)
+      }
+      this.modelValue = this.strList.join(',')
+    },
     changeMultiple() {
       // 允许多选状态改变 清空当前选中的状态
       this.$emit("filter-change", {
@@ -462,13 +473,13 @@ export default {
           if (item.colName === this.column.columns && item.value) {
             if (['in', 'eq', 'like'].includes(item.ruleType)) {
               this.$nextTick(() => {
-                this.modelValue = item.value
                 if (item.ruleType === 'in') {
                   this.strList.push(...item.value.split(','))
-                  this.strList = Array.from(new Set(this.strList))
                 } else {
                   this.strList.push(item.value)
                 }
+                this.strList = Array.from(new Set(this.strList))
+                this.modelValue = this.strList.toString()
                 this.onFilter = true
               });
             } else if (['ge', 'le', 'gt', 'lt'].includes(item.ruleType)) {
@@ -654,6 +665,7 @@ export default {
             this.onFilter = true;
           } else {
             this.onFilter = false;
+            val.remove = true
           }
           break;
       }
@@ -737,6 +749,24 @@ export default {
 
   .input-box {
     // max-width: 300px;
+    .check-button-group{
+      display: flex;flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 5px;
+      .check-button-item{
+        padding: 5px 10px;
+        border-radius:4px;
+        border: 1px solid #DCDFE6;
+        min-width: 60px;
+        text-align: center;
+        cursor:pointer;
+        &.active{
+          background-color: #ecf5ff;
+          color: #409eff;
+          border-color: #409eff;
+        }
+      }
+    }
   }
 }
 
