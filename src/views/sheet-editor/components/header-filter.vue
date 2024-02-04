@@ -92,11 +92,21 @@
         <div class="input-box" v-else-if="['富文本', '字符串'].includes(colType)">
           <div class="label">内容过滤：</div>
           <el-input v-model="modelValue" clearable></el-input>
+          <div class="text-bold p-y-2">
+            快捷筛选：
+            <el-switch v-model="multiple" active-text="多选" inactive-text="单选" @change="changeMultiple">
+            </el-switch>
+          </div>
           <div class="check-button-group">
-            <div class="check-button-item" :class="{ active: strList.includes(item) }" v-for="item in optionList"
-              :label="item" :key="item" @click="onCheckBtnChange(item)">
+            <div class="check-button-item"
+              :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
+              v-for="item in optionList" :label="item" :key="item" @click="shortFilter(item)">
               {{ item }}
             </div>
+            <!-- <div class="check-button-item" :class="{ active: strList.includes(item) }" v-for="item in optionList"
+              :label="item" :key="item"  @click="onCheckBtnChange(item)">
+              {{ item }}
+            </div> -->
           </div>
           <!-- <el-checkbox-group style="width: 100%; overflow-x: auto" v-model="strList" v-if="colType === '字符串'">
             <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item" :key="item">
@@ -362,10 +372,10 @@ export default {
     };
   },
   methods: {
-    onCheckBtnChange(item){
-      if(this.strList.includes(item)){
-        this.strList.splice(this.strList.indexOf(item),1)
-      }else{
+    onCheckBtnChange(item) {
+      if (this.strList.includes(item)) {
+        this.strList.splice(this.strList.indexOf(item), 1)
+      } else {
         this.strList.push(item)
       }
       this.modelValue = this.strList.join(',')
@@ -748,19 +758,23 @@ export default {
   }
 
   .input-box {
+
     // max-width: 300px;
-    .check-button-group{
-      display: flex;flex-wrap: wrap;
+    .check-button-group {
+      display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       padding-top: 5px;
-      .check-button-item{
+
+      .check-button-item {
         padding: 5px 10px;
-        border-radius:4px;
+        border-radius: 4px;
         border: 1px solid #DCDFE6;
         min-width: 60px;
         text-align: center;
-        cursor:pointer;
-        &.active{
+        cursor: pointer;
+
+        &.active {
           background-color: #ecf5ff;
           color: #409eff;
           border-color: #409eff;
