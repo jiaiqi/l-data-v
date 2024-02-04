@@ -114,7 +114,7 @@ export default {
   },
   data() {
     return {
-      initExprCols:[],
+      initExprCols: [],
       initCond: [],
       tableMaxHeight: 1000,
       onPopup: false,//弹窗是否打开状态
@@ -1149,7 +1149,7 @@ export default {
     },
     buildInitCond() {
       let arr = [];
-      let initExprFields = this.initExprCols 
+      let initExprFields = this.initExprCols
       // || this.allFields.filter(item => !!item.init_expr)
       // 只有init_expr 使用init_expr
       if (initExprFields?.length) {
@@ -1399,6 +1399,15 @@ export default {
             // }
 
             columnObj.renderHeaderCell = ({ column }, h) => {
+              const conditions = [...this.initCond,...this.defaultConditions]
+              // const conditions = [...this.defaultConditions]
+              // if (Array.isArray(this.initCond) && this.initCond.length) {
+              //   this.initCond.forEach(item => {
+              //     if (!conditions.find(col => col.colName === item.colName)) {
+              //       conditions.push(item)
+              //     }
+              //   })
+              // }
               return h(HeaderCell, {
                 attrs: {
                   app: this.srvApp,
@@ -1406,17 +1415,17 @@ export default {
                   column: { ...item, edit: columnObj.edit },
                   sortState: this.setSortState,
                   service: this.serviceName,
-                  condition: [...this.initCond, ...this.defaultConditions],
+                  condition: JSON.parse(JSON.stringify(conditions)),
                 },
                 on: {
                   "filter-change": (event) => {
                     if (event?.colName) {
+                      if (this.initCond?.find(item => item.colName === event.colName)) {
+                        // 清空初始查询条件
+                        this.initCond = this.initCond.filter(item => item.colName !== event.colName)
+                      }
                       if (event.remove) {
                         this.$set(this.filterState, event.colName, null);
-                        if (this.initCond?.find(item => item.colName === event.colName)) {
-                          // 清空初始查询条件
-                          this.initCond = this.initCond.filter(item => item.colName !== event.colName)
-                        }
                       } else {
                         this.$set(this.filterState, event.colName, event);
                       }
@@ -1485,7 +1494,7 @@ export default {
               }
               // if (item.bx_col_type === "fk") {
               columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-     
+
                 const oldRowData = this.oldTableData.find(
                   (item) => item.__id && item.__id === row.__id
                 );
@@ -1655,7 +1664,7 @@ export default {
                 } else if (
                   ['Enum', 'Dict'].includes(item.col_type)
                 ) {
-                  if(!item.option_list_v2){
+                  if (!item.option_list_v2) {
                     item.option_list_v2 = []
                   }
                   return h(
@@ -1698,7 +1707,7 @@ export default {
                   if (row[column.field]) {
                     value = row[column.field].split(",");
                   }
-                  if(!item.option_list_v2){
+                  if (!item.option_list_v2) {
                     item.option_list_v2 = []
                   }
                   return h(
@@ -2611,12 +2620,12 @@ export default {
 
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
-        this.initExprCols = res.data.srv_cols.reduce((pre,cur)=>{
-          if(cur.init_expr){
+        this.initExprCols = res.data.srv_cols.reduce((pre, cur) => {
+          if (cur.init_expr) {
             pre.push(cur)
           }
           return pre
-        },[])
+        }, [])
 
         const editBtn = res.data?.rowButton?.find(
           (item) => item.button_type === "edit"
