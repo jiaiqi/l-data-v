@@ -3,19 +3,33 @@
     <el-popover placement="bottom" trigger="click" v-model="filterVisible" @show="showPopover">
       <div class="filter-box">
         <!-- Enum、Set -->
-        <div class="option-list" v-if="['枚举', '集合'].includes(colType)">
-          <el-checkbox-group v-model="modelValue">
+        <div class="option-list input-box" v-if="['枚举', '集合'].includes(colType)">
+          <el-input v-model="modelValue" clearable></el-input>
+          <div class="text-bold p-y-2">
+            快捷筛选：
+            <el-switch v-model="multiple" active-text="多选" inactive-text="单选" @change="changeMultiple">
+            </el-switch>
+          </div>
+          <div class="check-button-group">
+            <div class="check-button-item"
+              :class="{ active: modelValue === item || (multiple && multipleValMap[item.value] == true) }"
+              v-for="item in optionList" :label="item.label" :key="item.value" @click="shortFilter(item.value)">
+              {{ item.label }}
+            </div>
+            <!-- <div class="check-button-item" :class="{ active: strList.includes(item) }" v-for="item in optionList"
+              :label="item" :key="item"  @click="onCheckBtnChange(item)">
+              {{ item }}
+            </div> -->
+          </div>
+          <!-- <el-checkbox-group v-model="modelValue">
             <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item.value"
               :key="item.value">
-
-              <!-- {{
-              item.label }} -->
               <div class="checkbox-btn" :class="{ active: modelValue && modelValue.includes(item.value) }">{{ item.label
               }}
               </div>
 
             </el-checkbox>
-          </el-checkbox-group>
+          </el-checkbox-group> -->
         </div>
 
         <div class="number-range" v-else-if="colType === '数字'">
