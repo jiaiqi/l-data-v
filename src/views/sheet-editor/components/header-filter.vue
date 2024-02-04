@@ -118,14 +118,27 @@
         <div class="input-box" v-else-if="colType === '外键'">
           <div class="label">内容过滤：</div>
           <el-input v-model="filterText" clearable @change="getFkOptions"></el-input>
-          <el-checkbox-group v-model="modelValue">
+          <div class="text-bold p-y-2">
+            快捷筛选：
+            <el-switch v-model="multiple" active-text="多选" inactive-text="单选" @change="changeMultiple">
+            </el-switch>
+          </div>
+          <div class="check-button-group">
+            <div class="check-button-item"
+              :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
+              v-for="item in optionList" :label="item" :key="item" @click="shortFilter(item)">
+              {{ item }}
+            </div>
+            <!-- <div class="check-button-item" :class="{ active: strList.includes(item) }" v-for="item in optionList"
+              :label="item" :key="item"  @click="onCheckBtnChange(item)">
+              {{ item }}
+            </div> -->
+          </div>
+          <!-- <el-checkbox-group v-model="modelValue">
             <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item" :key="item">
-              <!-- {{
-              item
-            }} -->
               <div class="checkbox-btn" :class="{ active: modelValue && modelValue.includes(item) }">{{ item }}</div>
             </el-checkbox>
-          </el-checkbox-group>
+          </el-checkbox-group> -->
         </div>
         <div class="handler-bar flex justify-end m-t-2">
           <el-button class="text-gray" size="mini" @click="filterVisible = false">取消</el-button>
