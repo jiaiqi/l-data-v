@@ -16,20 +16,41 @@
               v-for="item in optionList" :label="item.label" :key="item.value" @click="shortFilter(item.value)">
               {{ item.label }}
             </div>
-            <!-- <div class="check-button-item" :class="{ active: strList.includes(item) }" v-for="item in optionList"
-              :label="item" :key="item"  @click="onCheckBtnChange(item)">
-              {{ item }}
-            </div> -->
           </div>
-          <!-- <el-checkbox-group v-model="modelValue">
-            <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item.value"
-              :key="item.value">
-              <div class="checkbox-btn" :class="{ active: modelValue && modelValue.includes(item.value) }">{{ item.label
-              }}
-              </div>
-
-            </el-checkbox>
-          </el-checkbox-group> -->
+        </div>
+        <!-- 外键 -->
+        <div class="input-box" v-else-if="colType === '外键'">
+          <div class="label">内容过滤：</div>
+          <el-input v-model="filterText" clearable @change="getFkOptions"></el-input>
+          <div class="text-bold p-y-2">
+            快捷筛选：
+            <el-switch v-model="multiple" active-text="多选" inactive-text="单选" @change="changeMultiple">
+            </el-switch>
+          </div>
+          <div class="check-button-group">
+            <div class="check-button-item"
+              :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
+              v-for="item in optionList" :label="item" :key="item" @click="shortFilter(item)">
+              {{ item }}
+            </div>
+          </div>
+        </div>
+        
+        <div class="input-box" v-else-if="['富文本', '字符串'].includes(colType)">
+          <div class="label">内容过滤：</div>
+          <el-input v-model="modelValue" clearable></el-input>
+          <div class="text-bold p-y-2">
+            快捷筛选：
+            <el-switch v-model="multiple" active-text="多选" inactive-text="单选" @change="changeMultiple">
+            </el-switch>
+          </div>
+          <div class="check-button-group">
+            <div class="check-button-item"
+              :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
+              v-for="item in optionList" :label="item" :key="item" @click="shortFilter(item)">
+              {{ item }}
+            </div>
+          </div>
         </div>
 
         <div class="number-range" v-else-if="colType === '数字'">
@@ -40,6 +61,7 @@
             <el-input placeholder="请输入最大值" v-model="max" type="number"></el-input>
           </div>
         </div>
+        
         <div class="date-range" v-else-if="['时间'].includes(colType)">
           <div class="label">选择时间范围：</div>
           <el-time-select v-model="min" :picker-options="{
@@ -103,57 +125,7 @@
             </div>
           </div>
         </div>
-        <div class="input-box" v-else-if="['富文本', '字符串'].includes(colType)">
-          <div class="label">内容过滤：</div>
-          <el-input v-model="modelValue" clearable></el-input>
-          <div class="text-bold p-y-2">
-            快捷筛选：
-            <el-switch v-model="multiple" active-text="多选" inactive-text="单选" @change="changeMultiple">
-            </el-switch>
-          </div>
-          <div class="check-button-group">
-            <div class="check-button-item"
-              :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
-              v-for="item in optionList" :label="item" :key="item" @click="shortFilter(item)">
-              {{ item }}
-            </div>
-            <!-- <div class="check-button-item" :class="{ active: strList.includes(item) }" v-for="item in optionList"
-              :label="item" :key="item"  @click="onCheckBtnChange(item)">
-              {{ item }}
-            </div> -->
-          </div>
-          <!-- <el-checkbox-group style="width: 100%; overflow-x: auto" v-model="strList" v-if="colType === '字符串'">
-            <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item" :key="item">
-              <div class="checkbox-btn" :class="{ active: strList.includes(item) }">{{ item }}</div>
-            </el-checkbox>
 
-          </el-checkbox-group> -->
-        </div>
-        <div class="input-box" v-else-if="colType === '外键'">
-          <div class="label">内容过滤：</div>
-          <el-input v-model="filterText" clearable @change="getFkOptions"></el-input>
-          <div class="text-bold p-y-2">
-            快捷筛选：
-            <el-switch v-model="multiple" active-text="多选" inactive-text="单选" @change="changeMultiple">
-            </el-switch>
-          </div>
-          <div class="check-button-group">
-            <div class="check-button-item"
-              :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
-              v-for="item in optionList" :label="item" :key="item" @click="shortFilter(item)">
-              {{ item }}
-            </div>
-            <!-- <div class="check-button-item" :class="{ active: strList.includes(item) }" v-for="item in optionList"
-              :label="item" :key="item"  @click="onCheckBtnChange(item)">
-              {{ item }}
-            </div> -->
-          </div>
-          <!-- <el-checkbox-group v-model="modelValue">
-            <el-checkbox class="el-checkbox str-checkbox" v-for="item in optionList" :label="item" :key="item">
-              <div class="checkbox-btn" :class="{ active: modelValue && modelValue.includes(item) }">{{ item }}</div>
-            </el-checkbox>
-          </el-checkbox-group> -->
-        </div>
         <div class="handler-bar flex justify-end m-t-2">
           <el-button class="text-gray" size="mini" @click="filterVisible = false">取消</el-button>
           <el-button size="mini" @click="resetFilter">重置</el-button>
@@ -225,7 +197,7 @@ export default {
     },
     optionList() {
       let res = null;
-      if (this.colType === "枚举") {
+      if (["枚举", "集合"].includes(this.colType)) {
         res = this.column?.option_list_v2;
       } else if (this.filterOptions?.length) {
         res = [...new Set(this.filterOptions)];
