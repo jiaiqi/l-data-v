@@ -83,6 +83,8 @@ import { RecordManager } from "./util/recordManager.js";
 import { Loading } from "element-ui";
 import { $http } from "../../common/http";
 import loginDialog from '../../components/login-dialog/index.vue'
+import { processStrings,appendNumber } from '../../common/common'
+
 const ignoreKeys = [
   "__id",
   "__flag",
@@ -281,8 +283,37 @@ export default {
                   val = sourceSelectionData[1][key] - sourceSelectionData[0][key]
                 }
               }
+
               if (customFill) {
                 let lastVal = sourceSelectionData[sourceSelectionData.length - 1][key]
+                let diff = null
+                if (sourceSelectionData.length > 1) {
+                  diff = processStrings(sourceSelectionData[0][key], sourceSelectionData[1][key])?.diff
+                }
+                if (diff) {
+                  let isProcess = sourceSelectionData.every((item, index) => {
+                    if (index === sourceSelectionData.length - 1) {
+                      return true
+                    }
+                    return processStrings(item[key], sourceSelectionData[index + 1][key])?.diff === diff
+                  })
+                  if (isProcess) {
+                    this.tableData.forEach(item => {
+                      let index = targetSelectionData.findIndex(e => e.rowKey && e.rowKey === item.rowKey)
+                      if (index > -1){
+                        // 等差递增
+                        let curVal = appendNumber(lastVal,diff,index+1)
+                        if(typeof lastVal==="number"){
+                          curVal = Number(curVal)
+                        }
+                        this.$set(item, key, curVal)
+                      }
+                    })
+                    this.triggerEditCell(targetSelectionRangeIndexes)
+                    return false
+                  }
+                }
+
                 this.tableData.forEach((item) => {
                   let index = targetSelectionData.findIndex(e => e.rowKey && e.rowKey === item.rowKey)
                   if (index > -1) {
@@ -1399,7 +1430,7 @@ export default {
             // }
 
             columnObj.renderHeaderCell = ({ column }, h) => {
-              const conditions = [...this.initCond,...this.defaultConditions]
+              const conditions = [...this.initCond, ...this.defaultConditions]
               // const conditions = [...this.defaultConditions]
               // if (Array.isArray(this.initCond) && this.initCond.length) {
               //   this.initCond.forEach(item => {
