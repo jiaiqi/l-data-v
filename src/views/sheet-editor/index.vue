@@ -37,7 +37,7 @@
           v-if="calcColumnWidthReq && calcColumnWidthReq.length > 0">保存样式</el-button>
       </div>
     </div>
-    <div class="flex-1" v-if="!loading">
+    <div class="flex-1" v-if="isFetched">
       <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
         :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
         :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
@@ -140,6 +140,7 @@ export default {
       addColsMap: null, //新增字段映射
       updateColsMap: null, //编辑字段映射
       loading: false,
+      isFetched: false, //数据加载完成
       recordManager: new RecordManager(), //编辑记录
       tableData: [],
       oldTableData: [], //源数据
@@ -502,7 +503,7 @@ export default {
             }
           } else {
             // 编辑行 处理in_update
-            if (this.updateColsMap[column.field]?.in_update !== 1) {
+            if (this.updateColsMap?.[column.field]?.in_update !== 1) {
               this.$message({
                 message: "当前列不支持编辑",
                 type: "warning",
@@ -690,14 +691,6 @@ export default {
         return arr;
       }
     },
-    // calcReqData: {
-    //   get() {
-    //     return this.buildReqParams() || [];
-    //   },
-    //   set(val) {
-
-    //   },
-    // },
     // body 右键菜单配置
     contextmenuBodyOption() {
       return {
@@ -951,87 +944,6 @@ export default {
         };
       }
     },
-    // initCond() {
-    //   let arr = [];
-    //   let initExprFields = this.allFields.filter(item => !!item.init_expr)
-    //   // 只有init_expr 使用init_expr
-    //   if (initExprFields?.length) {
-    //     initExprFields.forEach(item => {
-    //       if (this.filterState[item.columns] !== null && !this.filterState[item.columns]) {
-    //         let obj = {
-    //           colName: item.columns,
-    //           ruleType: 'eq'
-    //         }
-    //         if (item.init_expr?.indexOf("'") === 0) {
-    //           obj.value = item.init_expr.replaceAll("'", '')
-    //         }
-    //         if (obj.value) {
-    //           arr.push(obj)
-    //         }
-    //       }
-
-    //     })
-    //   }
-    //   if (this.$route?.query?.initCond) {
-    //     let str = this.$route?.query?.initCond;
-    //     try {
-    //       str = JSON.parse(decodeURIComponent(str));
-    //       if (Array.isArray(str) && str?.length) {
-    //         str.forEach((item) => {
-    //           if (item?.value?.includes("top.user")) {
-    //             let key = item.value.split("top.user.");
-    //             key = key.length > 1 ? key[1] : "";
-    //             if (key) {
-    //               let userInfo = sessionStorage.getItem("current_login_user");
-    //               if (userInfo) {
-    //                 userInfo = JSON.parse(userInfo);
-    //               }
-    //               item.value = userInfo?.[key];
-    //             }
-    //           } else if (item?.value?.includes("new Date()")) {
-    //             item.value = dayjs().format("YYYY-MM-DD");
-    //           }
-    //           // init_expr跟initCond都有 使用initCond
-    //           arr = arr.filter(e => e.colName !== item.colName)
-    //           arr.push(item);
-    //         });
-    //       }
-    //     } catch (error) {
-    //       console.log(error);
-    //     }
-    //   }
-    //   let query_init_value_lsit = this.v2data.srv_cols.filter(item => item.query_init_value?.value)
-    //   if (query_init_value_lsit?.length) {
-    //     query_init_value_lsit.forEach(item => {
-    //       let obj = {
-    //         colName: item.columns,
-    //         ruleType: 'eq',
-    //         value: item.query_init_value.value
-    //       }
-    //       if (obj?.value?.includes("top.user")) {
-    //         let key = obj.value.split("top.user.");
-    //         key = key.length > 1 ? key[1] : "";
-    //         if (key) {
-    //           let userInfo = sessionStorage.getItem("current_login_user");
-    //           if (userInfo) {
-    //             userInfo = JSON.parse(userInfo);
-    //           }
-    //           obj.value = userInfo?.[key];
-    //         }
-    //       } else if (obj?.value?.includes("new Date()")) {
-    //         obj.value = dayjs().format("YYYY-MM-DD");
-    //       }
-    //       if(Array.isArray(obj.value)&&obj.value.length===2){
-    //         obj.ruleType = 'between'
-    //       }else if(Array.isArray(obj.value)){
-    //         obj.ruleType = 'in'
-    //         obj.value = obj.value.join(',')
-    //       }
-    //       arr.push(obj)
-    //     })
-    //   }
-    //   return arr;
-    // },
     defaultConditions() {
       const query = this.$route.query;
       let defaultConditions = [];
@@ -1275,7 +1187,10 @@ export default {
         this.loading = false;
         if (refresh) {
           setTimeout(() => {
-            this.getList();
+            this.isFetched = false
+            this.getList().then(()=>{
+              this.isFetched = true
+            });
           }, 500);
         }
         return;
@@ -1508,12 +1423,12 @@ export default {
             if (!columnObj.disabled) {
               if (item.col_type === "User") {
                 item.bx_col_type = "fk";
-                if (this.updateColsMap[item.columns]?.option_list_v2) {
+                if (this.updateColsMap?.[item.columns]?.option_list_v2) {
                   item.option_list_v2 =
-                    this.updateColsMap[item.columns]?.option_list_v2;
-                } else if (this.addColsMap[item.columns]?.option_list_v2) {
+                    this.updateColsMap?.[item.columns]?.option_list_v2;
+                } else if (this.addColsMap?.[item.columns]?.option_list_v2) {
                   item.addColsMap =
-                    this.updateColsMap[item.columns]?.option_list_v2;
+                    this.updateColsMap?.[item.columns]?.option_list_v2;
                 } else if (!item.option_list_v2) {
                   item.option_list_v2 = {
                     refed_col: "user_no",
@@ -2053,7 +1968,11 @@ export default {
       })
         .then(() => {
           this.page.pageNo = 1;
-          this.getList();
+          this.isFetched = false
+          debugger
+          this.getList().then(()=>{
+            this.isFetched = true
+          });
         })
         .catch(() => {
           this.$message({
@@ -2161,67 +2080,6 @@ export default {
               }
             }
             this.getList();
-            // if (res?.response?.length) {
-            //   res?.response.forEach((item) => {
-            //     if (item?.serviceName?.includes("_update")) {
-            //       const __id = item?.response?.effect_data?.[0]?.id;
-            //       if (__id) {
-            //         const __index = this.tableData.findIndex(
-            //           (item) => item.id == __id
-            //         );
-            //         if (__index !== -1) {
-            //           const dataItem = {
-            //             ...this.tableData[__index],
-            //             ...item?.response?.effect_data?.[0],
-            //             __flag: null,
-            //           };
-            //           this.$set(this.tableData, __index, dataItem);
-            //         }
-            //       }
-            //     } else if (item?.serviceName?.includes("_add")) {
-            //       if (item?.response?.effect_data?.length) {
-            //         item?.response?.effect_data.forEach((iitem) => {
-            //           const __id = uniqueId("table_item_");
-            //           let dataItem = {
-            //             rowKey: __id,
-            //             __id,
-            //             __flag: null,
-            //             ...iitem,
-            //             __flag: null,
-            //           };
-            //           if (iitem[this.treeInfo?.pidCol]) {
-            //             // 在当前列表中有父节点
-            //             let __index = this.tableData.findIndex(
-            //               (e) =>
-            //                 e[this.treeInfo.idCol] ===
-            //                 iitem[this.treeInfo?.pidCol]
-            //             );
-            //             if (__index !== -1) {
-            //               // 父行数据
-            //               const row = this.tableData[__index];
-            //               let __indent = 40;
-            //               if (row.__indent === 0 || row.__indent > 0) {
-            //                 __indent = row.__indent + 40;
-            //               }
-            //               dataItem = {
-            //                 ...dataItem,
-            //                 __indent,
-            //                 // 给每一行子数据存储它的父数据
-            //                 __parent_row: cloneDeep(row),
-            //               };
-            //               // 插入父节点下面
-            //               this.tableData.splice(__index+1, 0, dataItem);
-            //               return;
-            //             }
-            //           }
-            //           this.tableData.unshift(dataItem);
-            //         });
-            //         this.tableData = this.tableData.filter(item=>!item.__flag)
-            //       }
-            //     }
-            //   });
-            //   this.oldTableData = cloneDeep(this.tableData);
-            // }
           } else if (res?.resultMessage) {
             if (res.resultCode === '0011') {
               this.$refs?.loginRef?.open(() => {

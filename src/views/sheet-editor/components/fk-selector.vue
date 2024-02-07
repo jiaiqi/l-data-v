@@ -19,7 +19,7 @@
 
     <el-select ref="inputRef" v-model="modelValue" remote filterable reserve-keyword placeholder="请输入关键词"
       :remote-method="remoteMethod" :loading="loading" :value-key="srvInfo.refed_col" @click.native="remoteMethod"
-      @dblclick.native="openDialog" @change="onSelectChange" @focus="onFocus" clearable :disabled="setDisabled" v-else>
+      @dblclick.native="openDialog" @change="onSelectChange" @focus="onFocus" clearable :disabled="setDisabled" v-else-if="srvInfo&&srvInfo.refed_col">
       <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value">
       </el-option>
     </el-select>
@@ -135,8 +135,8 @@ export default {
               this.remoteMethod(newValue).then(res => {
                 if (res?.length > 1) {
                   this.$refs?.inputRef?.focus()
-                } else {
-                  this.onSelectChange(res.map(item => item[this.srvInfo.refed_col]))
+                } else if(this.srvInfo?.refed_col) {
+                  this.onSelectChange(res.map(item => item[this.srvInfo?.refed_col]))
                 }
               });
             }
@@ -182,7 +182,7 @@ export default {
       // this.onFocus()
       this.filterText = this.value
       this.remoteMethod(this.filterText).then(res => {
-        if (res?.length === 1) {
+        if (res?.length === 1&&this.srvInfo?.refed_col) {
           this.onSelectChange(res.map(item => item[this.srvInfo.refed_col]))
         }
       })
@@ -206,7 +206,7 @@ export default {
             pageNo: 1,
           }
         );
-        if (res?.data) {
+        if (res?.data&&option?.refed_col) {
           const result = res.data.map((item) => {
             item.label = item[option.key_disp_col];
             item.value = item[option.refed_col];
@@ -247,9 +247,9 @@ export default {
           ruleType: "[like]",
         });
       }
-      if (option.refed_col && queryString) {
+      if (option?.refed_col && queryString) {
         relation_condition.data.push({
-          colName: option.refed_col,
+          colName: option?.refed_col,
           value: queryString,
           ruleType: "[like]",
         });
@@ -262,7 +262,7 @@ export default {
         this.pageNo,
         this.rownumber
       ).then((res) => {
-        if (res?.data?.length) {
+        if (res?.data?.length&&option?.refed_col) {
           this.tableData = res.data.map((item) => {
             item.label = item[option.key_disp_col];
             item.value = item[option.refed_col];
@@ -293,7 +293,7 @@ export default {
       }
       this.$refs?.treePopover?.doClose()
       this.modelValue = val;
-      let currentValue = this.allOptions.find(item => item[this.srvInfo.refed_col] === this.modelValue);
+      let currentValue = this.allOptions.find(item => item[this.srvInfo?.refed_col] === this.modelValue);
       if (currentValue) {
         this.$emit('select', {
           value: this.modelValue,
@@ -304,7 +304,7 @@ export default {
       }
     },
     onDBClick(row, column, cell, event) {
-      this.modelValue = row[this.srvInfo.refed_col];
+      this.modelValue = row[this.srvInfo?.refed_col];
       this.$emit("input", this.modelValue);
       this.options = JSON.parse(JSON.stringify(this.tableData));
       this.dialogVisible = false;
@@ -355,7 +355,7 @@ export default {
         this.pageNo,
         this.rownumber
       ).then((res) => {
-        if (res?.data?.length) {
+        if (res?.data?.length&&this.srvInfo?.refed_col) {
           this.tableData = res.data.map((item) => {
             item.label = item[this.srvInfo.key_disp_col];
             item.value = item[this.srvInfo.refed_col];
@@ -407,7 +407,7 @@ export default {
         relation: "OR",
         data: [],
       };
-      if (!option.key_disp_col && !option.refed_col) {
+      if (!option?.key_disp_col && !option?.refed_col) {
         return;
       }
       if (option.key_disp_col && queryString) {
@@ -431,7 +431,7 @@ export default {
           this.row,
           this.app
         ).then((res) => {
-          if (res?.data?.length) {
+          if (res?.data?.length&&option?.refed_col) {
             this.options = res.data.map((item) => {
               item.label = item[option.key_disp_col];
               item.value = item[option.refed_col];

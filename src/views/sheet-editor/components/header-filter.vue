@@ -4,7 +4,7 @@
       <div class="filter-box">
         <!-- Enum、Set -->
         <div class="option-list input-box" v-if="['枚举', '集合'].includes(colType)">
-          <el-input v-model="modelValue" clearable></el-input>
+          <!-- <el-input v-model="modelValue" clearable></el-input> -->
           <div class="text-bold p-y-2">
             快捷筛选：
             <el-switch v-model="multiple" active-text="多选" inactive-text="单选" @change="changeMultiple">

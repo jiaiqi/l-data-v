@@ -75,7 +75,9 @@ export const renderStr = (str, obj = {}) => {
  */
 function processStrings(str1, str2) {
   const regex = /\d+$/;
-
+  if (typeof str1 == "number" && typeof str2 == "number") {
+    return { result: str2 - str1 + str2, diff: str2 - str1 };
+  }
   // 检查两个字符串是否都以数字结尾
   if (!regex.test(str1) || !regex.test(str2)) {
     return { result: str2, diff: null };
@@ -114,6 +116,9 @@ function processStrings(str1, str2) {
  * @returns {string} 返回str前缀拼接str结尾数字加上num*rate的字符串
  */
 function appendNumber(str, num, rate = 1) {
+  if(typeof str ==='number'){
+    return str + num * rate;
+  }
   // 获取字符串末尾的数字
   const lastNum = parseInt(str.match(/\d+$/)[0], 10);
   // 将数字加上第二个参数
