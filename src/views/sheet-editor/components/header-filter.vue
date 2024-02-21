@@ -12,7 +12,7 @@
           </div>
           <div class="check-button-group">
             <div class="check-button-item"
-              :class="{ active: modelValue === item || (multiple && multipleValMap[item.value] == true) }"
+              :class="{ active: modelValue === item.label || (multiple && multipleValMap[item.value] == true) }"
               v-for="item in optionList" :label="item.label" :key="item.value" @click="shortFilter(item.value)">
               {{ item.label }}
             </div>

@@ -1969,7 +1969,6 @@ export default {
         .then(() => {
           this.page.pageNo = 1;
           this.isFetched = false
-          debugger
           this.getList().then(()=>{
             this.isFetched = true
           });
