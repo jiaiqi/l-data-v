@@ -2,11 +2,11 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 // import HomeView from "@/views/page-editor/index.vue";
 import HomeView from "@/views/sheet-editor/index.vue";
-import { importRouters } from "./autoImportRouter";
+// import { importRouters } from "./autoImportRouter";
 Vue.use(VueRouter);
 
-const routers = importRouters();
-console.log(routers);
+// const routers = importRouters();
+// console.log(routers);
 const router = new VueRouter({
   mode: "hash",
   base: import.meta.env.BASE_URL,
@@ -14,7 +14,12 @@ const router = new VueRouter({
     {
       path: "/",
       name: "Home",
-      component:HomeView
+      component: HomeView
+    },
+    {
+      path: "/table-graph",
+      name: "TableGraph",
+      component: () => import('@/views/table-graph/index.vue')
     },
     // {
     //   path: "/",
@@ -57,68 +62,22 @@ const router = new VueRouter({
       component: () => import("@/views/sheet-editor/index.vue"),
     },
     {
+      path: "/childList/:childListType/:broadCastName/:app/:service",
+      name: "childList",
+      component: () => import("@/views/sheet-editor/index.vue"),
+    },
+    {
+      path: "/childList/:childListType/:service",
+      name: "childList2",
+      component: () => import("@/views/sheet-editor/index.vue"),
+    },
+    {
       path: "/h5",
       name: "h5Page",
       component: () => import("@/views/webview.vue"),
     },
-    // {
-    //   path: "/test",
-    //   name: "test",
-    //   component: () => import("@/views/test.vue"),
-    // },
-    ...routers,
+    // ...routers,
   ],
-  // routes: [
-  //   {
-  //     path: "/",
-  //     name: "pageEditor",
-  //     component: HomeView,
-  //   },
-  //   {
-  //     path: "/dataview",
-  //     name: "dataview",
-  //     component: HomeView,
-  //   },
-  //   {
-  //     path: "/preview",
-  //     name: "preview",
-  //     // route level code-splitting
-  //     // this generates a separate chunk (About.[hash].js) for this route
-  //     // which is lazy-loaded when the route is visited.
-  //     component: () => import("@/views/preview.vue"),
-  //   },
-  //   {
-  //     path: "/player",
-  //     name: "player",
-  //     component: () => import("@/views/video-player.vue"),
-  //   },
-  //   {
-  //     path: "/request",
-  //     name: "requestBuilder",
-  //     component: () => import("@/views/request-builder.vue"),
-  //   },
-  //   {
-  //     path: "/request-preview",
-  //     name: "requestpreview",
-  //     component: () => import("@/views/request-preview.vue"),
-  //   },
-  //   {
-  //     path: "/sheet/:service",
-  //     name: "sheetEditor",
-  //     component: () => import("@/views/sheetEditor.vue"),
-  //   },
-  //   {
-  //     path: "/sheet/:service/:fkCol/:fkVal",
-  //     name: "sheetEditor1",
-  //     component: () => import("@/views/sheetEditor.vue"),
-  //   },
-  //   ,
-  //   {
-  //     path: "/h5",
-  //     name: "h5Page",
-  //     component: () => import("@/views/webview.vue"),
-  //   },
-  // ],
 });
 
 export default router;

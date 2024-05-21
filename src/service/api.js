@@ -31,7 +31,8 @@ const getServiceV2 = async (
   serviceName,
   use_type = "list",
   app = "health",
-  forceFeth = false
+  forceFeth = false,
+  mainSrv
 ) => {
   if (serviceName) {
     // const v2FromStore = metaStore.metaMap[`${service}-${use_type}`];
@@ -47,6 +48,9 @@ const getServiceV2 = async (
       ],
       order: [{ colName: "seq", orderType: "asc" }],
     };
+    if(mainSrv){
+      req.condition.push( { colName: "main_srv", value: mainSrv, ruleType: "eq" },)
+    }
     let url = `${app}/select/srvsys_service_columnex_v2_select`;
     const res = await http.post(url, req);
     if (res?.data?.state === "SUCCESS") {

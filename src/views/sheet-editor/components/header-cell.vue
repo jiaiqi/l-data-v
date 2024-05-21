@@ -1,6 +1,6 @@
 <template>
   <div class="header-cell">
-    <div class="flex items-center justify-between w-full flex-row-reverse truncate">
+    <div class="flex items-center justify-between w-full flex-row-reverse truncate" v-if="!childListType">
       <div class="flex items-center">
         <div class="filter-icon cursor-pointer">
           <header-filter :column="column" :condition="condition" :app="app" :list="list" :service="service"
@@ -14,7 +14,7 @@
           <i class="el-icon-caret-bottom" :class="{ active: curSort === 'DESC' }"></i>
         </div>
       </div>
-      <div class="flex items-center">
+      <div class="flex items-center ">
         <el-tooltip class="item" effect="dark" content="必填" placement="bottom-center" v-if="column.isRequired">
           <span class="required color-red m-r-2 font-bold">*</span>
         </el-tooltip>
@@ -24,7 +24,15 @@
       </div>
 
     </div>
-    <div class="flex items-center w-full justify-center">
+    <div class="flex items-center w-full"
+    :class="{
+      'justify-center':!childListType,
+      'justify-start p-x-2':!!childListType
+    }"
+    >
+      <el-tooltip class="item" effect="dark" content="必填" placement="bottom-center" v-if="childListType&&column.isRequired">
+        <span class="required color-red m-r-2 font-bold">*</span>
+      </el-tooltip>
       <el-tooltip effect="dark" :content="column.label">
         <div class="label truncate">{{ column.label }}</div>
       </el-tooltip>
@@ -44,7 +52,8 @@ export default {
     app: String,
     service: String,
     list: Array,
-    condition: Array
+    condition: Array,
+    childListType:String
   },
   data() {
     return {

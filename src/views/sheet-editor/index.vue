@@ -3,9 +3,10 @@
     <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full">
       <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
         <div class="m-r-2">添加</div>
-        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
+        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px"/>
         <div class="m-x-2">行</div>
-        <el-button size="mini" type="primary" @click="batchInsertRows" :disabled="insertRowNumber === 0">添加</el-button>
+        <el-button size="mini" type="primary" @click="batchInsertRows" :disabled="insertRowNumber === 0">添加
+        </el-button>
       </div>
       <div class="text-sm text-gray cursor-not-allowed" v-else>
         没有添加权限
@@ -18,7 +19,7 @@
       </div>
 
       <div class="flex flex-items-center flex-1 justify-end">
-        <div class="color-map flex flex-items-center m-r-20">
+        <div class="color-map flex flex-items-center m-r-20" v-if="childListType!=='add'">
           <div class="color-map-item flex flex-items-center">
             <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div>
             <div class="text">新增</div>
@@ -28,29 +29,40 @@
             <div class="text">更新</div>
           </div>
         </div>
+<!--        <div v-if="childListType" class="text-sm cursor-pointer hover:color-[#999]">-->
+<!--          <span v-if="listMaxHeight" @click="fold"><icon-fold></icon-fold>  收起</span>-->
+<!--          <span v-else @click="unfold"><icon-unfold></icon-unfold>  展开</span>-->
+<!--        </div>-->
         <!-- <el-button size="mini" type="primary" @click="repari">修复</el-button> -->
-        <el-button size="mini" type="primary" @click="refreshData">刷新</el-button>
-        <el-button size="mini" type="primary" @click="saveData"
-          :disabled="!calcReqData || calcReqData.length == 0">保存</el-button>
+        <el-button size="mini" type="primary" @click="refreshData" v-if="childListType!=='add'">刷新</el-button>
+        <el-button size="mini" type="primary" @click="saveData" :disabled="!calcReqData || calcReqData.length == 0"
+                   v-if="childListType!=='add'"
+        >
+          保存
+        </el-button>
         <el-button size="mini" type="primary" @click="saveColumnWidth"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
-          v-if="calcColumnWidthReq && calcColumnWidthReq.length > 0">保存样式</el-button>
+                   :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
+                   v-if="!childListType && calcColumnWidthReq && calcColumnWidthReq.length > 0">保存列宽
+        </el-button>
       </div>
     </div>
-    <div class="flex-1" v-if="isFetched">
+<!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
+    <div class="flex-1 list-container" v-if="isFetched || childListType">
       <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
-        :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-        :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-        :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-        :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-        :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-        :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+                :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
+                :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
+                :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
+                :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
+                :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
+                :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption"/>
     </div>
-    <div class="empty-data" v-if="page.total === 0 && !loading">暂无数据</div>
-    <div class="text-center">
+    <div class="empty-data" v-if="!childListType&& listMaxHeight && page.total === 0 && !loading">暂无数据</div>
+    <!--    列表为新增子表时不显示分页-->
+    <div class="text-center" v-if="childListType!=='add'">
       <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
-        :total="page.total">
+                     :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber"
+                     layout="total, sizes, pager,  jumper"
+                     :total="page.total">
       </el-pagination>
     </div>
 
@@ -69,22 +81,25 @@ import {
   onDelete,
 } from "../../service/api";
 import dayjs from "dayjs";
-import { buildSrvCols } from "../../utils/sheetUtils";
-import { COLUMN_KEYS } from "../../utils/constant";
-import { uniqueId, cloneDeep } from "lodash-es";
-import { Message } from "element-ui"; // 引入elementUI的Message组件
+import {buildSrvCols} from "../../utils/sheetUtils";
+import {COLUMN_KEYS} from "../../utils/constant";
+import {uniqueId, cloneDeep} from "lodash-es";
+import {Message} from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
 import FileUpload from "./components/file-upload.vue";
 import selectParentNode from "./components/select-parent-node.vue";
 import fkAutocomplate from "./components/fk-autocomplate.vue";
-import { RecordManager } from "./util/recordManager.js";
-import { Loading } from "element-ui";
-import { $http } from "../../common/http";
+import {RecordManager} from "./util/recordManager.js";
+import {Loading} from "element-ui";
+import {$http} from "../../common/http";
 import loginDialog from '../../components/login-dialog/index.vue'
-import { processStrings,appendNumber } from '../../common/common'
+import {processStrings, appendNumber} from '../../common/common'
+import IconFold from "../../components/icons/icon-fold.vue";
+import IconUnfold from '../../components/icons/icon-unfold.vue'
 
+let broadcastChannel = null //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
   "__flag",
@@ -97,28 +112,60 @@ const ignoreKeys = [
 
 export default {
   name: "SheetEditor",
-  mounted() {
-    this.tableMaxHeight = document.body.clientHeight - 80
-    window.addEventListener('resize', () => {
-      this.tableMaxHeight = document.body.clientHeight - 80
-    })
-    this.bindKeyboardEvent(this.undo, this.redo);
+  beforeDestroy() {
+    broadcastChannel?.close();
+    broadcastChannel = null;
+  },
+  created() {
+    if (this.$route.params?.childListType) {
+      // 子表类型 add|update|detail
+      this.childListType = this.$route.params?.childListType;
+      this.$nextTick(() => {
+        broadcastChannel = new BroadcastChannel(this.$route.params?.broadCastName);
+        broadcastChannel.addEventListener("message", this.bcOn);
+        this.watchPageHeight()
+      })
+    }
     this.initPage().then(() => {
       if (this.v2data?.is_tree === true && this.listType !== "treelist") {
         this.listType = "treelist";
         this.initPage();
       }
     });
+    this.$nextTick(() => {
+      this.unfold()
+      this.bindKeyboardEvent(this.undo, this.redo);
+    })
+  },
+  mounted() {
+    // this.tableMaxHeight = document.body.clientHeight - 80
+    // window.addEventListener('resize', () => {
+    //   this.tableMaxHeight = document.body.clientHeight - 80
+    // })
+    // this.bindKeyboardEvent(this.undo, this.redo);
+    // this.initPage().then(() => {
+    //   if (this.v2data?.is_tree === true && this.listType !== "treelist") {
+    //     this.listType = "treelist";
+    //     this.initPage();
+    //   }
+    // });
   },
   components: {
+    IconFold, IconUnfold,
     selectParentNode,
     loginDialog
   },
   data() {
     return {
+      childListCfg: {
+        foreign_key: {
+          // adapt_main_srv: "srvledu_practice_activity_apply_add"
+        }
+      },//子表配置
+      listMaxHeight: 0,
       initExprCols: [],
       initCond: [],
-      tableMaxHeight: 1000,
+      // tableMaxHeight: 1000,
       onPopup: false,//弹窗是否打开状态
       calcReqData: null,
       columnWidthMap: {}, //存储改变后的列宽
@@ -127,6 +174,7 @@ export default {
       changeParentdialogVisible: false,
       pageNo: uniqueId("pageNo"),
       listType: "list",
+      childListType: null,//子表类型 add/update/detail
       treeList: [],
       page: {
         //分页信息
@@ -148,7 +196,7 @@ export default {
       allFields: [], //所有字段
       columns: [], //表头字段
       eventCustomOption: {
-        bodyCellEvents: ({ row, column, rowIndex }) => {
+        bodyCellEvents: ({row, column, rowIndex}) => {
           return {
             // click: (event) => {
             //   console.log("click::", row, column, rowIndex, event);
@@ -169,7 +217,7 @@ export default {
             // },
           };
         },
-        bodyRowEvents: ({ row, rowIndex }) => {
+        bodyRowEvents: ({row, rowIndex}) => {
           return {
             // click: (event) => {
             //   console.log("click::", row, rowIndex, event);
@@ -193,7 +241,7 @@ export default {
         },
       },
       cellStyleOption: {
-        bodyCellClass: ({ row, column, rowIndex }) => {
+        bodyCellClass: ({row, column, rowIndex}) => {
           if (row?.__flag === "add") {
             // 新增行直接显示为绿色背景 不用判断字段有没有值
             return "table-body-cell__add";
@@ -227,7 +275,7 @@ export default {
       columnWidthResizeOption: {
         enable: true,
         minWidth: 30,
-        sizeChange: ({ column, differWidth, columnWidth }) => {
+        sizeChange: ({column, differWidth, columnWidth}) => {
           console.log({
             column,
             differWidth,
@@ -248,17 +296,17 @@ export default {
       cellAutofillOption: {
         directionX: false,
         directionY: true,
-        afterAutofill: ({ targetSelectionRangeIndexes }) => {
+        afterAutofill: ({targetSelectionRangeIndexes}) => {
           //targetSelectionRangeIndexes 自动填充目标的行和列索引
           this.triggerEditCell(targetSelectionRangeIndexes);
         },
         beforeAutofill: ({
-          direction,
-          sourceSelectionRangeIndexes,
-          targetSelectionRangeIndexes,
-          sourceSelectionData,
-          targetSelectionData,
-        }) => {
+                           direction,
+                           sourceSelectionRangeIndexes,
+                           targetSelectionRangeIndexes,
+                           sourceSelectionData,
+                           targetSelectionData,
+                         }) => {
           console.log(direction,
             sourceSelectionRangeIndexes,
             targetSelectionRangeIndexes,
@@ -301,10 +349,10 @@ export default {
                   if (isProcess) {
                     this.tableData.forEach(item => {
                       let index = targetSelectionData.findIndex(e => e.rowKey && e.rowKey === item.rowKey)
-                      if (index > -1){
+                      if (index > -1) {
                         // 等差递增
-                        let curVal = appendNumber(lastVal,diff,index+1)
-                        if(typeof lastVal==="number"){
+                        let curVal = appendNumber(lastVal, diff, index + 1)
+                        if (typeof lastVal === "number") {
                           curVal = Number(curVal)
                         }
                         this.$set(item, key, curVal)
@@ -335,7 +383,7 @@ export default {
       },
       // 剪贴板配置
       clipboardOption: {
-        beforePaste: ({ data, selectionRangeIndexes, selectionRangeKeys }) => {
+        beforePaste: ({data, selectionRangeIndexes, selectionRangeKeys}) => {
           console.log(selectionRangeIndexes);
 
           if (Array.isArray(data) && data?.length) {
@@ -416,12 +464,12 @@ export default {
             return isValid;
           }
         },
-        afterPaste: ({ selectionRangeIndexes }) => {
+        afterPaste: ({selectionRangeIndexes}) => {
           //selectionRangeIndexes ：拷贝区域的索引信息
           this.triggerEditCell(selectionRangeIndexes);
         },
-        afterCut: ({ selectionRangeIndexes }) => {
-          const { startRowIndex, endRowIndex, startColIndex, endColIndex } =
+        afterCut: ({selectionRangeIndexes}) => {
+          const {startRowIndex, endRowIndex, startColIndex, endColIndex} =
             selectionRangeIndexes;
           const columns = this.columns.filter(
             (item) =>
@@ -446,7 +494,7 @@ export default {
       },
       // 单元格编辑配置
       editOption: {
-        beforeCellValueChange: ({ row, column, changeValue }) => {
+        beforeCellValueChange: ({row, column, changeValue}) => {
           const colType = column?.__field_info?.col_type;
           // console.log(row, column, changeValue);
           if (row.__flag === "add") {
@@ -483,7 +531,7 @@ export default {
           }
 
         },
-        beforeStartCellEditing: ({ row, column, cellValue }) => {
+        beforeStartCellEditing: ({row, column, cellValue}) => {
           // console.log("beforeStartCellEditing：",row,column, cellValue);
           // const colType = column?.__field_info?.col_type;
           // if(column?.__field_info?.bx_col_type==='fk'){
@@ -534,7 +582,7 @@ export default {
             return false;
           }
         },
-        afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
+        afterCellValueChange: ({row, column, changeValue, rowIndex}) => {
           // console.log("afterCellValueChange");
           // console.log("row::", row);
           // console.log("column::", column);
@@ -586,6 +634,10 @@ export default {
             }
           }
           this.recordManager?.push(cloneDeep(this.tableData));
+          if (this.childListType) {
+            // 子表数据更新 通知主表
+            this.emitListData(this.tableData)
+          }
         },
       },
       // header 右键菜单配置
@@ -645,9 +697,9 @@ export default {
           ) {
             arr.push({
               serviceName: "srvsys_table_columns_update",
-              data: [{ list_min_width: this.columnWidthMap[key].width }],
+              data: [{list_min_width: this.columnWidthMap[key].width}],
               condition: [
-                { colName: "column_name", value: key, ruleType: "eq" },
+                {colName: "column_name", value: key, ruleType: "eq"},
                 {
                   colName: "table_name",
                   value: this.columnWidthMap[key].fieldInfo.table_name,
@@ -671,9 +723,9 @@ export default {
           ) {
             arr.push({
               serviceName: "srvsys_service_columns_query_update",
-              data: [{ list_min_width: this.columnWidthMap[key].width }],
+              data: [{list_min_width: this.columnWidthMap[key].width}],
               condition: [
-                { colName: "columns", value: key, ruleType: "eq" },
+                {colName: "columns", value: key, ruleType: "eq"},
                 {
                   colName: "service_name",
                   value: this.columnWidthMap[key].fieldInfo.service_name,
@@ -695,10 +747,10 @@ export default {
     contextmenuBodyOption() {
       return {
         beforeShow: ({
-          isWholeRowSelection,
-          selectionRangeKeys,
-          selectionRangeIndexes,
-        }) => {
+                       isWholeRowSelection,
+                       selectionRangeKeys,
+                       selectionRangeIndexes,
+                     }) => {
           console.log("---contextmenu header beforeShow--");
           console.log("isWholeColSelection::", isWholeRowSelection);
           console.log("selectionRangeKeys::", selectionRangeKeys);
@@ -707,10 +759,10 @@ export default {
           return false;
         },
         afterMenuClick: ({
-          type,
-          selectionRangeKeys,
-          selectionRangeIndexes,
-        }) => {
+                           type,
+                           selectionRangeKeys,
+                           selectionRangeIndexes,
+                         }) => {
           console.log("---contextmenu body afterMenuClick--");
           console.log("type::", type);
           console.log("selectionRangeKeys::", selectionRangeKeys);
@@ -803,15 +855,15 @@ export default {
 
             // 删除选中行数据
             let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-              }至第${selectionRangeIndexes.endRowIndex + 1
-              }行数据，是否继续操作？`;
+            }至第${selectionRangeIndexes.endRowIndex + 1
+            }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
               selectionRangeIndexes.startRowIndex ==
               0
             ) {
               text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-                }行数据，是否继续操作？`;
+              }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -1051,6 +1103,94 @@ export default {
     },
   },
   methods: {
+    watchPageHeight(){
+        const element = document.querySelector('.ve-table-container')
+        // 监听可能引起高度变化的事件，例如图片加载完成、DOM变更等
+        var observer = new MutationObserver(function(mutationsList) {
+          mutationsList.forEach(function(mutation) {
+            // 检查是否有高度相关的变更
+            sendHeightToParent();
+          });
+        });
+
+        // 配置观察器选项
+        var config = { attributes: true, childList: false, subtree: false };
+
+        // 开始观察整个文档
+        observer.observe(element, config);
+
+        const sendHeightToParent = ()=> {
+          var height = element?.scrollHeight
+          if(height){
+            this.bcEmit('heightChange', height + 60);
+            this.listMaxHeight = height+ 80
+          }else{
+            this.bcEmit('heightChange', 80 + 60);
+          }
+          // window.parent.postMessage({ type: 'iframeHeight', height: height }, '*'); // '*' 表示允许任何源，实际应用中应指定确切的源
+        }
+
+    },
+    bcOn(event) {
+      let data = event.data;
+      try {
+        if (typeof data === 'string') {
+          data = JSON.parse(data);
+        }
+      } catch (e) {
+      }
+      console.log('child-listener', data)
+      if (data?.childListCfg) {
+        this.childListCfg = data.childListCfg;
+      }
+    },
+    bcEmit(type, data) {
+      // 通过broadcastChannel广播消息
+      if (broadcastChannel?.postMessage) {
+        const msg = {
+          type,
+          data
+        }
+        broadcastChannel.postMessage(JSON.stringify(msg));
+      }
+    },
+    emitListData() {
+      let data = this.tableData
+      if (this.childListType === 'add') {
+        data = data.filter(item => Object.keys(item).some(key => !['__flag', '__id', 'rowKey'].includes(key) && item[key]))
+        data.forEach(item => {
+          Object.keys(item).forEach(key => {
+            if (['__flag', '__id', 'rowKey'].includes(key)) {
+              delete item[key]
+            }
+          })
+        })
+      }
+      const reuslt = [
+        {
+          "serviceName": this.addButton?.service_name,
+          "data": [...data],
+          "depend_keys": [
+            {
+              "type": "column",
+              "depend_key": this.childListCfg?.foreign_key?.referenced_column_name,
+              "add_col": this.childListCfg?.foreign_key?.column_name,
+            }
+          ]
+        }
+      ]
+      console.log('emitListData', reuslt);
+      this.bcEmit('getData', reuslt)
+    },
+    fold() {
+      // 收起
+      this.listMaxHeight = 0
+    },
+    unfold() {
+      // 展开
+      this.listMaxHeight = document.querySelector('.ve-table-container')?.scrollHeight + 80
+        // document.documentElement.clientHeight - 50;
+    },
     repari() {
       this.loading = true
       setTimeout(() => {
@@ -1074,7 +1214,8 @@ export default {
           }
           value = userInfo?.[key];
         }
-      } if (value?.includes("userInfo.")) {
+      }
+      if (value?.includes("userInfo.")) {
         let key = value.split("userInfo.");
         key = key.length > 1 ? key[1] : "";
         if (key) {
@@ -1156,7 +1297,7 @@ export default {
         const req = [
           {
             serviceName: this.updateButton?.service_name,
-            condition: [{ colName: "id", ruleType: "eq", value: row.id }],
+            condition: [{colName: "id", ruleType: "eq", value: row.id}],
             data: [
               {
                 [this.v2data?.parent_no_col]: val,
@@ -1183,12 +1324,13 @@ export default {
       if (this.serviceName) {
         this.loading = true;
         const v2Data = await this.getV2Data();
+        if (this.childListType === 'add') return this.loading = false//新增时不查子表数据
         this.buildInitCond()
         this.loading = false;
         if (refresh) {
           setTimeout(() => {
             this.isFetched = false
-            this.getList().then(()=>{
+            this.getList().then(() => {
               this.isFetched = true
             });
           }, 500);
@@ -1210,11 +1352,11 @@ export default {
       this.getList();
     },
     triggerEditCell({
-      startRowIndex,
-      endRowIndex,
-      startColIndex,
-      endColIndex,
-    }) {
+                      startRowIndex,
+                      endRowIndex,
+                      startColIndex,
+                      endColIndex,
+                    }) {
       // 触发编辑事件
       const columns = this.columns.filter(
         (item) =>
@@ -1251,6 +1393,7 @@ export default {
       }
     },
     buildColumns() {
+      const self = this
       const startRowIndex = this.startRowIndex;
       let columns = [
         {
@@ -1260,7 +1403,7 @@ export default {
           title: "#",
           width: 50,
           fixed: "left",
-          renderBodyCell: function ({ rowIndex, row }) {
+          renderBodyCell: function ({rowIndex, row}) {
             return startRowIndex + rowIndex + 1;
           },
         },
@@ -1316,7 +1459,7 @@ export default {
               // item?.col_type?.includes("decimal") ||
               // item?.bx_col_type == "fk",
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
-              __field_info: { ...item },
+              __field_info: {...item},
             };
 
             // Image
@@ -1344,7 +1487,7 @@ export default {
             //   columnObj.edit = !columnObj.disabled && columnObj.edit;
             // }
 
-            columnObj.renderHeaderCell = ({ column }, h) => {
+            columnObj.renderHeaderCell = ({column}, h) => {
               const conditions = [...this.initCond, ...this.defaultConditions]
               // const conditions = [...this.defaultConditions]
               // if (Array.isArray(this.initCond) && this.initCond.length) {
@@ -1358,10 +1501,11 @@ export default {
                 attrs: {
                   app: this.srvApp,
                   list: this.tableData,
-                  column: { ...item, edit: columnObj.edit },
+                  column: {...item, edit: columnObj.edit},
                   sortState: this.setSortState,
                   service: this.serviceName,
                   condition: JSON.parse(JSON.stringify(conditions)),
+                  childListType: this.childListType
                 },
                 on: {
                   "filter-change": (event) => {
@@ -1439,7 +1583,7 @@ export default {
                 }
               }
               // if (item.bx_col_type === "fk") {
-              columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
+              columnObj.renderBodyCell = ({row, column, rowIndex}, h) => {
 
                 const oldRowData = this.oldTableData.find(
                   (item) => item.__id && item.__id === row.__id
@@ -1521,7 +1665,7 @@ export default {
                       }
                     }
                   })
-                } else if (item.bx_col_type === "fk") {
+                } else if (item.bx_col_type === "fk" || (item.col_type?.indexOf('bx') === 0 && item?.option_list_v2?.serviceName)) {
                   return h(fkSelector, {
                     attrs: {
                       value: row[column.field],
@@ -1581,7 +1725,7 @@ export default {
                       size: "mini",
                       type: item.col_type.toLowerCase(),
                       style: `width:${item.col_type === "DateTime" ? 180 : 130
-                        }px;`,
+                      }px;`,
                       valueFormat:
                         item.col_type === "DateTime"
                           ? "yyyy-MM-dd HH:mm:ss"
@@ -1776,7 +1920,7 @@ export default {
                       onfocus: () => {
                         this.$refs[
                           "tableRef"
-                        ].clearCellSelectionCurrentCell();
+                          ].clearCellSelectionCurrentCell();
                       },
                       onpopup: (val) => {
                         this.onPopup = val
@@ -1820,6 +1964,35 @@ export default {
           }
           return item
         })
+        if (this.childListType === 'add') {
+          columns.push(
+            {
+              field: "_handler",
+              key: "_handler",
+              operationColumn: true,
+              title: "操作",
+              width: 50,
+              // fixed: "right",
+              renderBodyCell: function ({row, column, rowIndex}, h) {
+                return h('div', {
+                  domProps: {innerHTML: 'x'},
+                  attrs: {
+                    style: "cursor:pointer;",
+                    class: "hover:color-red"
+                  },
+                  on: {
+                    click: () => {
+                      console.log(row, 'delete')
+                      self.tableData = self.tableData.filter((item,index)=>index!==rowIndex)
+                      self.emitListData()
+                      // self.tableData = self.tableData.splice(rowIndex,1);
+                    }
+                  }
+                })
+              },
+            },
+          )
+        }
         return columns;
       }
       columns = columns.concat(
@@ -1842,17 +2015,19 @@ export default {
         if (fkColumn) {
           let redundant = item?.redundant || this.addColsMap[item.columns]?.redundant || this.updateColsMap[item.columns]?.redundant || {}
           if (redundant?.dependField === fkColumn && redundant.refedCol) {
+            item.redundant = redundant
             return true
           }
         }
       })
       if (columns?.length) {
         columns.forEach(item => {
-          if (item.redundant.trigger === "isnull") {
+          if (item?.redundant?.trigger === "isnull") {
             if (row[item.columns] || row[item.columns] === 0 || row[item.columns] === false) {
               return
             }
           }
+          if (!item?.redundant?.refedCol) return
           row[item.columns] = rawData[item.redundant.refedCol] || null
           this.$set(this.tableData, rowIndex, row);
           if (this.allFields.find(e => e.columns === item.columns)) {
@@ -1898,7 +2073,7 @@ export default {
             if (Object.keys(updateObj)?.length) {
               reqData.push({
                 serviceName: this.updateButton.service_name,
-                condition: [{ colName: "id", ruleType: "eq", value: item.id }],
+                condition: [{colName: "id", ruleType: "eq", value: item.id}],
                 data: [updateObj],
               });
             }
@@ -1969,7 +2144,7 @@ export default {
         .then(() => {
           this.page.pageNo = 1;
           this.isFetched = false
-          this.getList().then(()=>{
+          this.getList().then(() => {
             this.isFetched = true
           });
         })
@@ -2105,6 +2280,10 @@ export default {
      */
     insert2Rows(index, parentRow) {
       // 插入到第几行
+      if (this.childListType) {
+        // 作为子表 只插到最后一行
+        index = this.tableData.length
+      }
       if (index >= 0) {
         const __id = uniqueId("table_item_");
         const dataItem = {
@@ -2124,8 +2303,9 @@ export default {
           }
           return res;
         }, {});
+
         this.allFields.forEach((field) => {
-          if (field.editable) {
+          if (field.editable || field.canAdd) {
             dataItem[field.columns] = null;
             let init_expr = null
             let fk_init_expr = null
@@ -2225,7 +2405,7 @@ export default {
         return tableData;
       }
       tableData = cloneDeep(tableData);
-      let loadingInstance = Loading.service({ fullscreen: true });
+      let loadingInstance = Loading.service({fullscreen: true});
       const res = await onSelect(
         this.serviceName,
         this.srvApp,
@@ -2291,7 +2471,7 @@ export default {
       this.$set(this.tableData[rowIndex], "__unfold", load);
       if (load) {
         // 加载当前数据的子数据
-        let loadingInstance = Loading.service({ fullscreen: true });
+        let loadingInstance = Loading.service({fullscreen: true});
         onSelect(
           this.serviceName,
           this.srvApp,
@@ -2521,9 +2701,10 @@ export default {
         if (editBtn?.service_name) {
           const ress = await getServiceV2(
             editBtn.service_name,
-            "update",
+            this.childListType === 'update' ? 'updatechildlist' : "update",
             this.srvApp,
-            this.pageNo
+            false,
+            this.childListCfg?.foreign_key?.adapt_main_srv
           );
           this.updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
@@ -2538,6 +2719,8 @@ export default {
             addBtn.service_name,
             "add",
             this.srvApp,
+            false,
+            this.childListCfg?.foreign_key?.adapt_main_srv
           );
           this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
@@ -2571,7 +2754,8 @@ export default {
         this.v2data.allFields = buildSrvCols(
           this.v2data.srv_cols,
           this.updateColsMap,
-          this.addColsMap
+          this.addColsMap,
+          this.childListType
         );
         this.allFields = this.v2data.allFields;
 
@@ -2584,7 +2768,7 @@ export default {
         return res.data
       }
     },
-    scrolling({ startRowIndex }) {
+    scrolling({startRowIndex}) {
       this.startRowIndex = startRowIndex;
     },
     // 取消监听撤销重做事件
@@ -2651,6 +2835,11 @@ export default {
   border-top: 0;
 }
 
+.list-container {
+  overflow: hidden;
+  transition: max-height 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
 .table-body-cell__add {
   background-color: #a4da89 !important;
 
@@ -2696,13 +2885,12 @@ export default {
 }
 
 .ve-table-body-tr {
-  height: unset !important;
-  ;
+  height: unset !important;;
 }
 
 .ve-table-header-th {
   padding: 2px 0 !important;
-  background-color: #e5e7ea !important;
+  background-color: #f0f3f9 !important;
 }
 
 .spreadsheet {
