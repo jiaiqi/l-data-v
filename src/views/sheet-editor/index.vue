@@ -29,10 +29,10 @@
             <div class="text">更新</div>
           </div>
         </div>
-<!--        <div v-if="childListType" class="text-sm cursor-pointer hover:color-[#999]">-->
-<!--          <span v-if="listMaxHeight" @click="fold"><icon-fold></icon-fold>  收起</span>-->
-<!--          <span v-else @click="unfold"><icon-unfold></icon-unfold>  展开</span>-->
-<!--        </div>-->
+        <!--        <div v-if="childListType" class="text-sm cursor-pointer hover:color-[#999]">-->
+        <!--          <span v-if="listMaxHeight" @click="fold"><icon-fold></icon-fold>  收起</span>-->
+        <!--          <span v-else @click="unfold"><icon-unfold></icon-unfold>  展开</span>-->
+        <!--        </div>-->
         <!-- <el-button size="mini" type="primary" @click="repari">修复</el-button> -->
         <el-button size="mini" type="primary" @click="refreshData" v-if="childListType!=='add'">刷新</el-button>
         <el-button size="mini" type="primary" @click="saveData" :disabled="!calcReqData || calcReqData.length == 0"
@@ -46,7 +46,7 @@
         </el-button>
       </div>
     </div>
-<!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
+    <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
       <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
                 :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
@@ -116,10 +116,14 @@ export default {
     broadcastChannel?.close();
     broadcastChannel = null;
   },
-  created() {
+  async created() {
     if (this.$route.params?.childListType) {
       // 子表类型 add|update|detail
       this.childListType = this.$route.params?.childListType;
+      // if (this.childListType === 'add' && this.childListCfg?.data_source_cfg?.select_srv) {
+      //   // 初始数据配置
+      //   await this.getInitData(this.childListCfg?.data_source_cfg)
+      // }
       this.$nextTick(() => {
         broadcastChannel = new BroadcastChannel(this.$route.params?.broadCastName);
         broadcastChannel.addEventListener("message", this.bcOn);
@@ -137,19 +141,6 @@ export default {
       this.bindKeyboardEvent(this.undo, this.redo);
     })
   },
-  mounted() {
-    // this.tableMaxHeight = document.body.clientHeight - 80
-    // window.addEventListener('resize', () => {
-    //   this.tableMaxHeight = document.body.clientHeight - 80
-    // })
-    // this.bindKeyboardEvent(this.undo, this.redo);
-    // this.initPage().then(() => {
-    //   if (this.v2data?.is_tree === true && this.listType !== "treelist") {
-    //     this.listType = "treelist";
-    //     this.initPage();
-    //   }
-    // });
-  },
   components: {
     IconFold, IconUnfold,
     selectParentNode,
@@ -157,10 +148,11 @@ export default {
   },
   data() {
     return {
+      initData: null,
+      mainData: null,
       childListCfg: {
-        foreign_key: {
-          // adapt_main_srv: "srvledu_practice_activity_apply_add"
-        }
+        foreign_key: null,
+        data_source_cfg: null
       },//子表配置
       listMaxHeight: 0,
       initExprCols: [],
@@ -198,23 +190,11 @@ export default {
       eventCustomOption: {
         bodyCellEvents: ({row, column, rowIndex}) => {
           return {
-            // click: (event) => {
-            //   console.log("click::", row, column, rowIndex, event);
-            // },
-            // dblclick: (event) => {
-            //   console.log("dblclick::", row, column, rowIndex, event);
-            // },
             contextmenu: (event) => {
               console.log("bodyCellEvents::", row, column, rowIndex, event);
               this.cleft = event.x + "px";
               this.ctop = event.y + "px";
             },
-            // mouseenter: (event) => {
-            //   console.log("mouseenter::", row, column, rowIndex, event);
-            // },
-            // mouseleave: (event) => {
-            //   console.log("mouseleave::", row, column, rowIndex, event);
-            // },
           };
         },
         bodyRowEvents: ({row, rowIndex}) => {
@@ -307,11 +287,6 @@ export default {
                            sourceSelectionData,
                            targetSelectionData,
                          }) => {
-          console.log(direction,
-            sourceSelectionRangeIndexes,
-            targetSelectionRangeIndexes,
-            sourceSelectionData,
-            targetSelectionData);
           if (sourceSelectionRangeIndexes.startRowIndex !== targetSelectionRangeIndexes.endRowIndex) {
             if (sourceSelectionData?.length > 1) {
               let val = null
@@ -533,10 +508,7 @@ export default {
         },
         beforeStartCellEditing: ({row, column, cellValue}) => {
           // console.log("beforeStartCellEditing：",row,column, cellValue);
-          // const colType = column?.__field_info?.col_type;
-          // if(column?.__field_info?.bx_col_type==='fk'){
-          //   return false
-          // }
+       
           let oldRowData = this.oldTableData.find(
             (item) => item.__id === row.__id
           );
@@ -583,13 +555,8 @@ export default {
           }
         },
         afterCellValueChange: ({row, column, changeValue, rowIndex}) => {
-          // console.log("afterCellValueChange");
-          // console.log("row::", row);
-          // console.log("column::", column);
-          // console.log("changeValue::", changeValue);
           const colType = column?.__field_info?.col_type;
           // console.log("afterCellValueChange", row, column, changeValue);
-
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
@@ -1103,32 +1070,56 @@ export default {
     },
   },
   methods: {
-    watchPageHeight(){
-        const element = document.querySelector('.ve-table-container')
-        // 监听可能引起高度变化的事件，例如图片加载完成、DOM变更等
-        var observer = new MutationObserver(function(mutationsList) {
-          mutationsList.forEach(function(mutation) {
-            // 检查是否有高度相关的变更
-            sendHeightToParent();
-          });
+    // getInitData(cfg = {}) {
+    //   const service = cfg.select_srv;
+    //   const condition = cfg.condition.map(item => {
+    //     if (item.value_main_col && this.mainData) {
+    //       item.value = this.mainData[item.value_main_col];
+    //     }
+    //     return item
+    //   })
+    //   const url =  `/${cfg.app}/select/${service}`
+    //   onSelect(service,cfg.app,condition).then(res=>{
+    //     console.log(res)
+    //     if(res.data?.length){
+    //       // this.initData = res.data
+    //       res.data.forEach(item=>{
+    //         const obj = {}
+    //         Object.keys(cfg.mapping).forEach(key=>{
+    //           obj[key] = item[key]
+    //         })
+    //         this.insert2Rows(this.tableData.length,null,obj)
+    //       })
+    //     }
+    //   })
+    //
+    // },
+    watchPageHeight() {
+      const element = document.querySelector('.ve-table-container')
+      // 监听可能引起高度变化的事件，例如图片加载完成、DOM变更等
+      var observer = new MutationObserver(function (mutationsList) {
+        mutationsList.forEach(function (mutation) {
+          // 检查是否有高度相关的变更
+          sendHeightToParent();
         });
+      });
 
-        // 配置观察器选项
-        var config = { attributes: true, childList: false, subtree: false };
+      // 配置观察器选项
+      var config = {attributes: true, childList: false, subtree: false};
 
-        // 开始观察整个文档
-        observer.observe(element, config);
+      // 开始观察整个文档
+      observer.observe(element, config);
 
-        const sendHeightToParent = ()=> {
-          var height = element?.scrollHeight
-          if(height){
-            this.bcEmit('heightChange', height + 60);
-            this.listMaxHeight = height+ 80
-          }else{
-            this.bcEmit('heightChange', 80 + 60);
-          }
-          // window.parent.postMessage({ type: 'iframeHeight', height: height }, '*'); // '*' 表示允许任何源，实际应用中应指定确切的源
+      const sendHeightToParent = () => {
+        var height = element?.scrollHeight
+        if (height) {
+          this.bcEmit('heightChange', height + 60);
+          this.listMaxHeight = height + 80
+        } else {
+          this.bcEmit('heightChange', 80 + 60);
         }
+        // window.parent.postMessage({ type: 'iframeHeight', height: height }, '*'); // '*' 表示允许任何源，实际应用中应指定确切的源
+      }
 
     },
     bcOn(event) {
@@ -1143,6 +1134,21 @@ export default {
       if (data?.childListCfg) {
         this.childListCfg = data.childListCfg;
       }
+      if (data?.mainData) {
+        this.mainData = data?.mainData;
+      }
+      if (data?.type === 'initDataChange') {
+        console.log('initDataChange', data)
+        this.tableData = []
+        if (data?.data?.length) {
+          data.data.forEach(item => {
+            this.insert2Rows(this.tableData.length, null, item)
+          })
+        }
+      }
+      if (data?.type === 'colSrvChange' && data.colSrv) {
+        this.initPage()
+      }
     },
     bcEmit(type, data) {
       // 通过broadcastChannel广播消息
@@ -1155,12 +1161,12 @@ export default {
       }
     },
     emitListData() {
-      let data = this.tableData
+      let data = JSON.parse(JSON.stringify(this.tableData))
       if (this.childListType === 'add') {
-        data = data.filter(item => Object.keys(item).some(key => !['__flag', '__id', 'rowKey'].includes(key) && item[key]))
+        data = data.filter(item => Object.keys(item).some(key => !ignoreKeys.includes(key) && item[key]))
         data.forEach(item => {
           Object.keys(item).forEach(key => {
-            if (['__flag', '__id', 'rowKey'].includes(key)) {
+            if (ignoreKeys.includes(key)) {
               delete item[key]
             }
           })
@@ -1189,7 +1195,7 @@ export default {
     unfold() {
       // 展开
       this.listMaxHeight = document.querySelector('.ve-table-container')?.scrollHeight + 80
-        // document.documentElement.clientHeight - 50;
+      // document.documentElement.clientHeight - 50;
     },
     repari() {
       this.loading = true
@@ -1410,6 +1416,9 @@ export default {
       ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
         let minWidth = (window.innerWidth + 50) / this.allFields.length;
+        if(this.childListType === 'add'){
+          minWidth -= 200
+        }
         if (minWidth < 200) {
           minWidth = 200;
         }
@@ -1571,7 +1580,7 @@ export default {
                   item.option_list_v2 =
                     this.updateColsMap?.[item.columns]?.option_list_v2;
                 } else if (this.addColsMap?.[item.columns]?.option_list_v2) {
-                  item.addColsMap =
+                  item.option_list_v2 =
                     this.updateColsMap?.[item.columns]?.option_list_v2;
                 } else if (!item.option_list_v2) {
                   item.option_list_v2 = {
@@ -1983,7 +1992,7 @@ export default {
                   on: {
                     click: () => {
                       console.log(row, 'delete')
-                      self.tableData = self.tableData.filter((item,index)=>index!==rowIndex)
+                      self.tableData = self.tableData.filter((item, index) => index !== rowIndex)
                       self.emitListData()
                       // self.tableData = self.tableData.splice(rowIndex,1);
                     }
@@ -2278,7 +2287,7 @@ export default {
      * @param {*} index 插入到第几条数据
      * @param {*} parentRow 父节点数据
      */
-    insert2Rows(index, parentRow) {
+    insert2Rows(index, parentRow, itemData) {
       // 插入到第几行
       if (this.childListType) {
         // 作为子表 只插到最后一行
@@ -2286,7 +2295,7 @@ export default {
       }
       if (index >= 0) {
         const __id = uniqueId("table_item_");
-        const dataItem = {
+        let dataItem = {
           rowKey: __id,
           __id,
           __flag: "add",
@@ -2307,6 +2316,9 @@ export default {
         this.allFields.forEach((field) => {
           if (field.editable || field.canAdd) {
             dataItem[field.columns] = null;
+            if (itemData && itemData[field.columns]) {
+              dataItem[field.columns] = itemData[field.columns]
+            }
             let init_expr = null
             let fk_init_expr = null
             let fk_column = null
@@ -2387,6 +2399,7 @@ export default {
           dataItem[this.treeInfo.pidCol] = parentRow[this.treeInfo.idCol];
           dataItem.__indent = parentRow.__indent ? parentRow.__indent + 40 : 40;
         }
+
         this.tableData.splice(index, 0, dataItem);
       }
     },
@@ -2755,7 +2768,8 @@ export default {
           this.v2data.srv_cols,
           this.updateColsMap,
           this.addColsMap,
-          this.childListType
+          this.childListType,
+          this.colSrv
         );
         this.allFields = this.v2data.allFields;
 

@@ -1,5 +1,5 @@
 <template>
-  <div v-loading="loading" class="flex justify-between items-center" @dblclick.stop="">
+  <div v-loading="loading" class="flex justify-between items-center" style="max-width: 500px" @dblclick.stop="">
 
     <div style="width: 100%;" v-if="isTree && setDisabled" @click="remoteMethod">
       {{ modelValue }}
@@ -18,7 +18,7 @@
     </div>
 
     <el-select ref="inputRef" v-model="modelValue" remote filterable reserve-keyword placeholder="请输入关键词"
-      :remote-method="remoteMethod" :loading="loading" :value-key="srvInfo.refed_col" @click.native="remoteMethod"
+      :remote-method="remoteMethod" :loading="loading" :label-key="srvInfo.key_disp_col" :value-key="srvInfo.refed_col" @click.native="remoteMethod"
       @dblclick.native="openDialog" @change="onSelectChange" @focus="onFocus" clearable :disabled="setDisabled" v-else-if="srvInfo&&srvInfo.refed_col">
       <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value">
       </el-option>
