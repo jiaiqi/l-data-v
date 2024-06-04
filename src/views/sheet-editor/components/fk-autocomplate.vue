@@ -1,7 +1,9 @@
 <template>
   <div @dblclick.stop="" class="flex items-center autocomplete-box">
     <div v-if="isTree && !setDisabled" style="width: 100%;">
-      <el-popover placement="bottom-center" ref="treePopover" trigger="click" @show="onPopoverShow">
+      <el-popover append-to-body placement="bottom-center" ref="treePopover" trigger="click" @show="onPopoverShow"
+      :popper-options="{ boundariesElement: 'body', removeOnDestroy: true }"
+      >
         <span slot="reference" v-if="modelValue && !setDisabled" class="cursor-pointer">{{ modelLabel || modelValue || ''
         }}</span>
         <span slot="reference" class="text-gray cursor-pointer" v-else-if="!setDisabled">请选择</span>

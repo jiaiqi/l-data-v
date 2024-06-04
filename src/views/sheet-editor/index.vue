@@ -3,7 +3,7 @@
     <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full">
       <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
         <div class="m-r-2">添加</div>
-        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px"/>
+        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
         <div class="m-x-2">行</div>
         <el-button size="mini" type="primary" @click="batchInsertRows" :disabled="insertRowNumber === 0">添加
         </el-button>
@@ -19,7 +19,7 @@
       </div>
 
       <div class="flex flex-items-center flex-1 justify-end">
-        <div class="color-map flex flex-items-center m-r-20" v-if="childListType!=='add'">
+        <div class="color-map flex flex-items-center m-r-20" v-if="childListType !== 'add'">
           <div class="color-map-item flex flex-items-center">
             <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div>
             <div class="text">新增</div>
@@ -34,35 +34,33 @@
         <!--          <span v-else @click="unfold"><icon-unfold></icon-unfold>  展开</span>-->
         <!--        </div>-->
         <!-- <el-button size="mini" type="primary" @click="repari">修复</el-button> -->
-        <el-button size="mini" type="primary" @click="refreshData" v-if="childListType!=='add'">刷新</el-button>
+        <el-button size="mini" type="primary" @click="refreshData" v-if="childListType !== 'add'">刷新</el-button>
         <el-button size="mini" type="primary" @click="saveData" :disabled="!calcReqData || calcReqData.length == 0"
-                   v-if="childListType!=='add'"
-        >
+          v-if="childListType !== 'add'">
           保存
         </el-button>
         <el-button size="mini" type="primary" @click="saveColumnWidth"
-                   :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
-                   v-if="!childListType && calcColumnWidthReq && calcColumnWidthReq.length > 0">保存列宽
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
+          v-if="!childListType && calcColumnWidthReq && calcColumnWidthReq.length > 0">保存列宽
         </el-button>
       </div>
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
       <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
-                :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-                :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-                :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-                :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-                :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-                :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption"/>
+        :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
+        :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
+        :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
+        :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
+        :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
+        :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
     </div>
-    <div class="empty-data" v-if="!childListType&& listMaxHeight && page.total === 0 && !loading">暂无数据</div>
+    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">暂无数据</div>
     <!--    列表为新增子表时不显示分页-->
-    <div class="text-center" v-if="childListType!=='add'">
+    <div class="text-center" v-if="childListType !== 'add'">
       <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
-                     :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber"
-                     layout="total, sizes, pager,  jumper"
-                     :total="page.total">
+        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
+        :total="page.total">
       </el-pagination>
     </div>
 
@@ -81,21 +79,21 @@ import {
   onDelete,
 } from "../../service/api";
 import dayjs from "dayjs";
-import {buildSrvCols} from "../../utils/sheetUtils";
-import {COLUMN_KEYS} from "../../utils/constant";
-import {uniqueId, cloneDeep} from "lodash-es";
-import {Message} from "element-ui"; // 引入elementUI的Message组件
+import { buildSrvCols } from "../../utils/sheetUtils";
+import { COLUMN_KEYS } from "../../utils/constant";
+import { uniqueId, cloneDeep } from "lodash-es";
+import { Message } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
 import FileUpload from "./components/file-upload.vue";
 import selectParentNode from "./components/select-parent-node.vue";
 import fkAutocomplate from "./components/fk-autocomplate.vue";
-import {RecordManager} from "./util/recordManager.js";
-import {Loading} from "element-ui";
-import {$http} from "../../common/http";
+import { RecordManager } from "./util/recordManager.js";
+import { Loading } from "element-ui";
+import { $http } from "../../common/http";
 import loginDialog from '../../components/login-dialog/index.vue'
-import {processStrings, appendNumber} from '../../common/common'
+import { processStrings, appendNumber } from '../../common/common'
 import IconFold from "../../components/icons/icon-fold.vue";
 import IconUnfold from '../../components/icons/icon-unfold.vue'
 
@@ -188,7 +186,7 @@ export default {
       allFields: [], //所有字段
       columns: [], //表头字段
       eventCustomOption: {
-        bodyCellEvents: ({row, column, rowIndex}) => {
+        bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
             contextmenu: (event) => {
               console.log("bodyCellEvents::", row, column, rowIndex, event);
@@ -197,7 +195,7 @@ export default {
             },
           };
         },
-        bodyRowEvents: ({row, rowIndex}) => {
+        bodyRowEvents: ({ row, rowIndex }) => {
           return {
             // click: (event) => {
             //   console.log("click::", row, rowIndex, event);
@@ -221,7 +219,7 @@ export default {
         },
       },
       cellStyleOption: {
-        bodyCellClass: ({row, column, rowIndex}) => {
+        bodyCellClass: ({ row, column, rowIndex }) => {
           if (row?.__flag === "add") {
             // 新增行直接显示为绿色背景 不用判断字段有没有值
             return "table-body-cell__add";
@@ -255,7 +253,7 @@ export default {
       columnWidthResizeOption: {
         enable: true,
         minWidth: 30,
-        sizeChange: ({column, differWidth, columnWidth}) => {
+        sizeChange: ({ column, differWidth, columnWidth }) => {
           console.log({
             column,
             differWidth,
@@ -276,17 +274,17 @@ export default {
       cellAutofillOption: {
         directionX: false,
         directionY: true,
-        afterAutofill: ({targetSelectionRangeIndexes}) => {
+        afterAutofill: ({ targetSelectionRangeIndexes }) => {
           //targetSelectionRangeIndexes 自动填充目标的行和列索引
           this.triggerEditCell(targetSelectionRangeIndexes);
         },
         beforeAutofill: ({
-                           direction,
-                           sourceSelectionRangeIndexes,
-                           targetSelectionRangeIndexes,
-                           sourceSelectionData,
-                           targetSelectionData,
-                         }) => {
+          direction,
+          sourceSelectionRangeIndexes,
+          targetSelectionRangeIndexes,
+          sourceSelectionData,
+          targetSelectionData,
+        }) => {
           if (sourceSelectionRangeIndexes.startRowIndex !== targetSelectionRangeIndexes.endRowIndex) {
             if (sourceSelectionData?.length > 1) {
               let val = null
@@ -358,7 +356,7 @@ export default {
       },
       // 剪贴板配置
       clipboardOption: {
-        beforePaste: ({data, selectionRangeIndexes, selectionRangeKeys}) => {
+        beforePaste: ({ data, selectionRangeIndexes, selectionRangeKeys }) => {
           console.log(selectionRangeIndexes);
 
           if (Array.isArray(data) && data?.length) {
@@ -439,12 +437,12 @@ export default {
             return isValid;
           }
         },
-        afterPaste: ({selectionRangeIndexes}) => {
+        afterPaste: ({ selectionRangeIndexes }) => {
           //selectionRangeIndexes ：拷贝区域的索引信息
           this.triggerEditCell(selectionRangeIndexes);
         },
-        afterCut: ({selectionRangeIndexes}) => {
-          const {startRowIndex, endRowIndex, startColIndex, endColIndex} =
+        afterCut: ({ selectionRangeIndexes }) => {
+          const { startRowIndex, endRowIndex, startColIndex, endColIndex } =
             selectionRangeIndexes;
           const columns = this.columns.filter(
             (item) =>
@@ -469,7 +467,7 @@ export default {
       },
       // 单元格编辑配置
       editOption: {
-        beforeCellValueChange: ({row, column, changeValue}) => {
+        beforeCellValueChange: ({ row, column, changeValue }) => {
           const colType = column?.__field_info?.col_type;
           // console.log(row, column, changeValue);
           if (row.__flag === "add") {
@@ -506,9 +504,9 @@ export default {
           }
 
         },
-        beforeStartCellEditing: ({row, column, cellValue}) => {
+        beforeStartCellEditing: ({ row, column, cellValue }) => {
           // console.log("beforeStartCellEditing：",row,column, cellValue);
-       
+
           let oldRowData = this.oldTableData.find(
             (item) => item.__id === row.__id
           );
@@ -554,7 +552,7 @@ export default {
             return false;
           }
         },
-        afterCellValueChange: ({row, column, changeValue, rowIndex}) => {
+        afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
           // console.log("afterCellValueChange", row, column, changeValue);
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
@@ -664,9 +662,9 @@ export default {
           ) {
             arr.push({
               serviceName: "srvsys_table_columns_update",
-              data: [{list_min_width: this.columnWidthMap[key].width}],
+              data: [{ list_min_width: this.columnWidthMap[key].width }],
               condition: [
-                {colName: "column_name", value: key, ruleType: "eq"},
+                { colName: "column_name", value: key, ruleType: "eq" },
                 {
                   colName: "table_name",
                   value: this.columnWidthMap[key].fieldInfo.table_name,
@@ -690,9 +688,9 @@ export default {
           ) {
             arr.push({
               serviceName: "srvsys_service_columns_query_update",
-              data: [{list_min_width: this.columnWidthMap[key].width}],
+              data: [{ list_min_width: this.columnWidthMap[key].width }],
               condition: [
-                {colName: "columns", value: key, ruleType: "eq"},
+                { colName: "columns", value: key, ruleType: "eq" },
                 {
                   colName: "service_name",
                   value: this.columnWidthMap[key].fieldInfo.service_name,
@@ -714,10 +712,10 @@ export default {
     contextmenuBodyOption() {
       return {
         beforeShow: ({
-                       isWholeRowSelection,
-                       selectionRangeKeys,
-                       selectionRangeIndexes,
-                     }) => {
+          isWholeRowSelection,
+          selectionRangeKeys,
+          selectionRangeIndexes,
+        }) => {
           console.log("---contextmenu header beforeShow--");
           console.log("isWholeColSelection::", isWholeRowSelection);
           console.log("selectionRangeKeys::", selectionRangeKeys);
@@ -726,10 +724,10 @@ export default {
           return false;
         },
         afterMenuClick: ({
-                           type,
-                           selectionRangeKeys,
-                           selectionRangeIndexes,
-                         }) => {
+          type,
+          selectionRangeKeys,
+          selectionRangeIndexes,
+        }) => {
           console.log("---contextmenu body afterMenuClick--");
           console.log("type::", type);
           console.log("selectionRangeKeys::", selectionRangeKeys);
@@ -822,15 +820,15 @@ export default {
 
             // 删除选中行数据
             let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-            }至第${selectionRangeIndexes.endRowIndex + 1
-            }行数据，是否继续操作？`;
+              }至第${selectionRangeIndexes.endRowIndex + 1
+              }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
               selectionRangeIndexes.startRowIndex ==
               0
             ) {
               text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-              }行数据，是否继续操作？`;
+                }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -1105,7 +1103,7 @@ export default {
       });
 
       // 配置观察器选项
-      var config = {attributes: true, childList: false, subtree: false};
+      var config = { attributes: true, childList: false, subtree: false };
 
       // 开始观察整个文档
       observer.observe(element, config);
@@ -1303,7 +1301,7 @@ export default {
         const req = [
           {
             serviceName: this.updateButton?.service_name,
-            condition: [{colName: "id", ruleType: "eq", value: row.id}],
+            condition: [{ colName: "id", ruleType: "eq", value: row.id }],
             data: [
               {
                 [this.v2data?.parent_no_col]: val,
@@ -1358,11 +1356,11 @@ export default {
       this.getList();
     },
     triggerEditCell({
-                      startRowIndex,
-                      endRowIndex,
-                      startColIndex,
-                      endColIndex,
-                    }) {
+      startRowIndex,
+      endRowIndex,
+      startColIndex,
+      endColIndex,
+    }) {
       // 触发编辑事件
       const columns = this.columns.filter(
         (item) =>
@@ -1409,14 +1407,14 @@ export default {
           title: "#",
           width: 50,
           fixed: "left",
-          renderBodyCell: function ({rowIndex, row}) {
+          renderBodyCell: function ({ rowIndex, row }) {
             return startRowIndex + rowIndex + 1;
           },
         },
       ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
         let minWidth = (window.innerWidth + 50) / this.allFields.length;
-        if(this.childListType === 'add'){
+        if (this.childListType === 'add') {
           minWidth -= 200
         }
         if (minWidth < 200) {
@@ -1468,7 +1466,7 @@ export default {
               // item?.col_type?.includes("decimal") ||
               // item?.bx_col_type == "fk",
               // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
-              __field_info: {...item},
+              __field_info: { ...item },
             };
 
             // Image
@@ -1496,7 +1494,7 @@ export default {
             //   columnObj.edit = !columnObj.disabled && columnObj.edit;
             // }
 
-            columnObj.renderHeaderCell = ({column}, h) => {
+            columnObj.renderHeaderCell = ({ column }, h) => {
               const conditions = [...this.initCond, ...this.defaultConditions]
               // const conditions = [...this.defaultConditions]
               // if (Array.isArray(this.initCond) && this.initCond.length) {
@@ -1510,7 +1508,7 @@ export default {
                 attrs: {
                   app: this.srvApp,
                   list: this.tableData,
-                  column: {...item, edit: columnObj.edit},
+                  column: { ...item, edit: columnObj.edit },
                   sortState: this.setSortState,
                   service: this.serviceName,
                   condition: JSON.parse(JSON.stringify(conditions)),
@@ -1592,7 +1590,7 @@ export default {
                 }
               }
               // if (item.bx_col_type === "fk") {
-              columnObj.renderBodyCell = ({row, column, rowIndex}, h) => {
+              columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
 
                 const oldRowData = this.oldTableData.find(
                   (item) => item.__id && item.__id === row.__id
@@ -1734,7 +1732,7 @@ export default {
                       size: "mini",
                       type: item.col_type.toLowerCase(),
                       style: `width:${item.col_type === "DateTime" ? 180 : 130
-                      }px;`,
+                        }px;`,
                       valueFormat:
                         item.col_type === "DateTime"
                           ? "yyyy-MM-dd HH:mm:ss"
@@ -1747,9 +1745,20 @@ export default {
                       },
                     },
                     on: {
+                      // change: (event) => {
+                      //   console.log('el-date-picker-change',event);
+                      //   // self.$set(row, column.field, event);
+                      //   this.$refs["tableRef"].startEditingCell({
+                      //     rowKey: row.rowKey,
+                      //     colKey: column.field,
+                      //     defaultValue: event || null,
+                      //   });
+                      //   this.$refs["tableRef"].stopEditingCell();
+                      //   this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                      // },
                       input: (event) => {
-                        console.log;
-                        // self.$set(row, column.field, event);
+                        console.log('el-date-picker-input', event);
+                        self.$set(row, column.field, event);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
                           colKey: column.field,
@@ -1929,7 +1938,7 @@ export default {
                       onfocus: () => {
                         this.$refs[
                           "tableRef"
-                          ].clearCellSelectionCurrentCell();
+                        ].clearCellSelectionCurrentCell();
                       },
                       onpopup: (val) => {
                         this.onPopup = val
@@ -1982,9 +1991,9 @@ export default {
               title: "操作",
               width: 50,
               // fixed: "right",
-              renderBodyCell: function ({row, column, rowIndex}, h) {
+              renderBodyCell: function ({ row, column, rowIndex }, h) {
                 return h('div', {
-                  domProps: {innerHTML: 'x'},
+                  domProps: { innerHTML: 'x' },
                   attrs: {
                     style: "cursor:pointer;",
                     class: "hover:color-red"
@@ -2057,12 +2066,38 @@ export default {
       const addDatas = [];
 
       tableData.forEach((item, index) => {
-        if (
+        const oldItem = this.oldTableData.find((d) => d.__id && d.__id === item.__id);
+        if (item.__flag === null && oldItem) {
+          const updateObj = {};
+          Object.keys(item).forEach((key) => {
+            if (
+              key.indexOf("_") !== 0 &&
+              !ignoreKeys.includes(key) &&
+              this.updateColsMap?.[key]?.in_update !== 0
+            ) {
+              if (oldItem[key] !== item[key]) {
+                item.__flag = "update"
+                this.$set(item,'__flag','update')
+                if (item[key] === '' || item[key] == undefined) {
+                  item[key] = null;
+                }
+                updateObj[key] = item[key];
+              }
+            }
+          }
+          )
+          if (Object.keys(updateObj)?.length) {
+            reqData.push({
+              serviceName: this.updateButton.service_name,
+              condition: [{ colName: "id", ruleType: "eq", value: item.id }],
+              data: [updateObj],
+            });
+          }
+        } else if (
           item.__flag === "update" &&
           item.id &&
           this.updateButton?.service_name
         ) {
-          const oldItem = this.oldTableData.find((d) => d.__id === item.__id);
           const updateObj = {};
           if (oldItem) {
             Object.keys(oldItem).forEach((key) => {
@@ -2082,7 +2117,7 @@ export default {
             if (Object.keys(updateObj)?.length) {
               reqData.push({
                 serviceName: this.updateButton.service_name,
-                condition: [{colName: "id", ruleType: "eq", value: item.id}],
+                condition: [{ colName: "id", ruleType: "eq", value: item.id }],
                 data: [updateObj],
               });
             }
@@ -2418,7 +2453,7 @@ export default {
         return tableData;
       }
       tableData = cloneDeep(tableData);
-      let loadingInstance = Loading.service({fullscreen: true});
+      let loadingInstance = Loading.service({ fullscreen: true });
       const res = await onSelect(
         this.serviceName,
         this.srvApp,
@@ -2484,7 +2519,7 @@ export default {
       this.$set(this.tableData[rowIndex], "__unfold", load);
       if (load) {
         // 加载当前数据的子数据
-        let loadingInstance = Loading.service({fullscreen: true});
+        let loadingInstance = Loading.service({ fullscreen: true });
         onSelect(
           this.serviceName,
           this.srvApp,
@@ -2782,7 +2817,7 @@ export default {
         return res.data
       }
     },
-    scrolling({startRowIndex}) {
+    scrolling({ startRowIndex }) {
       this.startRowIndex = startRowIndex;
     },
     // 取消监听撤销重做事件
@@ -2899,7 +2934,8 @@ export default {
 }
 
 .ve-table-body-tr {
-  height: unset !important;;
+  height: unset !important;
+  ;
 }
 
 .ve-table-header-th {
@@ -2941,9 +2977,19 @@ export default {
 
 }
 
+// .ve-table{
+//   position: unset!important;
+//   .ve-table-container{
+//   position: unset!important;
+//  .ve-table-content-wrapper{
+
+//   position: unset!important;
+//  }
+//   }
+// }
 .ve-table-container {
   min-height: 80px;
-  // height: calc(100vh - 80px)!important;
-  // overflow: auto;
+  height: calc(100vh - 80px) !important;
+  overflow: auto;
 }
 </style>
