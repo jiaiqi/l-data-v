@@ -1328,6 +1328,9 @@ export default {
       if (this.serviceName) {
         this.loading = true;
         const v2Data = await this.getV2Data();
+        if(v2Data===false){
+          return
+        }
         if (this.childListType === 'add') return this.loading = false//新增时不查子表数据
         this.buildInitCond()
         this.loading = false;
@@ -2736,6 +2739,10 @@ export default {
 
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
+        if(res.data.is_tree===true && this.listType === 'list'){
+          // 树列表 停止执行之后的逻辑 改为加载树列表逻辑
+          return false
+        }
         this.initExprCols = res.data.srv_cols.reduce((pre, cur) => {
           if (cur.init_expr) {
             pre.push(cur)
