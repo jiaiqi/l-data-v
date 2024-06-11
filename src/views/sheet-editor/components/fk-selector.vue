@@ -20,7 +20,7 @@
     <el-select ref="inputRef" v-model="modelValue" remote filterable reserve-keyword placeholder="请输入关键词"
       :remote-method="remoteMethod" :loading="loading" :label-key="srvInfo.key_disp_col" :value-key="srvInfo.refed_col" @click.native="remoteMethod"
       @dblclick.native="openDialog" @change="onSelectChange" @focus="onFocus" clearable :disabled="setDisabled" v-else-if="srvInfo&&srvInfo.refed_col">
-      <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value">
+      <el-option v-for="(item,index) in options" :key="index" :label="item.label" :value="item.value">
       </el-option>
     </el-select>
     <i class="el-icon-arrow-right cursor-pointer  m-l-[-5px] text-#C0C4CC" :class="{ 'cursor-not-allowed': setDisabled }"

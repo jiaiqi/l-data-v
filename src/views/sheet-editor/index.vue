@@ -1328,7 +1328,7 @@ export default {
       if (this.serviceName) {
         this.loading = true;
         const v2Data = await this.getV2Data();
-        if(v2Data===false){
+        if (v2Data === false) {
           return
         }
         if (this.childListType === 'add') return this.loading = false//新增时不查子表数据
@@ -2080,7 +2080,7 @@ export default {
             ) {
               if (oldItem[key] !== item[key]) {
                 item.__flag = "update"
-                this.$set(item,'__flag','update')
+                this.$set(item, '__flag', 'update')
                 if (item[key] === '' || item[key] == undefined) {
                   item[key] = null;
                 }
@@ -2129,11 +2129,11 @@ export default {
           const addObj = {
             ...item,
           };
-          Object.keys(addObj).forEach((key) => {
-            if (addObj[key] === null || this.addColsMap?.[key]?.in_add !== 1) {
-              delete addObj[key];
-            }
-          });
+          // Object.keys(addObj).forEach((key) => {
+          //   if (addObj[key] === null || this.addColsMap?.[key]?.in_add === 0) {
+          //     delete addObj[key];
+          //   }
+          // });
           if (this.defaultConditions?.length) {
             this.defaultConditions.forEach((item) => {
               if (item.value && !addObj[item.colName]) {
@@ -2145,7 +2145,7 @@ export default {
           }
 
           Object.keys(addObj).forEach((key) => {
-            if (ignoreKeys.includes(key) || key.indexOf("__") === 0) {
+            if (ignoreKeys.includes(key) || key.indexOf("_") === 0) {
               delete addObj[key];
             }
             if (addObj[key] === '' || addObj[key] === undefined || addObj[key] === null) {
@@ -2739,7 +2739,7 @@ export default {
 
       if (res?.state === "SUCCESS") {
         this.v2data = res.data;
-        if(res.data.is_tree===true && this.listType === 'list'){
+        if (res.data.is_tree === true && this.listType === 'list') {
           // 树列表 停止执行之后的逻辑 改为加载树列表逻辑
           return false
         }
