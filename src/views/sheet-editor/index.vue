@@ -1,6 +1,6 @@
 <template>
   <div class="spreadsheet flex flex-col" v-loading="loading">
-    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full">
+    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full" v-if="disabled !== true">
       <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
         <div class="m-r-2">添加</div>
         <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
@@ -29,11 +29,6 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <!--        <div v-if="childListType" class="text-sm cursor-pointer hover:color-[#999]">-->
-        <!--          <span v-if="listMaxHeight" @click="fold"><icon-fold></icon-fold>  收起</span>-->
-        <!--          <span v-else @click="unfold"><icon-unfold></icon-unfold>  展开</span>-->
-        <!--        </div>-->
-        <!-- <el-button size="mini" type="primary" @click="repari">修复</el-button> -->
         <el-button size="mini" type="primary" @click="refreshData" v-if="childListType !== 'add'">刷新</el-button>
         <el-button size="mini" type="primary" @click="saveData" :disabled="!calcReqData || calcReqData.length == 0"
           v-if="childListType !== 'add'">
@@ -47,13 +42,14 @@
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
+      <ve-table :columns="columns" :table-data="tableData" v-if="disabled" ref="tableRef" style="word-break: break-word; width: 100vw;height: 100%;" max-height="calc(100vh - 40px)" fixed-header/>
       <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
         :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
         :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
         :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
         :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
         :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-        :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+        :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" v-else/>
     </div>
     <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">暂无数据</div>
     <!--    列表为新增子表时不显示分页-->
@@ -115,6 +111,9 @@ export default {
     broadcastChannel = null;
   },
   async created() {
+    if (this.$route.query?.disabled) {
+      this.disabled = true
+    }
     if (this.$route.params?.childListType) {
       // 子表类型 add|update|detail
       this.childListType = this.$route.params?.childListType;
@@ -146,6 +145,7 @@ export default {
   },
   data() {
     return {
+      disabled: false,
       initData: null,
       mainData: null,
       childListCfg: {
@@ -968,6 +968,7 @@ export default {
         Object.keys(query).forEach((key) => {
           if (
             ![
+              "disabled",
               "srvApp",
               "isTree",
               "topTreeData",
@@ -1626,7 +1627,7 @@ export default {
                     attrs: {
                       row,
                       column: setColumn,
-                      disabled: !columnObj.edit ||
+                      disabled: this.disabled || !columnObj.edit ||
                         (row.__flag !== "add" &&
                           row?.__button_auth?.edit === false),
                       app: this.srvApp,
@@ -1687,7 +1688,7 @@ export default {
                       row,
                       column,
                       listType: this.listType,
-                      disabled: !columnObj.edit ||
+                      disabled:this.disabled || !columnObj.edit ||
                         (row.__flag !== "add" &&
                           row?.__button_auth?.edit === false),
                     },
@@ -1725,7 +1726,7 @@ export default {
                 } else if (["Date", "DateTime"].includes(item.col_type)) {
                   return h("el-date-picker", {
                     attrs: {
-                      disabled:
+                      disabled:this.disabled ||
                         !columnObj.edit ||
                         (row.__flag !== "add" &&
                           row?.__button_auth?.edit === false),
@@ -1782,7 +1783,7 @@ export default {
                     "el-select",
                     {
                       attrs: {
-                        disabled:
+                        disabled:this.disabled ||
                           !columnObj.edit ||
                           (row.__flag !== "add" &&
                             row?.__button_auth?.edit === false),
@@ -1827,7 +1828,7 @@ export default {
                       attrs: {
                         collapseTags: false,
                         multiple: true,
-                        disabled:
+                        disabled:this.disabled ||
                           !columnObj.edit ||
                           (row.__flag !== "add" &&
                             row?.__button_auth?.edit === false),
@@ -1881,7 +1882,7 @@ export default {
                     attrs: {
                       row,
                       column: setColumn,
-                      disabled: !editable,
+                      disabled:this.disabled || !editable,
                       value: row[column.field],
                       app: this.srvApp,
                     },
@@ -1926,7 +1927,7 @@ export default {
                       treeInfo: this.treeInfo,
                       row,
                       column: setColumn,
-                      editable: editable,
+                      editable:!this.disabled || editable,
                       html: row[column.field],
                       oldValue: oldRowData?.[column.field],
                       listType: this.listType,
