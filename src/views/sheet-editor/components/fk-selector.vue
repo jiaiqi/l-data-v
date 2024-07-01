@@ -1,10 +1,10 @@
 <template>
   <div v-loading="loading" class="flex justify-between items-center" style="max-width: 500px" @dblclick.stop="">
-
     <div style="width: 100%;" v-if="isTree && setDisabled" @click="remoteMethod">
       {{ modelValue }}
     </div>
-    <div v-if="isTree" style="width: 100%;">
+    <div v-else-if="setDisabled">{{ modelLabel||modelValue||'' }}</div>
+    <div v-else-if="isTree" style="width: 100%;">
       <el-popover placement="bottom-center" ref="treePopover" trigger="click" @show="onPopoverShow">
         <span slot="reference" v-if="modelValue && !setDisabled" class="cursor-pointer">{{ modelLabel || modelValue || ''
         }}</span>
@@ -24,7 +24,7 @@
       </el-option>
     </el-select>
     <i class="el-icon-arrow-right cursor-pointer  m-l-[-5px] text-#C0C4CC" :class="{ 'cursor-not-allowed': setDisabled }"
-      @click="openDialog" v-if="!isTree"></i>
+      @click="openDialog" v-if="!isTree&&!setDisabled"></i>
 
     <el-dialog title="选择" :visible.sync="dialogVisible" width="80%" append-to-body v-loading="tableloading">
       <div @click.stop="">

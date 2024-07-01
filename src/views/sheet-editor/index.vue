@@ -21,7 +21,8 @@
       <div class="flex flex-items-center flex-1 justify-end">
         <div class="color-map flex flex-items-center m-r-20" v-if="childListType !== 'add'">
           <div class="color-map-item flex flex-items-center">
-            <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div>
+            <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
+            <div class="color bg-[#67c23a] w-4 h-4 m-r-2 rounded"></div>
             <div class="text">新增</div>
           </div>
           <div class="color-map-item flex flex-items-center m-l-5">
@@ -42,14 +43,17 @@
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
-      <ve-table :columns="columns" :table-data="tableData" v-if="disabled" ref="tableRef" style="word-break: break-word; width: 100vw;height: 100%;" max-height="calc(100vh - 40px)" fixed-header/>
-      <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
-        :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-        :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-        :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-        :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-        :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-        :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" v-else/>
+      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
+        style="word-break: break-word; width: 100vw;height: 100%;" max-height="calc(100vh - 40px)" fixed-header />
+      <div class="custom-style" v-else>
+        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)"
+          fixed-header :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+      </div>
     </div>
     <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">暂无数据</div>
     <!--    列表为新增子表时不显示分页-->
@@ -97,6 +101,7 @@ let broadcastChannel = null //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
   "__flag",
+  "__parent_row",
   "rowKey",
   "id",
   "__button_auth",
@@ -220,7 +225,8 @@ export default {
       },
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
-          if (row?.__flag === "add") {
+          // if (row?.__flag === "add") {
+          if (row?.__flag === "add" && column.field==='index') {
             // 新增行直接显示为绿色背景 不用判断字段有没有值
             return "table-body-cell__add";
             // 新增数据 整行某个字段有值后 增加class
@@ -1131,6 +1137,7 @@ export default {
       }
       console.log('child-listener', data)
       if (data?.childListCfg) {
+        console.log('childListCfg', data.childListCfg)
         this.childListCfg = data.childListCfg;
       }
       if (data?.mainData) {
@@ -1143,6 +1150,10 @@ export default {
           data.data.forEach(item => {
             this.insert2Rows(this.tableData.length, null, item)
           })
+          if (this.disabled === true) {
+            console.log('emitListData::', this.tableData);
+            this.emitListData()
+          }
         }
       }
       if (data?.type === 'colSrvChange' && data.colSrv) {
@@ -1165,7 +1176,7 @@ export default {
         data = data.filter(item => Object.keys(item).some(key => !ignoreKeys.includes(key) && item[key]))
         data.forEach(item => {
           Object.keys(item).forEach(key => {
-            if (ignoreKeys.includes(key)) {
+            if (ignoreKeys.includes(key) || key?.indexOf('_') === 0) {
               delete item[key]
             }
           })
@@ -1688,7 +1699,7 @@ export default {
                       row,
                       column,
                       listType: this.listType,
-                      disabled:this.disabled || !columnObj.edit ||
+                      disabled: this.disabled || !columnObj.edit ||
                         (row.__flag !== "add" &&
                           row?.__button_auth?.edit === false),
                     },
@@ -1724,9 +1735,12 @@ export default {
                     },
                   });
                 } else if (["Date", "DateTime"].includes(item.col_type)) {
+                  if (this.disabled) {
+                    return row[column.field] || ''
+                  }
                   return h("el-date-picker", {
                     attrs: {
-                      disabled:this.disabled ||
+                      disabled: this.disabled ||
                         !columnObj.edit ||
                         (row.__flag !== "add" &&
                           row?.__button_auth?.edit === false),
@@ -1779,11 +1793,14 @@ export default {
                   if (!item.option_list_v2) {
                     item.option_list_v2 = []
                   }
+                  if (this.disabled) {
+                    return row[column.field] ? item.option_list_v2.find(e => e.value === row[column.field])?.label || '' : ''
+                  }
                   return h(
                     "el-select",
                     {
                       attrs: {
-                        disabled:this.disabled ||
+                        disabled: this.disabled ||
                           !columnObj.edit ||
                           (row.__flag !== "add" &&
                             row?.__button_auth?.edit === false),
@@ -1828,7 +1845,7 @@ export default {
                       attrs: {
                         collapseTags: false,
                         multiple: true,
-                        disabled:this.disabled ||
+                        disabled: this.disabled ||
                           !columnObj.edit ||
                           (row.__flag !== "add" &&
                             row?.__button_auth?.edit === false),
@@ -1882,7 +1899,7 @@ export default {
                     attrs: {
                       row,
                       column: setColumn,
-                      disabled:this.disabled || !editable,
+                      disabled: this.disabled || !editable,
                       value: row[column.field],
                       app: this.srvApp,
                     },
@@ -1927,7 +1944,8 @@ export default {
                       treeInfo: this.treeInfo,
                       row,
                       column: setColumn,
-                      editable:!this.disabled || editable,
+                      disabled: this.disabled,
+                      editable: editable,
                       html: row[column.field],
                       oldValue: oldRowData?.[column.field],
                       listType: this.listType,
@@ -1986,7 +2004,7 @@ export default {
           }
           return item
         })
-        if (this.childListType === 'add') {
+        if (this.childListType === 'add' && !this.disabled) {
           columns.push(
             {
               field: "_handler",
@@ -2897,66 +2915,74 @@ export default {
   transition: max-height 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
-.table-body-cell__add {
-  background-color: #a4da89 !important;
+.custom-style {
 
-  .el-select .el-input {
-    .el-select__caret {
+  .ve-table-container {
+    min-height: 80px;
+    height: calc(100vh - 80px) !important;
+    overflow: auto;
+  }
+
+  .table-body-cell__add {
+    background-color: #67c23a !important;
+    color: #fff!important;
+    // border-top: 1px solid #a4da89;
+    .el-select .el-input {
+      .el-select__caret {
+        color: #eee;
+      }
+
+      .el-input__inner::placeholder {
+        color: #fff;
+      }
+    }
+
+
+    .el-icon-arrow-right {
       color: #eee;
     }
+  }
 
-    .el-input__inner::placeholder {
-      color: #fff;
+  .table-body-cell__update {
+    // color: #2087cc !important;
+    color: #f00 !important;
+
+    .el-input {
+      .el-input__inner {
+        // color: #2087cc !important;
+        color: #f00 !important;
+      }
     }
-  }
 
-
-  .el-icon-arrow-right {
-    color: #eee;
-  }
-}
-
-.table-body-cell__update {
-  // color: #2087cc !important;
-  color: #f00 !important;
-
-  .el-input {
-    .el-input__inner {
-      // color: #2087cc !important;
+    .el-tag {
       color: #f00 !important;
     }
+
+    // background-color: #2087CC !important;
   }
 
-  .el-tag {
-    color: #f00 !important;
+  // .table-body-cell__update_border {
+  //   border: 1px solid #2087cc !important;
+  // }
+  .ve-table-body-td {
+    padding: 2px 5px !important;
   }
 
-  // background-color: #2087CC !important;
-}
+  .ve-table-body-tr {
+    height: unset !important;
+    ;
+  }
 
-// .table-body-cell__update_border {
-//   border: 1px solid #2087cc !important;
-// }
-.ve-table-body-td {
-  padding: 2px 5px !important;
-}
-
-.ve-table-body-tr {
-  height: unset !important;
-  ;
-}
-
-.ve-table-header-th {
-  padding: 2px 0 !important;
-  background-color: #f0f3f9 !important;
+  .ve-table-header-th {
+    padding: 2px 0 !important;
+    background-color: #f0f3f9 !important;
+  }
 }
 
 .spreadsheet {
   width: 100vw;
   height: 100vh;
 
-  // padding: 0 10px;
-  // margin: 20px 0;
   .el-select,
   .el-autocomplete {
     .el-input__inner {
@@ -2983,21 +3009,5 @@ export default {
   }
 
 
-}
-
-// .ve-table{
-//   position: unset!important;
-//   .ve-table-container{
-//   position: unset!important;
-//  .ve-table-content-wrapper{
-
-//   position: unset!important;
-//  }
-//   }
-// }
-.ve-table-container {
-  min-height: 80px;
-  height: calc(100vh - 80px) !important;
-  overflow: auto;
 }
 </style>

@@ -11,10 +11,10 @@
       <div style="" v-else-if="![null, undefined, ''].includes(html)" >{{ html }}</div>
       <div class="old-value" v-else-if="[null, undefined, ''].includes(html) && oldValue" v-html="oldValue"></div>
     </div>
-    <el-button size="mini" class="edit-btn" circle @click.stop="showRichEditor" v-if="useEditor"><i
+    <el-button size="mini" class="edit-btn" circle @click.stop="showRichEditor" v-if="useEditor&&!disabled"><i
         class="el-icon-edit"></i></el-button>
     <el-button size="mini" class="edit-btn" circle @click.stop="showTextarea"
-      v-if="'MultilineText' === column.col_type"><i class="el-icon-edit"></i></el-button>
+      v-if="'MultilineText' === column.col_type&&!disabled"><i class="el-icon-edit"></i></el-button>
 
     <el-dialog :title="editable ? '编辑' : '详情'" :visible.sync="dialogTableVisible" :close-on-press-escape="false"
       :close-on-click-modal="false" :destroy-on-close="true" append-to-body width="80vw" custom-class="editor-dialog"
@@ -27,10 +27,10 @@
         :key="ticket + 2" />
       <el-input type="textarea" :rows="10" :disabled="!editable" placeholder="请输入内容" v-model="innerHtml" v-else>
       </el-input>
-      <div class="text-orange text-center" v-if="!editable">
+      <div class="text-orange text-center" v-if="!disabled && !editable">
         当前字段不可编辑
       </div>
-      <div class="text-center m-t-5" v-if="editable">
+      <div class="text-center m-t-5" v-if="!disabled && editable">
         <el-button type="primary" @click="
           $emit('change', innerHtml);
         dialogTableVisible = false;
@@ -54,6 +54,7 @@ export default {
     html: [String, Number],
     oldValue: [String, Number],
     editable: Boolean,
+    disabled:Boolean,
     row: Object,
     column: Object,
     listType: String,
