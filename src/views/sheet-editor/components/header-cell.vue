@@ -6,7 +6,7 @@
           <header-filter :column="column" :condition="condition" :app="app" :list="list" :service="service"
             @filter-change="filterChange"></header-filter>
         </div>
-        <div class="sort-icon" @click="onSrotChange" v-if="!['MultilineText', 'File', 'Image', 'RichText'].includes(
+        <div class="sort-icon" @click="onSrotChange" v-if="!['MultilineText', 'File', 'Image', 'RichText','snote'].includes(
           column.col_type
         )
           ">

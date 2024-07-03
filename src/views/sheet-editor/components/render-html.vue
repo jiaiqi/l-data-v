@@ -99,7 +99,7 @@ export default {
       return str;
     },
     useEditor() {
-      return ["Note", "RichText"].includes(this.column.col_type);
+      return ["Note", "RichText",'snote'].includes(this.column.col_type);
     },
     showUnfold() {
       // 显示展开收起图标
