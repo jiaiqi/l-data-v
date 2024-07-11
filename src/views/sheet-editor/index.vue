@@ -2755,8 +2755,11 @@ export default {
         this.srvApp,
         force
       );
-
       if (res?.state === "SUCCESS") {
+        const listColsMap = res?.data?.srv_cols?.reduce((pre, cur) => {
+            pre[cur.columns] = cur;
+            return pre;
+          }, {});
         this.v2data = res.data;
         if (res.data.is_tree === true && this.listType === 'list') {
           // 树列表 停止执行之后的逻辑 改为加载树列表逻辑
@@ -2825,13 +2828,28 @@ export default {
             return item
           })
         }
+
+        const allColsMap =   {
+          updateColsMap:this.updateColsMap,
+          listColsMap:listColsMap,
+          addColsMap:this.addColsMap,
+          childListType:this.childListType
+          }
         this.v2data.allFields = buildSrvCols(
-          this.v2data.srv_cols,
-          this.updateColsMap,
-          this.addColsMap,
+          this.v2data.srv_cols,allColsMap,
+        
+          // this.updateColsMap,
+          // this.addColsMap,
           this.childListType,
           this.colSrv
         );
+        // this.v2data.allFields = buildSrvCols(
+        //   this.v2data.srv_cols,
+        //   this.updateColsMap,
+        //   this.addColsMap,
+        //   this.childListType,
+        //   this.colSrv
+        // );
         this.allFields = this.v2data.allFields;
 
         this.listColsMap = this.allFields?.reduce((pre, cur) => {

@@ -1,42 +1,122 @@
 <template>
   <div @dblclick.stop="" class="flex items-center autocomplete-box">
-    <div v-if="isTree && !setDisabled" style="width: 100%;">
-      <el-popover append-to-body placement="bottom-center" ref="treePopover" trigger="click" @show="onPopoverShow"
-      :popper-options="{ boundariesElement: 'body', removeOnDestroy: true }"
+    <div v-if="isTree && !setDisabled" style="width: 100%">
+      <el-popover
+        append-to-body
+        placement="bottom-center"
+        ref="treePopover"
+        trigger="click"
+        @show="onPopoverShow"
+        :popper-options="{
+          boundariesElement: 'body',
+          removeOnDestroy: true,
+          positionFixed: true,
+        }"
       >
-        <span slot="reference" v-if="modelValue && !setDisabled" class="cursor-pointer">{{ modelLabel || modelValue || ''
-        }}</span>
-        <span slot="reference" class="text-gray cursor-pointer" v-else-if="!setDisabled">请选择</span>
-        <el-input placeholder="输入关键字进行过滤" clearable v-model="modelValue" @focus="onFocus" @input="onFilterInput"
-          @clear="onFilterClear" style="max-width: 300px;margin-bottom: 5px;">
+        <span
+          slot="reference"
+          v-if="modelValue && !setDisabled"
+          class="cursor-pointer"
+          >{{ modelLabel || modelValue || "" }}</span
+        >
+        <span
+          slot="reference"
+          class="text-gray cursor-pointer"
+          v-else-if="!setDisabled"
+          >请选择</span
+        >
+        <el-input
+          placeholder="输入关键字进行过滤"
+          clearable
+          v-model="modelValue"
+          @focus="onFocus"
+          @input="onFilterInput"
+          @clear="onFilterClear"
+          style="max-width: 300px; margin-bottom: 5px"
+        >
         </el-input>
-        <el-cascader-panel :props="props" :is-border="false" :options="options" @change="onSelectChange" :emitPath="false"
-          checkStrictly></el-cascader-panel>
+        <el-cascader-panel
+          :props="props"
+          :is-border="false"
+          :options="options"
+          @change="onSelectChange"
+          :emitPath="false"
+          checkStrictly
+        ></el-cascader-panel>
       </el-popover>
     </div>
-    <el-autocomplete clearable ref="inputRef" @focus="onFocus" class="inline-input" v-model="modelValue"
-      :value-key="redundant.refedCol" :fetch-suggestions="querySearch" @clear="onFilterClear" placeholder="请输入"
-      @select="handleSelect" @click.native="" v-else-if="!setDisabled">
+    <el-autocomplete
+      append-to-body
+      clearable
+      ref="inputRef"
+      @focus="onFocus"
+      class="inline-input"
+      v-model="modelValue"
+      :value-key="redundant.refedCol"
+      :fetch-suggestions="querySearch"
+      @clear="onFilterClear"
+      placeholder="请输入"
+      @select="handleSelect"
+      @click.native=""
+      v-else-if="!setDisabled"
+    >
     </el-autocomplete>
     <span v-else>{{ modelValue }}</span>
-    <i class="el-icon-arrow-right cursor-pointer  text-#C0C4CC" :class="{ 'cursor-not-allowed': setDisabled }"
-      @click="openDialog" v-if="!setDisabled"></i>
+    <i
+      class="el-icon-arrow-right cursor-pointer text-#C0C4CC"
+      :class="{ 'cursor-not-allowed': setDisabled }"
+      @click="openDialog"
+      v-if="!setDisabled"
+    ></i>
 
-    <el-dialog title="选择" :visible.sync="dialogVisible" width="80%" append-to-body v-loading="tableloading">
+    <el-dialog
+      title="选择"
+      :visible.sync="dialogVisible"
+      width="80%"
+      append-to-body
+      v-loading="tableloading"
+    >
       <div @click.stop="">
         <div class="filter-box">
           <div class="text-bold">输入文字进行筛选:</div>
-          <el-input placeholder="输入文字进行筛选" @change="toFilter" v-model="filterText" clearable></el-input>
+          <el-input
+            placeholder="输入文字进行筛选"
+            @change="toFilter"
+            v-model="filterText"
+            clearable
+          ></el-input>
         </div>
-        <el-table :data="tableData" style="width: 100%" v-if="tableData.length" @row-dblclick="onDBClick">
-          <el-table-column :prop="column.columns" :label="column.label" width="180" show-overflow-tooltip border
-            v-for="column in tableColumns">
+        <el-table
+          :data="tableData"
+          style="width: 100%"
+          v-if="tableData.length"
+          @row-dblclick="onDBClick"
+        >
+          <el-table-column
+            :prop="column.columns"
+            :label="column.label"
+            width="180"
+            show-overflow-tooltip
+            border
+            v-for="column in tableColumns"
+            :key="column.columns"
+          >
           </el-table-column>
         </el-table>
-        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :page-sizes="[5, 10, 20, 30]"
-          :page-size="rownumber" :total="total" :current-page="pageNo" layout="total, sizes, prev, pager, next">
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :page-sizes="[5, 10, 20, 30]"
+          :page-size="rownumber"
+          :total="total"
+          :current-page="pageNo"
+          layout="total, sizes, prev, pager, next"
+        >
         </el-pagination>
-        <div class="text-red text-center m-t-4" v-if="tableData && tableData.length">
+        <div
+          class="text-red text-center m-t-4"
+          v-if="tableData && tableData.length"
+        >
           双击列表进行选择
         </div>
       </div>
@@ -45,10 +125,10 @@
 </template>
 
 <script>
-import { $http } from '../../../common/http.js'
-import { cloneDeep } from 'lodash-es'
+import { $http } from "../../../common/http.js";
+import { cloneDeep } from "lodash-es";
 import { getFkOptions, onSelect } from "../../../service/api";
-import { renderStr } from '../../../common/common'
+import { renderStr } from "../../../common/common";
 export default {
   data() {
     return {
@@ -69,38 +149,38 @@ export default {
         value: "value",
         label: "label",
         lazy: true,
-        leaf: 'leaf',
+        leaf: "leaf",
         lazyLoad: (node, resolve) => {
           this.loadTree(node).then((res) => {
             resolve(res);
           });
         },
       },
-    }
+    };
   },
   props: {
     value: {
       type: [Number, String, Array, Object],
-      default: null
+      default: null,
     },
     column: Object,
     row: {
       // 行数据
       type: Object,
-      default: null
+      default: null,
     },
     app: {
       type: String,
     },
     disabled: {
       type: Boolean,
-      default: false
+      default: false,
     },
     placeholder: {
       type: String,
-      default: '请选择'
+      default: "请选择",
     },
-    defaultConditionsMap: Object
+    defaultConditionsMap: Object,
   },
   computed: {
     srvApp() {
@@ -108,7 +188,7 @@ export default {
     },
     currentModel() {
       if (this.modelValue) {
-        return this.allOptions.find(item => item.value === this.modelValue);
+        return this.allOptions.find((item) => item.value === this.modelValue);
       }
     },
     modelLabel() {
@@ -129,12 +209,11 @@ export default {
       return this.disabled;
     },
     redundant() {
-      return this.column?.redundant
+      return this.column?.redundant;
     },
     srvInfo() {
-      return this.column?.redundant_options
+      return this.column?.redundant_options;
     },
-
   },
   watch: {
     value: {
@@ -142,37 +221,49 @@ export default {
       handler(newValue, oldValue) {
         if (newValue !== this.modelValue) {
           this.modelValue = newValue;
-          if ((this.row?.__flag === 'add' || this.row?.__flag === 'update') && newValue) {
+          if (
+            (this.row?.__flag === "add" || this.row?.__flag === "update") &&
+            newValue
+          ) {
             this.$nextTick(() => {
               // this.$refs?.inputRef?.focus()
-              this.loadOptions(newValue).then(res => {
+              this.loadOptions(newValue).then((res) => {
                 if (res?.length > 1) {
                   // 模糊匹配结果数量大于1
-                  let matchedVal = res.find(item => item.value === this.value)
+                  let matchedVal = res.find(
+                    (item) => item.value === this.value
+                  );
                   if (matchedVal) {
-                    this.$emit('select', cloneDeep(matchedVal))
+                    this.$emit("select", cloneDeep(matchedVal));
                   }
-                  this.$refs?.inputRef?.focus()
+                  this.$refs?.inputRef?.focus();
                 } else if (res?.length) {
                   // 模糊匹配结果数量为1
-                  this.$emit('select', cloneDeep(res[0]))
+                  this.$emit("select", cloneDeep(res[0]));
                   if (this.$refs?.inputRef?.activated) {
                     this.$nextTick(() => {
-                      this.$refs.inputRef.activated = false
-                    })
+                      this.$refs.inputRef.activated = false;
+                    });
                   }
                 }
-              })
-            })
+              });
+            });
           }
         }
-
       },
     },
   },
   created() {
-    if (!this.defaultConditionsMap?.[this.column.columns] && (!this.value || this.options.length === 0) && this.row?.__flag === 'add' && this.row[`_${this.column?.redundant?.dependField}_init_val`]) {
-      this.loadOptions(null, this.row[`_${this.column?.redundant?.dependField}_init_val`]);
+    if (
+      !this.defaultConditionsMap?.[this.column.columns] &&
+      (!this.value || this.options.length === 0) &&
+      this.row?.__flag === "add" &&
+      this.row[`_${this.column?.redundant?.dependField}_init_val`]
+    ) {
+      this.loadOptions(
+        null,
+        this.row[`_${this.column?.redundant?.dependField}_init_val`]
+      );
     }
   },
   methods: {
@@ -181,20 +272,20 @@ export default {
       this.$emit("onfocus");
     },
     onFilterClear() {
-      this.modelValue = ''
-      this.$emit('input', '')
-      this.$emit('select', null)
-      this.remoteMethod()
+      this.modelValue = "";
+      this.$emit("input", "");
+      this.$emit("select", null);
+      this.remoteMethod();
     },
     onFilterInput(value) {
       // this.$emit('input',value)
-      this.modelValue = value
-      this.remoteMethod(value)
+      this.modelValue = value;
+      this.remoteMethod(value);
     },
     onPopoverShow() {
       // this.onFocus()
-      this.modelValue = this.value
-      this.remoteMethod(this.modelValue)
+      this.modelValue = this.value;
+      this.remoteMethod(this.modelValue);
     },
     async loadTree(node) {
       if (node?.value) {
@@ -219,11 +310,11 @@ export default {
           const result = res.data.map((item) => {
             item.label = item[option.key_disp_col];
             item.value = item[option.refed_col];
-            item.leaf = item.is_leaf === '是'
+            item.leaf = item.is_leaf === "是";
             return item;
           });
-          this.allOptions.push(...result)
-          return result
+          this.allOptions.push(...result);
+          return result;
         } else return [];
       }
     },
@@ -272,17 +363,17 @@ export default {
             this.options = res.data.map((item) => {
               item.label = item[option.key_disp_col];
               item.value = item[option.refed_col];
-              item.leaf = item.is_leaf === '是'
+              item.leaf = item.is_leaf === "是";
               return item;
             });
-            this.allOptions.push(...this.options)
+            this.allOptions.push(...this.options);
             // if (this.modelValue) {
             //   let currentValue = this.options.find(item => item[option.refed_col] === this.modelValue);
             //   if (currentValue) {
             //     this.$emit('select', currentValue)
             //   }
             // }
-            resolve(this.options)
+            resolve(this.options);
           } else {
             this.options = [];
           }
@@ -292,12 +383,14 @@ export default {
     },
     onSelectChange(val) {
       if (Array.isArray(val) && val?.length) {
-        val = val[0]
+        val = val[0];
       }
-      this.$refs?.treePopover?.doClose()
-      let currentValue = this.allOptions.find(item => item[this.srvInfo.refed_col] === val);
+      this.$refs?.treePopover?.doClose();
+      let currentValue = this.allOptions.find(
+        (item) => item[this.srvInfo.refed_col] === val
+      );
       if (currentValue) {
-        this.$emit('select', currentValue)
+        this.$emit("select", currentValue);
         this.modelValue = currentValue.label;
       }
       this.$emit("input", this.modelValue);
@@ -365,7 +458,7 @@ export default {
       this.getTableData();
     },
     onDBClick(row, column, cell, event) {
-      this.$emit('select', cloneDeep(row))
+      this.$emit("select", cloneDeep(row));
       // this.modelValue = row[this.srvInfo.refed_col];
       // this.$emit("input", this.modelValue);
       this.options = JSON.parse(JSON.stringify(this.tableData));
@@ -373,8 +466,8 @@ export default {
       this.filterText = "";
       if (this.$refs?.inputRef?.activated) {
         this.$nextTick(() => {
-          this.$refs.inputRef.activated = false
-        })
+          this.$refs.inputRef.activated = false;
+        });
       }
     },
     getFkColumns() {
@@ -447,57 +540,61 @@ export default {
       }
     },
     handleSelect(item) {
-      this.$emit('select', cloneDeep(item))
+      this.$emit("select", cloneDeep(item));
     },
     querySearch(queryString, callback) {
       // 关键词搜索
-      this.loadOptions(queryString).then(res => {
-        callback(res)
-      })
+      this.loadOptions(queryString).then((res) => {
+        callback(res);
+      });
     },
     async loadOptions(queryString, initValue) {
       // 查询选项
-      const srvInfo = this.srvInfo
+      const srvInfo = this.srvInfo;
       const req = {
         serviceName: srvInfo?.serviceName,
-        colNames: ['*'],
+        colNames: ["*"],
         condition: [],
         page: {
           pageNo: 1,
-          rownumber: 50
-        }
+          rownumber: 50,
+        },
       };
-      let appName = srvInfo?.srv_app || this.app || sessionStorage.getItem('current_app');
+      let appName =
+        srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app");
       if (!req.serviceName || !appName) {
-        return
+        return;
       }
-      appName = renderStr(appName,{data:this.row})
+      appName = renderStr(appName, { data: this.row });
 
-      let loginUser = JSON.parse(sessionStorage.getItem('current_login_user') || '{}');
+      let loginUser = JSON.parse(
+        sessionStorage.getItem("current_login_user") || "{}"
+      );
       if (srvInfo?.conditions?.length) {
         for (let i = 0; i < srvInfo.conditions.length; i++) {
           const obj = {
             colName: srvInfo?.conditions[i]?.colName,
             ruleType: srvInfo?.conditions[i]?.ruleType,
-            value: srvInfo?.conditions[i]?.value
-          }
-          if (obj.value.indexOf('data.') !== -1) {
-            let colName = obj.value.slice(obj.value.indexOf('data.') + 5);
+            value: srvInfo?.conditions[i]?.value,
+          };
+          if (obj.value.indexOf("data.") !== -1) {
+            let colName = obj.value.slice(obj.value.indexOf("data.") + 5);
             if (this.row[colName]) {
               obj.value = this.row[colName];
             }
-          } else if (obj.value.indexOf('top.user.') !== -1) {
-            let colName = obj.value.slice(obj.value.indexOf('top.user.') + 9);
+          } else if (obj.value.indexOf("top.user.") !== -1) {
+            let colName = obj.value.slice(obj.value.indexOf("top.user.") + 9);
             if (loginUser[colName]) {
               obj.value = loginUser[colName];
             }
-          } else if (obj.value.indexOf("'") === 0 && obj.value.lastIndexOf(
-            "'") === obj.value
-              .length - 1) {
+          } else if (
+            obj.value.indexOf("'") === 0 &&
+            obj.value.lastIndexOf("'") === obj.value.length - 1
+          ) {
             // 常量，去掉单引号
-            obj.value = obj.value.replace(/\'/gi, '');
+            obj.value = obj.value.replace(/\'/gi, "");
           }
-          req.condition.push(obj)
+          req.condition.push(obj);
         }
       }
       if (queryString) {
@@ -505,33 +602,32 @@ export default {
           ...req.condition,
           {
             colName: this.srvInfo.key_disp_col,
-            ruleType: 'like',
-            value: queryString
-          }
-        ]
+            ruleType: "like",
+            value: queryString,
+          },
+        ];
       }
       if (initValue) {
         req.condition = [
           ...req.condition,
           {
             colName: this.srvInfo.refed_col,
-            ruleType: 'eq',
-            value: initValue
-          }
-        ]
+            ruleType: "eq",
+            value: initValue,
+          },
+        ];
       }
       if (srvInfo?.relation_condition) {
-        req.relation_condition = srvInfo?.relation_condition
+        req.relation_condition = srvInfo?.relation_condition;
       }
 
-      const url = `/${appName}/select/${srvInfo?.serviceName}`
-      const res = await $http.post(url, req)
-      if (res.data.state === 'SUCCESS') {
-        this.options = res.data.data
+      const url = `/${appName}/select/${srvInfo?.serviceName}`;
+      const res = await $http.post(url, req);
+      if (res.data.state === "SUCCESS") {
+        this.options = res.data.data;
         if (initValue && this.options?.length) {
-          this.$emit('select', cloneDeep(this.options[0]))
+          this.$emit("select", cloneDeep(this.options[0]));
         } else if (queryString && this.options?.length) {
-
           // let matchedVal = this.options.filter(item => item[this.srvInfo.refed_col] === queryString)
           // if (matchedVal?.length) {
           //   this.$emit('select', cloneDeep(matchedVal[0]))
@@ -558,28 +654,28 @@ export default {
           //   }
           // }
         }
-        return res.data.data
+        return res.data.data;
       } else {
-        this.options = []
-        return []
+        this.options = [];
+        return [];
       }
     },
   },
 };
 </script>
 
-<style lang="scss" >
+<style lang="scss">
 .el-autocomplete-suggestion.el-popper {
   min-width: 200px !important;
 }
 
 .text-gray {
   font-size: 12px;
-
 }
 
 .table-body-cell__add {
-  .autocomplete-box {}
+  .autocomplete-box {
+  }
 
   .text-gray {
     color: #fff;
@@ -601,6 +697,5 @@ export default {
       font-size: 12px;
     }
   }
-
 }
 </style>
