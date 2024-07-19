@@ -33,9 +33,20 @@
               v-for="item in optionList" :label="item" :key="item" @click="shortFilter(item)">
               {{ item }}
             </div>
+            <!-- <div class="check-button-item"
+              :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
+              v-for="item in optionList" :label="item" :key="item" @click="shortFilter(item)">
+              {{ item }}
+            </div> -->
+          </div>
+          <div>
+            <el-pagination @size-change="(val) => optionPage.rownumber = val" @current-change="pageChange"
+              :current-page="optionPage.pageNo" :page-sizes="[10, 20, 50]" hide-on-single-page
+              :page-size="optionPage.rownumber" layout="total,  prev, pager, next, jumper" :total="optionPage.total">
+            </el-pagination>
           </div>
         </div>
-        
+
         <div class="input-box" v-else-if="['富文本', '字符串'].includes(colType)">
           <div class="label">内容过滤：</div>
           <el-input v-model="modelValue" clearable></el-input>
@@ -45,11 +56,22 @@
             </el-switch>
           </div>
           <div class="check-button-group">
+            <!-- <div class="check-button-item"
+              :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
+              v-for="item in optionListCurPage" :label="item" :key="item" @click="shortFilter(item)">
+              {{ item }}
+            </div> -->
             <div class="check-button-item"
               :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
               v-for="item in optionList" :label="item" :key="item" @click="shortFilter(item)">
               {{ item }}
             </div>
+          </div>
+          <div>
+            <el-pagination @size-change="(val) => optionPage.rownumber = val" @current-change="pageChange"
+              :current-page="optionPage.pageNo" :page-sizes="[10, 20, 50]" hide-on-single-page
+              :page-size="optionPage.rownumber" layout="total,  prev, pager, next, jumper" :total="optionPage.total">
+            </el-pagination>
           </div>
         </div>
 
@@ -61,7 +83,7 @@
             <el-input placeholder="请输入最大值" v-model="max" type="number"></el-input>
           </div>
         </div>
-        
+
         <div class="date-range" v-else-if="['时间'].includes(colType)">
           <div class="label">选择时间范围：</div>
           <el-time-select v-model="min" :picker-options="{
@@ -216,9 +238,17 @@ export default {
       }
       return res;
     },
+    optionListCurPage() {
+      return this.optionList.slice((this.optionPage.pageNo - 1) * this.optionPage.rownumber, this.optionPage.pageNo * this.optionPage.rownumber)
+    }
   },
   data() {
     return {
+      optionPage: {
+        pageNo: 1,
+        rownumber: 20,
+        total: 0
+      },
       multiple: false,//是否多选 默认否
       multipleValMap: {},//存储多选的值
       filterOptions: null,
@@ -371,6 +401,18 @@ export default {
     };
   },
   methods: {
+    pageChange(val) {
+      this.optionPage.pageNo = val
+      switch (this.colType) {
+        case '字符串':
+        case '外键':
+          this.getFilterOptions();
+          break;
+
+        default:
+          break;
+      }
+    },
     onCheckBtnChange(item) {
       if (this.strList.includes(item)) {
         this.strList.splice(this.strList.indexOf(item), 1)
@@ -409,6 +451,10 @@ export default {
         colNames: ["*"],
         condition: [],
         use_type: "list",
+        page: {
+          pageNo: this.optionPage.pageNo,
+          rownumber: this.optionPage.rownumber
+        },
         group: [
           {
             colName: this.column.columns,
@@ -416,16 +462,32 @@ export default {
           },
         ],
       };
-      if (Array.isArray(this.condition) && this.condition.length) {
-        req.condition = this.condition.filter(
-          (item) => item.colName !== this.column.columns
-        );
+      if (this.colType === '外键') {
+        const srvInfo = JSON.parse(JSON.stringify(this.column.option_list_v2));
+        req.group.push({
+          colName: srvInfo.key_disp_col,
+          type: "by",
+        })
       }
+      // if (Array.isArray(this.condition) && this.condition.length) {
+      //   req.condition = this.condition.filter(
+      //     (item) => item.colName !== this.column.columns
+      //   );
+      // }
       this.$http.post(url, req).then((res) => {
         if (res?.data?.data?.length) {
           this.filterOptions = res.data.data.map(
             (item) => item[this.column.columns] || "null"
           );
+          // if (this.colType === '外键') {
+          //   const srvInfo = JSON.parse(JSON.stringify(this.column.option_list_v2));
+          //   this.filterOptions = res.data.data.map(
+          //     (item) => item[srvInfo.key_disp_col] || "null"
+          //   );
+          // }
+          if (res.data?.page?.total) {
+            this.optionPage.total = res.data.page.total;
+          }
         }
       });
     },
@@ -760,10 +822,14 @@ export default {
 
     // max-width: 300px;
     .check-button-group {
+      margin-bottom: 10px;
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       padding-top: 5px;
+      max-width: 500px;
+      // min-height: 200px;
+      align-items: flex-start;
 
       .check-button-item {
         padding: 5px 10px;

@@ -1,29 +1,17 @@
 <template>
   <div>
-    <el-dialog
-      title="登录"
-      center
-      :visible.sync="dialogVisible"
-      append-to-body
-      width="400px"
-    >
+    <el-dialog title="登录" center :visible.sync="dialogVisible" append-to-body width="400px">
       <el-form ref="loginForm" :model="loginForm" label-width="80px">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="loginForm.username"></el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input
-            type="password"
-            v-model="loginForm.password"
-            show-password
-            @keyup.enter.native.prevent="submitForm('loginForm')"
-          ></el-input>
+          <el-input type="password" v-model="loginForm.password" show-password
+            @keyup.enter.native.prevent="submitForm('loginForm')"></el-input>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm('loginForm')"
-          >登录</el-button
-        >
+        <el-button type="primary" @click="submitForm('loginForm')">登录</el-button>
       </span>
     </el-dialog>
   </div>
@@ -43,6 +31,15 @@ export default {
     };
   },
   methods: {
+    listenerStorage(event) {
+      if (event.key === "bx_auth_ticket") {
+        console.log("bx_auth_ticket变化了");
+        if (this.cb && typeof this.cb === "function") {
+          this.cb();
+          window.removeEventListener("storage", this.listenerStorage);
+        }
+      }
+    },
     open(callback) {
       this.cb = callback;
       const getRootWindow = function (_window) {
@@ -67,6 +64,7 @@ export default {
           area: ["300px", "350px"],
           shade: 0.9,
         });
+        window.addEventListener("storage", this.listenerStorage);
       } else {
         this.dialogVisible = true;
       }
