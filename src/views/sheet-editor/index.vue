@@ -1,25 +1,49 @@
 <template>
-  <div class="spreadsheet flex flex-col" v-loading="loading">
-    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full" v-if="disabled !== true">
-      <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
+  <div class="spreadsheet flex flex-col">
+    <loading-view v-if="loading" mask type="surround" :maskOpacity="0.2" showText textColor="#fff"></loading-view>
+    <div
+      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full"
+      v-if="disabled !== true"
+    >
+      <div
+        class="flex flex-1 items-center text-sm"
+        v-if="addButton && addButton.service_name"
+      >
         <div class="m-r-2">添加</div>
-        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
+        <el-input-number
+          size="mini"
+          v-model="insertRowNumber"
+          style="width: 100px"
+        />
         <div class="m-x-2">行</div>
-        <el-button size="mini" type="primary" @click="batchInsertRows" :disabled="insertRowNumber === 0">添加
+        <el-button
+          size="mini"
+          type="primary"
+          @click="batchInsertRows"
+          :disabled="insertRowNumber === 0"
+          >添加
         </el-button>
       </div>
       <div class="text-sm text-gray cursor-not-allowed" v-else>
         没有添加权限
       </div>
       <div flex-1>
-        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
+        <el-radio-group
+          v-model="listType"
+          @input="listTypeChange"
+          size="mini"
+          v-if="isTree"
+        >
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
       </div>
 
       <div class="flex flex-items-center flex-1 justify-end">
-        <div class="color-map flex flex-items-center m-r-20" v-if="childListType !== 'add'">
+        <div
+          class="color-map flex flex-items-center m-r-20"
+          v-if="childListType !== 'add'"
+        >
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
             <div class="color bg-[#67c23a] w-4 h-4 m-r-2 rounded"></div>
@@ -30,42 +54,104 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <el-button size="mini" type="primary" @click="refreshData" v-if="childListType !== 'add'">刷新</el-button>
-        <el-button size="mini" type="primary" @click="saveData" :disabled="!calcReqData || calcReqData.length == 0"
-          v-if="childListType !== 'add'">
+        <el-button
+          size="mini"
+          type="primary"
+          @click="refreshData"
+          v-if="childListType !== 'add'"
+          >刷新</el-button
+        >
+        <el-button
+          size="mini"
+          type="primary"
+          @click="saveData"
+          :disabled="!calcReqData || calcReqData.length == 0"
+          v-if="childListType !== 'add'"
+        >
           保存
         </el-button>
-        <el-button size="mini" type="primary" @click="saveColumnWidth"
+        <el-button
+          size="mini"
+          type="primary"
+          @click="saveColumnWidth"
           :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
-          v-if="!childListType && calcColumnWidthReq && calcColumnWidthReq.length > 0">保存列宽
+          v-if="
+            !childListType &&
+            calcColumnWidthReq &&
+            calcColumnWidthReq.length > 0
+          "
+          >保存列宽
         </el-button>
       </div>
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
-      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
-        style="word-break: break-word; width: 100vw;height: 100%;" max-height="calc(100vh - 40px)" fixed-header />
+      <ve-table
+        :columns="columns"
+        border-x
+        border-y
+        :table-data="tableData"
+        v-if="disabled"
+        ref="tableRef"
+        style="word-break: break-word; width: 100vw; height: 100%"
+        max-height="calc(100vh - 40px)"
+        fixed-header
+      />
       <div class="custom-style" v-else>
-        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)"
-          fixed-header :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+        <ve-table
+          ref="tableRef"
+          style="word-break: break-word; width: 100vw"
+          max-height="calc(100vh - 80px)"
+          fixed-header
+          :scroll-width="0"
+          border-y
+          :columns="columns"
+          :table-data="tableData"
+          row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption"
+          :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption"
+          :edit-option="editOption"
+          :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption"
+          :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption"
+          :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption"
+          :columnHiddenOption="columnHiddenOption"
+        />
       </div>
     </div>
-    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">暂无数据</div>
+    <div
+      class="empty-data"
+      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
+    >
+      暂无数据
+    </div>
     <!--    列表为新增子表时不显示分页-->
     <div class="text-center" v-if="childListType !== 'add'">
-      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
-        :total="page.total">
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]"
+        :page-size="page.rownumber"
+        layout="total, sizes, pager,  jumper"
+        :total="page.total"
+      >
       </el-pagination>
     </div>
 
-    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-      " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
+    <select-parent-node
+      ref="changeParentRef"
+      :topTreeData="topTreeData"
+      :srvApp="srvApp"
+      :options="
+        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+      "
+      :option-info="parentColOption"
+      @confirm="updateParentNo"
+    ></select-parent-node>
 
     <login-dialog ref="loginRef"></login-dialog>
   </div>
@@ -92,12 +178,12 @@ import fkAutocomplate from "./components/fk-autocomplate.vue";
 import { RecordManager } from "./util/recordManager.js";
 import { Loading } from "element-ui";
 import { $http } from "../../common/http";
-import loginDialog from '../../components/login-dialog/index.vue'
-import { processStrings, appendNumber } from '../../common/common'
+import loginDialog from "../../components/login-dialog/index.vue";
+import { processStrings, appendNumber } from "../../common/common";
 import IconFold from "../../components/icons/icon-fold.vue";
-import IconUnfold from '../../components/icons/icon-unfold.vue'
-
-let broadcastChannel = null //跨iframe通信的实例
+import IconUnfold from "../../components/icons/icon-unfold.vue";
+import LoadingView from "./components/loading/index.vue";
+let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
   "__flag",
@@ -117,7 +203,7 @@ export default {
   },
   async created() {
     if (this.$route.query?.disabled) {
-      this.disabled = true
+      this.disabled = true;
     }
     if (this.$route.params?.childListType) {
       // 子表类型 add|update|detail
@@ -127,10 +213,12 @@ export default {
       //   await this.getInitData(this.childListCfg?.data_source_cfg)
       // }
       this.$nextTick(() => {
-        broadcastChannel = new BroadcastChannel(this.$route.params?.broadCastName);
+        broadcastChannel = new BroadcastChannel(
+          this.$route.params?.broadCastName
+        );
         broadcastChannel.addEventListener("message", this.bcOn);
-        this.watchPageHeight()
-      })
+        this.watchPageHeight();
+      });
     }
     this.initPage().then(() => {
       if (this.v2data?.is_tree === true && this.listType !== "treelist") {
@@ -139,14 +227,16 @@ export default {
       }
     });
     this.$nextTick(() => {
-      this.unfold()
+      this.unfold();
       this.bindKeyboardEvent(this.undo, this.redo);
-    })
+    });
   },
   components: {
-    IconFold, IconUnfold,
+    IconFold,
+    IconUnfold,
     selectParentNode,
-    loginDialog
+    loginDialog,
+    LoadingView,
   },
   data() {
     return {
@@ -155,13 +245,13 @@ export default {
       mainData: null,
       childListCfg: {
         foreign_key: null,
-        data_source_cfg: null
-      },//子表配置
+        data_source_cfg: null,
+      }, //子表配置
       listMaxHeight: 0,
       initExprCols: [],
       initCond: [],
       // tableMaxHeight: 1000,
-      onPopup: false,//弹窗是否打开状态
+      onPopup: false, //弹窗是否打开状态
       calcReqData: null,
       columnWidthMap: {}, //存储改变后的列宽
       ctop: "-100vh",
@@ -169,7 +259,7 @@ export default {
       changeParentdialogVisible: false,
       pageNo: uniqueId("pageNo"),
       listType: "list",
-      childListType: null,//子表类型 add/update/detail
+      childListType: null, //子表类型 add/update/detail
       treeList: [],
       page: {
         //分页信息
@@ -226,7 +316,7 @@ export default {
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
           // if (row?.__flag === "add") {
-          if (row?.__flag === "add" && column.field==='index') {
+          if (row?.__flag === "add" && column.field === "index") {
             // 新增行直接显示为绿色背景 不用判断字段有没有值
             return "table-body-cell__add";
             // 新增数据 整行某个字段有值后 增加class
@@ -291,70 +381,100 @@ export default {
           sourceSelectionData,
           targetSelectionData,
         }) => {
-          if (sourceSelectionRangeIndexes.startRowIndex !== targetSelectionRangeIndexes.endRowIndex) {
+          if (
+            sourceSelectionRangeIndexes.startRowIndex !==
+            targetSelectionRangeIndexes.endRowIndex
+          ) {
             if (sourceSelectionData?.length > 1) {
-              let val = null
-              let key = Object.keys(sourceSelectionData[0]).find(e => e !== 'rowKey')
+              let val = null;
+              let key = Object.keys(sourceSelectionData[0]).find(
+                (e) => e !== "rowKey"
+              );
               let customFill = sourceSelectionData.every((item, index) => {
-                if (index <= sourceSelectionData.length - 1 && index > 0 && !isNaN(Number(item[key]))) {
-                  val = item[key] - sourceSelectionData[index - 1][key]
+                if (
+                  index <= sourceSelectionData.length - 1 &&
+                  index > 0 &&
+                  !isNaN(Number(item[key]))
+                ) {
+                  val = item[key] - sourceSelectionData[index - 1][key];
                   if (val === item[key] - sourceSelectionData[index - 1][key]) {
-                    return true
+                    return true;
                   }
-                  return false
+                  return false;
                 }
-                return true
-              })
-              if (sourceSelectionData.length === 2 && sourceSelectionData[0][key] !== sourceSelectionData[1][key]) {
-                if (!isNaN(sourceSelectionData[1][key] - sourceSelectionData[0][key])) {
-                  customFill = true
-                  val = sourceSelectionData[1][key] - sourceSelectionData[0][key]
+                return true;
+              });
+              if (
+                sourceSelectionData.length === 2 &&
+                sourceSelectionData[0][key] !== sourceSelectionData[1][key]
+              ) {
+                if (
+                  !isNaN(
+                    sourceSelectionData[1][key] - sourceSelectionData[0][key]
+                  )
+                ) {
+                  customFill = true;
+                  val =
+                    sourceSelectionData[1][key] - sourceSelectionData[0][key];
                 }
               }
 
               if (customFill) {
-                let lastVal = sourceSelectionData[sourceSelectionData.length - 1][key]
-                let diff = null
+                let lastVal =
+                  sourceSelectionData[sourceSelectionData.length - 1][key];
+                let diff = null;
                 if (sourceSelectionData.length > 1) {
-                  diff = processStrings(sourceSelectionData[0][key], sourceSelectionData[1][key])?.diff
+                  diff = processStrings(
+                    sourceSelectionData[0][key],
+                    sourceSelectionData[1][key]
+                  )?.diff;
                 }
                 if (diff) {
                   let isProcess = sourceSelectionData.every((item, index) => {
                     if (index === sourceSelectionData.length - 1) {
-                      return true
+                      return true;
                     }
-                    return processStrings(item[key], sourceSelectionData[index + 1][key])?.diff === diff
-                  })
+                    return (
+                      processStrings(
+                        item[key],
+                        sourceSelectionData[index + 1][key]
+                      )?.diff === diff
+                    );
+                  });
                   if (isProcess) {
-                    this.tableData.forEach(item => {
-                      let index = targetSelectionData.findIndex(e => e.rowKey && e.rowKey === item.rowKey)
+                    this.tableData.forEach((item) => {
+                      let index = targetSelectionData.findIndex(
+                        (e) => e.rowKey && e.rowKey === item.rowKey
+                      );
                       if (index > -1) {
                         // 等差递增
-                        let curVal = appendNumber(lastVal, diff, index + 1)
+                        let curVal = appendNumber(lastVal, diff, index + 1);
                         if (typeof lastVal === "number") {
-                          curVal = Number(curVal)
+                          curVal = Number(curVal);
                         }
-                        this.$set(item, key, curVal)
+                        this.$set(item, key, curVal);
                       }
-                    })
-                    this.triggerEditCell(targetSelectionRangeIndexes)
-                    return false
+                    });
+                    this.triggerEditCell(targetSelectionRangeIndexes);
+                    return false;
                   }
                 }
 
                 this.tableData.forEach((item) => {
-                  let index = targetSelectionData.findIndex(e => e.rowKey && e.rowKey === item.rowKey)
+                  let index = targetSelectionData.findIndex(
+                    (e) => e.rowKey && e.rowKey === item.rowKey
+                  );
                   if (index > -1) {
                     // 等差递增
-                    let curVal = Number(lastVal) + val * (index + 1)
-                    if (typeof lastVal === 'string') {
-                      curVal = curVal + ''
+                    let curVal = Number(lastVal) + val * (index + 1);
+                    if (typeof lastVal === "string") {
+                      curVal = curVal + "";
                     }
-                    this.$set(item, key, curVal)
+                    this.$set(item, key, curVal);
                   }
-                })
-                this.triggerEditCell(targetSelectionRangeIndexes)
-                return false
+                });
+                this.triggerEditCell(targetSelectionRangeIndexes);
+                return false;
               }
             }
           }
@@ -508,7 +628,6 @@ export default {
               return false;
             }
           }
-
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
           // console.log("beforeStartCellEditing：",row,column, cellValue);
@@ -581,13 +700,15 @@ export default {
           }
           if (column?.__field_info?.redundant_options?._target_column) {
             // 处理autocomplete对应的fk字段
-            console.log('changeValue:', changeValue, column.field);
+            console.log("changeValue:", changeValue, column.field);
             const col = column?.__field_info?.redundant_options?._target_column;
 
             if (!changeValue) {
               // 清空值后，对应fk字段的值也要清空
 
-              const fkColumnInfo = this.setAllFields.find(item => item.columns === col)
+              const fkColumnInfo = this.setAllFields.find(
+                (item) => item.columns === col
+              );
               if (fkColumnInfo && row[col]) {
                 row[col] = null;
                 this.$set(this.tableData, rowIndex, row);
@@ -601,13 +722,12 @@ export default {
               }
             } else {
               // this.handlerRedundant({}, col, row.rowKey, rowIndex);
-
             }
           }
           this.recordManager?.push(cloneDeep(this.tableData));
           if (this.childListType) {
             // 子表数据更新 通知主表
-            this.emitListData(this.tableData)
+            this.emitListData(this.tableData);
           }
         },
       },
@@ -652,10 +772,10 @@ export default {
   computed: {
     setAllFields() {
       // 所有字段
-      return this.v2data?.srv_cols || []
+      return this.v2data?.srv_cols || [];
     },
     topTreeData() {
-      return !!this.$route?.query?.topTreeData
+      return !!this.$route?.query?.topTreeData;
     },
     // 更新表字段的最小列宽的请求参数
     calcTableColumnWidthReq() {
@@ -825,16 +945,19 @@ export default {
             });
 
             // 删除选中行数据
-            let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-              }至第${selectionRangeIndexes.endRowIndex + 1
-              }行数据，是否继续操作？`;
+            let text = `此操作将永久删除该第${
+              selectionRangeIndexes.startRowIndex + 1
+            }至第${
+              selectionRangeIndexes.endRowIndex + 1
+            }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
-              selectionRangeIndexes.startRowIndex ==
+                selectionRangeIndexes.startRowIndex ==
               0
             ) {
-              text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-                }行数据，是否继续操作？`;
+              text = `此操作将永久删除该第${
+                selectionRangeIndexes.startRowIndex + 1
+              }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -961,9 +1084,11 @@ export default {
       // 隐藏作为条件传入的列
       if (this.defaultConditions?.length) {
         return {
-          defaultHiddenColumnKeys: this.defaultConditions.map(
-            (item) => item.colName
-          ).filter(item => !this.setFilterState.find(e => e.colName === item)),
+          defaultHiddenColumnKeys: this.defaultConditions
+            .map((item) => item.colName)
+            .filter(
+              (item) => !this.setFilterState.find((e) => e.colName === item)
+            ),
         };
       }
     },
@@ -980,7 +1105,7 @@ export default {
               "topTreeData",
               "fixedCol",
               "initCond",
-              'colSrv' // 用来查找显示的列的服务
+              "colSrv", // 用来查找显示的列的服务
             ].includes(key)
           ) {
             defaultConditions.push({
@@ -1100,7 +1225,7 @@ export default {
     //
     // },
     watchPageHeight() {
-      const element = document.querySelector('.ve-table-container')
+      const element = document.querySelector(".ve-table-container");
       // 监听可能引起高度变化的事件，例如图片加载完成、DOM变更等
       var observer = new MutationObserver(function (mutationsList) {
         mutationsList.forEach(function (mutation) {
@@ -1116,48 +1241,46 @@ export default {
       observer.observe(element, config);
 
       const sendHeightToParent = () => {
-        var height = element?.scrollHeight
+        var height = element?.scrollHeight;
         if (height) {
-          this.bcEmit('heightChange', height + 60);
-          this.listMaxHeight = height + 80
+          this.bcEmit("heightChange", height + 60);
+          this.listMaxHeight = height + 80;
         } else {
-          this.bcEmit('heightChange', 80 + 60);
+          this.bcEmit("heightChange", 80 + 60);
         }
         // window.parent.postMessage({ type: 'iframeHeight', height: height }, '*'); // '*' 表示允许任何源，实际应用中应指定确切的源
-      }
-
+      };
     },
     bcOn(event) {
       let data = event.data;
       try {
-        if (typeof data === 'string') {
+        if (typeof data === "string") {
           data = JSON.parse(data);
         }
-      } catch (e) {
-      }
-      console.log('child-listener', data)
+      } catch (e) {}
+      console.log("child-listener", data);
       if (data?.childListCfg) {
-        console.log('childListCfg', data.childListCfg)
+        console.log("childListCfg", data.childListCfg);
         this.childListCfg = data.childListCfg;
       }
       if (data?.mainData) {
         this.mainData = data?.mainData;
       }
-      if (data?.type === 'initDataChange') {
-        console.log('initDataChange', data)
-        this.tableData = []
+      if (data?.type === "initDataChange") {
+        console.log("initDataChange", data);
+        this.tableData = [];
         if (data?.data?.length) {
-          data.data.forEach(item => {
-            this.insert2Rows(this.tableData.length, null, item)
-          })
+          data.data.forEach((item) => {
+            this.insert2Rows(this.tableData.length, null, item);
+          });
           if (this.disabled === true) {
-            console.log('emitListData::', this.tableData);
-            this.emitListData()
+            console.log("emitListData::", this.tableData);
+            this.emitListData();
           }
         }
       }
-      if (data?.type === 'colSrvChange' && data.colSrv) {
-        this.initPage()
+      if (data?.type === "colSrvChange" && data.colSrv) {
+        this.initPage();
       }
     },
     bcEmit(type, data) {
@@ -1165,58 +1288,68 @@ export default {
       if (broadcastChannel?.postMessage) {
         const msg = {
           type,
-          data
-        }
+          data,
+        };
         broadcastChannel.postMessage(JSON.stringify(msg));
       }
     },
     emitListData() {
-      let data = JSON.parse(JSON.stringify(this.tableData))
-      if (this.childListType === 'add') {
-        data = data.filter(item => Object.keys(item).some(key => !ignoreKeys.includes(key) && item[key]))
-        data.forEach(item => {
-          Object.keys(item).forEach(key => {
-            if (ignoreKeys.includes(key) || key?.indexOf('_') === 0) {
-              delete item[key]
+      let data = JSON.parse(JSON.stringify(this.tableData));
+      if (this.childListType === "add") {
+        data = data.filter((item) =>
+          Object.keys(item).some(
+            (key) => !ignoreKeys.includes(key) && item[key]
+          )
+        );
+        data.forEach((item) => {
+          Object.keys(item).forEach((key) => {
+            if (ignoreKeys.includes(key) || key?.indexOf("_") === 0) {
+              delete item[key];
             }
-          })
-        })
+          });
+        });
       }
       const reuslt = [
         {
-          "serviceName": this.addButton?.service_name,
-          "data": [...data],
-          "depend_keys": [
+          serviceName: this.addButton?.service_name,
+          data: [...data],
+          depend_keys: [
             {
-              "type": "column",
-              "depend_key": this.childListCfg?.foreign_key?.referenced_column_name,
-              "add_col": this.childListCfg?.foreign_key?.column_name,
-            }
-          ]
-        }
-      ]
-      console.log('emitListData', reuslt);
-      this.bcEmit('getData', reuslt)
+              type: "column",
+              depend_key:
+                this.childListCfg?.foreign_key?.referenced_column_name,
+              add_col: this.childListCfg?.foreign_key?.column_name,
+            },
+          ],
+        },
+      ];
+      console.log("emitListData", reuslt);
+      this.bcEmit("getData", reuslt);
     },
     fold() {
       // 收起
-      this.listMaxHeight = 0
+      this.listMaxHeight = 0;
     },
     unfold() {
       // 展开
-      this.listMaxHeight = document.querySelector('.ve-table-container')?.scrollHeight + 80
+      this.listMaxHeight =
+        document.querySelector(".ve-table-container")?.scrollHeight + 80;
       // document.documentElement.clientHeight - 50;
     },
     repari() {
-      this.loading = true
+      this.loading = true;
       setTimeout(() => {
-        this.loading = false
+        this.loading = false;
       }, 10);
     },
     isFk(column) {
       if (column?.col_type || column?.bx_col_type) {
-        const fkTypes = ["User", "Dept", "bxsys_user", "bxsys_dept", 'fk'];
-        return fkTypes.includes(column.col_type) || column.bx_col_type === 'fk' || column.bx_col_type?.indexOf('bx') === 0
+        const fkTypes = ["User", "Dept", "bxsys_user", "bxsys_dept", "fk"];
+        return (
+          fkTypes.includes(column.col_type) ||
+          column.bx_col_type === "fk" ||
+          column.bx_col_type?.indexOf("bx") === 0
+        );
       }
     },
     explainValue(value, column) {
@@ -1242,32 +1375,34 @@ export default {
         }
       } else if (value?.includes("new Date()")) {
         value = dayjs().format("YYYY-MM-DD");
-      } else if (['本人'].includes(value) && column && this.isFk(column)) {
+      } else if (["本人"].includes(value) && column && this.isFk(column)) {
         value = userInfo?.user_no;
       }
-      return value
+      return value;
     },
     buildInitCond() {
       let arr = [];
-      let initExprFields = this.initExprCols
+      let initExprFields = this.initExprCols;
       // || this.allFields.filter(item => !!item.init_expr)
       // 只有init_expr 使用init_expr
       if (initExprFields?.length) {
-        initExprFields.forEach(item => {
-          if (this.filterState[item.columns] !== null && !this.filterState[item.columns]) {
+        initExprFields.forEach((item) => {
+          if (
+            this.filterState[item.columns] !== null &&
+            !this.filterState[item.columns]
+          ) {
             let obj = {
               colName: item.columns,
-              ruleType: 'eq'
-            }
+              ruleType: "eq",
+            };
             if (item.init_expr?.indexOf("'") === 0) {
-              obj.value = item.init_expr.replaceAll("'", '')
+              obj.value = item.init_expr.replaceAll("'", "");
             }
             if (obj.value) {
-              arr.push(obj)
+              arr.push(obj);
             }
           }
-
-        })
+        });
       }
       if (this.$route?.query?.initCond) {
         let str = this.$route?.query?.initCond;
@@ -1275,9 +1410,9 @@ export default {
           str = JSON.parse(decodeURIComponent(str));
           if (Array.isArray(str) && str?.length) {
             str.forEach((item) => {
-              item.value = this.explainValue(item.value)
+              item.value = this.explainValue(item.value);
               // init_expr跟initCond都有 使用initCond
-              arr = arr.filter(e => e.colName !== item.colName)
+              arr = arr.filter((e) => e.colName !== item.colName);
               arr.push(item);
             });
           }
@@ -1285,27 +1420,29 @@ export default {
           console.log(error);
         }
       }
-      let query_init_value_lsit = this.v2data.srv_cols.filter(item => item.query_init_value?.value)
+      let query_init_value_lsit = this.v2data.srv_cols.filter(
+        (item) => item.query_init_value?.value
+      );
       if (query_init_value_lsit?.length) {
-        query_init_value_lsit.forEach(item => {
+        query_init_value_lsit.forEach((item) => {
           let obj = {
             colName: item.columns,
-            ruleType: 'eq',
-            value: item.query_init_value.value
-          }
-          obj.value = this.explainValue(obj.value)
+            ruleType: "eq",
+            value: item.query_init_value.value,
+          };
+          obj.value = this.explainValue(obj.value);
           if (Array.isArray(obj.value) && obj.value.length === 2) {
-            obj.ruleType = 'between'
+            obj.ruleType = "between";
           } else if (Array.isArray(obj.value)) {
-            obj.ruleType = 'in'
-            obj.value = obj.value.join(',')
+            obj.ruleType = "in";
+            obj.value = obj.value.join(",");
           }
           // 优先使用query_init_value配置的初始查询条件
-          arr = arr.filter(e => e.colName !== obj.colName)
-          arr.push(obj)
-        })
+          arr = arr.filter((e) => e.colName !== obj.colName);
+          arr.push(obj);
+        });
       }
-      this.initCond = arr
+      this.initCond = arr;
     },
     updateParentNo(val, row) {
       if (this.updateButton?.service_name) {
@@ -1341,16 +1478,16 @@ export default {
         this.loading = true;
         const v2Data = await this.getV2Data();
         if (v2Data === false) {
-          return
+          return;
         }
-        if (this.childListType === 'add') return this.loading = false//新增时不查子表数据
-        this.buildInitCond()
+        if (this.childListType === "add") return (this.loading = false); //新增时不查子表数据
+        this.buildInitCond();
         this.loading = false;
         if (refresh) {
           setTimeout(() => {
-            this.isFetched = false
+            this.isFetched = false;
             this.getList().then(() => {
-              this.isFetched = true
+              this.isFetched = true;
             });
           }, 500);
         }
@@ -1359,7 +1496,7 @@ export default {
     },
     listTypeChange(val) {
       console.log(val);
-      this.initPage()
+      this.initPage();
     },
     handleCurrentChange(val) {
       this.page.pageNo = val;
@@ -1412,7 +1549,7 @@ export default {
       }
     },
     buildColumns() {
-      const self = this
+      const self = this;
       const startRowIndex = this.startRowIndex;
       let columns = [
         {
@@ -1429,8 +1566,8 @@ export default {
       ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
         let minWidth = (window.innerWidth + 50) / this.allFields.length;
-        if (this.childListType === 'add') {
-          minWidth -= 200
+        if (this.childListType === "add") {
+          minWidth -= 200;
         }
         if (minWidth < 200) {
           minWidth = 200;
@@ -1510,7 +1647,7 @@ export default {
             // }
 
             columnObj.renderHeaderCell = ({ column }, h) => {
-              const conditions = [...this.initCond, ...this.defaultConditions]
+              const conditions = [...this.initCond, ...this.defaultConditions];
               // const conditions = [...this.defaultConditions]
               // if (Array.isArray(this.initCond) && this.initCond.length) {
               //   this.initCond.forEach(item => {
@@ -1527,14 +1664,20 @@ export default {
                   sortState: this.setSortState,
                   service: this.serviceName,
                   condition: JSON.parse(JSON.stringify(conditions)),
-                  childListType: this.childListType
+                  childListType: this.childListType,
                 },
                 on: {
                   "filter-change": (event) => {
                     if (event?.colName) {
-                      if (this.initCond?.find(item => item.colName === event.colName)) {
+                      if (
+                        this.initCond?.find(
+                          (item) => item.colName === event.colName
+                        )
+                      ) {
                         // 清空初始查询条件
-                        this.initCond = this.initCond.filter(item => item.colName !== event.colName)
+                        this.initCond = this.initCond.filter(
+                          (item) => item.colName !== event.colName
+                        );
                       }
                       if (event.remove) {
                         this.$set(this.filterState, event.colName, null);
@@ -1606,7 +1749,6 @@ export default {
               }
               // if (item.bx_col_type === "fk") {
               columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-
                 const oldRowData = this.oldTableData.find(
                   (item) => item.__id && item.__id === row.__id
                 );
@@ -1618,7 +1760,8 @@ export default {
                   setColumn = column.__field_info;
                 }
                 if (column.__field_info?.redundant_options) {
-                  setColumn.redundant_options = column.__field_info.redundant_options
+                  setColumn.redundant_options =
+                    column.__field_info.redundant_options;
                 }
                 if (columnObj.isFirstCol === true) {
                   setColumn.isFirstCol = true;
@@ -1638,7 +1781,9 @@ export default {
                     attrs: {
                       row,
                       column: setColumn,
-                      disabled: this.disabled || !columnObj.edit ||
+                      disabled:
+                        this.disabled ||
+                        !columnObj.edit ||
                         (row.__flag !== "add" &&
                           row?.__button_auth?.edit === false),
                       app: this.srvApp,
@@ -1663,15 +1808,21 @@ export default {
                       select: (rawData) => {
                         // 对应的fk字段
 
-                        const fkColumn = setColumn.redundant_options._target_column
+                        const fkColumn =
+                          setColumn.redundant_options._target_column;
                         if (fkColumn) {
-                          const fkColumnInfo = this.setAllFields.find(item => item.columns === fkColumn)
+                          const fkColumnInfo = this.setAllFields.find(
+                            (item) => item.columns === fkColumn
+                          );
                           if (fkColumnInfo) {
-                            let data = rawData || {}
-                            row[fkColumn] = data[setColumn.redundant_options.refed_col];
-                            row[`_${fkColumn}_data`] = rawData
+                            let data = rawData || {};
+                            row[fkColumn] =
+                              data[setColumn.redundant_options.refed_col];
+                            row[`_${fkColumn}_data`] = rawData;
                             this.$set(this.tableData, rowIndex, row);
-                            if (this.allFields.find(e => e.columns === fkColumn)) {
+                            if (
+                              this.allFields.find((e) => e.columns === fkColumn)
+                            ) {
                               this.$refs["tableRef"].startEditingCell({
                                 rowKey: row.rowKey,
                                 colKey: fkColumn,
@@ -1681,13 +1832,22 @@ export default {
                               this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                             }
 
-                            this.handlerRedundant(data, fkColumn, row.rowKey, rowIndex);
+                            this.handlerRedundant(
+                              data,
+                              fkColumn,
+                              row.rowKey,
+                              rowIndex
+                            );
                           }
                         }
-                      }
-                    }
-                  })
-                } else if (item.bx_col_type === "fk" || (item.col_type?.indexOf('bx') === 0 && item?.option_list_v2?.serviceName)) {
+                      },
+                    },
+                  });
+                } else if (
+                  item.bx_col_type === "fk" ||
+                  (item.col_type?.indexOf("bx") === 0 &&
+                    item?.option_list_v2?.serviceName)
+                ) {
                   return h(fkSelector, {
                     attrs: {
                       value: row[column.field],
@@ -1699,7 +1859,9 @@ export default {
                       row,
                       column,
                       listType: this.listType,
-                      disabled: this.disabled || !columnObj.edit ||
+                      disabled:
+                        this.disabled ||
+                        !columnObj.edit ||
                         (row.__flag !== "add" &&
                           row?.__button_auth?.edit === false),
                     },
@@ -1718,7 +1880,12 @@ export default {
                         });
                         this.$refs["tableRef"].stopEditingCell();
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-                        this.handlerRedundant(event?.rawData, column.field, row.rowKey, rowIndex);
+                        this.handlerRedundant(
+                          event?.rawData,
+                          column.field,
+                          row.rowKey,
+                          rowIndex
+                        );
                       },
                       input: (event) => {
                         row[column.field] = event;
@@ -1730,17 +1897,23 @@ export default {
                         });
                         this.$refs["tableRef"].stopEditingCell();
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-                        this.handlerRedundant({}, column.field, row.rowKey, rowIndex);
+                        this.handlerRedundant(
+                          {},
+                          column.field,
+                          row.rowKey,
+                          rowIndex
+                        );
                       },
                     },
                   });
                 } else if (["Date", "DateTime"].includes(item.col_type)) {
                   if (this.disabled) {
-                    return row[column.field] || ''
+                    return row[column.field] || "";
                   }
                   return h("el-date-picker", {
                     attrs: {
-                      disabled: this.disabled ||
+                      disabled:
+                        this.disabled ||
                         !columnObj.edit ||
                         (row.__flag !== "add" &&
                           row?.__button_auth?.edit === false),
@@ -1749,8 +1922,9 @@ export default {
                         : "",
                       size: "mini",
                       type: item.col_type.toLowerCase(),
-                      style: `width:${item.col_type === "DateTime" ? 180 : 130
-                        }px;`,
+                      style: `width:${
+                        item.col_type === "DateTime" ? 180 : 130
+                      }px;`,
                       valueFormat:
                         item.col_type === "DateTime"
                           ? "yyyy-MM-dd HH:mm:ss"
@@ -1775,7 +1949,7 @@ export default {
                       //   this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                       // },
                       input: (event) => {
-                        console.log('el-date-picker-input', event);
+                        console.log("el-date-picker-input", event);
                         self.$set(row, column.field, event);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
@@ -1787,20 +1961,23 @@ export default {
                       },
                     },
                   });
-                } else if (
-                  ['Enum', 'Dict'].includes(item.col_type)
-                ) {
+                } else if (["Enum", "Dict"].includes(item.col_type)) {
                   if (!item.option_list_v2) {
-                    item.option_list_v2 = []
+                    item.option_list_v2 = [];
                   }
                   if (this.disabled) {
-                    return row[column.field] ? item.option_list_v2.find(e => e.value === row[column.field])?.label || '' : ''
+                    return row[column.field]
+                      ? item.option_list_v2.find(
+                          (e) => e.value === row[column.field]
+                        )?.label || ""
+                      : "";
                   }
                   return h(
                     "el-select",
                     {
                       attrs: {
-                        disabled: this.disabled ||
+                        disabled:
+                          this.disabled ||
                           !columnObj.edit ||
                           (row.__flag !== "add" &&
                             row?.__button_auth?.edit === false),
@@ -1831,13 +2008,13 @@ export default {
                       });
                     })
                   );
-                } else if (['Set'].includes(item.col_type)) {
+                } else if (["Set"].includes(item.col_type)) {
                   let value = [];
                   if (row[column.field]) {
                     value = row[column.field].split(",");
                   }
                   if (!item.option_list_v2) {
-                    item.option_list_v2 = []
+                    item.option_list_v2 = [];
                   }
                   return h(
                     "el-select",
@@ -1845,7 +2022,8 @@ export default {
                       attrs: {
                         collapseTags: false,
                         multiple: true,
-                        disabled: this.disabled ||
+                        disabled:
+                          this.disabled ||
                           !columnObj.edit ||
                           (row.__flag !== "add" &&
                             row?.__button_auth?.edit === false),
@@ -1876,9 +2054,7 @@ export default {
                       });
                     })
                   );
-                } else if (
-                  ["FileList", "Image"].includes(item.col_type)
-                ) {
+                } else if (["FileList", "Image"].includes(item.col_type)) {
                   // 文件
                   let editable = true;
                   if (row.__flag === "add") {
@@ -1954,16 +2130,14 @@ export default {
                     on: {
                       needLogin: (callback) => {
                         this.$refs?.loginRef?.open(() => {
-                          callback?.(true)
-                        })
+                          callback?.(true);
+                        });
                       },
                       onfocus: () => {
-                        this.$refs[
-                          "tableRef"
-                        ].clearCellSelectionCurrentCell();
+                        this.$refs["tableRef"].clearCellSelectionCurrentCell();
                       },
                       onpopup: (val) => {
-                        this.onPopup = val
+                        this.onPopup = val;
                       },
                       unfold: (event, callback) => {
                         this.loadTree(event, row, rowIndex, callback);
@@ -1982,7 +2156,6 @@ export default {
                     },
                   });
                 }
-
               };
             }
             return columnObj;
@@ -1991,47 +2164,61 @@ export default {
         // 设置固定列
         let fixedCol = Number(this.$route.query?.fixedCol);
         if (this.$route.query?.fixedCol) {
-          fixedCol = columns.filter((item, index) => index !== 0 && !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(item.key)).filter((item, index) => index < this.$route.query?.fixedCol).map(item => item.key)
+          fixedCol = columns
+            .filter(
+              (item, index) =>
+                index !== 0 &&
+                !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
+                  item.key
+                )
+            )
+            .filter((item, index) => index < this.$route.query?.fixedCol)
+            .map((item) => item.key);
         } else {
           fixedCol = columns.find((item, index) => {
-            return index !== 0 && !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(item.key)
-          })
-          fixedCol = [fixedCol?.key]
+            return (
+              index !== 0 &&
+              !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
+                item.key
+              )
+            );
+          });
+          fixedCol = [fixedCol?.key];
         }
         columns = columns.map((item) => {
           if (fixedCol?.includes(item.key)) {
             item.fixed = "left";
           }
-          return item
-        })
-        if (this.childListType === 'add' && !this.disabled) {
-          columns.push(
-            {
-              field: "_handler",
-              key: "_handler",
-              operationColumn: true,
-              title: "操作",
-              width: 50,
-              // fixed: "right",
-              renderBodyCell: function ({ row, column, rowIndex }, h) {
-                return h('div', {
-                  domProps: { innerHTML: 'x' },
-                  attrs: {
-                    style: "cursor:pointer;",
-                    class: "hover:color-red"
+          return item;
+        });
+        if (this.childListType === "add" && !this.disabled) {
+          columns.push({
+            field: "_handler",
+            key: "_handler",
+            operationColumn: true,
+            title: "操作",
+            width: 50,
+            // fixed: "right",
+            renderBodyCell: function ({ row, column, rowIndex }, h) {
+              return h("div", {
+                domProps: { innerHTML: "x" },
+                attrs: {
+                  style: "cursor:pointer;",
+                  class: "hover:color-red",
+                },
+                on: {
+                  click: () => {
+                    console.log(row, "delete");
+                    self.tableData = self.tableData.filter(
+                      (item, index) => index !== rowIndex
+                    );
+                    self.emitListData();
+                    // self.tableData = self.tableData.splice(rowIndex,1);
                   },
-                  on: {
-                    click: () => {
-                      console.log(row, 'delete')
-                      self.tableData = self.tableData.filter((item, index) => index !== rowIndex)
-                      self.emitListData()
-                      // self.tableData = self.tableData.splice(rowIndex,1);
-                    }
-                  }
-                })
-              },
+                },
+              });
             },
-          )
+          });
         }
         return columns;
       }
@@ -2051,26 +2238,34 @@ export default {
     handlerRedundant(rawData = {}, fkColumn, rowKey, rowIndex) {
       // 处理冗余
       const row = this.tableData[rowIndex];
-      let columns = this.setAllFields.filter(item => {
+      let columns = this.setAllFields.filter((item) => {
         if (fkColumn) {
-          let redundant = item?.redundant || this.addColsMap[item.columns]?.redundant || this.updateColsMap[item.columns]?.redundant || {}
+          let redundant =
+            item?.redundant ||
+            this.addColsMap[item.columns]?.redundant ||
+            this.updateColsMap[item.columns]?.redundant ||
+            {};
           if (redundant?.dependField === fkColumn && redundant.refedCol) {
-            item.redundant = redundant
-            return true
+            item.redundant = redundant;
+            return true;
           }
         }
-      })
+      });
       if (columns?.length) {
-        columns.forEach(item => {
+        columns.forEach((item) => {
           if (item?.redundant?.trigger === "isnull") {
-            if (row[item.columns] || row[item.columns] === 0 || row[item.columns] === false) {
-              return
+            if (
+              row[item.columns] ||
+              row[item.columns] === 0 ||
+              row[item.columns] === false
+            ) {
+              return;
             }
           }
-          if (!item?.redundant?.refedCol) return
-          row[item.columns] = rawData[item.redundant.refedCol] || null
+          if (!item?.redundant?.refedCol) return;
+          row[item.columns] = rawData[item.redundant.refedCol] || null;
           this.$set(this.tableData, rowIndex, row);
-          if (this.allFields.find(e => e.columns === item.columns)) {
+          if (this.allFields.find((e) => e.columns === item.columns)) {
             this.$refs["tableRef"].startEditingCell({
               rowKey: rowKey,
               colKey: item.columns,
@@ -2079,7 +2274,7 @@ export default {
             this.$refs["tableRef"].stopEditingCell();
             this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
           }
-        })
+        });
       }
     },
     buildReqParams() {
@@ -2088,7 +2283,9 @@ export default {
       const addDatas = [];
 
       tableData.forEach((item, index) => {
-        const oldItem = this.oldTableData.find((d) => d.__id && d.__id === item.__id);
+        const oldItem = this.oldTableData.find(
+          (d) => d.__id && d.__id === item.__id
+        );
         if (item.__flag === null && oldItem) {
           const updateObj = {};
           Object.keys(item).forEach((key) => {
@@ -2098,16 +2295,15 @@ export default {
               this.updateColsMap?.[key]?.in_update !== 0
             ) {
               if (oldItem[key] !== item[key]) {
-                item.__flag = "update"
-                this.$set(item, '__flag', 'update')
-                if (item[key] === '' || item[key] == undefined) {
+                item.__flag = "update";
+                this.$set(item, "__flag", "update");
+                if (item[key] === "" || item[key] == undefined) {
                   item[key] = null;
                 }
                 updateObj[key] = item[key];
               }
             }
-          }
-          )
+          });
           if (Object.keys(updateObj)?.length) {
             reqData.push({
               serviceName: this.updateButton.service_name,
@@ -2129,7 +2325,7 @@ export default {
                 this.updateColsMap?.[key]?.in_update !== 0
               ) {
                 if (oldItem[key] !== item[key]) {
-                  if (item[key] === '' || item[key] == undefined) {
+                  if (item[key] === "" || item[key] == undefined) {
                     item[key] = null;
                   }
                   updateObj[key] = item[key];
@@ -2167,7 +2363,11 @@ export default {
             if (ignoreKeys.includes(key) || key.indexOf("_") === 0) {
               delete addObj[key];
             }
-            if (addObj[key] === '' || addObj[key] === undefined || addObj[key] === null) {
+            if (
+              addObj[key] === "" ||
+              addObj[key] === undefined ||
+              addObj[key] === null
+            ) {
               delete addObj[key];
             }
           });
@@ -2209,9 +2409,9 @@ export default {
       })
         .then(() => {
           this.page.pageNo = 1;
-          this.isFetched = false
+          this.isFetched = false;
           this.getList().then(() => {
-            this.isFetched = true
+            this.isFetched = true;
           });
         })
         .catch(() => {
@@ -2321,14 +2521,14 @@ export default {
             }
             this.getList();
           } else if (res?.resultMessage) {
-            if (res.resultCode === '0011') {
+            if (res.resultCode === "0011") {
               this.$refs?.loginRef?.open(() => {
                 this.initPage(false).then(() => {
                   if (!this.tableData.length) {
-                    this.getList()
+                    this.getList();
                   }
-                })
-              })
+                });
+              });
             }
             Message({
               showClose: true,
@@ -2348,7 +2548,7 @@ export default {
       // 插入到第几行
       if (this.childListType) {
         // 作为子表 只插到最后一行
-        index = this.tableData.length
+        index = this.tableData.length;
       }
       if (index >= 0) {
         const __id = uniqueId("table_item_");
@@ -2364,7 +2564,8 @@ export default {
             res[cur.columns] = {
               ...cur.option_list_v2,
               _target_column: cur.columns,
-              init_expr: cur.init_expr || this.addColsMap?.[cur.columns]?.init_expr,
+              init_expr:
+                cur.init_expr || this.addColsMap?.[cur.columns]?.init_expr,
             };
           }
           return res;
@@ -2374,20 +2575,23 @@ export default {
           if (field.editable || field.canAdd) {
             dataItem[field.columns] = null;
             if (itemData && itemData[field.columns]) {
-              dataItem[field.columns] = itemData[field.columns]
+              dataItem[field.columns] = itemData[field.columns];
             }
-            let init_expr = null
-            let fk_init_expr = null
-            let fk_column = null
+            let init_expr = null;
+            let fk_init_expr = null;
+            let fk_column = null;
             if (field.subtype === "autocomplete") {
             }
             if (this.addColsMap[field.columns]?.init_expr) {
               init_expr = this.addColsMap[field.columns]?.init_expr;
-            } else if (field.subtype === "autocomplete" &&
-              field.redundant?.dependField && fkCols[field.redundant?.dependField]?.init_expr) {
-              fk_init_expr = fkCols[field.redundant?.dependField]?.init_expr
-              init_expr = fk_init_expr
-              fk_column = fkCols[field.redundant?.dependField]?._target_column
+            } else if (
+              field.subtype === "autocomplete" &&
+              field.redundant?.dependField &&
+              fkCols[field.redundant?.dependField]?.init_expr
+            ) {
+              fk_init_expr = fkCols[field.redundant?.dependField]?.init_expr;
+              init_expr = fk_init_expr;
+              fk_column = fkCols[field.redundant?.dependField]?._target_column;
             }
             if (init_expr) {
               // 初始值
@@ -2410,7 +2614,9 @@ export default {
                   val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
                 }
                 if (
-                  ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
+                  ["Integer", "Float", "Money", "int", "Int"].includes(
+                    colType
+                  ) ||
                   colType.includes("decimal")
                 ) {
                   // 数字类型 初始值处理
@@ -2439,8 +2645,9 @@ export default {
             this.defaultConditionsMap &&
             this.defaultConditionsMap[field.columns]
           ) {
-            if (!['Date', "DateTime"].includes(field.col_type)) {
-              dataItem[field.columns] = this.defaultConditionsMap[field.columns];
+            if (!["Date", "DateTime"].includes(field.col_type)) {
+              dataItem[field.columns] =
+                this.defaultConditionsMap[field.columns];
             }
           }
         });
@@ -2690,12 +2897,12 @@ export default {
             );
             return item;
           });
-        } else if (res?.resultCode === '0011') {
+        } else if (res?.resultCode === "0011") {
           // this.$message.error('登录超时请重新登录')
           this.$refs?.loginRef?.open(() => {
-            this.initPage(false)
-          })
-          return
+            this.initPage(false);
+          });
+          return;
         }
         this.page.total = res.page.total;
 
@@ -2732,7 +2939,11 @@ export default {
     },
     async getColsV2() {
       if (this.colSrv) {
-        const use_type = this.colSrv?.includes('_add') ? 'add' : this.colSrv?.includes('_update') ? 'update' : 'list'
+        const use_type = this.colSrv?.includes("_add")
+          ? "add"
+          : this.colSrv?.includes("_update")
+          ? "update"
+          : "list";
         const res = await getServiceV2(
           this.colSrv,
           use_type,
@@ -2740,11 +2951,12 @@ export default {
           true
         );
         if (res?.state === "SUCCESS") {
-          return res?.data?.srv_cols?.map(item => {
+          return res?.data?.srv_cols?.map((item) => {
             // 列表字段显示隐藏默认用的in_list控制 在使用自定义的服务来显示列时使用对应的use_type控制
-            item.in_list = item[`in_${use_type}`] === 1 ? 1 : item[`in_${use_type}`]
-            return item
-          })
+            item.in_list =
+              item[`in_${use_type}`] === 1 ? 1 : item[`in_${use_type}`];
+            return item;
+          });
         }
       }
     },
@@ -2757,20 +2969,20 @@ export default {
       );
       if (res?.state === "SUCCESS") {
         const listColsMap = res?.data?.srv_cols?.reduce((pre, cur) => {
-            pre[cur.columns] = cur;
-            return pre;
-          }, {});
+          pre[cur.columns] = cur;
+          return pre;
+        }, {});
         this.v2data = res.data;
-        if (res.data.is_tree === true && this.listType === 'list') {
+        if (res.data.is_tree === true && this.listType === "list") {
           // 树列表 停止执行之后的逻辑 改为加载树列表逻辑
-          return false
+          return false;
         }
         this.initExprCols = res.data.srv_cols.reduce((pre, cur) => {
           if (cur.init_expr) {
-            pre.push(cur)
+            pre.push(cur);
           }
-          return pre
-        }, [])
+          return pre;
+        }, []);
 
         const editBtn = res.data?.rowButton?.find(
           (item) => item.button_type === "edit"
@@ -2778,7 +2990,7 @@ export default {
         if (editBtn?.service_name) {
           const ress = await getServiceV2(
             editBtn.service_name,
-            this.childListType === 'update' ? 'updatechildlist' : "update",
+            this.childListType === "update" ? "updatechildlist" : "update",
             this.srvApp,
             false,
             this.childListCfg?.foreign_key?.adapt_main_srv
@@ -2805,39 +3017,39 @@ export default {
           }, {});
         }
         if (this.colSrv) {
-          const srv_cols = await this.getColsV2()
+          const srv_cols = await this.getColsV2();
           if (srv_cols?.length) {
-            this.v2data.srv_cols = srv_cols
+            this.v2data.srv_cols = srv_cols;
           }
         }
         if (Array.isArray(this.v2data.srv_cols)) {
-          this.v2data.srv_cols = this.v2data.srv_cols.map(item => {
+          this.v2data.srv_cols = this.v2data.srv_cols.map((item) => {
             if (item.more_config) {
               try {
-                const moreConfig = JSON.parse(item.more_config)
+                const moreConfig = JSON.parse(item.more_config);
                 if (moreConfig?.query_init_value) {
-                  item.query_init_value = moreConfig.query_init_value
-                  if (item.col_type === 'fk') {
-                    item.option_list_v2.query_init_value = moreConfig.query_init_value
+                  item.query_init_value = moreConfig.query_init_value;
+                  if (item.col_type === "fk") {
+                    item.option_list_v2.query_init_value =
+                      moreConfig.query_init_value;
                   }
                 }
-              } catch (error) {
-
-              }
+              } catch (error) {}
             }
-            return item
-          })
+            return item;
+          });
         }
 
-        const allColsMap =   {
-          updateColsMap:this.updateColsMap,
-          listColsMap:listColsMap,
-          addColsMap:this.addColsMap,
-          childListType:this.childListType
-          }
+        const allColsMap = {
+          updateColsMap: this.updateColsMap,
+          listColsMap: listColsMap,
+          addColsMap: this.addColsMap,
+          childListType: this.childListType,
+        };
         this.v2data.allFields = buildSrvCols(
-          this.v2data.srv_cols,allColsMap,
-        
+          this.v2data.srv_cols,
+          allColsMap,
+
           // this.updateColsMap,
           // this.addColsMap,
           this.childListType,
@@ -2858,16 +3070,14 @@ export default {
         }, {});
         document.title = res.data.service_view_name;
         this.columns = this.buildColumns();
-        return res.data
+        return res.data;
       }
     },
     scrolling({ startRowIndex }) {
       this.startRowIndex = startRowIndex;
     },
     // 取消监听撤销重做事件
-    unbindKeyboardEvent() {
-
-    },
+    unbindKeyboardEvent() {},
     /**
      * @description 绑定ctrl+z ctrl+y事件
      * @param {*} callBackCZ 撤销/回退事件
@@ -2934,7 +3144,6 @@ export default {
 }
 
 .custom-style {
-
   .ve-table-container {
     min-height: 80px;
     height: calc(100vh - 80px) !important;
@@ -2943,7 +3152,7 @@ export default {
 
   .table-body-cell__add {
     background-color: #67c23a !important;
-    color: #fff!important;
+    color: #fff !important;
     // border-top: 1px solid #a4da89;
     .el-select .el-input {
       .el-select__caret {
@@ -2954,7 +3163,6 @@ export default {
         color: #fff;
       }
     }
-
 
     .el-icon-arrow-right {
       color: #eee;
@@ -2988,7 +3196,6 @@ export default {
 
   .ve-table-body-tr {
     height: unset !important;
-    ;
   }
 
   .ve-table-header-th {
@@ -3023,9 +3230,6 @@ export default {
     .el-input__inner::placeholder {
       color: #ccc;
     }
-
   }
-
-
 }
 </style>
