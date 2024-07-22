@@ -469,22 +469,16 @@ export default {
           type: "by",
         })
       }
-      // if (Array.isArray(this.condition) && this.condition.length) {
-      //   req.condition = this.condition.filter(
-      //     (item) => item.colName !== this.column.columns
-      //   );
-      // }
+      if (Array.isArray(this.condition) && this.condition.length) {
+        req.condition = this.condition.filter(
+          (item) => item.colName !== this.column.columns
+        );
+      }
       this.$http.post(url, req).then((res) => {
         if (res?.data?.data?.length) {
           this.filterOptions = res.data.data.map(
             (item) => item[this.column.columns] || "null"
           );
-          // if (this.colType === '外键') {
-          //   const srvInfo = JSON.parse(JSON.stringify(this.column.option_list_v2));
-          //   this.filterOptions = res.data.data.map(
-          //     (item) => item[srvInfo.key_disp_col] || "null"
-          //   );
-          // }
           if (res.data?.page?.total) {
             this.optionPage.total = res.data.page.total;
           }
