@@ -1161,6 +1161,11 @@ export default {
         item.button_type?.includes("edit")
       );
     },
+    detailButton(){
+      return this.v2data?.rowButton?.find((item) =>
+        item.button_type?.includes("detail")
+      );
+    },
     tableHeader() {
       return this.v2data?.allFields;
     },
@@ -2126,6 +2131,8 @@ export default {
                       oldValue: oldRowData?.[column.field],
                       listType: this.listType,
                       app: this.srvApp,
+                      serviceName:this.serviceName,
+                      detailButton:this.detailButton,
                     },
                     on: {
                       needLogin: (callback) => {
@@ -2188,6 +2195,9 @@ export default {
         columns = columns.map((item) => {
           if (fixedCol?.includes(item.key)) {
             item.fixed = "left";
+            if(fixedCol?.indexOf(item.key) === 0){
+              item.linkToDetail = true
+            }
           }
           return item;
         });

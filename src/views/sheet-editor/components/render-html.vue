@@ -1,44 +1,118 @@
 <template>
-  <div class="render-html" :class="{ 'is-rich-text': useEditor }" :style="setStyle" v-loading="loadingFold"
-    @dblclick="showRichEditor">
+  <div
+    class="render-html"
+    :class="{ 'is-rich-text': useEditor, 'link-to-detail': linkToDetail }"
+    :style="setStyle"
+    v-loading="loadingFold"
+    @dblclick="showRichEditor"
+  >
     <div class="flex w-full">
-      <div class="prefix-icon" v-if="showUnfold && column.isFirstCol" @click="changeFold">
+      <div
+        class="prefix-icon"
+        v-if="showUnfold && column.isFirstCol"
+        @click="changeFold"
+      >
         <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
         <div class="unfold-icon el-icon-plus" v-else></div>
       </div>
-      <div class="prefix-icon cursor-initial" v-else-if="column.isFirstCol"></div>
-      <div v-html="html" style="" v-if="useEditor && html" ></div>
-      <div style="" v-else-if="![null, undefined, ''].includes(html)" >{{ html }}</div>
-      <div class="old-value" v-else-if="[null, undefined, ''].includes(html) && oldValue" v-html="oldValue"></div>
+      <div
+        class="prefix-icon cursor-initial"
+        v-else-if="column.isFirstCol"
+      ></div>
+      <div class="text" v-html="html" style="" v-if="useEditor && html"></div>
+      <div
+        class="text"
+        style=""
+        v-else-if="![null, undefined, ''].includes(html)"
+        :title="linkToDetail?'点击查看详情':''"
+        @click="toDetail"
+      >
+        {{ html }}
+      </div>
+      <div
+        class="old-value"
+        v-else-if="[null, undefined, ''].includes(html) && oldValue"
+        v-html="oldValue"
+      ></div>
     </div>
-    <el-button size="mini" class="edit-btn" circle @click.stop="showRichEditor" v-if="useEditor&&!disabled"><i
-        class="el-icon-edit"></i></el-button>
-    <el-button size="mini" class="edit-btn" circle @click.stop="showTextarea"
-      v-if="'MultilineText' === column.col_type&&!disabled"><i class="el-icon-edit"></i></el-button>
+    <el-button
+      size="mini"
+      class="edit-btn"
+      circle
+      @click.stop="showRichEditor"
+      v-if="useEditor && !disabled"
+      ><i class="el-icon-edit"></i
+    ></el-button>
+    <el-button
+      size="mini"
+      class="edit-btn"
+      circle
+      @click.stop="showTextarea"
+      v-if="'MultilineText' === column.col_type && !disabled"
+      ><i class="el-icon-edit"></i
+    ></el-button>
 
-    <el-dialog :title="editable ? '编辑' : '详情'" :visible.sync="dialogTableVisible" :close-on-press-escape="false"
-      :close-on-click-modal="false" :destroy-on-close="true" append-to-body width="80vw" custom-class="editor-dialog"
-      :key="ticket">
-      <Toolbar style="border-bottom: 1px solid #ccc" :editor="editor" :defaultConfig="toolbarConfig" :mode="mode"
-        v-if="editable && useEditor && dialogTableVisible" :key="ticket + 1" />
-      <Editor v-if="useEditor && dialogTableVisible" v-model="innerHtml"
-        style="height: 500px; overflow-y: hidden; border-bottom: 1px solid #ccc" :defaultConfig="editorConfig"
-        :disabled="!editable" :mode="mode" @click.stop @onCreated="onCreated" @customPaste="customPaste"
-        :key="ticket + 2" />
-      <el-input type="textarea" :rows="10" :disabled="!editable" placeholder="请输入内容" v-model="innerHtml" v-else>
+    <el-dialog
+      :title="editable ? '编辑' : '详情'"
+      :visible.sync="dialogTableVisible"
+      :close-on-press-escape="false"
+      :close-on-click-modal="false"
+      :destroy-on-close="true"
+      append-to-body
+      width="80vw"
+      custom-class="editor-dialog"
+      :key="ticket"
+    >
+      <Toolbar
+        style="border-bottom: 1px solid #ccc"
+        :editor="editor"
+        :defaultConfig="toolbarConfig"
+        :mode="mode"
+        v-if="editable && useEditor && dialogTableVisible"
+        :key="ticket + 1"
+      />
+      <Editor
+        v-if="useEditor && dialogTableVisible"
+        v-model="innerHtml"
+        style="height: 500px; overflow-y: hidden; border-bottom: 1px solid #ccc"
+        :defaultConfig="editorConfig"
+        :disabled="!editable"
+        :mode="mode"
+        @click.stop
+        @onCreated="onCreated"
+        @customPaste="customPaste"
+        :key="ticket + 2"
+      />
+      <el-input
+        type="textarea"
+        :rows="10"
+        :disabled="!editable"
+        placeholder="请输入内容"
+        v-model="innerHtml"
+        v-else
+      >
       </el-input>
       <div class="text-orange text-center" v-if="!disabled && !editable">
         当前字段不可编辑
       </div>
       <div class="text-center m-t-5" v-if="!disabled && editable">
-        <el-button type="primary" @click="
-          $emit('change', innerHtml);
-        dialogTableVisible = false;
-        ">确认</el-button>
+        <el-button
+          type="primary"
+          @click="
+            $emit('change', innerHtml);
+            dialogTableVisible = false;
+          "
+          >确认</el-button
+        >
       </div>
     </el-dialog>
-    <el-image style="width: 0; height: 0;overflow: hidden;" :src="url" :preview-src-list="srcList"
-      :initial-index="initialIndex" id="imgPreview">
+    <el-image
+      style="width: 0; height: 0; overflow: hidden"
+      :src="url"
+      :preview-src-list="srcList"
+      :initial-index="initialIndex"
+      id="imgPreview"
+    >
     </el-image>
   </div>
 </template>
@@ -54,37 +128,45 @@ export default {
     html: [String, Number],
     oldValue: [String, Number],
     editable: Boolean,
-    disabled:Boolean,
+    disabled: Boolean,
     row: Object,
     column: Object,
     listType: String,
     app: String,
+    serviceName: String,
+    detailButton: Object,
   },
   watch: {
     dialogTableVisible(newVal) {
-      this.$emit('onpopup', newVal)
+      this.$emit("onpopup", newVal);
       if (newVal) {
-        window.addEventListener('dblclick', this.dblListener)
+        window.addEventListener("dblclick", this.dblListener);
       } else {
-        window.removeEventListener('dblclick', this.dblListener)
-        this.srcList = []
-        this.url = ''
-        this.initialIndex = 0
+        window.removeEventListener("dblclick", this.dblListener);
+        this.srcList = [];
+        this.url = "";
+        this.initialIndex = 0;
       }
     },
     row: {
       deep: true,
       immediate: true,
       handler(newVal) {
-        this.unfold = newVal?.__unfold ? true : false
-        this.loadingFold = false
-      }
-    }
+        this.unfold = newVal?.__unfold ? true : false;
+        this.loadingFold = false;
+      },
+    },
   },
   created() {
-    this.ticket = sessionStorage.getItem('bx_auth_ticket')
+    this.ticket = sessionStorage.getItem("bx_auth_ticket");
   },
   computed: {
+    linkToDetail() {
+      return (
+        this.$parent?.column?.linkToDetail === true &&
+        this.detailButton?.permission
+      );
+    },
     colType() {
       return this.column?.col_type;
     },
@@ -99,7 +181,7 @@ export default {
       return str;
     },
     useEditor() {
-      return ["Note", "RichText",'snote'].includes(this.column.col_type);
+      return ["Note", "RichText", "snote"].includes(this.column.col_type);
     },
     showUnfold() {
       // 显示展开收起图标
@@ -113,14 +195,13 @@ export default {
           uploadImage: this.uploadConfig,
           uploadVideo: this.uploadConfig,
         },
-      }
+      };
     },
     uploadConfig() {
-      const self = this
+      const self = this;
       return {
         server:
-          window.backendIpAddr +
-          "/file/upload?bx_auth_ticket=" + this.ticket,
+          window.backendIpAddr + "/file/upload?bx_auth_ticket=" + this.ticket,
         // form-data fieldName ，默认值 'wangeditor-uploaded-image'
         fieldName: "file",
         // 单个文件的最大体积限制，默认为 2M
@@ -154,17 +235,17 @@ export default {
             const url = `${window.backendIpAddr}/file/download?filePath=${res.fileurl}`;
             insertFn(url);
           } else {
-            if (res?.resultCode === '0011') {
+            if (res?.resultCode === "0011") {
               //登录超时
               self.$message.error(res.resultMessage);
-              self.$emit('needLogin', () => {
-                self.ticket = sessionStorage.getItem('bx_auth_ticket')
-              })
+              self.$emit("needLogin", () => {
+                self.ticket = sessionStorage.getItem("bx_auth_ticket");
+              });
             }
           }
         },
-      }
-    }
+      };
+    },
   },
   data() {
     return {
@@ -183,30 +264,65 @@ export default {
     };
   },
   methods: {
+    toDetail() {
+      if (this.linkToDetail) {
+        let address = `/vpages/#/detail/${this.serviceName}/${this.row.id}?srvApp=${this.app}`;
+        let tab_title = this.detailButton.service_view_name;
+        let disp_col = this.detailButton._disp_col;
+        let disp_value = this.row[disp_col]; //详情页面上的标签
+        tab_title = tab_title.replace("查询", "");
+        if (disp_value != null && disp_value != undefined && disp_value != "") {
+          tab_title = disp_value + "(" + tab_title + "详情)";
+        } else {
+          tab_title = tab_title + "详情";
+        }
+        let page = {
+          title: tab_title,
+          url: address,
+          icon: "",
+          app: this.app,
+        };
+        if (window.top.tab) {
+          window.top.tab.addTab(page);
+        } else {
+          // 没有tab实例，在浏览器中打开新标签页
+          const page = window.open(address);
+          setTimeout(() => {
+            page.document.title = tab_title;
+          }, 500);
+        }
+      }
+    },
     dblListener(eve) {
       console.log(eve);
-      if (eve.target?.offsetParent?.className.indexOf('w-e-image-container') > -1 && eve.target.currentSrc) {
-        this.url = eve.target.currentSrc
-        const arr = []
-        let imgIndex = 0
-        document.querySelectorAll('.w-e-image-container').forEach((item, index) => {
-          item.children.forEach(iItem => {
-            if (iItem.tagName === 'IMG' && iItem.src) {
-              arr.push(iItem.src)
-              if (iItem.src === eve.target.currentSrc) {
-                imgIndex = index
+      if (
+        eve.target?.offsetParent?.className.indexOf("w-e-image-container") >
+          -1 &&
+        eve.target.currentSrc
+      ) {
+        this.url = eve.target.currentSrc;
+        const arr = [];
+        let imgIndex = 0;
+        document
+          .querySelectorAll(".w-e-image-container")
+          .forEach((item, index) => {
+            item.children.forEach((iItem) => {
+              if (iItem.tagName === "IMG" && iItem.src) {
+                arr.push(iItem.src);
+                if (iItem.src === eve.target.currentSrc) {
+                  imgIndex = index;
+                }
               }
-            }
-          })
-        })
-        this.srcList = arr
+            });
+          });
+        this.srcList = arr;
         // 图片预览初始图片index
-        this.initialIndex = imgIndex
+        this.initialIndex = imgIndex;
         setTimeout(() => {
-          document.getElementById('imgPreview')?.click()
+          document.getElementById("imgPreview")?.click();
         }, 200);
-        eve.stopPropagation()
-        eve.preventDefault()
+        eve.stopPropagation();
+        eve.preventDefault();
       }
     },
     changeFold() {
@@ -331,5 +447,16 @@ export default {
 
 .editor-dialog {
   z-index: 999;
+}
+.link-to-detail {
+  .text {
+    &:hover {
+      color: #409eff;
+      text-decoration: underline;
+      text-decoration-color: #409eff;
+      text-underline-offset: 0.5em;
+      cursor: pointer;
+    }
+  }
 }
 </style>
