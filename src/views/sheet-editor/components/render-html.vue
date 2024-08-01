@@ -20,7 +20,7 @@
         v-else-if="column.isFirstCol"
       ></div>
       <div class="text" v-html="html" style="" v-if="useEditor && html"></div>
-      <div
+      <span
         class="text"
         style=""
         v-else-if="![null, undefined, ''].includes(html)"
@@ -28,7 +28,7 @@
         @click="toDetail"
       >
         {{ html }}
-      </div>
+      </span>
       <div
         class="old-value"
         v-else-if="[null, undefined, ''].includes(html) && oldValue"
@@ -450,12 +450,21 @@ export default {
 }
 .link-to-detail {
   .text {
+    display: contents;
     &:hover {
       color: #409eff;
-      text-decoration: underline;
-      text-decoration-color: #409eff;
-      text-underline-offset: 0.5em;
+      // text-decoration: underline;
+      // text-decoration-color: #409eff;
+      // text-underline-offset: 0.5em;
       cursor: pointer;
+      // &::after{
+      //   content: '';
+      //   width: 100%;
+      //   height: 1px;
+      //   position: absolute;
+      //   bottom: -2px;
+      //   background-color: #409eff;
+      // }
     }
   }
 }
