@@ -2133,6 +2133,7 @@ export default {
                       app: this.srvApp,
                       serviceName:this.serviceName,
                       detailButton:this.detailButton,
+                      keyDispCol:this.v2data?.key_disp_col
                     },
                     on: {
                       needLogin: (callback) => {
@@ -2198,6 +2199,10 @@ export default {
             if(fixedCol?.indexOf(item.key) === 0){
               item.linkToDetail = true
             }
+          }
+          if(this.v2data?.key_disp_col && item.key === this.v2data?.key_disp_col && this.v2data?.key_disp_col!=='id'){
+            // key_disp_col
+            item.linkToDetail = true
           }
           return item;
         });

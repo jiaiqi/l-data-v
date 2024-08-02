@@ -20,11 +20,18 @@
         v-else-if="column.isFirstCol"
       ></div>
       <div class="text" v-html="html" style="" v-if="useEditor && html"></div>
+      <a
+        class="text"
+        v-else-if="keyDispCol && column.columns === keyDispCol"
+        :title="linkToDetail ? '点击查看详情' : ''"
+        @click="toDetail"
+        >{{ html }}</a
+      >
       <span
         class="text"
         style=""
         v-else-if="![null, undefined, ''].includes(html)"
-        :title="linkToDetail?'点击查看详情':''"
+        :title="linkToDetail ? '点击查看详情' : ''"
         @click="toDetail"
       >
         {{ html }}
@@ -135,6 +142,7 @@ export default {
     app: String,
     serviceName: String,
     detailButton: Object,
+    keyDispCol: String,
   },
   watch: {
     dialogTableVisible(newVal) {
@@ -449,8 +457,12 @@ export default {
   z-index: 999;
 }
 .link-to-detail {
+  a.text {
+    color: #409eff;
+  }
   .text {
     display: contents;
+    transition: all 0.2s ease;
     &:hover {
       color: #409eff;
       // text-decoration: underline;
