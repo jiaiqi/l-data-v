@@ -429,7 +429,11 @@ export default {
       }
     },
     async getListV2(serviceName) {
-      const url = `/lgs/select/srvsys_service_columnex_v2_select?colsel_v2=${serviceName}`;
+      let app = 'lgs'
+      if(this.srvReqJson?.mapp){
+        app = this.srvReqJson?.mapp
+      }
+      const url = `/${app}/select/srvsys_service_columnex_v2_select?colsel_v2=${serviceName}`;
       const req = {
         serviceName: "srvsys_service_columnex_v2_select",
         colNames: ["*"],
@@ -491,7 +495,8 @@ export default {
       delete req.group;
       if (Array.isArray(this.curGroup) && this.curGroup.length > 0) {
         req.group = this.curGroup;
-      } else {
+      } else if(this.calcCols?.length){
+        req.group = [...this.calcCols]
         // req.group = [...this.groupCols, ...this.calcCols]
       }
       if (Array.isArray(this.filterCols)) {
@@ -543,7 +548,7 @@ export default {
         //     return obj
         //   }
         // }).filter(item => item?.colName)
-        req.condition = [...req.condition, ...condition]
+        req.condition = [...(req.condition||[]), ...condition]
       }
       this.onLoading = true;
       const res = await this.$http.post(url, req);

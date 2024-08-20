@@ -4,9 +4,10 @@ let bx_auth_ticket = "";
 // let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
 // let baseURL = window.backendIpAddr || `https://xxld.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.151:180`;
-let baseURL = window.backendIpAddr || `https://api.100xsys.cn`;
+// let baseURL = window.backendIpAddr || `https://api.100xsys.cn`;
+let baseURL = window.backendIpAddr || `http://192.168.0.241:8080`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
-const devTicket = 'xabxdzkj-f57975e2-2ef7-4198-a3ab-b3cc5d791f93'
+const devTicket = 'xabxdzkj-ff71322f-4cea-433b-916a-034c4a4dbba3'
 if (top?.pathConfig?.gateway) {
   baseURL = top?.pathConfig?.gateway;
 }
