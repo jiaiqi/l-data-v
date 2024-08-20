@@ -4,7 +4,11 @@
     <el-container>
       <el-header style="height: unset;">
         <div class="title" v-if="config && config.list_title">
+          <div>
           {{ config.list_title || '' }}
+
+          </div>
+          <el-button size="mini" plain type="primary"  v-if="tableData&&tableData.length" @click="exportExcel">导出</el-button>
         </div>
         <!-- 分组 -->
         <div class="group-box" v-if="groupByCols">
@@ -19,7 +23,7 @@
         </div>
         <!-- 筛选 -->
         <div v-if="filterCols && filterCols.length > 0">
-          <el-form ref="form" :model="filterModel" label-width="120px">
+          <el-form ref="form" :model="filterModel">
             <el-row>
               <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="4" v-for="(item,index) in filterCols" :key="index">
                 <el-form-item :label="item.label">
@@ -60,7 +64,7 @@
       <el-main>
 
         <!-- 数据 -->
-        <el-table :data="tableData" border stripe style="width: 100%" :span-method="objectSpanMethod"
+        <el-table ref="elTable" :data="tableData" border stripe style="width: 100%" :span-method="objectSpanMethod"
           v-loading="onLoading" :header-cell-style="{
             background: '#f0f3f9',
             'font-weight': 'bold',
@@ -81,6 +85,9 @@
 </template>
 
 <script>
+import * as XLSX from "xlsx";
+import dayjs from "dayjs";
+
 export default {
   data() {
     return {
@@ -148,6 +155,37 @@ export default {
     },
   },
   methods: {
+    exportExcel() {
+      if (!this.tableData?.length) {
+        alert("表格数据为空");
+        return;
+      } else {
+        let time = dayjs().format("-YYYYMMDDHHmmss");
+        let fileName = this.config.list_title + time + ".xlsx";
+        // 将预览表格中的数据导出为excel
+        let wb = XLSX.utils.table_to_book(this.$refs.elTable?.$el);
+        XLSX.writeFile(wb, `${fileName}.xlsx`);
+        /* 获取二进制字符串作为输出 */
+        // let wbout = XLSX.write(wb, {
+        //   bookType: "xlsx",
+        //   bookSST: true,
+        //   type: "array",
+        // });
+        // try {
+        //   FileSaver.saveAs(
+        //     //Blob 对象表示一个不可变、原始数据的类文件对象。
+        //     //Blob 表示的不一定是JavaScript原生格式的数据。
+        //     //File 接口基于Blob，继承了 blob 的功能并将其扩展使其支持用户系统上的文件。
+        //     //返回一个新创建的 Blob 对象，其内容由参数中给定的数组串联组成。
+        //     new Blob([wbout], { type: "application/octet-stream" }),
+        //     //设置导出文件名称
+        //     fileName
+        //   );
+        //   this.tableExportStatus = true;
+        // } catch (e) {}
+        // return wbout;
+      }
+    },
     resetFilter() {
       this.filterCols = this.filterCols.map(item => {
         item.value = undefined
@@ -579,7 +617,9 @@ export default {
 
 <style lang="scss" scoped>
 .page-wrap {
-
+  ::v-deep .el-form-item__content{
+    display: inline-block;
+  }
   // padding: 20px;
   .el-container {
     height: 100vh;
@@ -588,6 +628,9 @@ export default {
   .title {
     font-size: 18px;
     font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 0 10px;
   }
 
   .table-header {
@@ -597,13 +640,13 @@ export default {
 }
 
 .group-box {
-  padding: 0 10px;
+  padding: 0px;
   margin-bottom: 10px;
 
   .group-box-item {
-    margin-right: 20px;
+    margin-right: 40px;
     display: inline-block;
-    padding: 10px;
+    padding: 10px 0;
     // border: 1px solid #eee;
   }
 }
