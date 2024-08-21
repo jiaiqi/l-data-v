@@ -5,10 +5,11 @@
       <el-header style="height: unset;">
         <div class="title" v-if="config && config.list_title">
           <div>
-          {{ config.list_title || '' }}
+            {{ config.list_title || '' }}
 
           </div>
-          <el-button size="mini" plain type="primary"  v-if="tableData&&tableData.length" @click="exportExcel">导出</el-button>
+          <el-button size="mini" plain type="primary" v-if="tableData && tableData.length"
+            @click="exportExcel">导出</el-button>
         </div>
         <!-- 分组 -->
         <div class="group-box" v-if="groupByCols">
@@ -25,10 +26,14 @@
         <div v-if="filterCols && filterCols.length > 0">
           <el-form ref="form" :model="filterModel">
             <el-row>
-              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="4" v-for="(item,index) in filterCols" :key="index">
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="4" v-for="(item, index) in filterCols" :key="index">
                 <el-form-item :label="item.label">
                   <el-date-picker value-format="yyyy-MM-dd" v-model="item.value" type="daterange" range-separator="至"
                     start-placeholder="开始日期" end-placeholder="结束日期" v-if="item.col_type === 'Date'"
+                    @change="valueChange($event, item)">
+                  </el-date-picker>
+                  <el-date-picker value-format="yyyy-MM-dd HH:mm:ss" v-model="item.value" type="datetimerange" range-separator="至"
+                    start-placeholder="开始日期" end-placeholder="结束日期" v-if="item.col_type === 'DateTime'"
                     @change="valueChange($event, item)">
                   </el-date-picker>
                   <el-input v-model="item.value" clearable
@@ -70,7 +75,8 @@
             'font-weight': 'bold',
             color: '#000',
           }">
-          <el-table-column :prop="column.columns" :label="column.label" min-width="180" v-for="column in setSrvCols" :key="column.columns">
+          <el-table-column :prop="column.columns" :label="column.label" min-width="180" v-for="column in setSrvCols"
+            :key="column.columns">
           </el-table-column>
         </el-table>
       </el-main>
@@ -155,7 +161,62 @@ export default {
     },
   },
   methods: {
+    /**
+ * 查询后端生成文件的状态
+ * @param {*} uuid 后端返回的文件唯一标识
+ * @param {string} app 应用编号
+ */
+    async getFileState(uuid, app) {
+      const url = `/${app}/export/file/check?uuid=${uuid}`;
+      const res = await this.$http(url);
+      console.log(res.data);
+      if (res.data.state === "SUCCESS") {
+        return res.data.resultMessage;
+      } else {
+        return null;
+      }
+    },
+    downloadexport(uuid) {
+      let app = 'lgs'
+      if (this.srvReqJson?.mapp) {
+        app = this.srvReqJson?.mapp
+      }
+      const url = `${window.backendIpAddr}/${app}/downloadexport/${uuid}?bx_auth_ticket=${sessionStorage.getItem(
+        "bx_auth_ticket"
+      )}`;
+      window.open(url);
+      var loading = this.openLoading("文件准备中...");
+      const downloadTimer = setInterval(() => {
+        this.getFileState(uuid, app)
+          .then((res) => {
+            if (res === "完成") {
+              loading.close();
+              clearInterval(downloadTimer);
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+            loading.close();
+            clearInterval(downloadTimer);
+          });
+      }, 1000);
+    },
     exportExcel() {
+      let app = 'lgs'
+      if (this.srvReqJson?.mapp) {
+        app = this.srvReqJson?.mapp
+      }
+      const url = `/${app}/export/${this.srvReqJson?.serviceName}`
+      const req = this.buildListReq()
+      if(req.page){
+        delete req.page
+      }
+      this.$http.post(url, req).then(res => {
+        if (res?.data?.data.uuid) {
+          this.downloadexport(res?.data?.data.uuid);
+        }
+      })
+      return
       if (!this.tableData?.length) {
         alert("表格数据为空");
         return;
@@ -468,7 +529,7 @@ export default {
     },
     async getListV2(serviceName) {
       let app = 'lgs'
-      if(this.srvReqJson?.mapp){
+      if (this.srvReqJson?.mapp) {
         app = this.srvReqJson?.mapp
       }
       const url = `/${app}/select/srvsys_service_columnex_v2_select?colsel_v2=${serviceName}`;
@@ -526,14 +587,13 @@ export default {
         }
       }
     },
-    async getList(p) {
-      const url = `/${this.srvReqJson.mapp}/select/${this.srvReqJson.serviceName}`;
+    buildListReq() {
       const req = JSON.parse(JSON.stringify(this.srvReqJson));
       req.page = this.page || req.page;
       delete req.group;
       if (Array.isArray(this.curGroup) && this.curGroup.length > 0) {
         req.group = this.curGroup;
-      } else if(this.calcCols?.length){
+      } else if (this.calcCols?.length) {
         req.group = [...this.calcCols]
         // req.group = [...this.groupCols, ...this.calcCols]
       }
@@ -554,7 +614,7 @@ export default {
               res.push(obj1)
             }
           } else if (item.value !== undefined) {
-            if (item.col_type === 'Date') {
+            if (['DateTime','Date'].includes(item.col_type)) {
               obj.ruleType = 'between'
               obj.value = item.value
             } else {
@@ -586,8 +646,13 @@ export default {
         //     return obj
         //   }
         // }).filter(item => item?.colName)
-        req.condition = [...(req.condition||[]), ...condition]
+        req.condition = [...(req.condition || []), ...condition]
       }
+      return req
+    },
+    async getList(p) {
+      const url = `/${this.srvReqJson.mapp}/select/${this.srvReqJson.serviceName}`;
+      const req = this.buildListReq()
       this.onLoading = true;
       const res = await this.$http.post(url, req);
       this.onLoading = false;
@@ -617,9 +682,17 @@ export default {
 
 <style lang="scss" scoped>
 .page-wrap {
-  ::v-deep .el-form-item__content{
-    display: inline-block;
+::v-deep .el-form-item{
+  display: flex;
+  margin-right: 10px;
+  .el-form-item__content{
+    flex: 1;
   }
+  .el-date-editor .el-range-separator{
+    min-width: 20px;
+  }
+}
+
   // padding: 20px;
   .el-container {
     height: 100vh;
@@ -663,4 +736,5 @@ export default {
   .marign-lr {
     margin: 0 10px;
   }
-}</style>
+}
+</style>
