@@ -1,29 +1,59 @@
 <template>
   <div class="file-list">
     <div class="edit-icon">
-      <el-button size="mini" class="edit-btn" circle @click="showDialog"><i class="el-icon-upload2"></i></el-button>
+      <el-button size="mini" class="edit-btn" circle @click="showDialog"
+        ><i class="el-icon-upload2"></i
+      ></el-button>
     </div>
-    <div v-if="isImage && getImageUrl">
-      <el-image style="width: 100px; height: 100px" :src="getImageUrl" :preview-src-list="srcList"
-        @click.native="getFileList()">
+    <div v-if="setColumn && setColumn._obj_info">
+      <file-list :data="row" :field="setColumn"></file-list>
+    </div>
+    <div v-else-if="isImage && getImageUrl">
+      <el-image
+        style="width: 100px; height: 100px"
+        :src="getImageUrl"
+        :preview-src-list="srcList"
+        @click.native="getFileList()"
+      >
       </el-image>
     </div>
+  
     <div class="file-no" v-else>{{ value || "" }}</div>
 
-    <el-dialog title="文件上传" :visible.sync="dialogVisible" @close="hideDialog">
+    <el-dialog
+      title="文件上传"
+      :visible.sync="dialogVisible"
+      @close="hideDialog"
+    >
       <div id="imgbox" contenteditable="true"></div>
-      <el-upload :disabled="disabled" class="upload-demo" :action="uploadAction" :on-preview="handlePreview"
-        :on-remove="handleRemove" :before-remove="beforeRemove" :on-success="handleUploadSuccess" :headers="uploadHeaders"
-        :data="uploadData" :limit="limit" :on-exceed="handleExceed" :file-list="fileList"
-        :list-type="isImage ? 'picture-card' : 'text'" ref="upload">
+      <el-upload
+        :disabled="disabled"
+        class="upload-demo"
+        :action="uploadAction"
+        :on-preview="handlePreview"
+        :on-remove="handleRemove"
+        :before-remove="beforeRemove"
+        :on-success="handleUploadSuccess"
+        :headers="uploadHeaders"
+        :data="uploadData"
+        :limit="limit"
+        :on-exceed="handleExceed"
+        :file-list="fileList"
+        :list-type="isImage ? 'picture-card' : 'text'"
+        ref="upload"
+      >
         <!-- <div v-if="!disabled && isImage">
           <i class="el-icon-upload"></i>
           <div class="el-upload__text">
             将文件拖到此处，或<em>点击上传</em>
           </div>
         </div> -->
-        <div size="small" type="primary" v-if="isImage && !disabled">点击或粘贴上传</div>
-        <el-button size="small" type="primary" v-else-if="!disabled">点击上传</el-button>
+        <div size="small" type="primary" v-if="isImage && !disabled">
+          点击或粘贴上传
+        </div>
+        <el-button size="small" type="primary" v-else-if="!disabled"
+          >点击上传</el-button
+        >
         <div class="" v-else @click.prevent.stop="">没有编辑权限</div>
       </el-upload>
     </el-dialog>
@@ -32,8 +62,11 @@
 
 <script>
 import { $http } from "../../../common/http";
-
+import FileList from "./file-list.vue";
 export default {
+  components: {
+    FileList,
+  },
   props: {
     limit: {
       type: Number,
@@ -46,6 +79,13 @@ export default {
     value: [String, Number],
   },
   computed: {
+    setColumn() {
+      const obj = { ...this.column };
+      if (this.column?.option_list_v2?.obj_info) {
+        obj._obj_info = this.column.option_list_v2.obj_info;
+      }
+      return obj;
+    },
     srcList() {
       if (this.fileList?.length) {
         return this.fileList.map((item) => item.url).reverse();
@@ -57,7 +97,8 @@ export default {
       if (this.value) {
         return (
           window.backendIpAddr +
-          `/file/download?fileNo=${this.value
+          `/file/download?fileNo=${
+            this.value
           }&bx_auth_ticket=${sessionStorage.getItem("bx_auth_ticket")}`
         );
       }
@@ -94,7 +135,6 @@ export default {
         return this.value;
       },
     },
-
   },
   data() {
     return {
@@ -102,11 +142,9 @@ export default {
       dialogVisible: false,
     };
   },
-  created() { },
+  created() {},
   methods: {
-    hideDialog() {
-    
-    },
+    hideDialog() {},
     showDialog() {
       if (this.modelValue) {
         this.getFileList();
@@ -128,7 +166,9 @@ export default {
           return {
             name: item.src_name,
             file_type: item.file_type,
-            url: `${window.backendIpAddr}/file/download?filePath=${item.fileurl}&bx_auth_ticket=${sessionStorage.getItem('bx_auth_ticket')}`,
+            url: `${window.backendIpAddr}/file/download?filePath=${
+              item.fileurl
+            }&bx_auth_ticket=${sessionStorage.getItem("bx_auth_ticket")}`,
             fileurl: item.fileurl,
           };
         });
@@ -173,7 +213,8 @@ export default {
     },
     handleExceed(files, fileList) {
       this.$message.warning(
-        `当前限制选择 3 个文件，本次选择了 ${files.length} 个文件，共选择了 ${files.length + fileList.length
+        `当前限制选择 3 个文件，本次选择了 ${files.length} 个文件，共选择了 ${
+          files.length + fileList.length
         } 个文件`
       );
     },
@@ -203,16 +244,16 @@ export default {
       /**调用element的上传方法 需要把base64转换成file上传**/
       let a = this.dataURLtoBlob(file);
       let b = this.blobToFile(a, info);
-      const upload = this.$refs.upload
+      const upload = this.$refs.upload;
       upload.handleStart(b);
       setTimeout(() => {
         upload.submit();
         this.loading = true;
-      })
+      });
     },
     dataURLtoBlob(dataurl) {
       //将base64转换为blob
-      var arr = dataurl.split(','),
+      var arr = dataurl.split(","),
         mime = arr[0].match(/:(.*?);/)[1],
         bstr = atob(arr[1]),
         n = bstr.length,
@@ -232,11 +273,12 @@ export default {
     listenPasteEvent() {
       let _this = this;
       const pasteEvent = (event) => {
-        if(!this.dialogVisible){
-          return
+        if (!this.dialogVisible) {
+          return;
         }
         if (event.clipboardData || event.originalEvent) {
-          let clipboardData = (event.clipboardData || event.originalEvent.clipboardData);
+          let clipboardData =
+            event.clipboardData || event.originalEvent.clipboardData;
           if (clipboardData.items) {
             let items = clipboardData.items,
               len = items.length,
@@ -257,25 +299,27 @@ export default {
               let reader = new FileReader();
               reader.onload = function (event) {
                 // event.target.result 即为图片的Base64编码字符串
-                let base64_str = event.target.result
+                let base64_str = event.target.result;
                 //可以在这里写上传逻辑 直接将base64编码的字符串上传（可以尝试传入blob对象，看看后台程序能否解析）
-                _this.uploadImgFromPaste(base64_str, 'paste', { name: blob.name, type: blob.type, size: blob.size });
-              }
+                _this.uploadImgFromPaste(base64_str, "paste", {
+                  name: blob.name,
+                  type: blob.type,
+                  size: blob.size,
+                });
+              };
               reader.readAsDataURL(blob);
             }
           }
         }
-      }
-      document.addEventListener('paste', pasteEvent)
+      };
+      document.addEventListener("paste", pasteEvent);
     },
   },
   mounted() {
     if (this.isImage) {
-        this.listenPasteEvent()
-      }
+      this.listenPasteEvent();
+    }
   },
-
-
 };
 </script>
 

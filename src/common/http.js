@@ -7,7 +7,7 @@ let bx_auth_ticket = "";
 let baseURL = window.backendIpAddr || `https://api.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.241:8080`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
-const devTicket = 'xabxdzkj-bc51a7ae-6b66-4260-b1d9-02473e96706f'
+const devTicket = 'xabxdzkj-5f14cc93-9304-4870-9653-c1e4b9daa6bc'
 if (top?.pathConfig?.gateway) {
   baseURL = top?.pathConfig?.gateway;
 }
