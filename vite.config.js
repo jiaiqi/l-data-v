@@ -5,7 +5,7 @@ import legacy from "@vitejs/plugin-legacy";
 import vue2 from "@vitejs/plugin-vue2";
 import UnoCSS from "unocss/vite";
 // import { createRequire } from 'node:module';
-
+// import vueDevTools from 'vite-plugin-vue-devtools'
 // const require = createRequire( import.meta.url );
 
 // https://vitejs.dev/config/
@@ -18,6 +18,7 @@ export default defineConfig({
       additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
     }),
     UnoCSS(),
+    // vueDevTools(),
   ],
   resolve: {
     alias: {

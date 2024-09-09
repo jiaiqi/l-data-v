@@ -162,6 +162,7 @@ export default {
 .file-list {
   flex-direction: column;
   justify-content: flex-start;
+  max-height: 100px;
 }
 .file-item {
   width: 100%;

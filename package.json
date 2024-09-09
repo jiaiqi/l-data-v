@@ -47,7 +47,8 @@
     "ssh2": "^1.14.0",
     "terser": "^5.14.2",
     "unocss": "^0.54.1",
-    "vite": "^3.0.2"
+    "vite": "^3.2.5",
+    "vite-plugin-vue-devtools": "^7.4.4"
   },
   "volta": {
     "node": "20.10.0"

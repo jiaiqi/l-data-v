@@ -52,7 +52,7 @@ export default {
       };
       if (getRootWindow()?.layer) {
         // 有layer则说明当前在iframe中，直接弹出layer的登录框
-        const login_page = "/main/login.html";
+        let login_page = "/main/login.html";
         if (getRootWindow()?.getLoginAddress) {
           login_page = `/${getRootWindow().getLoginAddress()}`;
         }

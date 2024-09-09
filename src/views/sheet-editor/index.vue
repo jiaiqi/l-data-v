@@ -1,49 +1,26 @@
 <template>
   <div class="spreadsheet flex flex-col">
     <loading-view v-if="loading" mask type="surround" :maskOpacity="0.2" showText textColor="#fff"></loading-view>
-    <div
-      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full"
-      v-if="disabled !== true"
-    >
-      <div
-        class="flex flex-1 items-center text-sm"
-        v-if="addButton && addButton.service_name"
-      >
+    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full" v-if="disabled !== true">
+      <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
         <div class="m-r-2">添加</div>
-        <el-input-number
-          size="mini"
-          v-model="insertRowNumber"
-          style="width: 100px"
-        />
+        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
         <div class="m-x-2">行</div>
-        <el-button
-          size="mini"
-          type="primary"
-          @click="batchInsertRows"
-          :disabled="insertRowNumber === 0"
-          >添加
+        <el-button size="mini" type="primary" @click="batchInsertRows" :disabled="insertRowNumber === 0">添加
         </el-button>
       </div>
       <div class="text-sm text-gray cursor-not-allowed" v-else>
         没有添加权限
       </div>
       <div flex-1>
-        <el-radio-group
-          v-model="listType"
-          @input="listTypeChange"
-          size="mini"
-          v-if="isTree"
-        >
+        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
       </div>
 
       <div class="flex flex-items-center flex-1 justify-end">
-        <div
-          class="color-map flex flex-items-center m-r-20"
-          v-if="childListType !== 'add'"
-        >
+        <div class="color-map flex flex-items-center m-r-20" v-if="childListType !== 'add'">
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
             <div class="color bg-[#67c23a] w-4 h-4 m-r-2 rounded"></div>
@@ -54,104 +31,47 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <el-button
-          size="mini"
-          type="primary"
-          @click="refreshData"
-          v-if="childListType !== 'add'"
-          >刷新</el-button
-        >
-        <el-button
-          size="mini"
-          type="primary"
-          @click="saveData"
-          :disabled="!calcReqData || calcReqData.length == 0"
-          v-if="childListType !== 'add'"
-        >
+        <el-button size="mini" type="primary" @click="refreshData" v-if="childListType !== 'add'">刷新</el-button>
+        <el-button size="mini" type="primary" @click="saveData" :disabled="!calcReqData || calcReqData.length == 0"
+          v-if="childListType !== 'add'">
           保存
         </el-button>
-        <el-button
-          size="mini"
-          type="primary"
-          @click="saveColumnWidth"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
-          v-if="
+        <el-button size="mini" type="primary" @click="saveColumnWidth"
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0" v-if="
             !childListType &&
             calcColumnWidthReq &&
             calcColumnWidthReq.length > 0
-          "
-          >保存列宽
+          ">保存列宽
         </el-button>
       </div>
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
-      <ve-table
-        :columns="columns"
-        border-x
-        border-y
-        :table-data="tableData"
-        v-if="disabled"
-        ref="tableRef"
-        style="word-break: break-word; width: 100vw; height: 100%"
-        max-height="calc(100vh - 40px)"
-        fixed-header
-      />
+      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
+        style="word-break: break-word; width: 100vw; height: 100%" max-height="calc(100vh - 40px)" fixed-header />
       <div class="custom-style" v-else>
-        <ve-table
-          ref="tableRef"
-          style="word-break: break-word; width: 100vw"
-          max-height="calc(100vh - 80px)"
-          fixed-header
-          :scroll-width="0"
-          border-y
-          :columns="columns"
-          :table-data="tableData"
-          row-key-field-name="rowKey"
-          :virtual-scroll-option="virtualScrollOption"
-          :cell-autofill-option="cellAutofillOption"
-          :cell-style-option="cellStyleOption"
-          :edit-option="editOption"
-          :clipboard-option="clipboardOption"
-          :contextmenu-body-option="contextmenuBodyOption"
-          :contextmenu-header-option="contextmenuHeaderOption"
-          :row-style-option="rowStyleOption"
-          :column-width-resize-option="columnWidthResizeOption"
-          :event-custom-option="eventCustomOption"
-          :columnHiddenOption="columnHiddenOption"
-        />
+        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)"
+          fixed-header :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
       </div>
     </div>
-    <div
-      class="empty-data"
-      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
-    >
+    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">
       暂无数据
     </div>
     <!--    列表为新增子表时不显示分页-->
     <div class="text-center" v-if="childListType !== 'add'">
-      <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]"
-        :page-size="page.rownumber"
-        layout="total, sizes, pager,  jumper"
-        :total="page.total"
-      >
+      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
+        :total="page.total">
       </el-pagination>
     </div>
 
-    <select-parent-node
-      ref="changeParentRef"
-      :topTreeData="topTreeData"
-      :srvApp="srvApp"
-      :options="
-        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-      "
-      :option-info="parentColOption"
-      @confirm="updateParentNo"
-    ></select-parent-node>
+    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+      " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
 
     <login-dialog ref="loginRef"></login-dialog>
   </div>
@@ -597,8 +517,8 @@ export default {
           const colType = column?.__field_info?.col_type;
           // console.log(row, column, changeValue);
           if (row.__flag === "add") {
-            // 新增行 处理in_add
-            if (this.addColsMap[column.field]?.in_add !== 1) {
+            // 新增行 处理in_add 为0或者add服务没有这个字段
+            if (!this.addColsMap[column.field]?.in_add) {
               this.$message({
                 message: "新增行不支持编辑当前列",
                 type: "warning",
@@ -607,7 +527,7 @@ export default {
             }
           } else {
             // 编辑行 处理in_update
-            if (this.updateColsMap[column.field]?.in_update !== 1) {
+            if (!this.updateColsMap[column.field]?.in_update) {
               this.$message({
                 message: "当前列不支持编辑",
                 type: "warning",
@@ -637,7 +557,7 @@ export default {
           );
           if (row.__flag === "add") {
             // 新增行 处理in_add
-            if (this.addColsMap[column.field]?.in_add !== 1) {
+            if (!this.addColsMap[column.field]?.in_add) {
               this.$message({
                 message: "新增行不支持编辑当前列",
                 type: "warning",
@@ -646,7 +566,7 @@ export default {
             }
           } else {
             // 编辑行 处理in_update
-            if (this.updateColsMap?.[column.field]?.in_update !== 1) {
+            if (!this.updateColsMap?.[column.field]?.in_update) {
               this.$message({
                 message: "当前列不支持编辑",
                 type: "warning",
@@ -812,6 +732,21 @@ export default {
             this.columnWidthMap[key]?.width &&
             !isNaN(parseFloat(this.columnWidthMap[key].width))
           ) {
+            let serviceName = this.columnWidthMap[key].fieldInfo.service_name;
+            const addService = this.addColsMap?.[key]?.service_name
+            const updateService = this.updateColsMap?.[key]?.service_name
+            if (addService && !serviceName.includes(addService)) {
+              serviceName += `,${addService}`
+            }
+            if (updateService && !serviceName.includes(updateService)) {
+              serviceName += `,${updateService}`
+            }
+            if (this.serviceName && !serviceName.includes(this.serviceName)) {
+              serviceName += `,${this.serviceName}`
+            }
+            if (this.v2data?.service_name && !serviceName.includes(this.v2data?.service_name)) {
+              serviceName += `,${this.v2data?.service_name}`
+            }
             arr.push({
               serviceName: "srvsys_service_columns_query_update",
               data: [{ list_min_width: this.columnWidthMap[key].width }],
@@ -819,8 +754,8 @@ export default {
                 { colName: "columns", value: key, ruleType: "eq" },
                 {
                   colName: "service_name",
-                  value: this.columnWidthMap[key].fieldInfo.service_name,
-                  ruleType: "eq",
+                  value: serviceName,
+                  ruleType: "in",
                 },
                 {
                   colName: "table_name",
@@ -945,19 +880,16 @@ export default {
             });
 
             // 删除选中行数据
-            let text = `此操作将永久删除该第${
-              selectionRangeIndexes.startRowIndex + 1
-            }至第${
-              selectionRangeIndexes.endRowIndex + 1
-            }行数据，是否继续操作？`;
+            let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
+              }至第${selectionRangeIndexes.endRowIndex + 1
+              }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
-                selectionRangeIndexes.startRowIndex ==
+              selectionRangeIndexes.startRowIndex ==
               0
             ) {
-              text = `此操作将永久删除该第${
-                selectionRangeIndexes.startRowIndex + 1
-              }行数据，是否继续操作？`;
+              text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
+                }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -1161,7 +1093,7 @@ export default {
         item.button_type?.includes("edit")
       );
     },
-    detailButton(){
+    detailButton() {
       return this.v2data?.rowButton?.find((item) =>
         item.button_type?.includes("detail")
       );
@@ -1262,7 +1194,7 @@ export default {
         if (typeof data === "string") {
           data = JSON.parse(data);
         }
-      } catch (e) {}
+      } catch (e) { }
       console.log("child-listener", data);
       if (data?.childListCfg) {
         console.log("childListCfg", data.childListCfg);
@@ -1927,9 +1859,8 @@ export default {
                         : "",
                       size: "mini",
                       type: item.col_type.toLowerCase(),
-                      style: `width:${
-                        item.col_type === "DateTime" ? 180 : 130
-                      }px;`,
+                      style: `width:${item.col_type === "DateTime" ? 180 : 130
+                        }px;`,
                       valueFormat:
                         item.col_type === "DateTime"
                           ? "yyyy-MM-dd HH:mm:ss"
@@ -1973,8 +1904,8 @@ export default {
                   if (this.disabled) {
                     return row[column.field]
                       ? item.option_list_v2.find(
-                          (e) => e.value === row[column.field]
-                        )?.label || ""
+                        (e) => e.value === row[column.field]
+                      )?.label || ""
                       : "";
                   }
                   return h(
@@ -2064,12 +1995,12 @@ export default {
                   let editable = true;
                   if (row.__flag === "add") {
                     // 新增行 处理in_add
-                    if (this.addColsMap[column.field]?.in_add !== 1) {
+                    if (!this.addColsMap[column.field]?.in_add) {
                       editable = false;
                     }
                   } else {
                     // 编辑行 处理in_update
-                    if (this.updateColsMap[column.field]?.in_update !== 1) {
+                    if (!this.updateColsMap[column.field]?.in_update) {
                       editable = false;
                     }
                   }
@@ -2108,12 +2039,12 @@ export default {
                   let editable = true;
                   if (row.__flag === "add") {
                     // 新增行 处理in_add
-                    if (this.addColsMap[column.field]?.in_add !== 1) {
+                    if (!this.addColsMap[column.field]?.in_add) {
                       editable = false;
                     }
                   } else {
                     // 编辑行 处理in_update
-                    if (this.updateColsMap[column.field]?.in_update !== 1) {
+                    if (!this.updateColsMap[column.field]?.in_update) {
                       editable = false;
                     }
                   }
@@ -2131,9 +2062,9 @@ export default {
                       oldValue: oldRowData?.[column.field],
                       listType: this.listType,
                       app: this.srvApp,
-                      serviceName:this.serviceName,
-                      detailButton:this.detailButton,
-                      keyDispCol:this.v2data?.key_disp_col
+                      serviceName: this.serviceName,
+                      detailButton: this.detailButton,
+                      keyDispCol: this.v2data?.key_disp_col
                     },
                     on: {
                       needLogin: (callback) => {
@@ -2196,11 +2127,11 @@ export default {
         columns = columns.map((item) => {
           if (fixedCol?.includes(item.key)) {
             item.fixed = "left";
-            if(fixedCol?.indexOf(item.key) === 0){
+            if (fixedCol?.indexOf(item.key) === 0) {
               item.linkToDetail = true
             }
           }
-          if(this.v2data?.key_disp_col && item.key === this.v2data?.key_disp_col && this.v2data?.key_disp_col!=='id'){
+          if (this.v2data?.key_disp_col && item.key === this.v2data?.key_disp_col && this.v2data?.key_disp_col !== 'id') {
             // key_disp_col
             item.linkToDetail = true
           }
@@ -2413,7 +2344,7 @@ export default {
       const reqData = this.buildReqParams();
 
       if (reqData?.length === 0 || !reqData) {
-        this.page.pageNo = 1;
+        // this.page.pageNo = 1;
         this.getList();
         return;
       }
@@ -2957,8 +2888,8 @@ export default {
         const use_type = this.colSrv?.includes("_add")
           ? "add"
           : this.colSrv?.includes("_update")
-          ? "update"
-          : "list";
+            ? "update"
+            : "list";
         const res = await getServiceV2(
           this.colSrv,
           use_type,
@@ -3049,7 +2980,7 @@ export default {
                       moreConfig.query_init_value;
                   }
                 }
-              } catch (error) {}
+              } catch (error) { }
             }
             return item;
           });
@@ -3092,7 +3023,7 @@ export default {
       this.startRowIndex = startRowIndex;
     },
     // 取消监听撤销重做事件
-    unbindKeyboardEvent() {},
+    unbindKeyboardEvent() { },
     /**
      * @description 绑定ctrl+z ctrl+y事件
      * @param {*} callBackCZ 撤销/回退事件
@@ -3168,6 +3099,7 @@ export default {
   .table-body-cell__add {
     background-color: #67c23a !important;
     color: #fff !important;
+
     // border-top: 1px solid #a4da89;
     .el-select .el-input {
       .el-select__caret {
