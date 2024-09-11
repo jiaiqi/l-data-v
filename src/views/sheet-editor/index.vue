@@ -2706,7 +2706,7 @@ export default {
             },
           ],
           {
-            rownumber: this.page.rownumber,
+            rownumber: 99,
             pageNo: this.page.pageNo,
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
