@@ -35,8 +35,8 @@ export default defineConfig({
         "theme_color": "#ffffff",
         "background_color": "#ffffff",
         "display": "standalone",
-        "scope": "/",
-        "start_url": "/#/sheet/srvoa_project_task_plan_select?srvApp=oa",
+        "scope": "/dataview/",
+        "start_url": "/dataview/#/sheet/srvoa_project_task_plan_select?srvApp=oa",
         "icons": [
           {
             "sizes": "192x192",
