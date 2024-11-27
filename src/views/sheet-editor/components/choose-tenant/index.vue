@@ -1,16 +1,14 @@
 <template>
-  <!-- <div v-if="currentTenant&&currentTenant.tenant_name" class="px-10px flex items-center text-sm">
-    {{ currentTenant.tenant_name }}
-    <i class="i-ri:exchange-2-fill  cursor-pointer"></i>
-  </div> -->
   <el-dropdown v-if="tenants && tenants.length > 1">
     <span class="el-dropdown-link">
-      <div v-if="currentTenant && currentTenant.tenant_name"
+      <div 
         class="px-10px flex items-center text-sm cursor-pointer hover-text-blue">
+        <span v-if="currentTenant && currentTenant.tenant_name">
         {{ currentTenant.tenant_name }}
-        <i class="i-ri:exchange-2-fill  "></i>
+        </span>
+        <span v-else>选择租户</span>
+        <i class="i-ri:organization-chart"></i>
       </div>
-      <div class="px-10px flex items-center text-sm cursor-pointer hover-text-blue" v-else>选择租户</div>
     </span>
     <el-dropdown-menu v-if="tenants && tenants.length">
       <el-dropdown-item v-for="(item, index) in tenants" :key="index">
