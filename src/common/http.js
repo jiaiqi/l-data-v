@@ -76,8 +76,12 @@ $axios.interceptors.response.use(
         //   type: "error",
         // });
         if (response.data.resultCode == "0011") {
+          let currentTenant = sessionStorage.currentTenant;
           sessionStorage.clear()
           localStorage.clear()
+          if(currentTenant){
+            sessionStorage.currentTenant = currentTenant
+          }
           if (getRootWindow()?.layer) {
             var login_page = "/main/login.html";
             try {
