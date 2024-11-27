@@ -63,11 +63,15 @@
       暂无数据
     </div>
     <!--    列表为新增子表时不显示分页-->
-    <div class="text-center" v-if="childListType !== 'add'">
+    <div class="text-center flex justify-between" v-if="childListType !== 'add'">
+      <div class="position-relative">
+        <choose-tenant/>
+      </div>
       <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
         :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
         :total="page.total">
       </el-pagination>
+      <div class=""></div>
     </div>
 
     <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
@@ -85,6 +89,8 @@ import {
   onDelete,
 } from "../../service/api";
 import dayjs from "dayjs";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/user.js";
 import { buildSrvCols } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
 import { uniqueId, cloneDeep } from "lodash-es";
@@ -103,6 +109,7 @@ import { processStrings, appendNumber } from "../../common/common";
 import IconFold from "../../components/icons/icon-fold.vue";
 import IconUnfold from "../../components/icons/icon-unfold.vue";
 import LoadingView from "./components/loading/index.vue";
+import ChooseTenant from './components/choose-tenant/index.vue'
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
@@ -157,6 +164,7 @@ export default {
     selectParentNode,
     loginDialog,
     LoadingView,
+    ChooseTenant
   },
   data() {
     return {
@@ -690,6 +698,7 @@ export default {
     },
   },
   computed: {
+    ...mapState(useUserStore,['userInfo','tenants']),
     setAllFields() {
       // 所有字段
       return this.v2data?.srv_cols || [];

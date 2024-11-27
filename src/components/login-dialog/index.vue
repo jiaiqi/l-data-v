@@ -19,6 +19,8 @@
 
 <script>
 import { ElDialog, ElForm, ElFormItem, ElInput, ElButton } from "element-ui";
+import {useUserStore} from '@/stores/user.js'
+import { mapActions } from "pinia";
 export default {
   data() {
     return {
@@ -31,6 +33,7 @@ export default {
     };
   },
   methods: {
+    ...mapActions(useUserStore, ['setTenants','setUserInfo','setCurrentTenant']),
     listenerStorage(event) {
       if (event.key === "bx_auth_ticket") {
         console.log("bx_auth_ticket变化了");
@@ -110,7 +113,22 @@ export default {
           "current_login_user",
           JSON.stringify(resData.login_user_info)
         );
+        this.setUserInfo(resData.login_user_info)
         sessionStorage.setItem("logined", true);
+        if(resData.login_user_info?.otherTenantInfos?.length){
+          const tenantList = resData.login_user_info.otherTenantInfos;
+          sessionStorage.setItem("tenantList", JSON.stringify(tenantList));
+          if(tenantList.length>1){
+            if(sessionStorage.currentTenant){
+              const currentTenant = JSON.parse(sessionStorage.currentTenant)
+              const tenant = tenantList.find(item=>item.tenant_no===currentTenant.tenant_no)
+              if(tenant?.tenant_no){
+                this.setCurrentTenant(tenant)
+              }
+            }
+          }
+          this.setTenants(tenantList)
+        }
         return true;
       } else {
         this.$message.error(res.data.resultMessage);
