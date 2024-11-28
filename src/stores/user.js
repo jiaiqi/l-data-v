@@ -52,12 +52,8 @@ export const useUserStore = defineStore('user', {
             const resList = res[0].response;
             window.sessionStorage.setItem('bx_auth_ticket', resList.bx_auth_ticket)
             window.sessionStorage.setItem('current_login_user', JSON.stringify(resList.login_user_info))
-            top.window.location.reload()
-            if (tenantName) {
-              sessionStorage.setItem('current_tenant_name', tenantName)
-              setTimeout(() => {
-                document.title = tenantName
-              }, 2000);
+            if (window.confirm("租户登录成功，是否刷新页面？")) {
+              top.window.location.reload()
             }
           }
         }

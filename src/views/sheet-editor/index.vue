@@ -33,10 +33,10 @@
         </div>
         <el-button size="mini" type="primary" @click="refreshData" v-if="childListType !== 'add'">刷新</el-button>
         <el-button size="mini" type="primary" @click="saveData" :disabled="!calcReqData || calcReqData.length == 0"
-          v-if="childListType !== 'add'">
+          v-if="childListType !== 'add'" v-loading="onHandler">
           保存
         </el-button>
-        <el-button size="mini" type="primary" @click="saveColumnWidth"
+        <el-button size="mini" type="primary" @click="saveColumnWidth" v-loading="onHandler"
           :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0" v-if="
             !childListType &&
             calcColumnWidthReq &&
@@ -65,7 +65,7 @@
     <!--    列表为新增子表时不显示分页-->
     <div class="text-center flex justify-between" v-if="childListType !== 'add'">
       <div class="position-relative">
-        <choose-tenant/>
+        <choose-tenant />
       </div>
       <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
         :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
@@ -93,7 +93,7 @@ import { mapState } from "pinia";
 import { useUserStore } from "@/stores/user.js";
 import { buildSrvCols } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
-import { uniqueId, cloneDeep } from "lodash-es";
+import { uniqueId, cloneDeep, throttle } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
@@ -168,6 +168,7 @@ export default {
   },
   data() {
     return {
+      onHandler: false,
       disabled: false,
       initData: null,
       mainData: null,
@@ -698,7 +699,7 @@ export default {
     },
   },
   computed: {
-    ...mapState(useUserStore,['userInfo','tenants']),
+    ...mapState(useUserStore, ['userInfo', 'tenants']),
     setAllFields() {
       // 所有字段
       return this.v2data?.srv_cols || [];
@@ -2409,6 +2410,8 @@ export default {
       setTimeout(() => {
         this.loading = false;
       }, 5000);
+      if(this.onHandler) return
+      this.onHandler =true
       $http.post(url, req).then((res) => {
         if (res?.data?.state === "SUCCESS") {
           this.$message.success(res.data.resultMessage);
@@ -2420,6 +2423,8 @@ export default {
         } else {
           this.$message.error(res.data.resultMessage);
         }
+      }).finally(() => {
+        this.onHandler = false;
       });
     },
     // 更新表字段的最小宽度
@@ -2457,6 +2462,12 @@ export default {
         )
           ? this.addButton?.service_name
           : this.updateButton.service_name;
+          console.log(this.onHandler);
+          
+        if (this.onHandler) {
+          return
+        }
+        this.onHandler = true;
         onBatchOperate(reqData, service, this.srvApp).then((res) => {
           if (res?.state === "SUCCESS") {
             Message({
@@ -2491,7 +2502,11 @@ export default {
               type: "error",
             });
           }
-        });
+        }).finally(() => {
+          setTimeout(() => {
+            this.onHandler = false;
+          }, 2000);
+        })
       }
     },
     /**
