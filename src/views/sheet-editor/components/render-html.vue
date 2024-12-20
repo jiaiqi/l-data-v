@@ -1,125 +1,59 @@
 <template>
-  <div
-    class="render-html"
-    :class="{ 'is-rich-text': useEditor, 'link-to-detail': linkToDetail }"
-    :style="setStyle"
-    v-loading="loadingFold"
-    @dblclick="showRichEditor"
-  >
+  <div class="render-html" :class="{ 'is-rich-text': useEditor, 'link-to-detail': linkToDetail }" :style="setStyle"
+    v-loading="loadingFold" @dblclick="showRichEditor">
     <div class="flex w-full">
-      <div
-        class="prefix-icon"
-        v-if="showUnfold && column.isFirstCol"
-        @click="changeFold"
-      >
+      <div class="prefix-icon" v-if="showUnfold && column.isFirstCol" @click="changeFold">
         <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
         <div class="unfold-icon el-icon-plus" v-else></div>
       </div>
-      <div
-        class="prefix-icon cursor-initial"
-        v-else-if="column.isFirstCol"
-      ></div>
+      <div class="prefix-icon cursor-initial" v-else-if="column.isFirstCol"></div>
       <div class="text" v-html="html" style="" v-if="useEditor && html"></div>
-      <a
-        class="text"
-        v-else-if="keyDispCol && column.columns === keyDispCol"
-        :title="linkToDetail ? '点击查看详情' : ''"
-        @click="toDetail"
-        >{{ html }}</a
-      >
-      <span
-        class="text"
-        style=""
-        v-else-if="![null, undefined, ''].includes(html)"
-        :title="linkToDetail ? '点击查看详情' : ''"
-        @click="toDetail"
-      >
+      <a class="text" v-else-if="keyDispCol && column.columns === keyDispCol" :title="linkToDetail ? '点击查看详情' : ''"
+        @click="toDetail">{{ html }}</a>
+      <span class="text" style="" v-else-if="![null, undefined, ''].includes(html)"
+        :title="linkToDetail ? '点击查看详情' : ''" @click="toDetail">
         {{ html }}
       </span>
-      <div
-        class="old-value"
-        v-else-if="[null, undefined, ''].includes(html) && oldValue"
-        v-html="oldValue"
-      ></div>
+      <div class="old-value" v-else-if="[null, undefined, ''].includes(html) && oldValue" v-html="oldValue"></div>
     </div>
-    <el-button
-      size="mini"
-      class="edit-btn"
-      circle
-      @click.stop="showRichEditor"
-      v-if="useEditor && !disabled"
-      ><i class="el-icon-edit"></i
-    ></el-button>
-    <el-button
-      size="mini"
-      class="edit-btn"
-      circle
-      @click.stop="showTextarea"
-      v-if="'MultilineText' === column.col_type && !disabled"
-      ><i class="el-icon-edit"></i
-    ></el-button>
+    <el-button size="mini" class="edit-btn" circle @click.stop="showRichEditor" v-if="useEditor && !disabled"><i
+        class="el-icon-edit"></i></el-button>
+    <el-button size="mini" class="edit-btn" circle @click.stop="showTextarea"
+      v-if="'MultilineText' === column.col_type && !disabled"><i class="el-icon-edit"></i></el-button>
 
-    <el-dialog
-      :title="editable ? '编辑' : '详情'"
-      :visible.sync="dialogTableVisible"
-      :close-on-press-escape="false"
-      :close-on-click-modal="false"
-      :destroy-on-close="true"
-      append-to-body
-      width="80vw"
-      custom-class="editor-dialog"
-      :key="ticket"
-    >
-      <Toolbar
-        style="border-bottom: 1px solid #ccc"
-        :editor="editor"
-        :defaultConfig="toolbarConfig"
-        :mode="mode"
-        v-if="editable && useEditor && dialogTableVisible"
-        :key="ticket + 1"
-      />
-      <Editor
-        v-if="useEditor && dialogTableVisible"
-        v-model="innerHtml"
-        style="height: 500px; overflow-y: hidden; border-bottom: 1px solid #ccc"
-        :defaultConfig="editorConfig"
-        :disabled="!editable"
-        :mode="mode"
-        @click.stop
-        @onCreated="onCreated"
-        @customPaste="customPaste"
-        :key="ticket + 2"
-      />
-      <el-input
-        type="textarea"
-        :rows="10"
-        :disabled="!editable"
-        placeholder="请输入内容"
-        v-model="innerHtml"
-        v-else
-      >
+    <el-dialog :fullscreen="dialogFullscreen" :title="editable ? '编辑' : '详情'" :visible.sync="dialogTableVisible"
+      :close-on-press-escape="false" :close-on-click-modal="false" :destroy-on-close="true" append-to-body width="80vw"
+      custom-class="editor-dialog" :key="ticket">
+      <Toolbar style="border-bottom: 1px solid #ccc" :editor="editor" :defaultConfig="toolbarConfig" :mode="mode"
+        v-if="editable && useEditor && dialogTableVisible" :key="ticket + 1" />
+      <div v-if="useEditor && dialogTableVisible && !editable" v-html="innerHtml"
+        class="w-full overflow-auto"
+        :style="{ height: dialogFullscreen ? 'calc(100vh - 155px)' : '500px' }"></div>
+      <Editor v-else-if="useEditor && dialogTableVisible" v-model="innerHtml"
+        style=" overflow-y: hidden; border-bottom: 1px solid #ccc" :defaultConfig="editorConfig" :disabled="!editable"
+        :mode="mode" @click.stop @onCreated="onCreated" @customPaste="customPaste" :key="ticket + 2" />
+      <el-input type="textarea" :rows="10" :disabled="!editable" placeholder="请输入内容" v-model="innerHtml" v-else>
       </el-input>
       <div class="text-orange text-center" v-if="!disabled && !editable">
-        当前字段不可编辑
+        <span class="mr-20px">
+          当前字段不可编辑
+        </span>
+        <el-button type="text" @click="dialogFullscreen = !dialogFullscreen">
+          <i class="el-icon-full-screen" v-if="!dialogFullscreen"></i>
+          <i class="el-icon-switch-button" v-else></i>
+          <span v-if="!dialogFullscreen">全屏</span>
+          <span v-else>退出全屏</span>
+        </el-button>
       </div>
       <div class="text-center m-t-5" v-if="!disabled && editable">
-        <el-button
-          type="primary"
-          @click="
-            $emit('change', innerHtml);
-            dialogTableVisible = false;
-          "
-          >确认</el-button
-        >
+        <el-button type="primary" @click="
+          $emit('change', innerHtml);
+        dialogTableVisible = false;
+        ">确认</el-button>
       </div>
     </el-dialog>
-    <el-image
-      style="width: 0; height: 0; overflow: hidden"
-      :src="url"
-      :preview-src-list="srcList"
-      :initial-index="initialIndex"
-      id="imgPreview"
-    >
+    <el-image style="width: 0; height: 0; overflow: hidden" :src="url" :preview-src-list="srcList"
+      :initial-index="initialIndex" id="imgPreview">
     </el-image>
   </div>
 </template>
@@ -269,6 +203,7 @@ export default {
       innerHtml: "",
       unfold: false, //默认收起
       loadingFold: false,
+      dialogFullscreen: false
     };
   },
   methods: {
@@ -305,7 +240,7 @@ export default {
       console.log(eve);
       if (
         eve.target?.offsetParent?.className.indexOf("w-e-image-container") >
-          -1 &&
+        -1 &&
         eve.target.currentSrc
       ) {
         this.url = eve.target.currentSrc;
@@ -391,7 +326,10 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style
+  lang="scss"
+  scoped
+>
 .prefix-icon {
   width: 20px;
   cursor: pointer;
@@ -410,6 +348,7 @@ export default {
   max-height: 100px;
   position: relative;
   display: flex;
+
   .old-value {
     text-decoration: line-through;
     color: #f00;
@@ -456,13 +395,16 @@ export default {
 .editor-dialog {
   z-index: 999;
 }
+
 .link-to-detail {
   a.text {
     color: #409eff;
   }
+
   .text {
     display: contents;
     transition: all 0.2s ease;
+
     &:hover {
       color: #409eff;
       // text-decoration: underline;
