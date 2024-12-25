@@ -12,7 +12,7 @@
     </span>
     <el-dropdown-menu v-if="tenants && tenants.length">
       <el-dropdown-item v-for="(item, index) in tenants" :key="index">
-        <span @click.stop.prevent="setCurrentTenant(item)" :class="{'text-blue': currentTenant && item.tenant_no === currentTenant.tenant_no}">
+        <span class="w-full inline-block" @click.stop.prevent="setCurrentTenant(item)" :class="{'text-blue': currentTenant && item.tenant_no === currentTenant.tenant_no}">
           {{ item.tenant_name }}
         </span>
       </el-dropdown-item>

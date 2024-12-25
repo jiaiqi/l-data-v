@@ -28,8 +28,9 @@
         v-if="editable && useEditor && dialogTableVisible" :key="ticket + 1" />
       <div v-if="useEditor && dialogTableVisible && !editable" v-html="innerHtml"
         class="w-full overflow-auto"
-        :style="{ height: dialogFullscreen ? 'calc(100vh - 155px)' : '500px' }"></div>
+        :style="{ height: dialogFullscreen ? 'calc(100vh - 155px)' : '300px' }"></div>
       <Editor v-else-if="useEditor && dialogTableVisible" v-model="innerHtml"
+        :class="{ 'is-rich-text': true }" :style="{ height: dialogFullscreen ? 'calc(100vh - 155px)' : '300px' }"
         style=" overflow-y: hidden; border-bottom: 1px solid #ccc" :defaultConfig="editorConfig" :disabled="!editable"
         :mode="mode" @click.stop @onCreated="onCreated" @customPaste="customPaste" :key="ticket + 2" />
       <el-input type="textarea" :rows="10" :disabled="!editable" placeholder="请输入内容" v-model="innerHtml" v-else>
