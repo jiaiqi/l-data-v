@@ -1,6 +1,19 @@
 <template>
   <div @dblclick.stop="" class="flex items-center autocomplete-box">
-    <div v-if="isTree && !setDisabled" style="width: 100%">
+    <div
+      v-if="
+        column &&
+        column.redundant_options &&
+        (column.redundant_options.autocompleteInput === true ||
+          column.subtype === 'autocomplete')
+      "
+      class="flex-1 text-left"
+      :class="{ 'cursor-pointer text-blue': linkToDetail }"
+      @click="toDetail"
+    >
+      {{ modelValue }}
+    </div>
+    <div v-else-if="isTree && !setDisabled" style="width: 100%">
       <el-popover
         append-to-body
         placement="bottom-center"
@@ -9,8 +22,9 @@
         @show="onPopoverShow"
         :popper-options="{
           boundariesElement: 'body',
-          removeOnDestroy: true,
+          gpuAcceleration: true,
           positionFixed: true,
+          preventOverflow: true,
         }"
       >
         <span
@@ -181,8 +195,14 @@ export default {
       default: "请选择",
     },
     defaultConditionsMap: Object,
+    detailButton: Object,
   },
   computed: {
+    linkToDetail() {
+      return (
+        this?.column?.linkToDetail === true && this.detailButton?.permission
+      );
+    },
     srvApp() {
       return this.srvInfo?.srv_app || this.app;
     },
@@ -267,6 +287,35 @@ export default {
     }
   },
   methods: {
+    toDetail() {
+      if (this.linkToDetail) {
+        let address = `/vpages/#/detail/${this.srvInfo.serviceName}/${this.row.id}?srvApp=${this.app}`;
+        let tab_title = this.detailButton.service_view_name;
+        let disp_col = this.detailButton._disp_col;
+        let disp_value = this.row[disp_col]; //详情页面上的标签
+        tab_title = tab_title.replace("查询", "");
+        if (disp_value != null && disp_value != undefined && disp_value != "") {
+          tab_title = disp_value + "(" + tab_title + "详情)";
+        } else {
+          tab_title = tab_title + "详情";
+        }
+        let page = {
+          title: tab_title,
+          url: address,
+          icon: "",
+          app: this.app,
+        };
+        if (window.top.tab) {
+          window.top.tab.addTab(page);
+        } else {
+          // 没有tab实例，在浏览器中打开新标签页
+          const page = window.open(address);
+          setTimeout(() => {
+            page.document.title = tab_title;
+          }, 500);
+        }
+      }
+    },
     onFocus() {
       console.log("onfocus");
       this.$emit("onfocus");
@@ -665,6 +714,9 @@ export default {
 </script>
 
 <style lang="scss">
+.el-popover {
+  position: fixed;
+}
 .el-autocomplete-suggestion.el-popper {
   min-width: 200px !important;
 }

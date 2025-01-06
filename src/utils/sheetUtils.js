@@ -120,6 +120,12 @@ const buildSrvCols = (
           ...fkCols[dependField],
         };
       }
+      if(col?.col_type === "String" && col?.redundant?.dependField){
+        col.redundant_options = {
+          ...fkCols[dependField],
+          autocompleteInput:true,
+        };
+      }
       switch (col.bx_col_type) {
         case "fk":
           col.editType = "dropdownFk";

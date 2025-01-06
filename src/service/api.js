@@ -277,8 +277,9 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
     });
   }
   req.condition = conditions;
-  if (option_list_v2?.is_tree === true) {
+  if (option_list_v2?.autocompleteInput!==true && option_list_v2?.is_tree === true) {
     req.rdt = "ttd";
+    delete req.page;
   }
   if (option_list_v2.serviceName) {
     let url = `${app}/select/${option_list_v2.serviceName}`;

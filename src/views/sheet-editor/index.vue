@@ -1736,6 +1736,7 @@ export default {
                       app: this.srvApp,
                       value: row[column.field],
                       defaultConditionsMap: this.defaultConditionsMap,
+                      detailButton: this.detailButton,
                     },
                     on: {
                       onfocus: () => {
