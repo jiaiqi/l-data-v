@@ -334,3 +334,69 @@ export function parseUrlParams(url) {
   });
   return params;
 }
+
+/**
+ * 提取一串字符中的日期字符串
+ * @param {*} str 
+ * @returns 
+ */
+export function extractDates(str) {
+  const datePattern = /(\d{4})(\/|-)?(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])/g;
+  let matches = str.match(datePattern);
+  return matches ? matches : [];
+}
+
+/**
+ * 匹配 YYYYMMDD, YYYY/MM/DD, YYYY-MM-DD 或者 Unix 时间戳 (10 or 13 digits)
+ * @param {*} str 
+ * @returns 
+ */
+export function extractAndFormatDatesOrTimestamps(str) {
+  // 匹配 YYYYMMDD, YYYY/MM/DD, YYYY-MM-DD 或者 Unix 时间戳 (10 or 13 digits)
+  const dateOrTimestampPattern = /(\d{4})(\/|-)?(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])|\b\d{10}(?:\d{3})?\b/g;
+  let matches, formattedResults = [];
+
+  while (matches = dateOrTimestampPattern.exec(str)) {
+    if (matches[1]) { // 如果是日期格式
+      // 组合日期部分，确保使用斜杠作为分隔符
+      let formattedDate = `${matches[1]}/${matches[3]}/${matches[4]}`;
+      formattedResults.push(formattedDate);
+    } else { // 如果是时间戳
+      // 将时间戳转换为 YYYY/MM/DD 格式
+      let timestamp = parseInt(matches[0], 10);
+      let date = new Date(timestamp);
+      let formattedDate = date.toISOString().split('T')[0].replace(/-/g, '/');
+      formattedResults.push(formattedDate);
+    }
+  }
+
+  return formattedResults;
+}
+
+/**从字符串中提取数字  */
+export function extractConcatNumbersWithSingleDecimal(str) {
+  // 正则表达式用于匹配整数或小数（确保小数点前后都是数字）
+  const numberPattern = /\d+(\.\d+)?/g;
+  let matches = str.match(numberPattern);
+  if (!matches) return '';
+
+  // 用于构建最终结果的变量
+  let result = '';
+  let decimalPointSeen = false;
+
+  matches.forEach(match => {
+    // 遍历每个匹配项，处理其中的小数点
+    for (let i = 0; i < match.length; i++) {
+      if (match[i] === '.' && !decimalPointSeen) {
+        // 如果遇到第一个小数点，则保留它
+        decimalPointSeen = true;
+        result += match[i];
+      } else if (match[i] !== '.') {
+        // 只添加数字字符
+        result += match[i];
+      }
+    }
+  });
+
+  return result;
+}

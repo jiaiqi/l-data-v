@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 import legacy from "@vitejs/plugin-legacy";
 import vue2 from "@vitejs/plugin-vue2";
 import UnoCSS from "unocss/vite";
-import { VitePWA } from 'vite-plugin-pwa';
+// import { VitePWA } from 'vite-plugin-pwa';
 // import { createRequire } from 'node:module';
 // import vueDevTools from 'vite-plugin-vue-devtools'
 // const require = createRequire( import.meta.url );

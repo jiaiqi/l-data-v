@@ -1,12 +1,16 @@
 <template>
-  <div class="file-list">
+  <div class="file-list" @dblclick.stop.capture="showDialog">
     <div class="edit-icon">
       <el-button size="mini" class="edit-btn" circle @click="showDialog"
         ><i class="el-icon-upload2"></i
       ></el-button>
     </div>
     <div v-if="setColumn && setColumn._obj_info">
-      <file-list :data="row" :field="setColumn"></file-list>
+      <file-list
+        :data="row"
+        :field="setColumn"
+        :file-list="fileList"
+      ></file-list>
     </div>
     <div v-else-if="isImage && getImageUrl">
       <el-image
@@ -17,7 +21,7 @@
       >
       </el-image>
     </div>
-  
+
     <div class="file-no" v-else>{{ value || "" }}</div>
 
     <el-dialog
@@ -63,6 +67,7 @@
 <script>
 import { $http } from "../../../common/http";
 import FileList from "./file-list.vue";
+import { cloneDeep } from "lodash-es";
 export default {
   components: {
     FileList,
@@ -85,6 +90,9 @@ export default {
         obj._obj_info = this.column.option_list_v2.obj_info;
       }
       return obj;
+    },
+    objInfo() {
+      return this.setColumn?._obj_info;
     },
     srcList() {
       if (this.fileList?.length) {
@@ -164,6 +172,7 @@ export default {
       if (res?.data?.state === "SUCCESS") {
         this.fileList = res.data.data.map((item) => {
           return {
+            ...item,
             name: item.src_name,
             file_type: item.file_type,
             url: `${window.backendIpAddr}/file/download?filePath=${
@@ -175,13 +184,60 @@ export default {
         if (this.fileList.length === 0) {
           this.$emit("change", null);
         }
+        return res.data.data;
       }
+    },
+    setObjInfo(fileList) {
+      const objInfo = this.objInfo;
+      let field = { ...this.setColumn };
+      if (objInfo?.a_save_b_cols && objInfo?.a_save_b_obj_col) {
+        // fk字段值改变后，更新其obj_info中配置的的a_save_b_obj_col
+        const cols = objInfo?.a_save_b_cols.split(",");
+        let obj = [];
+        let objStr = "";
+        if (fileList?.length && cols?.length) {
+          fileList.forEach((fileItem) => {
+            let newValue = cloneDeep(fileItem);
+            if (fileItem?.response?.fileurl) {
+              newValue = { ...newValue?.response };
+            }
+            if (cols?.includes("*") && newValue?.fileurl) {
+              obj.push(cloneDeep(newValue));
+            } else {
+              let objItem = {};
+              cols.forEach((col) => {
+                objItem[col] = newValue[col];
+              });
+              obj.push(objItem);
+            }
+          });
+        }
+        objStr = JSON.stringify(obj);
+        if (objStr === "[]") {
+          objStr = "";
+        }
+        let objCol = {
+          type: "a_save_b_obj",
+          col: objInfo.a_save_b_obj_col,
+          val: objStr,
+        };
+        console.log("更新obj_info", objCol);
+        // 将更新的字段信息保存在_obj_col上，方便在form中获取
+        field["_obj_col"] = objCol;
+      } else if (field?._obj_col?.val) {
+        // 清空通过_obj_col保存的值
+        field["_obj_col"]["val"] = null;
+      }
+      this.$emit("change", this.modelValue, field);
     },
     handleUploadSuccess(response, file, fileList) {
       if (response?.file_no) {
         this.modelValue = response?.file_no;
         this.$nextTick(() => {
-          // this.getFileList();
+          this.getFileList().then((res) => {
+            debugger
+            this.setObjInfo(res);
+          });
         });
       }
     },
@@ -326,22 +382,22 @@ export default {
 <style lang="scss">
 .file-list {
   text-align: left;
-  min-height: 30px;
+  min-height: 100px;
   height: 100%;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-
   .edit-icon {
     position: absolute;
-    bottom: 10px;
-    right: 20px;
-    // top: calc(50% - 20px);
-    // right: calc(50% - 10px);
+    // bottom: 10px;
+    // right: 20px;
+    top: calc(50% - 20px);
+    right: calc(50% - 10px);
     width: 20px;
     height: 20px;
     display: none;
+    z-index: 99;
   }
 
   &:hover {

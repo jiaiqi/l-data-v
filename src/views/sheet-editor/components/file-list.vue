@@ -5,13 +5,13 @@
         <span v-if="isImage(item)" @click="onPreView(item, index)">
           <i class="el-icon-picture m-r-1" title="预览"></i>
           <span>
-            {{ item.src_name }}
+            {{ item.src_name || item.name }}
           </span>
         </span>
         <span v-else-if="isPDF(item)" @click="onPreView(item, index)">
           <i class="el-icon-document m-r-1" title="预览"></i>
           <span>
-            {{ item.src_name }}
+            {{ item.src_name||item.name }}
           </span>
         </span>
         <span v-else>
@@ -42,7 +42,7 @@
     </viewer> -->
     <el-image
       style="width: 0; height: 0"
-      :src="imgUrls[0]"
+      :src="imgUrls[curIndex]"
       ref="elImage"
       :preview-src-list="imgUrls"
       v-if="imgUrls && imgUrls.length > 0"
@@ -66,10 +66,17 @@ export default {
         return {};
       },
     },
+    fileList: {
+      type: Array,
+      default: () => {
+        return [];
+      },
+    },
   },
   data() {
     return {
       imgUrl: "",
+      curIndex:-1,
     };
   },
   computed: {
@@ -97,11 +104,14 @@ export default {
             isImage: this.isImage(item),
           };
         });
+      }else if(Array.isArray(this.fileList)&& this.fileList.length){
+        return this.fileList
       }
     },
   },
   methods: {
     onPreView(file = {}, index) {
+      this.curIndex = index
       if (this.isImage(file)) {
         this.$refs.elImage.showViewer = true
         // this.$refs.elImage
@@ -163,6 +173,7 @@ export default {
   flex-direction: column;
   justify-content: flex-start;
   max-height: 100px;
+  width: 100%;
 }
 .file-item {
   width: 100%;

@@ -3,6 +3,7 @@
     <div
       v-if="
         column &&
+        linkToDetail &&
         column.redundant_options &&
         (column.redundant_options.autocompleteInput === true ||
           column.subtype === 'autocomplete')

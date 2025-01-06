@@ -1,26 +1,56 @@
 <template>
   <div class="spreadsheet flex flex-col">
-    <loading-view v-if="loading" mask type="surround" :maskOpacity="0.2" showText textColor="#fff"></loading-view>
-    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full" v-if="disabled !== true">
-      <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
+    <loading-view
+      v-if="loading"
+      mask
+      type="surround"
+      :maskOpacity="0.2"
+      showText
+      textColor="#fff"
+    ></loading-view>
+    <div
+      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full"
+      v-if="disabled !== true"
+    >
+      <div
+        class="flex flex-1 items-center text-sm"
+        v-if="addButton && addButton.service_name"
+      >
         <div class="m-r-2">添加</div>
-        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
+        <el-input-number
+          size="mini"
+          v-model="insertRowNumber"
+          style="width: 100px"
+        />
         <div class="m-x-2">行</div>
-        <el-button size="mini" type="primary" @click="batchInsertRows" :disabled="insertRowNumber === 0">添加
+        <el-button
+          size="mini"
+          type="primary"
+          @click="batchInsertRows"
+          :disabled="insertRowNumber === 0"
+          >添加
         </el-button>
       </div>
       <div class="text-sm text-gray cursor-not-allowed" v-else>
         没有添加权限
       </div>
       <div flex-1>
-        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
+        <el-radio-group
+          v-model="listType"
+          @input="listTypeChange"
+          size="mini"
+          v-if="isTree"
+        >
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
       </div>
 
       <div class="flex flex-items-center flex-1 justify-end">
-        <div class="color-map flex flex-items-center m-r-20" v-if="childListType !== 'add'">
+        <div
+          class="color-map flex flex-items-center m-r-20"
+          v-if="childListType !== 'add'"
+        >
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
             <div class="color bg-[#67c23a] w-4 h-4 m-r-2 rounded"></div>
@@ -31,51 +61,113 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <el-button size="mini" type="primary" @click="refreshData" v-if="childListType !== 'add'">刷新</el-button>
-        <el-button size="mini" type="primary" @click="saveData" :disabled="!calcReqData || calcReqData.length == 0"
-          v-if="childListType !== 'add'" v-loading="onHandler">
+        <el-button
+          size="mini"
+          type="primary"
+          @click="refreshData"
+          v-if="childListType !== 'add'"
+          >刷新</el-button
+        >
+        <el-button
+          size="mini"
+          type="primary"
+          @click="saveData"
+          :disabled="!calcReqData || calcReqData.length == 0"
+          v-if="childListType !== 'add'"
+          v-loading="onHandler"
+        >
           保存
         </el-button>
-        <el-button size="mini" type="primary" @click="saveColumnWidth" v-loading="onHandler"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0" v-if="
+        <el-button
+          size="mini"
+          type="primary"
+          @click="saveColumnWidth"
+          v-loading="onHandler"
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
+          v-if="
             !childListType &&
             calcColumnWidthReq &&
             calcColumnWidthReq.length > 0
-          ">保存列宽
+          "
+          >保存列宽
         </el-button>
       </div>
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
-      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
-        style="word-break: break-word; width: 100vw; height: 100%" max-height="calc(100vh - 40px)" fixed-header />
+      <ve-table
+        :columns="columns"
+        border-x
+        border-y
+        :table-data="tableData"
+        v-if="disabled"
+        ref="tableRef"
+        style="word-break: break-word; width: 100vw; height: 100%"
+        max-height="calc(100vh - 40px)"
+        fixed-header
+      />
       <div class="custom-style" v-else>
-        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)"
-          fixed-header :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+        <ve-table
+          ref="tableRef"
+          style="word-break: break-word; width: 100vw"
+          max-height="calc(100vh - 80px)"
+          fixed-header
+          :scroll-width="0"
+          border-y
+          :columns="columns"
+          :table-data="tableData"
+          row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption"
+          :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption"
+          :edit-option="editOption"
+          :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption"
+          :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption"
+          :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption"
+          :columnHiddenOption="columnHiddenOption"
+        />
       </div>
     </div>
-    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">
+    <div
+      class="empty-data"
+      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
+    >
       暂无数据
     </div>
     <!--    列表为新增子表时不显示分页-->
-    <div class="text-center flex justify-between" v-if="childListType !== 'add'">
+    <div
+      class="text-center flex justify-between"
+      v-if="childListType !== 'add'"
+    >
       <div class="position-relative">
         <choose-tenant />
       </div>
-      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
-        :total="page.total">
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]"
+        :page-size="page.rownumber"
+        layout="total, sizes, pager,  jumper"
+        :total="page.total"
+      >
       </el-pagination>
       <div class=""></div>
     </div>
 
-    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-      " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
+    <select-parent-node
+      ref="changeParentRef"
+      :topTreeData="topTreeData"
+      :srvApp="srvApp"
+      :options="
+        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+      "
+      :option-info="parentColOption"
+      @confirm="updateParentNo"
+    ></select-parent-node>
 
     <login-dialog ref="loginRef"></login-dialog>
   </div>
@@ -109,7 +201,11 @@ import { processStrings, appendNumber } from "../../common/common";
 import IconFold from "../../components/icons/icon-fold.vue";
 import IconUnfold from "../../components/icons/icon-unfold.vue";
 import LoadingView from "./components/loading/index.vue";
-import ChooseTenant from './components/choose-tenant/index.vue'
+import ChooseTenant from "./components/choose-tenant/index.vue";
+import {
+  extractAndFormatDatesOrTimestamps,
+  extractConcatNumbersWithSingleDecimal,
+} from "@/common/DataUtil.js";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
@@ -164,7 +260,7 @@ export default {
     selectParentNode,
     loginDialog,
     LoadingView,
-    ChooseTenant
+    ChooseTenant,
   },
   data() {
     return {
@@ -413,16 +509,42 @@ export default {
       clipboardOption: {
         beforePaste: ({ data, selectionRangeIndexes, selectionRangeKeys }) => {
           console.log(selectionRangeIndexes);
-
           if (Array.isArray(data) && data?.length) {
             let isValid = true;
             for (let index = 0; index < data.length; index++) {
               const element = data[index];
+              const realIndex = selectionRangeIndexes["startRowIndex"] + index;
               this.columns.forEach((col) => {
+                const oldVal = this.oldTableData[realIndex][col.field];
                 const colType = col?.__field_info?.col_type;
                 if (colType) {
                   const changeValue = element[col.field];
                   if (changeValue) {
+                    if (["DateTime", "Date"].includes(colType)) {
+                      // 日期时间类型格式化
+                      let dateArr =
+                        extractAndFormatDatesOrTimestamps(changeValue);
+                      if (changeValue && Array.isArray(dateArr) && dateArr.length) {
+                        let dateStr = dateArr[0];
+                        element[col.field] = dateStr;
+                      } else {
+                        let dateArr = extractAndFormatDatesOrTimestamps(oldVal);
+                        if (
+                          oldVal &&
+                          Array.isArray(dateArr) &&
+                          dateArr.length
+                        ) {
+                          element[col.field] = oldVal;
+                        } else {
+                          element[col.field] = null;
+                        }
+                        // isValid = false;
+                        this.$message({
+                          message: "非日期类型字符串",
+                          type: "warning",
+                        });
+                      }
+                    }
                     if (
                       ["Integer", "Float", "Money", "int", "Int"].includes(
                         colType
@@ -430,16 +552,29 @@ export default {
                       colType.includes("decimal")
                     ) {
                       // 校验数字
-                      if (
-                        isNaN(Number(changeValue))
-                        // /^-?\d{1,100}(,\d{3})*(\.\d{1,10})?$/.test(changeValue) !==
-                        // true
-                      ) {
-                        isValid = false;
+                      if (!extractConcatNumbersWithSingleDecimal(changeValue)) {
+                        // isValid = false;
+                        element[col.field] = null;
+                        let val = null;
+                        if (
+                          !Number.isNaN(oldVal) ||
+                          extractConcatNumbersWithSingleDecimal(oldVal)
+                        ) {
+                          val = Number(oldVal);
+                        }
+                        element[col.field] = val;
                         this.$message({
                           message: "请输入数字",
                           type: "warning",
                         });
+                      } else {
+                        let valStr =
+                          extractConcatNumbersWithSingleDecimal(changeValue);
+                        if (["Int", "int", "Integer"].includes(colType)) {
+                          element[col.field] = parseInt(valStr);
+                        } else {
+                          element[col.field] = parseFloat(valStr);
+                        }
                       }
                     }
                   }
@@ -699,7 +834,7 @@ export default {
     },
   },
   computed: {
-    ...mapState(useUserStore, ['userInfo', 'tenants']),
+    ...mapState(useUserStore, ["userInfo", "tenants"]),
     setAllFields() {
       // 所有字段
       return this.v2data?.srv_cols || [];
@@ -743,19 +878,22 @@ export default {
             !isNaN(parseFloat(this.columnWidthMap[key].width))
           ) {
             let serviceName = this.columnWidthMap[key].fieldInfo.service_name;
-            const addService = this.addColsMap?.[key]?.service_name
-            const updateService = this.updateColsMap?.[key]?.service_name
+            const addService = this.addColsMap?.[key]?.service_name;
+            const updateService = this.updateColsMap?.[key]?.service_name;
             if (addService && !serviceName.includes(addService)) {
-              serviceName += `,${addService}`
+              serviceName += `,${addService}`;
             }
             if (updateService && !serviceName.includes(updateService)) {
-              serviceName += `,${updateService}`
+              serviceName += `,${updateService}`;
             }
             if (this.serviceName && !serviceName.includes(this.serviceName)) {
-              serviceName += `,${this.serviceName}`
+              serviceName += `,${this.serviceName}`;
             }
-            if (this.v2data?.service_name && !serviceName.includes(this.v2data?.service_name)) {
-              serviceName += `,${this.v2data?.service_name}`
+            if (
+              this.v2data?.service_name &&
+              !serviceName.includes(this.v2data?.service_name)
+            ) {
+              serviceName += `,${this.v2data?.service_name}`;
             }
             arr.push({
               serviceName: "srvsys_service_columns_query_update",
@@ -890,16 +1028,19 @@ export default {
             });
 
             // 删除选中行数据
-            let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-              }至第${selectionRangeIndexes.endRowIndex + 1
-              }行数据，是否继续操作？`;
+            let text = `此操作将永久删除该第${
+              selectionRangeIndexes.startRowIndex + 1
+            }至第${
+              selectionRangeIndexes.endRowIndex + 1
+            }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
-              selectionRangeIndexes.startRowIndex ==
+                selectionRangeIndexes.startRowIndex ==
               0
             ) {
-              text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-                }行数据，是否继续操作？`;
+              text = `此操作将永久删除该第${
+                selectionRangeIndexes.startRowIndex + 1
+              }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -1204,7 +1345,7 @@ export default {
         if (typeof data === "string") {
           data = JSON.parse(data);
         }
-      } catch (e) { }
+      } catch (e) {}
       console.log("child-listener", data);
       if (data?.childListCfg) {
         console.log("childListCfg", data.childListCfg);
@@ -1858,6 +1999,18 @@ export default {
                   if (this.disabled) {
                     return row[column.field] || "";
                   }
+                  function setWidth(type) {
+                    let width = 130;
+                    switch (type) {
+                      case "DateTime":
+                        width = 180;
+                        break;
+                      case "Date":
+                        width = 136;
+                        break;
+                    }
+                    return width;
+                  }
                   return h("el-date-picker", {
                     attrs: {
                       disabled:
@@ -1870,8 +2023,7 @@ export default {
                         : "",
                       size: "mini",
                       type: item.col_type.toLowerCase(),
-                      style: `width:${item.col_type === "DateTime" ? 180 : 130
-                        }px;`,
+                      style: `width:${setWidth(item.col_type)}px;`,
                       valueFormat:
                         item.col_type === "DateTime"
                           ? "yyyy-MM-dd HH:mm:ss"
@@ -1915,8 +2067,8 @@ export default {
                   if (this.disabled) {
                     return row[column.field]
                       ? item.option_list_v2.find(
-                        (e) => e.value === row[column.field]
-                      )?.label || ""
+                          (e) => e.value === row[column.field]
+                        )?.label || ""
                       : "";
                   }
                   return h(
@@ -2027,7 +2179,33 @@ export default {
                       app: this.srvApp,
                     },
                     on: {
-                      change: (event) => {
+                      change: (event, field) => {
+                        if (
+                          field?._obj_col &&
+                          field._obj_col.col &&
+                          field._obj_col.type === "a_save_b_obj"
+                        ) {
+                          this.$set(
+                            row,
+                            field._obj_col.col,
+                            field._obj_col.val
+                          );
+                          this.$set(
+                            row,
+                            "__flag",
+                            row.__flag === "add" ? "add" : "update"
+                          );
+                          debugger;
+                          console.log("data-change:", row, column.field, event);
+                          this.$refs["tableRef"].startEditingCell({
+                            rowKey: row.rowKey,
+                            colKey: column.field,
+                            defaultValue: event || null,
+                          });
+                          this.$refs["tableRef"].stopEditingCell();
+                          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                          return;
+                        }
                         this.$set(row, column.field, event);
                         this.$set(
                           row,
@@ -2075,7 +2253,7 @@ export default {
                       app: this.srvApp,
                       serviceName: this.serviceName,
                       detailButton: this.detailButton,
-                      keyDispCol: this.v2data?.key_disp_col
+                      keyDispCol: this.v2data?.key_disp_col,
                     },
                     on: {
                       needLogin: (callback) => {
@@ -2139,12 +2317,16 @@ export default {
           if (fixedCol?.includes(item.key)) {
             item.fixed = "left";
             if (fixedCol?.indexOf(item.key) === 0) {
-              item.linkToDetail = true
+              item.linkToDetail = true;
             }
           }
-          if (this.v2data?.key_disp_col && item.key === this.v2data?.key_disp_col && this.v2data?.key_disp_col !== 'id') {
+          if (
+            this.v2data?.key_disp_col &&
+            item.key === this.v2data?.key_disp_col &&
+            this.v2data?.key_disp_col !== "id"
+          ) {
             // key_disp_col
-            item.linkToDetail = true
+            item.linkToDetail = true;
           }
           return item;
         });
@@ -2411,22 +2593,25 @@ export default {
       setTimeout(() => {
         this.loading = false;
       }, 5000);
-      if(this.onHandler) return
-      this.onHandler =true
-      $http.post(url, req).then((res) => {
-        if (res?.data?.state === "SUCCESS") {
-          this.$message.success(res.data.resultMessage);
-          this.updateTableColumn();
-          this.columnWidthMap = {};
-          this.getV2Data(true).then(() => {
-            this.loading = false;
-          });
-        } else {
-          this.$message.error(res.data.resultMessage);
-        }
-      }).finally(() => {
-        this.onHandler = false;
-      });
+      if (this.onHandler) return;
+      this.onHandler = true;
+      $http
+        .post(url, req)
+        .then((res) => {
+          if (res?.data?.state === "SUCCESS") {
+            this.$message.success(res.data.resultMessage);
+            this.updateTableColumn();
+            this.columnWidthMap = {};
+            this.getV2Data(true).then(() => {
+              this.loading = false;
+            });
+          } else {
+            this.$message.error(res.data.resultMessage);
+          }
+        })
+        .finally(() => {
+          this.onHandler = false;
+        });
     },
     // 更新表字段的最小宽度
     updateTableColumn() {
@@ -2463,51 +2648,53 @@ export default {
         )
           ? this.addButton?.service_name
           : this.updateButton.service_name;
-          console.log(this.onHandler);
-          
+        console.log(this.onHandler);
+
         if (this.onHandler) {
-          return
+          return;
         }
         this.onHandler = true;
-        onBatchOperate(reqData, service, this.srvApp).then((res) => {
-          if (res?.state === "SUCCESS") {
-            Message({
-              showClose: true,
-              message: res.resultMessage,
-              type: "success",
-            });
-            console.log(res);
-            if (this.listType === "treelist" && this.treeInfo.idCol) {
-              let unfoldIds = this.tableData
-                .filter((item) => !!item?.__unfold)
-                .map((item) => item[this.treeInfo.idCol]);
-              if (unfoldIds?.length) {
-                this.getList(true, unfoldIds);
-                return;
+        onBatchOperate(reqData, service, this.srvApp)
+          .then((res) => {
+            if (res?.state === "SUCCESS") {
+              Message({
+                showClose: true,
+                message: res.resultMessage,
+                type: "success",
+              });
+              console.log(res);
+              if (this.listType === "treelist" && this.treeInfo.idCol) {
+                let unfoldIds = this.tableData
+                  .filter((item) => !!item?.__unfold)
+                  .map((item) => item[this.treeInfo.idCol]);
+                if (unfoldIds?.length) {
+                  this.getList(true, unfoldIds);
+                  return;
+                }
               }
-            }
-            this.getList();
-          } else if (res?.resultMessage) {
-            if (res.resultCode === "0011") {
-              this.$refs?.loginRef?.open(() => {
-                this.initPage(false).then(() => {
-                  if (!this.tableData.length) {
-                    this.getList();
-                  }
+              this.getList();
+            } else if (res?.resultMessage) {
+              if (res.resultCode === "0011") {
+                this.$refs?.loginRef?.open(() => {
+                  this.initPage(false).then(() => {
+                    if (!this.tableData.length) {
+                      this.getList();
+                    }
+                  });
                 });
+              }
+              Message({
+                showClose: true,
+                message: res.resultMessage,
+                type: "error",
               });
             }
-            Message({
-              showClose: true,
-              message: res.resultMessage,
-              type: "error",
-            });
-          }
-        }).finally(() => {
-          setTimeout(() => {
-            this.onHandler = false;
-          }, 2000);
-        })
+          })
+          .finally(() => {
+            setTimeout(() => {
+              this.onHandler = false;
+            }, 2000);
+          });
       }
     },
     /**
@@ -2913,8 +3100,8 @@ export default {
         const use_type = this.colSrv?.includes("_add")
           ? "add"
           : this.colSrv?.includes("_update")
-            ? "update"
-            : "list";
+          ? "update"
+          : "list";
         const res = await getServiceV2(
           this.colSrv,
           use_type,
@@ -3005,7 +3192,7 @@ export default {
                       moreConfig.query_init_value;
                   }
                 }
-              } catch (error) { }
+              } catch (error) {}
             }
             return item;
           });
@@ -3048,7 +3235,7 @@ export default {
       this.startRowIndex = startRowIndex;
     },
     // 取消监听撤销重做事件
-    unbindKeyboardEvent() { },
+    unbindKeyboardEvent() {},
     /**
      * @description 绑定ctrl+z ctrl+y事件
      * @param {*} callBackCZ 撤销/回退事件
