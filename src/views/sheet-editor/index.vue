@@ -2195,7 +2195,6 @@ export default {
                             "__flag",
                             row.__flag === "add" ? "add" : "update"
                           );
-                          debugger;
                           console.log("data-change:", row, column.field, event);
                           this.$refs["tableRef"].startEditingCell({
                             rowKey: row.rowKey,
