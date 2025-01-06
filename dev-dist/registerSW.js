@@ -1,1 +1,0 @@
-if('serviceWorker' in navigator) navigator.serviceWorker.register('/dataview/dev-sw.js?dev-sw', { scope: '/dataview/', type: 'classic' })
