@@ -312,7 +312,7 @@ export default {
               console.log("bodyCellEvents::", row, column, rowIndex, event);
               this.cleft = event.x + "px";
               this.ctop = event.y + "px";
-            },
+            }
           };
         },
         bodyRowEvents: ({ row, rowIndex }) => {
@@ -524,7 +524,11 @@ export default {
                       // 日期时间类型格式化
                       let dateArr =
                         extractAndFormatDatesOrTimestamps(changeValue);
-                      if (changeValue && Array.isArray(dateArr) && dateArr.length) {
+                      if (
+                        changeValue &&
+                        Array.isArray(dateArr) &&
+                        dateArr.length
+                      ) {
                         let dateStr = dateArr[0];
                         element[col.field] = dateStr;
                       } else {
@@ -695,7 +699,10 @@ export default {
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
           // console.log("beforeStartCellEditing：",row,column, cellValue);
-
+          if (column?.__field_info?.col_type === "FileList") {
+            this.$message.warning("附件类型不支持直接编辑，请点击上传按钮进行操作");
+            return false;
+          }
           let oldRowData = this.oldTableData.find(
             (item) => item.__id === row.__id
           );

@@ -382,7 +382,7 @@ export default {
 <style lang="scss">
 .file-list {
   text-align: left;
-  min-height: 100px;
+  min-height: 30px;
   height: 100%;
   position: relative;
   display: flex;

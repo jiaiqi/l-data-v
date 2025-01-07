@@ -11,7 +11,7 @@
         <span v-else-if="isPDF(item)" @click="onPreView(item, index)">
           <i class="el-icon-document m-r-1" title="预览"></i>
           <span>
-            {{ item.src_name||item.name }}
+            {{ item.src_name || item.name }}
           </span>
         </span>
         <span v-else>
@@ -76,7 +76,7 @@ export default {
   data() {
     return {
       imgUrl: "",
-      curIndex:-1,
+      curIndex: -1,
     };
   },
   computed: {
@@ -104,39 +104,24 @@ export default {
             isImage: this.isImage(item),
           };
         });
-      }else if(Array.isArray(this.fileList)&& this.fileList.length){
-        return this.fileList
+      } else if (Array.isArray(this.fileList) && this.fileList.length) {
+        return this.fileList;
       }
     },
   },
   methods: {
     onPreView(file = {}, index) {
-      this.curIndex = index
+      this.curIndex = index;
       if (this.isImage(file)) {
-        this.$refs.elImage.showViewer = true
-        // this.$refs.elImage
-        // const viewer2 = this.$el.querySelector(".image-" + file.file_no);
-        // let imgIndex = index || 0;
-        // this.imageList.forEach((item, i) => {
-        //   if (item.file_no && item.file_no == file.file_no) {
-        //     imgIndex = i;
-        //   }
-        // });
-        // const viewer = this.$refs.viewer.$viewer;
-        // viewer.index = imgIndex;
-        // console.log(viewer, imgIndex, viewer2, this.$refs.viewer);
-        // viewer.show();
+        this.$refs.elImage.showViewer = true;
       } else if (file.file_type === "pdf") {
-        let currLocation = top.window.location.href;
-        let hashIndex = currLocation.indexOf("#");
-        if (hashIndex > 0) {
-          let pdfPreviewUrl =
-            currLocation.substring(0, hashIndex) +
-            "#/viewpdf?pdfsrc=" +
-            encodeURIComponent(file.url);
-          this.addTabByUrl(pdfPreviewUrl, "文件预览");
-          return;
-        }
+        let pdfPreviewUrl = `/vpages/#/viewpdf?pdfsrc=${encodeURIComponent(
+          file.url
+        )}`;
+        this.addTabByUrl(
+          pdfPreviewUrl,
+          file.src_name ? `【${file.src_name}】预览` : "文件预览"
+        );
       } else {
         // window.location.href = file.url;
         this.$message({
