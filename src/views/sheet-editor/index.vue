@@ -192,7 +192,7 @@ import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
 import FileUpload from "./components/file-upload.vue";
 import selectParentNode from "./components/select-parent-node.vue";
-import fkAutocomplate from "./components/fk-autocomplate.vue";
+import fkAutocomplete from "./components/fk-autocomplete.vue";
 import { RecordManager } from "./util/recordManager.js";
 import { Loading } from "element-ui";
 import { $http } from "../../common/http";
@@ -312,7 +312,7 @@ export default {
               console.log("bodyCellEvents::", row, column, rowIndex, event);
               this.cleft = event.x + "px";
               this.ctop = event.y + "px";
-            }
+            },
           };
         },
         bodyRowEvents: ({ row, rowIndex }) => {
@@ -532,16 +532,16 @@ export default {
                         let dateStr = dateArr[0];
                         element[col.field] = dateStr;
                       } else {
-                        let dateArr = extractAndFormatDatesOrTimestamps(oldVal);
-                        if (
-                          oldVal &&
-                          Array.isArray(dateArr) &&
-                          dateArr.length
-                        ) {
-                          element[col.field] = oldVal;
-                        } else {
-                          element[col.field] = null;
-                        }
+                        // let dateArr = extractAndFormatDatesOrTimestamps(oldVal);
+                        // if (
+                        //   oldVal &&
+                        //   Array.isArray(dateArr) &&
+                        //   dateArr.length
+                        // ) {
+                        //   element[col.field] = oldVal;
+                        // } else {
+                        //   element[col.field] = null;
+                        // }
                         // isValid = false;
                         this.$message({
                           message: "非日期类型字符串",
@@ -683,6 +683,13 @@ export default {
               return false;
             }
           }
+          if (["DateTime", "Date"].includes(colType)) {
+            // 日期时间类型格式化
+            let dateArr = extractAndFormatDatesOrTimestamps(changeValue);
+            if (!Array.isArray(dateArr) || !dateArr?.length) {
+              return false;
+            }
+          }
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
             colType.includes("decimal")
@@ -699,10 +706,8 @@ export default {
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
           // console.log("beforeStartCellEditing：",row,column, cellValue);
-          if (column?.__field_info?.col_type === "FileList") {
-            this.$message.warning("附件类型不支持直接编辑，请点击上传按钮进行操作");
-            return false;
-          }
+          const colType = column?.__field_info?.col_type;
+
           let oldRowData = this.oldTableData.find(
             (item) => item.__id === row.__id
           );
@@ -729,8 +734,8 @@ export default {
           // if (row.__flag !== "add" && !row?._buttons[editBtnIndex]) {
           if (
             row.__flag !== "add" &&
-            !row?.__button_auth?.edit &&
-            oldRowData?.[column.field] !== row[column.field]
+            !row?.__button_auth?.edit 
+            //&& oldRowData?.[column.field] !== row[column.field]
           ) {
             Message.error("没有当前行的编辑权限！");
             if (oldRowData) {
@@ -745,6 +750,10 @@ export default {
               this.$refs["tableRef"].stopEditingCell();
               this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
             });
+            return false;
+          }
+          if (["FileList","Image"].includes(colType)) {
+            this.$message.warning(`【${colType}】类型字段不支持双击进行编辑`);
             return false;
           }
         },
@@ -776,7 +785,6 @@ export default {
 
             if (!changeValue) {
               // 清空值后，对应fk字段的值也要清空
-
               const fkColumnInfo = this.setAllFields.find(
                 (item) => item.columns === col
               );
@@ -1872,7 +1880,7 @@ export default {
                   }
                 }
                 if (setColumn.redundant_options) {
-                  return h(fkAutocomplate, {
+                  return h(fkAutocomplete, {
                     attrs: {
                       row,
                       column: setColumn,
@@ -3213,21 +3221,10 @@ export default {
         this.v2data.allFields = buildSrvCols(
           this.v2data.srv_cols,
           allColsMap,
-
-          // this.updateColsMap,
-          // this.addColsMap,
           this.childListType,
           this.colSrv
         );
-        // this.v2data.allFields = buildSrvCols(
-        //   this.v2data.srv_cols,
-        //   this.updateColsMap,
-        //   this.addColsMap,
-        //   this.childListType,
-        //   this.colSrv
-        // );
         this.allFields = this.v2data.allFields;
-
         this.listColsMap = this.allFields?.reduce((pre, cur) => {
           pre[cur.columns] = cur;
           return pre;
