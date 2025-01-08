@@ -26,11 +26,11 @@ const router = new VueRouter({
     //   name: "pageEditor",
     //   component: HomeView,
     // },
-    {
-      path: "/dataview",
-      name: "dataview",
-      component: ()=>import("@/views/page-editor/index.vue"),
-    },
+    // {
+    //   path: "/dataview",
+    //   name: "dataview",
+    //   component: ()=>import("@/views/page-editor/index.vue"),
+    // },
     // {
     //   path: "/player",
     //   name: "player",

@@ -4,10 +4,10 @@ import { defineConfig } from "vite";
 import legacy from "@vitejs/plugin-legacy";
 import vue2 from "@vitejs/plugin-vue2";
 import UnoCSS from "unocss/vite";
+// import { visualizer } from "rollup-plugin-visualizer";
+import viteCompression from 'vite-plugin-compression'
 // import { VitePWA } from 'vite-plugin-pwa';
-// import { createRequire } from 'node:module';
 // import vueDevTools from 'vite-plugin-vue-devtools'
-// const require = createRequire( import.meta.url );
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -15,11 +15,18 @@ export default defineConfig({
   plugins: [
     vue2(),
     legacy({
-      targets: ["ie >= 11"],
-      additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
+      targets: ['chrome 52', 'Android > 39', 'iOS >= 10.3', 'iOS >= 10.3'],
+      additionalLegacyPolyfills: ["regenerator-runtime/runtime"], // 面向IE11时需要此插件
     }),
     UnoCSS(),
-    // vueDevTools(),
+    // visualizer({ open: true }), // 自动开启分析页面
+    viteCompression({
+      verbose: true,
+      disable: false,
+      threshold: 10240,
+      algorithm: 'gzip',
+      ext: '.gz',
+    }),
     // VitePWA({
     //   registerType: 'autoUpdate',
     //   devOptions: {
@@ -52,6 +59,30 @@ export default defineConfig({
     //   }
     // })
   ],
+  build: {
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        // 生产环境删除console和debugger
+        drop_console: true,
+        drop_debugger: true
+      }
+    },
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks:{
+          'echarts': ['echarts'],
+          'vue': ['vue'],
+          'vue-router': ['vue-router'],
+          'element-ui': ['element-ui'],
+        },
+        chunkFileNames: 'js/[name]-[hash].js',  // 引入文件名的名称
+        entryFileNames: 'js/[name]-[hash].js',  // 包的入口文件名称
+        assetFileNames: '[ext]/[name]-[hash].[ext]' // 资源文件像 字体，图片等
+      }
+    }
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

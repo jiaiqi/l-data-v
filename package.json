@@ -25,7 +25,7 @@
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "pinia": "^2.0.16",
-    "tinymce": "^6.7.0",
+    "rollup-plugin-visualizer": "^5.14.0",
     "vue": "^2.7.7",
     "vue-easytable": "^2.27.1",
     "vue-grid-layout": "^2.4.0",
@@ -50,8 +50,8 @@
     "terser": "^5.14.2",
     "unocss": "^0.54.1",
     "vite": "^3.2.5",
-    "vite-plugin-pwa": "^0.21.0",
-    "vite-plugin-vue-devtools": "^7.4.4"
+    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-pwa": "^0.21.0"
   },
   "volta": {
     "node": "20.10.0"

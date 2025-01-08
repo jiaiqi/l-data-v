@@ -522,27 +522,11 @@ export default {
                   if (changeValue) {
                     if (["DateTime", "Date"].includes(colType)) {
                       // 日期时间类型格式化
-                      let dateArr =
+                      let dateStr =
                         extractAndFormatDatesOrTimestamps(changeValue);
-                      if (
-                        changeValue &&
-                        Array.isArray(dateArr) &&
-                        dateArr.length
-                      ) {
-                        let dateStr = dateArr[0];
+                      if (changeValue && dateStr) {
                         element[col.field] = dateStr;
                       } else {
-                        // let dateArr = extractAndFormatDatesOrTimestamps(oldVal);
-                        // if (
-                        //   oldVal &&
-                        //   Array.isArray(dateArr) &&
-                        //   dateArr.length
-                        // ) {
-                        //   element[col.field] = oldVal;
-                        // } else {
-                        //   element[col.field] = null;
-                        // }
-                        // isValid = false;
                         this.$message({
                           message: "非日期类型字符串",
                           type: "warning",
@@ -685,9 +669,21 @@ export default {
           }
           if (["DateTime", "Date"].includes(colType)) {
             // 日期时间类型格式化
-            let dateArr = extractAndFormatDatesOrTimestamps(changeValue);
-            if (!Array.isArray(dateArr) || !dateArr?.length) {
+            let dateStr = extractAndFormatDatesOrTimestamps(changeValue);
+            if (dateStr && dateStr !== changeValue) {
+              const index = this.tableData.findIndex(
+                (item) => item.__id === row.__id
+              );
+              let rowData = this.tableData[index];
+              this.$set(rowData, column.field, dateStr);
               return false;
+            } else if (!dateStr && isNaN(new Date(changeValue).getTime())) {
+              this.$message({
+                message: "非合法日期字符串",
+                type: "warning",
+              });
+              return false;
+            } else {
             }
           }
           if (
@@ -734,7 +730,7 @@ export default {
           // if (row.__flag !== "add" && !row?._buttons[editBtnIndex]) {
           if (
             row.__flag !== "add" &&
-            !row?.__button_auth?.edit 
+            !row?.__button_auth?.edit
             //&& oldRowData?.[column.field] !== row[column.field]
           ) {
             Message.error("没有当前行的编辑权限！");
@@ -752,7 +748,7 @@ export default {
             });
             return false;
           }
-          if (["FileList","Image"].includes(colType)) {
+          if (["FileList", "Image"].includes(colType)) {
             this.$message.warning(`【${colType}】类型字段不支持双击进行编辑`);
             return false;
           }
@@ -1439,12 +1435,6 @@ export default {
         document.querySelector(".ve-table-container")?.scrollHeight + 80;
       // document.documentElement.clientHeight - 50;
     },
-    repari() {
-      this.loading = true;
-      setTimeout(() => {
-        this.loading = false;
-      }, 10);
-    },
     isFk(column) {
       if (column?.col_type || column?.bx_col_type) {
         const fkTypes = ["User", "Dept", "bxsys_user", "bxsys_dept", "fk"];
@@ -1573,12 +1563,17 @@ export default {
     },
     showChangeParent(row) {
       // 显示更改父节点弹窗
-      // this.changeParentdialogVisible = true
       this.$refs?.changeParentRef?.open(row);
+    },
+    startLoading(timeout = 10 * 1000) {
+      this.loading = true;
+      setTimeout(() => {
+        this.loading = false;
+      }, timeout);
     },
     async initPage(refresh = true) {
       if (this.serviceName) {
-        this.loading = true;
+        this.startLoading();
         const v2Data = await this.getV2Data();
         if (v2Data === false) {
           return;
@@ -2603,10 +2598,7 @@ export default {
     saveColumnWidth() {
       const url = `/${this.srvApp}/operate/srvsys_service_columns_query_update`;
       const req = this.calcColumnWidthReq;
-      this.loading = true;
-      setTimeout(() => {
-        this.loading = false;
-      }, 5000);
+      this.startLoading();
       if (this.onHandler) return;
       this.onHandler = true;
       $http
@@ -2631,10 +2623,7 @@ export default {
     updateTableColumn() {
       const url = `/${this.srvApp}/operate/srvsys_table_columns_update`;
       const req = this.calcTableColumnWidthReq;
-      this.loading = true;
-      setTimeout(() => {
-        this.loading = false;
-      }, 5000);
+      this.startLoading();
       $http.post(url, req).then((res) => {
         this.loading = false;
         if (res?.data?.state === "SUCCESS") {
@@ -3027,7 +3016,7 @@ export default {
           .map((item) => item[this.treeInfo.idCol]);
       }
       if (this.serviceName) {
-        this.loading = true;
+        this.startLoading(30 * 1000);
         let condition = [...this.defaultConditions];
         if (this.initCond?.length) {
           this.initCond.forEach((item) => {

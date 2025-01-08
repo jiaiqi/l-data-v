@@ -352,26 +352,86 @@ export function extractDates(str) {
  * @returns 
  */
 export function extractAndFormatDatesOrTimestamps(str) {
-  // 匹配 YYYYMMDD, YYYY/MM/DD, YYYY-MM-DD 或者 Unix 时间戳 (10 or 13 digits)
-  const dateOrTimestampPattern = /(\d{4})(\/|-)?(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])|\b\d{10}(?:\d{3})?\b/g;
-  let matches, formattedResults = [];
+  // 匹配 YYYYMMDD, YYYY-MM-DD, YYYY/MM/DD 格式的日期
+  const fullYearDatePattern = /(\d{4})(\/|-)?(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])/g;
 
-  while (matches = dateOrTimestampPattern.exec(str)) {
-    if (matches[1]) { // 如果是日期格式
-      // 组合日期部分，确保使用斜杠作为分隔符
-      let formattedDate = `${matches[1]}/${matches[3]}/${matches[4]}`;
-      formattedResults.push(formattedDate);
-    } else { // 如果是时间戳
-      // 将时间戳转换为 YYYY/MM/DD 格式
-      let timestamp = parseInt(matches[0], 10);
-      let date = new Date(timestamp);
-      let formattedDate = date.toISOString().split('T')[0].replace(/-/g, '/');
-      formattedResults.push(formattedDate);
+  // 匹配 YYMMDD, YY-MM-DD, YY/MM/DD 格式的日期
+  const shortYearDatePattern = /(\d{2})(\/|-)?(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])/g;
+
+  // 匹配 10位或13位的时间戳
+  const timestampPattern = /\b\d{10}(?:\d{3})?\b/g;
+
+  let matches;
+
+
+  // 尝试匹配时间戳格式
+  matches = timestampPattern.exec(str);
+  if (matches) {
+    // 将时间戳转换为 YYYY/MM/DD 格式
+    let timestamp = parseInt(matches[0], 10);
+    let date;
+
+    // 判断时间戳是以秒还是毫秒为单位
+    if (matches[0].length === 10) {
+      // 如果是秒级时间戳，乘以1000转换为毫秒
+      date = new Date(timestamp * 1000);
+    } else if (matches[0].length === 13) {
+      // 如果是毫秒级时间戳，直接使用
+      date = new Date(timestamp);
     }
+
+    return date.toISOString().split('T')[0].replace(/-/g, '/');
+  }
+  
+  // 尝试匹配完整年份的日期格式
+  matches = fullYearDatePattern.exec(str);
+  if (matches) {
+    let yearPart = matches[1];
+    let monthPart = matches[3];
+    let dayPart = matches[4];
+
+    return `${yearPart}/${monthPart}/${dayPart}`;
   }
 
-  return formattedResults;
+  // 尝试匹配两位数年份的日期格式
+  matches = shortYearDatePattern.exec(str);
+  if (matches) {
+    let yearPart = `20${matches[1]}`; // 假设是20世纪的年份，可根据需要调整
+
+    let monthPart = matches[3];
+    let dayPart = matches[4];
+
+    return `${yearPart}/${monthPart}/${dayPart}`;
+  }
+
+
+
+  // 如果没有匹配到任何内容，返回空字符串或其他默认值
+  return '';
+
 }
+
+// export function extractAndFormatDatesOrTimestamps(str) {
+//   // 匹配 YYYYMMDD, YYYY/MM/DD, YYYY-MM-DD 或者 Unix 时间戳 (10 or 13 digits)
+//   const dateOrTimestampPattern = /(\d{4})(\/|-)?(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])|\b\d{10}(?:\d{3})?\b/g;
+//   let matches, formattedResults = [];
+
+//   while (matches = dateOrTimestampPattern.exec(str)) {
+//     if (matches[1]) { // 如果是日期格式
+//       // 组合日期部分，确保使用斜杠作为分隔符
+//       let formattedDate = `${matches[1]}/${matches[3]}/${matches[4]}`;
+//       formattedResults.push(formattedDate);
+//     } else { // 如果是时间戳
+//       // 将时间戳转换为 YYYY/MM/DD 格式
+//       let timestamp = parseInt(matches[0], 10);
+//       let date = new Date(timestamp);
+//       let formattedDate = date.toISOString().split('T')[0].replace(/-/g, '/');
+//       formattedResults.push(formattedDate);
+//     }
+//   }
+
+//   return formattedResults;
+// }
 
 /**从字符串中提取数字  */
 export function extractConcatNumbersWithSingleDecimal(str) {
