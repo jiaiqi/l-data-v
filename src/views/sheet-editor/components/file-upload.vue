@@ -235,7 +235,6 @@ export default {
         this.modelValue = response?.file_no;
         this.$nextTick(() => {
           this.getFileList().then((res) => {
-            debugger
             this.setObjInfo(res);
           });
         });
@@ -277,13 +276,14 @@ export default {
     beforeRemove(file, fileList) {
       return this.$confirm(`确定移除 ${file.name}？`)
         .then(() => {
-          debugger;
           const url = `/file/delete`;
           const req = { fileurl: file.fileurl };
           $http.post(url, req).then((res) => {
             if (res?.data?.resultCode === "SUCCESS") {
               this.$message.success(`删除成功！`);
-              this.getFileList();
+              this.getFileList().then((res) => {
+                this.setObjInfo(res);
+              });
             } else {
               this.$message.error(res.data.resultMessage || res.data.state);
             }
@@ -413,6 +413,6 @@ export default {
 }
 
 .upload-demo {
-  min-height: 200px;
+  // min-height: 200px;
 }
 </style>

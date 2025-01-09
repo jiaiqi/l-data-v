@@ -701,7 +701,6 @@ export default {
           }
         },
         beforeStartCellEditing: ({ row, column, cellValue }) => {
-          // console.log("beforeStartCellEditing：",row,column, cellValue);
           const colType = column?.__field_info?.col_type;
 
           let oldRowData = this.oldTableData.find(
@@ -726,8 +725,6 @@ export default {
               return false;
             }
           }
-          // let editBtnIndex = this.v2data.rowButton?.findIndex(item=>item.button_type==='edit')
-          // if (row.__flag !== "add" && !row?._buttons[editBtnIndex]) {
           if (
             row.__flag !== "add" &&
             !row?.__button_auth?.edit
@@ -752,10 +749,14 @@ export default {
             this.$message.warning(`【${colType}】类型字段不支持双击进行编辑`);
             return false;
           }
+          console.log("onDBClick", colType);
+          
+          if(['RichText','Note'].includes(colType)){
+            return false
+          }
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
-          // console.log("afterCellValueChange", row, column, changeValue);
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
@@ -839,6 +840,7 @@ export default {
           currentSelection?.selectionRangeIndexes?.startRowIndex &&
           currentSelection?.selectionRangeIndexes?.startRowIndex !== -1
         ) {
+          debugger
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
         }
       },
@@ -1622,6 +1624,10 @@ export default {
         const row = this.tableData[i];
         for (let j = startColIndex; j <= endColIndex; j++) {
           const col = columns[j];
+          if(['FileList'].includes(col?.__field_info?.col_type)){
+            // 附件类型 不触发
+            return
+          }
           this.$refs["tableRef"].startEditingCell({
             rowKey: row.rowKey,
             colKey: col.field,
@@ -2205,14 +2211,13 @@ export default {
                             "__flag",
                             row.__flag === "add" ? "add" : "update"
                           );
-                          console.log("data-change:", row, column.field, event);
-                          this.$refs["tableRef"].startEditingCell({
-                            rowKey: row.rowKey,
-                            colKey: column.field,
-                            defaultValue: event || null,
-                          });
-                          this.$refs["tableRef"].stopEditingCell();
-                          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                          // this.$refs["tableRef"].startEditingCell({
+                          //   rowKey: row.rowKey,
+                          //   colKey: column.field,
+                          //   defaultValue: event || null,
+                          // });
+                          // this.$refs["tableRef"].stopEditingCell();
+                          // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                           return;
                         }
                         this.$set(row, column.field, event);
@@ -2222,13 +2227,13 @@ export default {
                           row.__flag === "add" ? "add" : "update"
                         );
                         console.log("data-change:", row, column.field, event);
-                        this.$refs["tableRef"].startEditingCell({
-                          rowKey: row.rowKey,
-                          colKey: column.field,
-                          defaultValue: event || null,
-                        });
-                        this.$refs["tableRef"].stopEditingCell();
-                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        // this.$refs["tableRef"].startEditingCell({
+                        //   rowKey: row.rowKey,
+                        //   colKey: column.field,
+                        //   defaultValue: event || null,
+                        // });
+                        // this.$refs["tableRef"].stopEditingCell();
+                        // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                         // this.calcReqData = this.buildReqParams()
                       },
                     },
