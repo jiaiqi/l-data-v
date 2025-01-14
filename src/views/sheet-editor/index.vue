@@ -840,7 +840,6 @@ export default {
           currentSelection?.selectionRangeIndexes?.startRowIndex &&
           currentSelection?.selectionRangeIndexes?.startRowIndex !== -1
         ) {
-          debugger
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
         }
       },
@@ -3015,6 +3014,7 @@ export default {
       return obj;
     },
     async getList(insertNewRows = true, unfoldIds) {
+      debugger
       if (!unfoldIds && this.listType === "treelist" && this.treeInfo.idCol) {
         unfoldIds = this.tableData
           .filter((item) => !!item?.__unfold)
@@ -3139,10 +3139,10 @@ export default {
           return pre;
         }, {});
         this.v2data = res.data;
-        if (res.data.is_tree === true && this.listType === "list") {
-          // 树列表 停止执行之后的逻辑 改为加载树列表逻辑
-          return false;
-        }
+        // if (res.data.is_tree === true && this.listType === "list") {
+        //   // 树列表 停止执行之后的逻辑 改为加载树列表逻辑
+        //   return false;
+        // }
         this.initExprCols = res.data.srv_cols.reduce((pre, cur) => {
           if (cur.init_expr) {
             pre.push(cur);
