@@ -1,11 +1,11 @@
 import { fileURLToPath, URL } from "node:url";
 
 import { defineConfig } from "vite";
-import legacy from "@vitejs/plugin-legacy";
+// import legacy from "@vitejs/plugin-legacy";
 import vue2 from "@vitejs/plugin-vue2";
 import UnoCSS from "unocss/vite";
 // import { visualizer } from "rollup-plugin-visualizer";
-import viteCompression from 'vite-plugin-compression'
+// import viteCompression from 'vite-plugin-compression'
 // import { VitePWA } from 'vite-plugin-pwa';
 // import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -14,19 +14,19 @@ export default defineConfig({
   base: "/dataview/",
   plugins: [
     vue2(),
-    legacy({
-      targets: ['chrome 52', 'Android > 39', 'iOS >= 10.3', 'iOS >= 10.3'],
-      additionalLegacyPolyfills: ["regenerator-runtime/runtime"], // 面向IE11时需要此插件
-    }),
+    // legacy({
+    //   targets: ['chrome 52', 'Android > 39', 'iOS >= 10.3', 'iOS >= 10.3'],
+    //   additionalLegacyPolyfills: ["regenerator-runtime/runtime"], // 面向IE11时需要此插件
+    // }),
     UnoCSS(),
     // visualizer({ open: true }), // 自动开启分析页面
-    viteCompression({
-      verbose: true,
-      disable: false,
-      threshold: 10240,
-      algorithm: 'gzip',
-      ext: '.gz',
-    }),
+    // viteCompression({
+    //   verbose: true,
+    //   disable: false,
+    //   threshold: 10240,
+    //   algorithm: 'gzip',
+    //   ext: '.gz',
+    // }),
     // VitePWA({
     //   registerType: 'autoUpdate',
     //   devOptions: {
@@ -61,6 +61,7 @@ export default defineConfig({
   ],
   build: {
     minify: 'terser',
+    outDir:'dataview',
     terserOptions: {
       compress: {
         // 生产环境删除console和debugger
@@ -69,6 +70,18 @@ export default defineConfig({
       }
     },
     sourcemap: false,
+    // rollupOptions: {
+    //   output: {
+    //     // 对于入口文件，如 main.js
+    //     entryFileNames: `assets/[name]-[hash].js`,
+
+    //     // 对于通过代码分割生成的 chunk 文件
+    //     chunkFileNames: `assets/[name]-[hash].js`,
+
+    //     // 对于非 JavaScript 资源文件，如 CSS、图片等
+    //     assetFileNames: `assets/[name]-[hash].[ext]`
+    //   }
+    // }
     // rollupOptions: {
     //   output: {
     //     manualChunks:{
