@@ -116,7 +116,7 @@ function processStrings(str1, str2) {
  * @returns {string} 返回str前缀拼接str结尾数字加上num*rate的字符串
  */
 function appendNumber(str, num, rate = 1) {
-  if(typeof str ==='number'){
+  if (typeof str === 'number') {
     return str + num * rate;
   }
   // 获取字符串末尾的数字
@@ -128,3 +128,57 @@ function appendNumber(str, num, rate = 1) {
 }
 
 export { formatStyleData, processStrings, appendNumber };
+
+
+
+// 复制文字到剪贴板
+export async function copyTextToClipboard(text) {
+  let success = false;
+  let msg = ''
+  if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+          // 使用现代API
+          await navigator.clipboard.writeText(text);
+          console.log('文本已成功复制到剪贴板');
+          success = true;
+      } catch (err) {
+          console.error('现代API复制文本失败: ', err);
+          msg = `复制文本失败:${err}`
+      }
+  }
+
+  // 如果现代API不可用或失败，回退到execCommand方式
+  if (!success) {
+      // 创建临时textarea元素并添加到body中
+      const textarea = document.createElement('textarea');
+      textarea.style.position = 'fixed';  // 防止滚动条出现
+      textarea.style.top = 0;
+      textarea.style.left = 0;
+      textarea.style.width = '2em';
+      textarea.style.height = '2em';
+      textarea.style.padding = 0;
+      textarea.style.border = 'none';
+      textarea.style.outline = 'none';
+      textarea.style.boxShadow = 'none';
+      textarea.style.background = 'transparent';
+      textarea.value = text;
+      document.body.appendChild(textarea);
+
+      // 选择文本框中的内容，并尝试复制
+      textarea.select();
+      try {
+          success = document.execCommand('copy');
+          console.log(success ? '文本已成功复制到剪贴板' : '复制文本失败');
+      } catch (err) {
+          console.error('无法复制文本: ', err);
+          msg = `复制文本失败:${err}`
+      }
+      // 移除textarea元素
+      document.body.removeChild(textarea);
+  }
+
+  return {
+    success,
+    msg
+  };
+}
