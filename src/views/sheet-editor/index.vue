@@ -1,26 +1,56 @@
 <template>
   <div class="spreadsheet flex flex-col">
-    <loading-view v-if="loading" mask type="surround" :maskOpacity="0.2" showText textColor="#fff"></loading-view>
-    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full" v-if="disabled !== true">
-      <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
+    <loading-view
+      v-if="loading"
+      mask
+      type="surround"
+      :maskOpacity="0.2"
+      showText
+      textColor="#fff"
+    ></loading-view>
+    <div
+      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full"
+      v-if="disabled !== true"
+    >
+      <div
+        class="flex flex-1 items-center text-sm"
+        v-if="addButton && addButton.service_name"
+      >
         <div class="m-r-2">添加</div>
-        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
+        <el-input-number
+          size="mini"
+          v-model="insertRowNumber"
+          style="width: 100px"
+        />
         <div class="m-x-2">行</div>
-        <el-button size="mini" type="primary" @click="batchInsertRows" :disabled="insertRowNumber === 0">添加
+        <el-button
+          size="mini"
+          type="primary"
+          @click="batchInsertRows"
+          :disabled="insertRowNumber === 0"
+          >添加
         </el-button>
       </div>
       <div class="text-sm text-gray cursor-not-allowed" v-else>
         没有添加权限
       </div>
       <div flex-1>
-        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
+        <el-radio-group
+          v-model="listType"
+          @input="listTypeChange"
+          size="mini"
+          v-if="isTree"
+        >
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
       </div>
-  
+
       <div class="flex flex-items-center flex-1 justify-end">
-        <div class="color-map flex flex-items-center m-r-20" v-if="childListType !== 'add'">
+        <div
+          class="color-map flex flex-items-center m-r-20"
+          v-if="childListType !== 'add'"
+        >
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
             <div class="color bg-[#67c23a] w-4 h-4 m-r-2 rounded"></div>
@@ -31,53 +61,114 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <el-button size="mini" type="primary" @click="refreshData" v-if="childListType !== 'add'">刷新</el-button>
-        <el-button size="mini" type="primary" @click="saveData" :disabled="!calcReqData || calcReqData.length == 0"
-          v-if="childListType !== 'add'" v-loading="onHandler">
+        <el-button
+          size="mini"
+          type="primary"
+          @click="refreshData"
+          v-if="childListType !== 'add'"
+          >刷新</el-button
+        >
+        <el-button
+          size="mini"
+          type="primary"
+          @click="saveData"
+          :disabled="!calcReqData || calcReqData.length == 0"
+          v-if="childListType !== 'add'"
+          v-loading="onHandler"
+        >
           保存
         </el-button>
-        <el-button size="mini" type="primary" @click="saveColumnWidth" v-loading="onHandler"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0" v-if="
-                                            !childListType &&
-                                            calcColumnWidthReq &&
-                                            calcColumnWidthReq.length > 0
-                                          ">保存列宽
+        <el-button
+          size="mini"
+          type="primary"
+          @click="saveColumnWidth"
+          v-loading="onHandler"
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
+          v-if="
+            !childListType &&
+            calcColumnWidthReq &&
+            calcColumnWidthReq.length > 0
+          "
+          >保存列宽
         </el-button>
       </div>
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
-      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
-        style="word-break: break-word; width: 100vw; height: 100%" max-height="calc(100vh - 40px)" fixed-header />
+      <ve-table
+        :columns="columns"
+        border-x
+        border-y
+        :table-data="tableData"
+        v-if="disabled"
+        ref="tableRef"
+        style="word-break: break-word; width: 100vw; height: 100%"
+        max-height="calc(100vh - 40px)"
+        fixed-header
+      />
       <div class="custom-style" v-else>
-        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
-          :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+        <ve-table
+          ref="tableRef"
+          style="word-break: break-word; width: 100vw"
+          max-height="calc(100vh - 80px)"
+          fixed-header
+          :scroll-width="0"
+          border-y
+          :columns="columns"
+          :table-data="tableData"
+          row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption"
+          :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption"
+          :edit-option="editOption"
+          :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption"
+          :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption"
+          :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption"
+          :columnHiddenOption="columnHiddenOption"
+        />
       </div>
     </div>
-    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">
+    <div
+      class="empty-data"
+      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
+    >
       暂无数据
     </div>
     <!--    列表为新增子表时不显示分页-->
-    <div class="text-center flex justify-between" v-if="childListType !== 'add'">
+    <div
+      class="text-center flex justify-between"
+      v-if="childListType !== 'add'"
+    >
       <div class="position-relative">
         <choose-tenant />
       </div>
-      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
-        :total="page.total">
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]"
+        :page-size="page.rownumber"
+        layout="total, sizes, pager,  jumper"
+        :total="page.total"
+      >
       </el-pagination>
       <div class=""></div>
     </div>
-  
-    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="
-                                        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-                                      " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
-  
+
+    <select-parent-node
+      ref="changeParentRef"
+      :topTreeData="topTreeData"
+      :srvApp="srvApp"
+      :options="
+        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+      "
+      :option-info="parentColOption"
+      @confirm="updateParentNo"
+    ></select-parent-node>
+
     <login-dialog ref="loginRef"></login-dialog>
   </div>
 </template>
@@ -94,7 +185,7 @@ import { mapState } from "pinia";
 import { useUserStore } from "@/stores/user.js";
 import { buildSrvCols } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
-import { uniqueId, cloneDeep, throttle } from "lodash-es";
+import { uniqueId, cloneDeep, throttle, add } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
@@ -115,7 +206,7 @@ import {
   extractAndFormatDatesOrTimestamps,
   extractConcatNumbersWithSingleDecimal,
 } from "@/common/DataUtil.js";
-import { copyTextToClipboard } from '@/common/common.js'
+import { copyTextToClipboard } from "@/common/common.js";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
@@ -661,8 +752,11 @@ export default {
           }
           console.log("onDBClick", colType);
 
-          if (['RichText', 'Note'].includes(colType)) {
-            return false
+          if (
+            ["RichText", "Note"].includes(colType) &&
+            cellValue === oldRowData?.[column.field]
+          ) {
+            return false;
           }
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
@@ -871,92 +965,106 @@ export default {
             const startColIndex = selectionRangeIndexes.startColIndex;
             const endColIndex = selectionRangeIndexes.endColIndex;
             const rows = this.tableData.slice(startRowIndex, endRowIndex + 1);
-            const cols = this.columns.slice(startColIndex, endColIndex + 1).map(item => item.field)
-            console.log(rows, cols, ':::求和计数:::');
+            const cols = this.columns
+              .slice(startColIndex, endColIndex + 1)
+              .map((item) => item.field);
+            console.log(rows, cols, ":::求和计数:::");
             let result = null;
-            let valid = 0 // 有效的用来计算的值的数量
+            let valid = 0; // 有效的用来计算的值的数量
             switch (type) {
-              case 'SUM':
-
+              case "SUM":
                 result = rows.reduce((res, cur) => {
-                  cols.forEach(col => {
+                  cols.forEach((col) => {
                     if (!Number.isNaN(Number(cur[col]))) {
-                      valid++
-                      res += Number(cur[col])
+                      valid++;
+                      res += Number(cur[col]);
                     }
-                  })
-                  return res
-                }, 0)
+                  });
+                  return res;
+                }, 0);
                 break;
-              case 'AVG':
-                result = rows.reduce((res, cur) => {
-                  cols.forEach(col => {
-                    if (!Number.isNaN(Number(cur[col]))) {
-                      valid++
-                      res += Number(cur[col])
-                    }
-                  })
-                  return res
-                }, 0) / length
+              case "AVG":
+                result =
+                  rows.reduce((res, cur) => {
+                    cols.forEach((col) => {
+                      if (!Number.isNaN(Number(cur[col]))) {
+                        valid++;
+                        res += Number(cur[col]);
+                      }
+                    });
+                    return res;
+                  }, 0) / length;
                 break;
-              case 'COUNT':
+              case "COUNT":
                 if (cols.length > rows.length) {
-                  return this.$message.error('行数跟列数只能有一个大于1')
+                  return this.$message.error("行数跟列数只能有一个大于1");
                 } else if (cols.length > rows.length) {
-                  result = cols.length
-                  valid++
+                  result = cols.length;
+                  valid++;
                 } else {
-                  result = rows.length
-                  valid++
+                  result = rows.length;
+                  valid++;
                 }
                 break;
-              case 'MIN':
+              case "MIN":
                 result = rows.reduce((res, cur) => {
-                  cols.forEach(col => {
+                  cols.forEach((col) => {
                     if (!Number.isNaN(Number(cur[col]))) {
-                      res = Math.min(res, Number(cur[col]))
-                      valid++
+                      res = Math.min(res, Number(cur[col]));
+                      valid++;
                     }
-                  })
-                  return res
-                }, Number.MAX_SAFE_INTEGER)
+                  });
+                  return res;
+                }, Number.MAX_SAFE_INTEGER);
                 break;
-              case 'MAX':
+              case "MAX":
                 result = rows.reduce((res, cur) => {
-                  cols.forEach(col => {
+                  cols.forEach((col) => {
                     if (!Number.isNaN(Number(cur[col]))) {
-                      res = Math.max(res, Number(cur[col]))
-                      valid++
+                      res = Math.max(res, Number(cur[col]));
+                      valid++;
                     }
-                  })
-                  return res
-                }, Number.MIN_SAFE_INTEGER)
+                  });
+                  return res;
+                }, Number.MIN_SAFE_INTEGER);
                 break;
             }
 
             if (valid === 0) {
-              result = null
+              result = null;
             }
 
-            if (![null, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER].includes(result)) {
-              this.$confirm(`${type}结果为： ${result} ,是否将结果复制到剪切板？`, '提示', {
-                type: "success",
-              }).then(() => {
-                copyTextToClipboard(result).then(res => {
-                  console.log(res);
-                  if (res.success) {
-                    this.$message.success('复制成功')
-                  } else if (res.msg) {
-                    this.$message.error(res.msg)
-                  } else {
-                    this.$message.error('复制失败')
-                  }
+            if (
+              ![
+                null,
+                Number.MAX_SAFE_INTEGER,
+                Number.MIN_SAFE_INTEGER,
+              ].includes(result)
+            ) {
+              this.$confirm(
+                `${type}结果为： ${result} ,是否将结果复制到剪切板？`,
+                "提示",
+                {
+                  type: "success",
+                }
+              )
+                .then(() => {
+                  copyTextToClipboard(result).then((res) => {
+                    console.log(res);
+                    if (res.success) {
+                      this.$message.success("复制成功");
+                    } else if (res.msg) {
+                      this.$message.error(res.msg);
+                    } else {
+                      this.$message.error("复制失败");
+                    }
+                  });
                 })
-              }).catch(() => {
-                console.log('取消复制')
-              })
+                .catch(() => {
+                  console.log("取消复制");
+                });
             } else {
-              this.$message.error('计算异常！请检查数据格式是否正确')
+              this.$message.error("计算异常！请检查数据格式是否正确");
             }
           } else if (type === "addchild") {
             // 添加下级节点
@@ -1042,16 +1150,19 @@ export default {
             });
 
             // 删除选中行数据
-            let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-              }至第${selectionRangeIndexes.endRowIndex + 1
-              }行数据，是否继续操作？`;
+            let text = `此操作将永久删除该第${
+              selectionRangeIndexes.startRowIndex + 1
+            }至第${
+              selectionRangeIndexes.endRowIndex + 1
+            }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
-              selectionRangeIndexes.startRowIndex ==
+                selectionRangeIndexes.startRowIndex ==
               0
             ) {
-              text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-                }行数据，是否继续操作？`;
+              text = `此操作将永久删除该第${
+                selectionRangeIndexes.startRowIndex + 1
+              }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -1131,26 +1242,26 @@ export default {
           children: [
             {
               type: "SUM",
-              label: "求和"
+              label: "求和",
             },
             {
               type: "AVG",
-              label: "平均值"
+              label: "平均值",
             },
             {
               type: "COUNT",
-              label: "计数"
+              label: "计数",
             },
             {
               type: "MAX",
-              label: "最大值"
+              label: "最大值",
             },
             {
               type: "MIN",
-              label: "最小值"
-            }
-          ]
-        }
+              label: "最小值",
+            },
+          ],
+        },
       ];
 
       let addChildButton = this.v2data?.rowButton?.find((item) =>
@@ -1385,7 +1496,7 @@ export default {
         if (typeof data === "string") {
           data = JSON.parse(data);
         }
-      } catch (e) { }
+      } catch (e) {}
       console.log("child-listener", data);
       if (data?.childListCfg) {
         console.log("childListCfg", data.childListCfg);
@@ -1651,9 +1762,9 @@ export default {
         const row = this.tableData[i];
         for (let j = startColIndex; j <= endColIndex; j++) {
           const col = columns[j];
-          if (['FileList'].includes(col?.__field_info?.col_type)) {
+          if (["FileList"].includes(col?.__field_info?.col_type)) {
             // 附件类型 不触发
-            return
+            return;
           }
           this.$refs["tableRef"].startEditingCell({
             rowKey: row.rowKey,
@@ -2110,8 +2221,8 @@ export default {
                   if (this.disabled) {
                     return row[column.field]
                       ? item.option_list_v2.find(
-                        (e) => e.value === row[column.field]
-                      )?.label || ""
+                          (e) => e.value === row[column.field]
+                        )?.label || ""
                       : "";
                   }
                   return h(
@@ -2574,6 +2685,10 @@ export default {
       return reqData?.length ? reqData : null;
     },
     refreshData() {
+      if (this.onHandler) {
+        Message.warning("正在进行其他操作，请稍候重试~");
+        return;
+      }
       this.sortState = [];
       const reqData = this.buildReqParams();
 
@@ -2666,6 +2781,72 @@ export default {
         }
       });
     },
+    // 局部刷新
+    async miniUpdate({ updateList, addList }) {
+      console.log("updateList:", updateList, "addList:", addList);
+      if (Array.isArray(updateList) && updateList.length > 0) {
+      }
+      if (Array.isArray(addList) && addList.length > 0) {
+        let tableData = cloneDeep(this.tableData);
+        let oldAddData = tableData.filter((item) => !item.id);
+        tableData = tableData.filter((item) => !!item.id);
+        if (oldAddData.length === addList.length) {
+          tableData.push(
+            ...addList.map((item, index) => {
+              item.__button_auth = this.setButtonAuth(
+                this.v2data?.rowButton,
+                item
+              );
+              item.rowKey = oldAddData[index].rowKey;
+              item.__id = oldAddData[index].__id;
+              if (oldAddData[index].__indent) {
+                item.__indent = oldAddData[index].__indent;
+              }
+              if (oldAddData[index].__parent_row) {
+                item.__parent_row = oldAddData[index].__parent_row;
+              }
+              return item;
+            })
+          );
+        } else {
+          tableData.push(
+            ...addList.map((item, index) => {
+              item.__button_auth = this.setButtonAuth(
+                this.v2data?.rowButton,
+                item
+              );
+              const __id = uniqueId("table_item_");
+
+              item.rowKey = __id;
+              item.__id = __id;
+              return item;
+            })
+          );
+        }
+        this.tableData = tableData;
+        this.oldTableData = cloneDeep(tableData);
+        this.recordManager = new RecordManager();
+      }
+    },
+    // 乐观更新 保存更新前的状态
+    optimisticUpdate() {
+      let _oldTableData = cloneDeep(this.oldTableData);
+      let _tableData = cloneDeep(this.tableData);
+      let _recordManager = cloneDeep(this.recordManager);
+
+      this.tableData = this.tableData.map((item) => {
+        delete item.__flag;
+        return item;
+      });
+      this.oldTableData = cloneDeep(this.tableData);
+      this.recordManager = new RecordManager();
+      this.recordManager?.push(cloneDeep(this.oldTableData));
+      return {
+        _oldTableData,
+        _tableData,
+        _recordManager,
+      };
+    },
     saveData() {
       // const reqData = this.buildReqParams;
       const reqData = this.buildReqParams();
@@ -2689,6 +2870,10 @@ export default {
           return;
         }
         this.onHandler = true;
+        console.log(reqData, ":::onBatchOperate");
+        //乐观更新
+        const { _oldTableData, _tableData, _recordManager } =
+          this.optimisticUpdate();
         onBatchOperate(reqData, service, this.srvApp)
           .then((res) => {
             if (res?.state === "SUCCESS") {
@@ -2698,6 +2883,57 @@ export default {
                 type: "success",
               });
               console.log(res);
+              // 局部更新
+              if (res.response?.length) {
+                const updateList = [];
+                const addList = [];
+                res.response.forEach((item) => {
+                  if (
+                    item.serviceName?.lastIndexOf("_update") ===
+                    item.serviceName.length - 7
+                  ) {
+                    if (item.response.effect_data?.length) {
+                      updateList.push(...item.response.effect_data);
+                    }
+                  } else if (
+                    item.serviceName?.lastIndexOf("_add") ===
+                    item.serviceName.length - 4
+                  ) {
+                    if (item.response.effect_data?.length) {
+                      addList.push(...item.response.effect_data);
+                    }
+                  }
+                });
+                console.log("updateList:", updateList, "addList:", addList);
+                if (addList.length) {
+                  // 有新增的数据 直接全局刷新
+                  if (this.listType === "treelist" && this.treeInfo.idCol) {
+                    let unfoldIds = this.tableData
+                      .filter((item) => !!item?.__unfold)
+                      .map((item) => item[this.treeInfo.idCol]);
+                    if (unfoldIds?.length) {
+                      this.getList(true, unfoldIds);
+                      return;
+                    }
+                  }
+                  this.getList();
+                }
+                // this.miniUpdate({ updateList, addList });
+              }
+              // if (res.response?.length) {
+              //   let updateIds = res.response.reduce((pre, cur) => {
+              //     if (cur?.response?.effect_data?.length) {
+              //       const effect_data = cur?.response?.effect_data?.[0]
+              //       if (effect_data?.id) {
+              //         pre.push(effect_data?.id)
+              //       }
+              //     }
+              //     return pre
+              //   }, [])
+              //   console.log('updateIds:', updateIds);
+              //   return this.miniUpdate(updateIds)
+              // }
+              return;
               if (this.listType === "treelist" && this.treeInfo.idCol) {
                 let unfoldIds = this.tableData
                   .filter((item) => !!item?.__unfold)
@@ -2708,7 +2944,15 @@ export default {
                 }
               }
               this.getList();
-            } else if (res?.resultMessage) {
+            } else {
+              this.oldTableData = _oldTableData;
+              this.tableData = _tableData;
+              this.recordManager = _recordManager;
+              Message({
+                showClose: true,
+                message: res.resultMessage || "保存失败!",
+                type: "error",
+              });
               if (res.resultCode === "0011") {
                 this.$refs?.loginRef?.open(() => {
                   this.initPage(false).then(() => {
@@ -2718,17 +2962,19 @@ export default {
                   });
                 });
               }
-              Message({
-                showClose: true,
-                message: res.resultMessage,
-                type: "error",
-              });
             }
+          })
+          .catch((err) => {
+            console.log("err:", err);
+            // debugger
+            this.oldTableData = _oldTableData;
+            this.tableData = _tableData;
+            this.recordManager = _recordManager;
           })
           .finally(() => {
             setTimeout(() => {
               this.onHandler = false;
-            }, 2000);
+            }, 200);
           });
       }
     },
@@ -3135,8 +3381,8 @@ export default {
         const use_type = this.colSrv?.includes("_add")
           ? "add"
           : this.colSrv?.includes("_update")
-            ? "update"
-            : "list";
+          ? "update"
+          : "list";
         const res = await getServiceV2(
           this.colSrv,
           use_type,
@@ -3227,7 +3473,7 @@ export default {
                       moreConfig.query_init_value;
                   }
                 }
-              } catch (error) { }
+              } catch (error) {}
             }
             return item;
           });
@@ -3259,7 +3505,7 @@ export default {
       this.startRowIndex = startRowIndex;
     },
     // 取消监听撤销重做事件
-    unbindKeyboardEvent() { },
+    unbindKeyboardEvent() {},
     /**
      * @description 绑定ctrl+z ctrl+y事件
      * @param {*} callBackCZ 撤销/回退事件
