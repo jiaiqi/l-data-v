@@ -69,7 +69,7 @@ export default defineConfig({
         drop_debugger: true
       }
     },
-    sourcemap: false,
+    sourcemap: true,
     // rollupOptions: {
     //   output: {
     //     // 对于入口文件，如 main.js

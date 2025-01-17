@@ -779,31 +779,31 @@ export default {
           if (row.__id && row.__flag !== "add") {
             row.__flag = "update";
           }
-          if (column?.__field_info?.redundant_options?._target_column) {
-            // 处理autocomplete对应的fk字段
-            console.log("changeValue:", changeValue, column.field);
-            const col = column?.__field_info?.redundant_options?._target_column;
+          // if (column?.__field_info?.redundant_options?._target_column) {
+          //   // 处理autocomplete对应的fk字段
+          //   console.log("changeValue:", changeValue, column.field);
+          //   const col = column?.__field_info?.redundant_options?._target_column;
 
-            if (!changeValue) {
-              // 清空值后，对应fk字段的值也要清空
-              const fkColumnInfo = this.setAllFields.find(
-                (item) => item.columns === col
-              );
-              if (fkColumnInfo && row[col]) {
-                row[col] = null;
-                this.$set(this.tableData, rowIndex, row);
-                // this.$refs["tableRef"].startEditingCell({
-                //   rowKey: row.rowKey,
-                //   colKey: col,
-                //   defaultValue: null,
-                // });
-                // this.$refs["tableRef"].stopEditingCell();
-                this.handlerRedundant({}, col, row.rowKey, rowIndex);
-              }
-            } else {
-              // this.handlerRedundant({}, col, row.rowKey, rowIndex);
-            }
-          }
+          //   if (!changeValue) {
+          //     // 清空值后，对应fk字段的值也要清空
+          //     const fkColumnInfo = this.setAllFields.find(
+          //       (item) => item.columns === col
+          //     );
+          //     if (fkColumnInfo && row[col]) {
+          //       row[col] = null;
+          //       this.$set(this.tableData, rowIndex, row);
+          //       // this.$refs["tableRef"].startEditingCell({
+          //       //   rowKey: row.rowKey,
+          //       //   colKey: col,
+          //       //   defaultValue: null,
+          //       // });
+          //       // this.$refs["tableRef"].stopEditingCell();
+          //       this.handlerRedundant({}, col, row.rowKey, rowIndex);
+          //     }
+          //   } else {
+          //     // this.handlerRedundant({}, col, row.rowKey, rowIndex);
+          //   }
+          // }
           this.recordManager?.push(cloneDeep(this.tableData));
           if (this.childListType) {
             // 子表数据更新 通知主表
