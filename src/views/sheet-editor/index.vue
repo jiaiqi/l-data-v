@@ -516,9 +516,9 @@ export default {
               const element = data[index];
               const realIndex = selectionRangeIndexes["startRowIndex"] + index;
               this.columns.forEach((col) => {
-                const oldVal = this.oldTableData[realIndex][col.field];
+                const oldVal = this.oldTableData[realIndex]?.[col.field];
                 const colType = col?.__field_info?.col_type;
-                if (colType) {
+                if (colType && this.oldTableData[realIndex]) {
                   const changeValue = element[col.field];
                   if (changeValue) {
                     if (["DateTime", "Date"].includes(colType)) {
@@ -2855,131 +2855,134 @@ export default {
         return;
       }
       if (
-        Array.isArray(reqData) &&
-        reqData.length > 0 &&
-        this.updateButton?.service_name
+        !this.updateButton?.service_name ||
+        !Array.isArray(reqData) ||
+        !reqData.length
       ) {
-        let service = reqData.every(
-          (item) => item.serviceName === this.addButton?.service_name
-        )
-          ? this.addButton?.service_name
-          : this.updateButton.service_name;
-        console.log(this.onHandler);
-
-        if (this.onHandler) {
-          return;
-        }
-        this.onHandler = true;
-        console.log(reqData, ":::onBatchOperate");
-        //乐观更新
-        const { _oldTableData, _tableData, _recordManager } =
-          this.optimisticUpdate();
-        onBatchOperate(reqData, service, this.srvApp)
-          .then((res) => {
-            this.onHandler = false;
-            if (res?.state === "SUCCESS") {
-              Message({
-                showClose: true,
-                message: res.resultMessage||'操作成功',
-                type: "success",
-                duration: 800,
-              });
-              console.log(res);
-              // 局部更新
-              if (res.response?.length) {
-                const updateList = [];
-                const addList = [];
-                res.response.forEach((item) => {
-                  if (
-                    item.serviceName?.lastIndexOf("_update") ===
-                    item.serviceName.length - 7
-                  ) {
-                    if (item.response.effect_data?.length) {
-                      updateList.push(...item.response.effect_data);
-                    }
-                  } else if (
-                    item.serviceName?.lastIndexOf("_add") ===
-                    item.serviceName.length - 4
-                  ) {
-                    if (item.response.effect_data?.length) {
-                      addList.push(...item.response.effect_data);
-                    }
+        return;
+      }
+      let onlyAdd = reqData.every(
+        (item) => item.serviceName === this.addButton?.service_name
+      );
+      let service = "";
+      if (onlyAdd) {
+        service = this.addButton?.service_name;
+      } else {
+        service = this.updateButton?.service_name;
+      }
+      if (this.onHandler) {
+        return;
+      }
+      this.onHandler = true;
+      console.log(reqData, ":::onBatchOperate");
+      //乐观更新
+      const { _oldTableData, _tableData, _recordManager } =
+        this.optimisticUpdate();
+      onBatchOperate(reqData, service, this.srvApp)
+        .then((res) => {
+          this.onHandler = false;
+          if (res?.state === "SUCCESS") {
+            Message({
+              showClose: true,
+              message: res.resultMessage || "操作成功",
+              type: "success",
+              duration: 800,
+            });
+            console.log(res);
+            // 局部更新
+            if (res.response?.length) {
+              const updateList = [];
+              const addList = [];
+              res.response.forEach((item) => {
+                if (
+                  item.serviceName?.lastIndexOf("_update") ===
+                  item.serviceName.length - 7
+                ) {
+                  if (item.response.effect_data?.length) {
+                    updateList.push(...item.response.effect_data);
                   }
-                });
-                console.log("updateList:", updateList, "addList:", addList);
-                if (addList.length) {
-                  // 有新增的数据 直接全局刷新
-                  if (this.listType === "treelist" && this.treeInfo.idCol) {
-                    let unfoldIds = this.tableData
-                      .filter((item) => !!item?.__unfold)
-                      .map((item) => item[this.treeInfo.idCol]);
-                    if (unfoldIds?.length) {
-                      this.getList(true, unfoldIds);
-                      return;
-                    }
+                } else if (
+                  item.serviceName?.lastIndexOf("_add") ===
+                  item.serviceName.length - 4
+                ) {
+                  if (item.response.effect_data?.length) {
+                    addList.push(...item.response.effect_data);
                   }
-                  this.getList();
                 }
-                // this.miniUpdate({ updateList, addList });
-              }
-              // if (res.response?.length) {
-              //   let updateIds = res.response.reduce((pre, cur) => {
-              //     if (cur?.response?.effect_data?.length) {
-              //       const effect_data = cur?.response?.effect_data?.[0]
-              //       if (effect_data?.id) {
-              //         pre.push(effect_data?.id)
-              //       }
-              //     }
-              //     return pre
-              //   }, [])
-              //   console.log('updateIds:', updateIds);
-              //   return this.miniUpdate(updateIds)
-              // }
-              return;
-              if (this.listType === "treelist" && this.treeInfo.idCol) {
-                let unfoldIds = this.tableData
-                  .filter((item) => !!item?.__unfold)
-                  .map((item) => item[this.treeInfo.idCol]);
-                if (unfoldIds?.length) {
-                  this.getList(true, unfoldIds);
-                  return;
-                }
-              }
-              this.getList();
-            } else {
-              this.oldTableData = _oldTableData;
-              this.tableData = _tableData;
-              this.recordManager = _recordManager;
-              Message({
-                showClose: true,
-                message: res.resultMessage || "保存失败!",
-                type: "error",
               });
-              if (res.resultCode === "0011") {
-                this.$refs?.loginRef?.open(() => {
-                  this.initPage(false).then(() => {
-                    if (!this.tableData.length) {
-                      this.getList();
-                    }
-                  });
-                });
+              console.log("updateList:", updateList, "addList:", addList);
+              if (addList.length) {
+                // 有新增的数据 直接全局刷新
+                if (this.listType === "treelist" && this.treeInfo.idCol) {
+                  let unfoldIds = this.tableData
+                    .filter((item) => !!item?.__unfold)
+                    .map((item) => item[this.treeInfo.idCol]);
+                  if (unfoldIds?.length) {
+                    this.getList(true, unfoldIds);
+                    return;
+                  }
+                }
+                this.getList();
+              }
+              // this.miniUpdate({ updateList, addList });
+            }
+            // if (res.response?.length) {
+            //   let updateIds = res.response.reduce((pre, cur) => {
+            //     if (cur?.response?.effect_data?.length) {
+            //       const effect_data = cur?.response?.effect_data?.[0]
+            //       if (effect_data?.id) {
+            //         pre.push(effect_data?.id)
+            //       }
+            //     }
+            //     return pre
+            //   }, [])
+            //   console.log('updateIds:', updateIds);
+            //   return this.miniUpdate(updateIds)
+            // }
+            return;
+            if (this.listType === "treelist" && this.treeInfo.idCol) {
+              let unfoldIds = this.tableData
+                .filter((item) => !!item?.__unfold)
+                .map((item) => item[this.treeInfo.idCol]);
+              if (unfoldIds?.length) {
+                this.getList(true, unfoldIds);
+                return;
               }
             }
-          })
-          .catch((err) => {
-            console.log("err:", err);
-            // debugger
+            this.getList();
+          } else {
             this.oldTableData = _oldTableData;
             this.tableData = _tableData;
             this.recordManager = _recordManager;
+            Message({
+              showClose: true,
+              message: res.resultMessage || "保存失败!",
+              type: "error",
+            });
+            if (res.resultCode === "0011") {
+              this.$refs?.loginRef?.open(() => {
+                this.initPage(false).then(() => {
+                  if (!this.tableData.length) {
+                    this.getList();
+                  }
+                });
+              });
+            }
+          }
+        })
+        .catch((err) => {
+          console.log("err:", err);
+          // debugger
+          this.oldTableData = _oldTableData;
+          this.tableData = _tableData;
+          this.recordManager = _recordManager;
+          this.onHandler = false;
+        })
+        .finally(() => {
+          setTimeout(() => {
             this.onHandler = false;
-          })
-          .finally(() => {
-            setTimeout(() => {
-              this.onHandler = false;
-            }, 200);
-          });
-      }
+          }, 200);
+        });
     },
     /**
      *
