@@ -1705,7 +1705,7 @@ export default {
       // 显示更改父节点弹窗
       this.$refs?.changeParentRef?.open(row);
     },
-    startLoading(timeout = 10 * 1000) {
+    startLoading(timeout = 20 * 1000) {
       this.loading = true;
       setTimeout(() => {
         this.loading = false;
@@ -2876,11 +2876,13 @@ export default {
           this.optimisticUpdate();
         onBatchOperate(reqData, service, this.srvApp)
           .then((res) => {
+            this.onHandler = false;
             if (res?.state === "SUCCESS") {
               Message({
                 showClose: true,
-                message: res.resultMessage,
+                message: res.resultMessage||'操作成功',
                 type: "success",
+                duration: 800,
               });
               console.log(res);
               // 局部更新
@@ -2970,6 +2972,7 @@ export default {
             this.oldTableData = _oldTableData;
             this.tableData = _tableData;
             this.recordManager = _recordManager;
+            this.onHandler = false;
           })
           .finally(() => {
             setTimeout(() => {
