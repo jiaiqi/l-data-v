@@ -16,29 +16,23 @@
     </div>
     <div v-else-if="isTree && !setDisabled" style="width: 100%">
       <el-popover
-        append-to-body
         placement="bottom-center"
         ref="treePopover"
         trigger="click"
         @show="onPopoverShow"
-        :popper-options="{
-          boundariesElement: 'body',
-          gpuAcceleration: true,
-          positionFixed: true,
-          preventOverflow: true,
-        }"
+        :popper-options="popperOptions"
       >
-        <span
+        <div
           slot="reference"
           v-if="modelValue && !setDisabled"
           class="cursor-pointer"
-          >{{ modelLabel || modelValue || "" }}</span
+          >{{ modelLabel || modelValue || "" }}</div
         >
-        <span
+        <div
           slot="reference"
           class="text-gray cursor-pointer"
           v-else-if="!setDisabled"
-          >请选择</span
+          >请选择</div
         >
         <el-input
           placeholder="输入关键字进行过滤"
@@ -158,6 +152,7 @@ export default {
       tableloading: false,
       filterText: "",
       modelValue: "",
+      popperOptions: null,
       props: {
         emitPath: false,
         checkStrictly: true,
@@ -286,6 +281,14 @@ export default {
         this.row[`_${this.column?.redundant?.dependField}_init_val`]
       );
     }
+  },
+  mounted() {
+    this.popperOptions = {
+      boundariesElement: document.querySelector('body'),
+      gpuAcceleration: true,
+      positionFixed: true,
+      preventOverflow: true,
+    };
   },
   methods: {
     toDetail() {
@@ -716,7 +719,7 @@ export default {
 
 <style lang="scss">
 .el-popover {
-  position: fixed;
+  // position: fixed;
 }
 .el-autocomplete-suggestion.el-popper {
   min-width: 200px !important;

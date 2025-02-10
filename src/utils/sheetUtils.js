@@ -81,17 +81,9 @@ const buildSrvCols = (
     }
     for (let index = 0; index < cols.length; index++) {
       const col = cols[index];
-      // if (updateColsMap?.[col.columns]?.updatable) {
-      //   col.updatable = updateColsMap?.[col.columns]?.updatable;
-      // }
-      // col.editable =
-      //   col.updatable === 1 ||
-      //   updateColsMap?.[col.columns]?.updatable === 1 ||
-      //   addColsMap?.[col.columns]?.updatable === 1;
       col.editable =
         updateColsMap?.[col.columns]?.updatable === 1 &&
         updateColsMap?.[col.columns]?.in_update === 1;
-      // ||addColsMap?.[col.columns]?.in_add===1;
       col.canAdd = addColsMap?.[col.columns]?.in_add === 1;
       col.isRequired =
         col.required === "是" ||

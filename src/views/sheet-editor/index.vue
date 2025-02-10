@@ -2463,7 +2463,12 @@ export default {
               )
             );
           });
-          fixedCol = [fixedCol?.key];
+          if (fixedCol?.__field_info?.redundant_options?.serviceName) {
+            fixedCol = [];
+          } else {
+            fixedCol = [fixedCol?.key];
+          }
+          debugger;
         }
         columns = columns.map((item) => {
           if (fixedCol?.includes(item.key)) {
@@ -3205,7 +3210,7 @@ export default {
             },
           ],
           {
-            rownumber: 99,
+            rownumber: 500,
             pageNo: this.page.pageNo,
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
