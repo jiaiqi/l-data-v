@@ -217,6 +217,7 @@ const ignoreKeys = [
   "__button_auth",
   "_buttons",
   "__unfold",
+  "__indent",
 ];
 
 export default {
@@ -2468,7 +2469,6 @@ export default {
           } else {
             fixedCol = [fixedCol?.key];
           }
-          debugger;
         }
         columns = columns.map((item) => {
           if (fixedCol?.includes(item.key)) {
@@ -2724,6 +2724,8 @@ export default {
     deleteRow(rows) {
       const deleIds = rows.map((item) => item.id);
       if (deleIds.length > 0) {
+        const { _oldTableData, _tableData, _recordManager } =
+          this.optimisticUpdate();
         onDelete(
           deleIds.toString(),
           this.deleteButton?.service_name,
@@ -2735,8 +2737,16 @@ export default {
               message: res.resultMessage,
               type: "success",
             });
-            this.getList();
+            // this.getList();
+            // 不刷新列表，直接从本地数据中删掉需要删掉的数据
+            this.tableData = this.tableData.filter(
+              (item) => !deleIds.includes(item.id)
+            );
           } else if (res?.resultMessage) {
+            // 删除失败，恢复数据状态
+            this.oldTableData = _oldTableData;
+            this.tableData = _tableData;
+            this.recordManager = _recordManager;
             Message({
               showClose: true,
               message: res.resultMessage,
@@ -2838,9 +2848,10 @@ export default {
       let _oldTableData = cloneDeep(this.oldTableData);
       let _tableData = cloneDeep(this.tableData);
       let _recordManager = cloneDeep(this.recordManager);
-
       this.tableData = this.tableData.map((item) => {
-        delete item.__flag;
+        if (item.__flag !== "add") {
+          delete item.__flag;
+        }
         return item;
       });
       this.oldTableData = cloneDeep(this.tableData);
@@ -2917,17 +2928,43 @@ export default {
               });
               console.log("updateList:", updateList, "addList:", addList);
               if (addList.length) {
-                // 有新增的数据 直接全局刷新
-                if (this.listType === "treelist" && this.treeInfo.idCol) {
-                  let unfoldIds = this.tableData
-                    .filter((item) => !!item?.__unfold)
-                    .map((item) => item[this.treeInfo.idCol]);
-                  if (unfoldIds?.length) {
-                    this.getList(true, unfoldIds);
-                    return;
-                  }
+                let currentAddList = this.tableData.filter(
+                  (item) => item.__flag === "add"
+                );
+                if (currentAddList.length === addList.length) {
+                  let index = 0;
+                  const localKeys = [
+                    "__id",
+                    // "__flag",
+                    "__parent_row",
+                    "rowKey",
+                    "__button_auth",
+                    "_buttons",
+                    "__unfold",
+                    "__indent",
+                  ];
+                  this.tableData = this.tableData.map((item) => {
+                    if (item.__flag === "add") {
+                      localKeys.forEach((key) => {
+                        addList[index][key] = item[key];
+                      });
+                      item = addList[index];
+                      index++;
+                    }
+                    return item;
+                  });
                 }
-                this.getList();
+                // // 有新增的数据 直接全局刷新
+                // if (this.listType === "treelist" && this.treeInfo.idCol) {
+                //   let unfoldIds = this.tableData
+                //     .filter((item) => !!item?.__unfold)
+                //     .map((item) => item[this.treeInfo.idCol]);
+                //   if (unfoldIds?.length) {
+                //     this.getList(true, unfoldIds);
+                //     return;
+                //   }
+                // }
+                // this.getList();
               }
               // this.miniUpdate({ updateList, addList });
             }
