@@ -3,13 +3,13 @@ import { getFkOptions } from "@/service/api";
 // 组装srvCols数据
 const buildSrvCols = (
   cols,
-  allColsMap={},
-//   updateColsMap = {},
-//   addColsMap = {},
+  allColsMap = {},
+  //   updateColsMap = {},
+  //   addColsMap = {},
   childListType,
   colSrv
 ) => {
-    const {updateColsMap,addColsMap,listColsMap} = allColsMap||{};
+  const { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
   if (Array.isArray(cols) && cols.length > 0) {
     // 冗余字段auto complete特性
     const fkCols = cols.reduce((res, cur) => {
@@ -41,9 +41,9 @@ const buildSrvCols = (
       // 使用了自定义服务控制列表的列
       const srvType = colSrv.slice(colSrv.lastIndexOf("_") + 1);
       cols = cols.map((item) => {
-        item.in_list = item.in_list===1?1: item[`in_${srvType}`];
-        if(item.in_list!==1&&listColsMap?.[item.columns]?.in_list===1){
-            item.in_list = 1;
+        item.in_list = item.in_list === 1 ? 1 : item[`in_${srvType}`];
+        if (item.in_list !== 1 && listColsMap?.[item.columns]?.in_list === 1) {
+          item.in_list = 1;
         }
         return item;
       });
@@ -112,11 +112,15 @@ const buildSrvCols = (
           ...fkCols[dependField],
         };
       }
-      if(col?.col_type === "String" && col?.redundant?.dependField){
-        col.redundant_options = {
-          ...fkCols[dependField],
-          autocompleteInput:true,
-        };
+      if (col?.col_type === "String" && col?.redundant?.dependField) {
+        // 只让冗余的disp col 字段具备fk字段的效果
+        const key_disp_col = fkCols[col.redundant.dependField]?.key_disp_col;
+        if (key_disp_col && col.columns === key_disp_col) {
+          col.redundant_options = {
+            ...fkCols[dependField],
+            autocompleteInput: true,
+          };
+        }
       }
       switch (col.bx_col_type) {
         case "fk":
@@ -134,7 +138,7 @@ const buildSrvCols = (
     cols = cols.filter(
       (item) => item.in_list === 1 || item.in_update === 1 || item.in_add === 1
     );
-    if(allColsMap?.childListType){
+    if (allColsMap?.childListType) {
       // 如果是作为子表使用 则只显示子表类型对应的in的字段，比如add表单中的子表就只显示in_add的，update表单中子表只显示in_update
       cols = cols.filter(
         (item) => item[`in_${allColsMap.childListType}`] === 1
