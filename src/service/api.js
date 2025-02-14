@@ -48,8 +48,8 @@ const getServiceV2 = async (
       ],
       order: [{ colName: "seq", orderType: "asc" }],
     };
-    if(mainSrv){
-      req.condition.push( { colName: "main_srv", value: mainSrv, ruleType: "eq" },)
+    if (mainSrv) {
+      req.condition.push({ colName: "main_srv", value: mainSrv, ruleType: "eq" },)
     }
     let url = `${app}/select/srvsys_service_columnex_v2_select`;
     const res = await http.post(url, req);
@@ -80,12 +80,13 @@ const onSelect = async (serviceName, app, condition, params = {}) => {
       req.order = params.order;
     }
     if (params.isTree) {
-      req.use_type = "treelist";
+      // req.use_type = "treelist";
       // rdt: Return Data Type  ttd: top tree data
       if (req.condition?.length || params.forceUseTTD) {
         req["rdt"] = "ttd";
         delete req.page;
       } else if (params.pidCol) {
+        req.use_type = "treelist";
         req.condition.push({
           colName: params.pidCol,
           ruleType: "isnull",
@@ -277,7 +278,7 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
     });
   }
   req.condition = conditions;
-  if (option_list_v2?.autocompleteInput!==true && option_list_v2?.is_tree === true) {
+  if (option_list_v2?.autocompleteInput !== true && option_list_v2?.is_tree === true) {
     req.rdt = "ttd";
     delete req.page;
   }

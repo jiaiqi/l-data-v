@@ -26,14 +26,16 @@
           slot="reference"
           v-if="modelValue && !setDisabled"
           class="cursor-pointer"
-          >{{ modelLabel || modelValue || "" }}</div
         >
+          {{ modelLabel || modelValue || "" }}
+        </div>
         <div
           slot="reference"
           class="text-gray cursor-pointer"
           v-else-if="!setDisabled"
-          >请选择</div
         >
+          请选择
+        </div>
         <el-input
           placeholder="输入关键字进行过滤"
           clearable
@@ -284,7 +286,7 @@ export default {
   },
   mounted() {
     this.popperOptions = {
-      boundariesElement: document.querySelector('body'),
+      boundariesElement: document.querySelector("body"),
       gpuAcceleration: true,
       positionFixed: true,
       preventOverflow: true,

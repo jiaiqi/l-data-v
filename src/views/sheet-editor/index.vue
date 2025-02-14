@@ -832,6 +832,7 @@ export default {
         clickHighlight: false,
         hoverHighlight: true,
       },
+      allFieldsMap: {},
     };
   },
   watch: {
@@ -2051,7 +2052,6 @@ export default {
                       },
                       select: (rawData) => {
                         // 对应的fk字段
-
                         const fkColumn =
                           setColumn.redundant_options._target_column;
                         if (fkColumn) {
@@ -2113,8 +2113,12 @@ export default {
                       onfocus: () => {
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                       },
+                      modelChange: (event) => {
+                        console.log("fkSelector-modelChange", event);
+                      },
                       select: (event) => {
                         // fk选项发生变化
+                        console.log("fkSelector-select", event);
                         row[column.field] = event.value;
                         this.$set(this.tableData, rowIndex, row);
                         this.$refs["tableRef"].startEditingCell({
@@ -2141,12 +2145,12 @@ export default {
                         });
                         this.$refs["tableRef"].stopEditingCell();
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-                        this.handlerRedundant(
-                          {},
-                          column.field,
-                          row.rowKey,
-                          rowIndex
-                        );
+                        // this.handlerRedundant(
+                        //   {},
+                        //   column.field,
+                        //   row.rowKey,
+                        //   rowIndex
+                        // );
                       },
                     },
                   });
@@ -2533,6 +2537,19 @@ export default {
     },
     handlerRedundant(rawData = {}, fkColumn, rowKey, rowIndex) {
       // 处理冗余
+      if (this.allFieldsMap[fkColumn]) {
+        this.allFieldsMap[fkColumn].oldModel = cloneDeep(
+          this.allFieldsMap[fkColumn].newModel
+        );
+        this.allFieldsMap[fkColumn].newModel = cloneDeep(rawData);
+      } else {
+        this.allFieldsMap[fkColumn] = {
+          oldModel: null,
+          newModel: cloneDeep(rawData),
+        };
+      }
+      // console.log("handlerRedundant::", cloneDeep(this.allFieldsMap[fkColumn]));
+
       const row = this.tableData[rowIndex];
       let columns = this.setAllFields.filter((item) => {
         if (fkColumn) {
@@ -2555,6 +2572,16 @@ export default {
               row[item.columns] === 0 ||
               row[item.columns] === false
             ) {
+              return;
+            }
+          } else if (item?.redundant?.trigger === "unchange") {
+            // 未手动改变时才跟随fk字段变化
+            const dependField = item?.redundant?.dependField;
+            const fieldModelObj = cloneDeep(this.allFieldsMap[dependField]);
+            const oldValByFk =
+              fieldModelObj?.oldModel?.[item?.redundant?.refedCol];
+            console.log(oldValByFk, "oldValByFk");
+            if (oldValByFk && row[item.columns] !== oldValByFk) {
               return;
             }
           }
@@ -2938,7 +2965,6 @@ export default {
                     // "__flag",
                     "__parent_row",
                     "rowKey",
-                    "__button_auth",
                     "_buttons",
                     "__unfold",
                     "__indent",
@@ -2951,6 +2977,10 @@ export default {
                       item = addList[index];
                       index++;
                     }
+                    item.__button_auth = this.setButtonAuth(
+                      this.v2data?.rowButton,
+                      item
+                    );
                     return item;
                   });
                 }
