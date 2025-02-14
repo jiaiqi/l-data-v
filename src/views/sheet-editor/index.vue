@@ -266,6 +266,7 @@ export default {
   },
   data() {
     return {
+      currentCell:null,
       onHandler: false,
       disabled: false,
       initData: null,
@@ -310,6 +311,9 @@ export default {
       eventCustomOption: {
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
+            click: (event) => {
+              console.log(this.$refs.tableRef?.cellSelectionData?.currentCell);
+            },
             contextmenu: (event) => {
               console.log("bodyCellEvents::", row, column, rowIndex, event);
               this.cleft = event.x + "px";
@@ -2586,13 +2590,13 @@ export default {
             }
           }
           if (!item?.redundant?.refedCol) return;
-          row[item.columns] = rawData[item.redundant.refedCol] || null;
+          row[item.columns] = rawData?.[item.redundant.refedCol] || null;
           this.$set(this.tableData, rowIndex, row);
           if (this.allFields.find((e) => e.columns === item.columns)) {
             this.$refs["tableRef"].startEditingCell({
               rowKey: rowKey,
               colKey: item.columns,
-              defaultValue: rawData[item.redundant.refedCol] || null,
+              defaultValue: rawData?.[item.redundant.refedCol] || null,
             });
             this.$refs["tableRef"].stopEditingCell();
             this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();

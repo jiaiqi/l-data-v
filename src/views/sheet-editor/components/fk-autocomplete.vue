@@ -1,5 +1,5 @@
 <template>
-  <div @dblclick.stop="" class="flex items-center autocomplete-box">
+  <div class="flex items-center autocomplete-box">
     <div
       v-if="
         column &&
@@ -56,29 +56,32 @@
         ></el-cascader-panel>
       </el-popover>
     </div>
-    <el-autocomplete
-      append-to-body
-      clearable
-      ref="inputRef"
-      @focus="onFocus"
-      class="inline-input"
-      v-model="modelValue"
-      :value-key="redundant.refedCol"
-      :fetch-suggestions="querySearch"
-      @clear="onFilterClear"
-      placeholder="请输入"
-      @select="handleSelect"
-      @click.native=""
-      v-else-if="!setDisabled"
-    >
-    </el-autocomplete>
+    <div v-else-if="!setDisabled" class="flex items-center justify-between w-full">
+      <span>{{ modelValue }}</span>
+      <el-autocomplete
+        append-to-body
+        clearable
+        ref="inputRef"
+        @focus="onFocus"
+        class="inline-input"
+        v-model="modelValue"
+        :value-key="redundant.refedCol"
+        :fetch-suggestions="querySearch"
+        @clear="onFilterClear"
+        placeholder="请输入"
+        @select="handleSelect"
+        style="width: 0px; padding: 0; overflow: hidden"
+      >
+      </el-autocomplete>
+      <i
+        class="el-icon-arrow-right cursor-pointer text-#C0C4CC"
+        :class="{ 'cursor-not-allowed': setDisabled }"
+        @click="openDialog"
+        v-if="!setDisabled"
+      ></i>
+    </div>
+
     <span v-else>{{ modelValue }}</span>
-    <i
-      class="el-icon-arrow-right cursor-pointer text-#C0C4CC"
-      :class="{ 'cursor-not-allowed': setDisabled }"
-      @click="openDialog"
-      v-if="!setDisabled"
-    ></i>
 
     <el-dialog
       title="选择"
@@ -266,6 +269,9 @@ export default {
                 }
               });
             });
+          }
+          if (!newValue && newValue !== oldValue && newValue !== undefined) {
+            this.$emit("select", null);
           }
         }
       },

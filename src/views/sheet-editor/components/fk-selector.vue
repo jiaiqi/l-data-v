@@ -3,7 +3,6 @@
     v-loading="loading"
     class="flex justify-between items-center"
     style="max-width: 500px"
-    @dblclick.stop=""
   >
     <div style="width: 100%" v-if="isTree && setDisabled" @click="remoteMethod">
       {{ modelValue }}
@@ -48,40 +47,52 @@
         ></el-cascader-panel>
       </el-popover>
     </div>
-
-    <el-select
-      ref="inputRef"
-      v-model="modelValue"
-      remote
-      filterable
-      reserve-keyword
-      placeholder="请输入关键词"
-      :remote-method="remoteMethod"
-      :loading="loading"
-      :label-key="srvInfo.key_disp_col"
-      :value-key="srvInfo.refed_col"
-      @click.native="remoteMethod"
-      @dblclick.native="openDialog"
-      @change="onSelectChange"
-      @focus="onFocus"
-      clearable
-      :disabled="setDisabled"
+    <div
       v-else-if="srvInfo && srvInfo.refed_col"
+      class="flex items-center justify-between w-full"
     >
-      <el-option
-        v-for="(item, index) in options"
-        :key="index"
-        :label="item.label"
-        :value="item.value"
+      <div>{{ modelValue }}</div>
+      <el-select
+        ref="inputRef"
+        v-model="modelValue"
+        remote
+        :filterable="true"
+        reserve-keyword
+        placeholder="请输入关键词"
+        :remote-method="remoteMethod"
+        :loading="loading"
+        :label-key="srvInfo.key_disp_col"
+        :value-key="srvInfo.refed_col"
+        @click.native="remoteMethod"
+        @dblclick.native="openDialog"
+        @change="onSelectChange"
+        @focus="onFocus"
+        :clearable="false"
+        :disabled="setDisabled"
+        style="width: 0px; padding: 0; overflow: hidden"
       >
-      </el-option>
-    </el-select>
-    <i
+        <el-option
+          v-for="(item, index) in options"
+          :key="index"
+          :label="item.label"
+          :value="item.value"
+        >
+        </el-option>
+      </el-select>
+      <i
+        class="el-icon-arrow-right cursor-pointer m-l-[-5px] text-#C0C4CC"
+        :class="{ 'cursor-not-allowed': setDisabled }"
+        @click.stop="openDialog"
+        v-if="!isTree && !setDisabled"
+      ></i>
+    </div>
+
+    <!-- <i
       class="el-icon-arrow-right cursor-pointer m-l-[-5px] text-#C0C4CC"
       :class="{ 'cursor-not-allowed': setDisabled }"
       @click="openDialog"
       v-if="!isTree && !setDisabled"
-    ></i>
+    ></i> -->
 
     <el-dialog
       title="选择"
@@ -238,6 +249,12 @@ export default {
         if (newValue && this.row?.__flag === "add") {
           // 新增数据 如果是fk字段并且有默认值 自动查找fk选项
           this.remoteMethod(newValue);
+        } else if (
+          !newValue &&
+          newValue !== oldValue &&
+          newValue !== undefined
+        ) {
+          this.onSelectChange();
         }
       },
     },
@@ -385,7 +402,7 @@ export default {
       this.$refs?.treePopover?.doClose();
 
       let currentValue = this.allOptions.find(
-        (item) => item[this.srvInfo?.refed_col] === val
+        (item) => val && item[this.srvInfo?.refed_col] === val
       );
       this.modelValue = val;
       if (currentValue) {
@@ -394,6 +411,10 @@ export default {
           rawData: currentValue,
         });
       } else {
+        this.$emit("select", {
+          value: this.modelValue,
+          rawData: null,
+        });
         this.$emit("input", val);
       }
     },
