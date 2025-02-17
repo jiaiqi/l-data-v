@@ -380,7 +380,8 @@ export function extractAndFormatDatesOrTimestamps(str) {
       date = new Date(timestamp);
     }
 
-    return date.toISOString().split('T')[0].replace(/-/g, '/');
+    // return date.toISOString().split('T')[0].replace(/-/g, '/');
+    return date.toISOString().split('T')[0];
   }
   
   // 尝试匹配完整年份的日期格式
@@ -390,7 +391,8 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let monthPart = matches[3];
     let dayPart = matches[4];
 
-    return `${yearPart}/${monthPart}/${dayPart}`;
+    // return `${yearPart}/${monthPart}/${dayPart}`;
+    return `${yearPart}-${monthPart}-${dayPart}`;
   }
 
   // 尝试匹配两位数年份的日期格式
@@ -401,7 +403,8 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let monthPart = matches[3];
     let dayPart = matches[4];
 
-    return `${yearPart}/${monthPart}/${dayPart}`;
+    // return `${yearPart}/${monthPart}/${dayPart}`;
+    return `${yearPart}-${monthPart}-${dayPart}`;
   }
 
 

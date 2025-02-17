@@ -346,6 +346,7 @@ export default {
       },
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
+          
           // if (row?.__flag === "add") {
           if (row?.__flag === "add" && column.field === "index") {
             // 新增行直接显示为绿色背景 不用判断字段有没有值
@@ -365,6 +366,8 @@ export default {
             const oldRowData = this.oldTableData.find(
               (item) => item.__id && item.__id === row.__id
             );
+           
+            
             if (row[column.field] !== oldRowData[column.field]) {
               if (row[column.field] === null || row[column.field] === "") {
                 return "table-body-cell__update null-value";
@@ -1829,7 +1832,7 @@ export default {
               ""
             )?.length;
             if (length > 6) {
-              // 去掉符号的字符数长度大于4
+              // 去掉符号的字符数长度大于6
               console.log(`${item.label}:${length}`);
               width = length * 30;
             }
@@ -2648,6 +2651,12 @@ export default {
                   nullVal.includes(oldItem[key])
                 ) {
                   return;
+                }
+                const colInfo = this.updateColsMap?.[key]
+                if(['Date','DateTime'].includes(colInfo?.col_type)){
+                  if(dayjs(item[key]).isSame(dayjs(oldItem[key]))){
+                    return;
+                  }
                 }
                 item.__flag = "update";
                 this.$set(item, "__flag", "update");
