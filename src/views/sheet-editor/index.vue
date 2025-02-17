@@ -185,7 +185,7 @@ import { mapState } from "pinia";
 import { useUserStore } from "@/stores/user.js";
 import { buildSrvCols } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
-import { uniqueId, cloneDeep, throttle, add } from "lodash-es";
+import { uniqueId, cloneDeep} from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
@@ -266,7 +266,7 @@ export default {
   },
   data() {
     return {
-      currentCell:null,
+      currentCell: null,
       onHandler: false,
       disabled: false,
       initData: null,
@@ -736,6 +736,7 @@ export default {
             !row?.__button_auth?.edit
             //&& oldRowData?.[column.field] !== row[column.field]
           ) {
+            console.log("没有当前行的编辑权限！", row, column, oldRowData);
             Message.error("没有当前行的编辑权限！");
             if (oldRowData) {
               // 恢复原来的值
@@ -1772,12 +1773,12 @@ export default {
             // 附件类型 不触发
             return;
           }
-          this.$refs["tableRef"].startEditingCell({
+          this.$refs["tableRef"]?.startEditingCell?.({
             rowKey: row.rowKey,
             colKey: col.field,
             defaultValue: row[col.field],
           });
-          this.$refs["tableRef"].stopEditingCell();
+          this.$refs["tableRef"]?.stopEditingCell?.();
           // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
         }
       }
@@ -2122,8 +2123,13 @@ export default {
                       },
                       select: (event) => {
                         // fk选项发生变化
+                        console.log("fkSelector-select 1", event);
+                        if (row[column.field] !== event.value) {
+                          row[column.field] = event.value;
+                        } else {
+                          return;
+                        }
                         console.log("fkSelector-select", event);
-                        row[column.field] = event.value;
                         this.$set(this.tableData, rowIndex, row);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
@@ -2552,7 +2558,6 @@ export default {
           newModel: cloneDeep(rawData),
         };
       }
-      // console.log("handlerRedundant::", cloneDeep(this.allFieldsMap[fkColumn]));
 
       const row = this.tableData[rowIndex];
       let columns = this.setAllFields.filter((item) => {
@@ -2590,15 +2595,30 @@ export default {
             }
           }
           if (!item?.redundant?.refedCol) return;
+          if (
+            row[item.columns] !== undefined &&
+            row[item.columns] === rawData?.[item.redundant.refedCol]
+          ) {
+            // 值没变
+            return;
+          } else if (
+            rawData?.[item.redundant.refedCol] === undefined &&
+            row[item.columns] === null
+          ) {
+            // 值都为空
+            return;
+          }
           row[item.columns] = rawData?.[item.redundant.refedCol] || null;
           this.$set(this.tableData, rowIndex, row);
+          console.log("handlerRedundant::", item.columns, row[item.columns]);
+
           if (this.allFields.find((e) => e.columns === item.columns)) {
-            this.$refs["tableRef"].startEditingCell({
+            this.$refs["tableRef"]?.startEditingCell?.({
               rowKey: rowKey,
               colKey: item.columns,
               defaultValue: rawData?.[item.redundant.refedCol] || null,
             });
-            this.$refs["tableRef"].stopEditingCell();
+            this.$refs["tableRef"]?.stopEditingCell?.();
             this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
           }
         });
@@ -2622,6 +2642,13 @@ export default {
               this.updateColsMap?.[key]?.in_update !== 0
             ) {
               if (oldItem[key] !== item[key]) {
+                const nullVal = [null, undefined, ""];
+                if (
+                  nullVal.includes(item[key]) &&
+                  nullVal.includes(oldItem[key])
+                ) {
+                  return;
+                }
                 item.__flag = "update";
                 this.$set(item, "__flag", "update");
                 if (item[key] === "" || item[key] == undefined) {
