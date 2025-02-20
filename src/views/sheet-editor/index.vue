@@ -24,11 +24,15 @@
         />
         <div class="m-x-2">行</div>
         <el-button
+          class="icon-button"
           size="mini"
           type="primary"
           @click="batchInsertRows"
           :disabled="insertRowNumber === 0"
-          >添加
+          title="添加"
+        >
+          <!-- 添加 -->
+          <i class="i-ic-baseline-add"></i>
         </el-button>
       </div>
       <div class="text-sm text-gray cursor-not-allowed" v-else>
@@ -53,32 +57,41 @@
         >
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
-            <div class="color bg-[#67c23a] w-4 h-4 m-r-2 rounded"></div>
+            <div class="color bg-[#2EA269] w-4 h-4 m-r-2 rounded"></div>
             <div class="text">新增</div>
           </div>
           <div class="color-map-item flex flex-items-center m-l-5">
-            <div class="color bg-[#c00] w-4 h-4 m-r-2 rounded"></div>
+            <div class="color bg-[#E83D4B] w-4 h-4 m-r-2 rounded"></div>
             <div class="text">更新</div>
           </div>
         </div>
         <el-button
+          class="icon-button"
           size="mini"
           type="primary"
           @click="refreshData"
           v-if="childListType !== 'add'"
-          >刷新</el-button
+          title="刷新"
         >
+          <!-- 刷新 -->
+
+          <i class="i-ic-baseline-refresh"></i>
+        </el-button>
         <el-button
+          class="icon-button"
           size="mini"
           type="primary"
           @click="saveData"
           :disabled="!calcReqData || calcReqData.length == 0"
           v-if="childListType !== 'add'"
           v-loading="onHandler"
+          title="保存"
         >
-          保存
+          <!-- 保存 -->
+          <i class="i-ic-baseline-save"></i>
         </el-button>
         <el-button
+          class="icon-button"
           size="mini"
           type="primary"
           @click="saveColumnWidth"
@@ -89,7 +102,10 @@
             calcColumnWidthReq &&
             calcColumnWidthReq.length > 0
           "
-          >保存列宽
+          title="保存列宽"
+        >
+          <!-- 保存列宽 -->
+          <i class="i-ic-baseline-view-column"></i>
         </el-button>
       </div>
     </div>
@@ -185,7 +201,7 @@ import { mapState } from "pinia";
 import { useUserStore } from "@/stores/user.js";
 import { buildSrvCols } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
-import { uniqueId, cloneDeep} from "lodash-es";
+import { uniqueId, cloneDeep } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 import HeaderCell from "./components/header-cell.vue";
 import fkSelector from "./components/fk-selector.vue";
@@ -346,7 +362,6 @@ export default {
       },
       cellStyleOption: {
         bodyCellClass: ({ row, column, rowIndex }) => {
-          
           // if (row?.__flag === "add") {
           if (row?.__flag === "add" && column.field === "index") {
             // 新增行直接显示为绿色背景 不用判断字段有没有值
@@ -362,12 +377,14 @@ export default {
             row?.__flag === "update" &&
             !["__flag", "rowKey", "__id", "__unfold"].includes(column.field)
           ) {
+            if (column.field === "index") {
+              return "table-body-cell__update-index";
+            }
             // 某行某列绑定的值跟备份的数据中此行此列绑定的值不同时  增加class
             const oldRowData = this.oldTableData.find(
               (item) => item.__id && item.__id === row.__id
             );
-           
-            
+
             if (row[column.field] !== oldRowData[column.field]) {
               if (row[column.field] === null || row[column.field] === "") {
                 return "table-body-cell__update null-value";
@@ -2652,9 +2669,9 @@ export default {
                 ) {
                   return;
                 }
-                const colInfo = this.updateColsMap?.[key]
-                if(['Date','DateTime'].includes(colInfo?.col_type)){
-                  if(dayjs(item[key]).isSame(dayjs(oldItem[key]))){
+                const colInfo = this.updateColsMap?.[key];
+                if (["Date", "DateTime"].includes(colInfo?.col_type)) {
+                  if (dayjs(item[key]).isSame(dayjs(oldItem[key]))) {
                     return;
                   }
                 }
@@ -3672,6 +3689,17 @@ export default {
 };
 </script>
 <style lang="scss">
+.el-button {
+  & + & {
+    margin-left: 5px;
+  }
+  &.icon-button {
+    padding: 4px;
+  }
+  [class*="i-ic-"] {
+    font-size: 16px;
+  }
+}
 .empty-data {
   display: flex;
   align-items: center;
@@ -3697,7 +3725,7 @@ export default {
   }
 
   .table-body-cell__add {
-    background-color: #67c23a !important;
+    background-color: #2EA269 !important;
     color: #fff !important;
 
     // border-top: 1px solid #a4da89;
@@ -3715,20 +3743,23 @@ export default {
       color: #eee;
     }
   }
-
+  .table-body-cell__update-index {
+    background-color: rgba($color: #E83D4B, $alpha: 0.9) !important;
+    color: #fff !important;
+  }
   .table-body-cell__update {
     // color: #2087cc !important;
-    color: #f00 !important;
+    color: #E83D4B !important;
 
     .el-input {
       .el-input__inner {
         // color: #2087cc !important;
-        color: #f00 !important;
+        color: #E83D4B !important;
       }
     }
 
     .el-tag {
-      color: #f00 !important;
+      color: #E83D4B !important;
     }
 
     // background-color: #2087CC !important;
