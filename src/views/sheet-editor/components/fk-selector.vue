@@ -297,7 +297,7 @@ export default {
         if (this.modelValue !== newValue) {
           this.modelValue = newValue;
           // this.remoteMethod(this.value);
-          if (this.row?.__flag === "add" || this.row?.__flag === "update") {
+          if ((this.row?.__flag === "add" || this.row?.__flag === "update") && newValue) {
             if (this.isTree) {
               this.$refs?.treePopover?.doShow();
               // this.remoteMethod(newValue);

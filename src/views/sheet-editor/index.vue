@@ -2669,6 +2669,20 @@ export default {
                 class: "hover:color-blue",
               },
               on: {
+                // mouseenter: (event) => {
+                //   event.stopPropagation();
+                //   self.showDropMenu = true;
+                //   console.log(row, rowIndex, event, "onHandler");
+                //   self.dLeft = event.clientX;
+                //   self.dTop = event.clientY;
+                //   self.currentRowIndex = rowIndex;
+                // },
+                // mouseleave: (event) => {
+                //   self.showDropMenu = false;
+                //   self.dLeft = -1000
+                //   self.dTop = -1000
+                //   self.currentRowIndex = -1;
+                // },
                 contextmenu: (event) => {
                   event.preventDefault();
                   event.stopPropagation();
