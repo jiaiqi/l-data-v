@@ -804,7 +804,7 @@ export default {
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
           let oldRow = this.oldTableData.find((item) => item.__id === row.__id);
-          if(oldRow?.[column.field] === changeValue) {
+          if (oldRow?.[column.field] === changeValue) {
             return;
           }
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
@@ -824,8 +824,7 @@ export default {
 
           if (row.__id && row.__flag !== "add") {
             row.__flag = "update";
-            console.log('update');
-
+            console.log("update");
           }
           // if (column?.__field_info?.redundant_options?._target_column) {
           //   // 处理autocomplete对应的fk字段
@@ -1504,8 +1503,9 @@ export default {
   },
   methods: {
     onRowButton(item) {
-      console.log("onRowButton", item, this.tableData[this.currentRowIndex]);
-      const row = this.tableData[this.currentRowIndex];
+      const currentRowIndex = this.currentRowIndex;
+      console.log("onRowButton", item, this.tableData[currentRowIndex]);
+      const row = this.tableData[currentRowIndex];
       if (row) {
         rowButtonClick({
           operate_item: item,
@@ -1516,8 +1516,8 @@ export default {
           if (res?.type === "deleteRowData") {
             this.deleteRow([res.row]);
           } else if (res?.type === "onDuplicateClicked") {
-
-          } else if(!res){
+            this.insert2Rows(currentRowIndex, null, row);
+          } else if (!res) {
             this.$message.error("功能待开发");
           }
         });
@@ -2159,7 +2159,7 @@ export default {
                               this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                             }
                             console.log("fkAutocomplete-select", rawData);
-                            
+
                             this.handlerRedundant(
                               data,
                               fkColumn,
@@ -2176,12 +2176,15 @@ export default {
                   (item.col_type?.indexOf("bx") === 0 &&
                     item?.option_list_v2?.serviceName)
                 ) {
-                  const fieldInfo = this.tableData[rowIndex]?.__flag=='add'?this.addColsMap[column.field]:this.updateColsMap[column.field];
+                  const fieldInfo =
+                    this.tableData[rowIndex]?.__flag == "add"
+                      ? this.addColsMap[column.field]
+                      : this.updateColsMap[column.field];
                   return h(fkSelector, {
                     attrs: {
                       value: row[column.field],
                       size: "mini",
-                      fieldInfo:fieldInfo,
+                      fieldInfo: fieldInfo,
                       srvInfo:
                         this.updateColsMap[column.field]?.option_list_v2 ||
                         item.option_list_v2,
@@ -2196,6 +2199,26 @@ export default {
                           row?.__button_auth?.edit === false),
                     },
                     on: {
+                      "multi-tab-option-select-change": (item, cfg) => {
+                        console.log(
+                          "multi-tab-option-select-change",
+                          item,
+                          cfg
+                        );
+                        if (cfg?.case_col && cfg?.case_val) {
+                          if (cfg?.case_col in row) {
+                            row[cfg.case_col] = cfg?.case_val;
+                          }
+                          this.$set(this.tableData, rowIndex, row);
+                          this.$refs["tableRef"].startEditingCell({
+                            rowKey: row.rowKey,
+                            colKey: cfg.case_col,
+                            defaultValue: row[cfg.case_col],
+                          });
+                          this.$refs["tableRef"].stopEditingCell();
+                          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        }
+                      },
                       onfocus: () => {
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                       },
@@ -2219,8 +2242,11 @@ export default {
                         });
                         this.$refs["tableRef"].stopEditingCell();
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-                        console.log("fkSelector-select-handlerRedundant", event);
-                        
+                        console.log(
+                          "fkSelector-select-handlerRedundant",
+                          event
+                        );
+
                         this.handlerRedundant(
                           event?.rawData,
                           column.field,
@@ -2782,8 +2808,8 @@ export default {
                   }
                 }
                 item.__flag = "update";
-                console.log('update');
-                
+                console.log("update");
+
                 this.$set(item, "__flag", "update");
                 if (item[key] === "" || item[key] == undefined) {
                   item[key] = null;
@@ -3225,6 +3251,7 @@ export default {
      *
      * @param {*} index 插入到第几条数据
      * @param {*} parentRow 父节点数据
+     * @param {*} itemData 新增数据
      */
     insert2Rows(index, parentRow, itemData) {
       // 插入到第几行

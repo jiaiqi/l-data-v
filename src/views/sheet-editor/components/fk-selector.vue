@@ -8,6 +8,16 @@
       {{ modelValue }}
     </div>
     <div v-else-if="setDisabled">{{ modelLabel || modelValue || "" }}</div>
+    <multi-tab-option-select
+      v-else-if="useMultiTabOptionSelect === true"
+      :placeholder="fieldInfo.placeholder"
+      :optionListV3="optionListV3"
+      :field="fieldInfo"
+      :disabled="setDisabled"
+      v-model="modelValue"
+      :app="app"
+      @select="multiTabSelectChange"
+    ></multi-tab-option-select>
     <div v-else-if="isTree" style="width: 100%">
       <el-popover
         placement="bottom-center"
@@ -99,7 +109,7 @@
       :visible.sync="dialogVisible"
       width="80%"
       append-to-body
-      v-loading="tableloading"
+      v-loading="tableLoading"
     >
       <div @click.stop="">
         <div class="filter-box">
@@ -152,13 +162,21 @@
 <script>
 import { clone, cloneDeep } from "lodash-es";
 import { getFkOptions, onSelect } from "../../../service/api";
+import multiTabOptionSelect from "./fk-select/multi-tab-option-select.vue";
+
 export default {
+  components: {
+    multiTabOptionSelect,
+  },
   props: {
     app: {
       type: String,
       default: "",
     },
-    srvInfo: {
+    // srvInfo: {
+    //   type: Object,
+    // },
+    fieldInfo: {
       type: Object,
     },
     value: String,
@@ -179,7 +197,7 @@ export default {
       pageNo: 1,
       rownumber: 10,
       total: 0,
-      tableloading: false,
+      tableLoading: false,
       filterText: "",
       props: {
         emitPath: false,
@@ -210,7 +228,57 @@ export default {
       return this.srvInfo?.srv_app || this.app;
     },
     isTree() {
-      return this.srvInfo?.is_tree && this.srvInfo?.parent_col ? true : false;
+      return this.optionListV2?.is_tree && this.optionListV2?.parent_col ? true : false;
+    },
+    optionListV3() {
+      return this.fieldInfo?.option_list_v3;
+    },
+    srvInfo(){
+      return this.optionListV2;
+    },
+    optionListV2() {
+      let result = null;
+      if (this.optionListV3?.length) {
+        // 如果有v3 则使用v3
+        const option_list_v3 = this.optionListV3;
+        const data = this.row;
+        result = option_list_v3.find(
+          (item) =>
+            !item.conds?.length ||
+            item.conds?.every(
+              (cond) =>
+                data?.[cond.case_col] &&
+                cond.case_val?.includes?.(data?.[cond.case_col])
+            )
+        );
+      } else if (this.fieldInfo?.option_list_v2) {
+        result = this.fieldInfo.option_list_v2;
+      }
+      result = cloneDeep(result);
+      // if (!result) {
+      //   result = this.field?.info?.srvCol?.option_list_v2;
+      // }
+      if (
+        Array.isArray(result?.condition) &&
+        !Array.isArray(result?.conditions)
+      ) {
+        result.conditions = result.condition;
+      }
+      // if (this.field?.info?._upstreamCondition?.colName) {
+      //   if (Array.isArray(result?.conditions)) {
+      //     result.conditions.push(cloneDeep(this.field.info._upstreamCondition));
+      //   } else if (result) {
+      //     result.conditions = [cloneDeep(this.field.info._upstreamCondition)];
+      //   }
+      // }
+      return result;
+    },
+    useMultiTabOptionSelect() {
+      // 条件外键，没有符合的条件，使用多tab下拉组件
+      return (
+        !this.optionListV2 &&
+        this.optionListV3?.filter((item) => item.conds?.length)?.length > 0
+      );
     },
     setDisabled() {
       if (
@@ -254,6 +322,9 @@ export default {
           newValue !== oldValue &&
           newValue !== undefined
         ) {
+          if (newValue === null && oldValue === undefined) {
+            return;
+          }
           this.onSelectChange();
         }
       },
@@ -277,6 +348,16 @@ export default {
     }
   },
   methods: {
+    multiTabSelectChange(item, cfg) {
+      if(cfg?.case_col){
+        this.$emit('multi-tab-option-select-change', item, cfg);
+      }
+      this.onSelectChange(item[cfg.refed_col||cfg.refedCol]);
+      // this.field?.form?.allFields?.[cfg.case_col]?.setSrvVal?.(cfg.case_val);
+      // this.$nextTick(() => {
+      //   this.handleSelect(item, cfg);
+      // });
+    },
     onFilterClear() {
       this.filterText = "";
       this.$emit("input", "");
@@ -333,7 +414,7 @@ export default {
     toFilter(query) {
       this.pageNo = 1;
       this.total = 0;
-      // this.tableloading = true;
+      // this.tableLoading = true;
 
       let queryString = "";
       if (query && typeof query === "string") {
@@ -383,7 +464,7 @@ export default {
         } else {
           this.options = [];
         }
-        // this.tableloading = false;
+        // this.tableLoading = false;
       });
     },
     handleSizeChange(val) {
@@ -396,6 +477,8 @@ export default {
       this.getTableData();
     },
     onSelectChange(val) {
+      console.log("onSelectChange", val);
+
       if (Array.isArray(val) && val?.length) {
         val = val[0];
       }
@@ -455,25 +538,25 @@ export default {
       }
     },
     getTableData() {
-      this.tableloading = true;
+      this.tableLoading = true;
       setTimeout(() => {
-        this.tableloading = false;
+        this.tableLoading = false;
       }, 5000);
       const srvInfo = JSON.parse(JSON.stringify(this.srvInfo));
       if (this.filterText) {
-        srvInfo;
+        // srvInfo;
       }
       getFkOptions(
-        { ...this.column, option_list_v2: this.srvInfo },
+        { ...this.column, option_list_v2:srvInfo },
         this.row,
         this.app,
         this.pageNo,
         this.rownumber
       ).then((res) => {
-        if (res?.data?.length && this.srvInfo?.refed_col) {
+        if (res?.data?.length && srvInfo?.refed_col) {
           this.tableData = res.data.map((item) => {
-            item.label = item[this.srvInfo.key_disp_col];
-            item.value = item[this.srvInfo.refed_col];
+            item.label = item[srvInfo.key_disp_col];
+            item.value = item[srvInfo.refed_col];
             item.leaf = item.is_leaf === "是";
             return item;
           });
@@ -483,7 +566,7 @@ export default {
         } else {
           this.tableData = [];
         }
-        this.tableloading = false;
+        this.tableLoading = false;
       });
     },
     openDialog() {
@@ -500,12 +583,15 @@ export default {
       this.rownumber = 5;
       this.getTableData();
 
-      if (!this.tableColumns?.length) {
+      // if (!this.tableColumns?.length) {
         this.getFkColumns();
-      }
+      // }
     },
     filterMethod(node, query) {},
     remoteMethod(query) {
+      if(this.useMultiTabOptionSelect){
+        return 
+      }
       let queryString = this.value;
       if (query && typeof query === "string") {
         queryString = query;
@@ -517,7 +603,9 @@ export default {
           this.loading = false;
         }, 5000);
       }
-      let option = JSON.parse(JSON.stringify(this.srvInfo));
+      const option = JSON.parse(JSON.stringify(this.srvInfo));
+
+      // let option = JSON.parse(JSON.stringify(this.srvInfo));
       let relation_condition = {
         relation: "OR",
         data: [],
@@ -574,6 +662,200 @@ export default {
           this.loading = false;
         });
       });
+    },
+    
+    buildRelationConditionInfo(dispLoader, queryString) {
+      let self = this;
+      let relaTemp = {
+        relation: "AND",
+        data: [],
+      };
+      let condition = [];
+      let dataTemp = {
+        relation: "AND",
+        data: [],
+      };
+      console.log("dispLoader:", dispLoader);
+
+      let relation_condition = {};
+      if (dispLoader.conditions) {
+        this.buildConditions(dispLoader).forEach((c) => condition.push(c));
+        // condition = this.pruneConditions(condition);
+
+        if (condition.length > 0) {
+          relaTemp.relation = "OR";
+          dataTemp.data = [];
+          let dataItem = {
+            colName: "",
+            value: "",
+            ruleType: "",
+          };
+          // dataTemp.data = condition
+          // relaTemp.data.push(cloneDeep(dataTemp))
+          dataTemp.data = [];
+          dataItem.ruleType = "[like]";
+          dataItem.colName = this.field.info.valueCol;
+          dataItem.value = queryString == null ? "" : queryString;
+          dataTemp.data.push(cloneDeep(dataItem));
+          relaTemp.data.push(cloneDeep(dataTemp));
+          dataTemp.data = [];
+          dataItem.ruleType = "[like]";
+          dataItem.colName = this.field.info.dispCol;
+          dataItem.value = queryString == null ? "" : queryString;
+          dataTemp.data.push(cloneDeep(dataItem));
+          relaTemp.data.push(cloneDeep(dataTemp));
+        } else {
+          relaTemp.relation = "OR";
+          dataTemp.data = [];
+          let dataItem = {
+            colName: "",
+            value: "",
+            ruleType: "",
+          };
+          dataItem.ruleType = "[like]";
+          dataItem.colName = this.field.info.valueCol;
+          dataItem.value = queryString == null ? "" : queryString;
+          dataTemp.data.push(cloneDeep(dataItem));
+          relaTemp.data.push(cloneDeep(dataTemp));
+          dataTemp.data = [];
+          dataItem.ruleType = "[like]";
+          dataItem.colName = this.field.info.dispCol;
+          dataItem.value = queryString == null ? "" : queryString;
+          dataTemp.data.push(cloneDeep(dataItem));
+          relaTemp.data.push(cloneDeep(dataTemp));
+        }
+      } else {
+        // 默认的 value  disp 字段模糊查询条件
+        relaTemp.relation = "OR";
+        dataTemp.data = [];
+        let dataItem = {
+          colName: "",
+          value: "",
+          ruleType: "",
+        };
+        dataItem.ruleType = "[like]";
+        dataItem.colName = this.field.info.valueCol;
+        dataItem.value = queryString == null ? "" : queryString;
+        dataTemp.data.push(cloneDeep(dataItem));
+        relaTemp.data.push(cloneDeep(dataTemp));
+        dataTemp.data = [];
+        dataItem.ruleType = "[like]";
+        dataItem.colName = this.field.info.dispCol;
+        dataItem.value = queryString == null ? "" : queryString;
+        dataTemp.data.push(cloneDeep(dataItem));
+        relaTemp.data.push(cloneDeep(dataTemp));
+      }
+      return relaTemp;
+    },
+    buildRelationCondition(dispLoader) {
+      let self = this;
+      function evalCustomizer(value, key, obj, stack) {
+        if (key === "value" && !obj.literal) {
+          try {
+            return self.evalExprOrFunc(
+              value,
+              self.field.form.srvValFormModel(),
+              null
+            );
+          } catch (e) {
+            return value;
+          }
+        }
+      }
+
+      var evaled = cloneDeepWith(
+        dispLoader.relation_conditions,
+        evalCustomizer
+      );
+
+      function pruneCustomizer(value, key, obj, stack) {
+        if (
+          key === "data" &&
+          Array.isArray(value) &&
+          !isEmpty(value) &&
+          value[0].hasOwnProperty("colName")
+        ) {
+          return value.filter(
+            (leafCondition) =>
+              leafCondition.value !== "" &&
+              leafCondition.value !== null &&
+              leafCondition.value !== undefined
+          );
+        }
+      }
+      var result = cloneDeepWith(evaled, pruneCustomizer);
+      return result;
+    },
+
+    buildConditions: function (dispLoader) {
+      let ret = [];
+      const rowData = this.row;
+      const mainData = {};
+      for (let i in dispLoader.conditions) {
+        let cond = dispLoader.conditions[i];
+        let condition = {};
+        try {
+          condition.colName = cond.colName;
+          condition.ruleType = cond.ruleType;
+          if (cond.disableExpr && eval(cond.disableExpr)) {
+            continue;
+          }
+
+          let valueExpr = cond.valueExpr || cond.value;
+          if (valueExpr?.value_type && valueExpr?.value_key) {
+            if (valueExpr?.value_type === "rowData") {
+              condition.value = rowData[valueExpr.value_key];
+            } else if (valueExpr?.value_type === "mainData") {
+              condition.value = mainData[valueExpr.value_key];
+            } else if (
+              valueExpr?.value_type === "constant" &&
+              valueExpr.value
+            ) {
+              condition.value = valueExpr.value;
+            }
+          } else if (valueExpr) {
+            // literal value or js expr
+            if (cond.literalValue) {
+              condition.value = valueExpr;
+            } else {
+              condition.value = this.evalExprOrFunc(
+                valueExpr,
+                this.row,
+                null,
+                mainData
+              );
+            }
+          } else if (cond.valueFunc) {
+            condition.value = cond.valueFunc();
+          }
+        } catch (e) {
+          continue;
+        }
+        if (condition.ruleType === "isnull") {
+          /**
+           * 增加支持 ruleType === isnull
+           */
+          ret.push(condition);
+        } else {
+          if (condition.value != null && condition.value != "") {
+            if (Array.isArray(condition.value)) {
+              if (condition.value.length == 0) {
+                continue;
+              }
+            }
+            ret.push(condition);
+          } else if (
+            !this.field.info._finderAuto &&
+            condition.value === null &&
+            cond.value !== null
+          ) {
+            condition.value = "";
+            ret.push(condition);
+          }
+        }
+      }
+
+      return ret;
     },
   },
 };

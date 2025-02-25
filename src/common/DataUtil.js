@@ -347,27 +347,46 @@ export function extractDates(str) {
 }
 
 /**
- * 匹配 YYYYMMDD, YYYY/MM/DD, YYYY-MM-DD 或者 Unix 时间戳 (10 or 13 digits)
+ * 匹配 YYYYMMDD, YYYY/MM/DD, YYYY-MM-DD, YYYY.M.D, YYYY.M, YY.M.D, YY.M, M.D, YY-M-D, YY-MM-D, YY-M-DD 或者 Unix 时间戳 (10 or 13 digits)
  * @param {*} str 
  * @returns 
  */
 export function extractAndFormatDatesOrTimestamps(str) {
+  const currentYear = new Date().getFullYear();
+
   // 匹配 YYYYMMDD, YYYY-MM-DD, YYYY/MM/DD 格式的日期
-  const fullYearDatePattern = /(\d{4})(\/|-)?(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])/g;
+  const fullYearDatePattern = /(\d{4})(\/|-|\.)(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])/g;
 
   // 匹配 YYMMDD, YY-MM-DD, YY/MM/DD 格式的日期
-  const shortYearDatePattern = /(\d{2})(\/|-)?(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])/g;
+  const shortYearDatePattern = /(\d{2})(\/|-|\.)(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])/g;
+
+  // 匹配 YYYY.M.D 格式的日期
+  const fullYearDotDatePattern = /(\d{4})\.(0?[1-9]|1[0-2])\.(0?[1-9]|[12]\d|3[01])/g;
+
+  // 匹配 YYYY.M 格式的日期
+  const fullYearDotMonthPattern = /(\d{4})\.(0?[1-9]|1[0-2])/g;
+
+  // 匹配 YY.M.D 格式的日期
+  const shortYearDotDatePattern = /(\d{2})\.(0?[1-9]|1[0-2])\.([12]\d|3[01]|0?[1-9])/g;
+
+  // 匹配 YY.M 格式的日期
+  const shortYearDotMonthPattern = /(\d{2})\.(0?[1-9]|1[0-2])/g;
+
+  // 匹配 M.D 或 M.DD 或 MM.DD 格式的日期
+  const monthDayPattern = /(0?[1-9]|1[0-2])\.([12]\d|0?[1-9])/g;
+
+  // 匹配 YY-M-D, YY-MM-D, YY-M-DD 格式的日期
+  const shortYearDashDatePattern = /(\d{2})-(0?[1-9]|1[0-2])-(0?[1-9]|[12]\d)/g;
 
   // 匹配 10位或13位的时间戳
   const timestampPattern = /\b\d{10}(?:\d{3})?\b/g;
 
   let matches;
 
-
   // 尝试匹配时间戳格式
   matches = timestampPattern.exec(str);
   if (matches) {
-    // 将时间戳转换为 YYYY/MM/DD 格式
+    // 将时间戳转换为 YYYY-MM-DD 格式
     let timestamp = parseInt(matches[0], 10);
     let date;
 
@@ -380,10 +399,9 @@ export function extractAndFormatDatesOrTimestamps(str) {
       date = new Date(timestamp);
     }
 
-    // return date.toISOString().split('T')[0].replace(/-/g, '/');
     return date.toISOString().split('T')[0];
   }
-  
+
   // 尝试匹配完整年份的日期格式
   matches = fullYearDatePattern.exec(str);
   if (matches) {
@@ -391,29 +409,80 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let monthPart = matches[3];
     let dayPart = matches[4];
 
-    // return `${yearPart}/${monthPart}/${dayPart}`;
     return `${yearPart}-${monthPart}-${dayPart}`;
   }
 
   // 尝试匹配两位数年份的日期格式
   matches = shortYearDatePattern.exec(str);
   if (matches) {
-    let yearPart = `20${matches[1]}`; // 假设是20世纪的年份，可根据需要调整
+    let yearPart = `20${matches[1]}`; // 假设是21世纪的年份，可根据需要调整
 
     let monthPart = matches[3];
     let dayPart = matches[4];
 
-    // return `${yearPart}/${monthPart}/${dayPart}`;
     return `${yearPart}-${monthPart}-${dayPart}`;
   }
 
+  // 尝试匹配 YYYY.M.D 格式的日期
+  matches = fullYearDotDatePattern.exec(str);
+  if (matches) {
+    let yearPart = matches[1];
+    let monthPart = matches[2].padStart(2, '0');
+    let dayPart = matches[3].padStart(2, '0');
 
+    return `${yearPart}-${monthPart}-${dayPart}`;
+  }
+
+  // 尝试匹配 YYYY.M 格式的日期
+  matches = fullYearDotMonthPattern.exec(str);
+  if (matches) {
+    let yearPart = matches[1];
+    let monthPart = matches[2].padStart(2, '0');
+
+    return `${yearPart}-${monthPart}-01`;
+  }
+
+  // 尝试匹配 YY.M.D 格式的日期
+  matches = shortYearDotDatePattern.exec(str);
+  if (matches) {
+    let yearPart = `20${matches[1]}`; // 假设是21世纪的年份，可根据需要调整
+    let monthPart = matches[2].padStart(2, '0');
+    let dayPart = matches[3].padStart(2, '0');
+
+    return `${yearPart}-${monthPart}-${dayPart}`;
+  }
+
+  // 尝试匹配 YY.M 格式的日期
+  matches = shortYearDotMonthPattern.exec(str);
+  if (matches) {
+    let yearPart = `20${matches[1]}`; // 假设是21世纪的年份，可根据需要调整
+    let monthPart = matches[2].padStart(2, '0');
+
+    return `${yearPart}-${monthPart}-01`;
+  }
+
+  // 尝试匹配 M.D 或 M.DD 或 MM.DD 格式的日期
+  matches = monthDayPattern.exec(str);
+  if (matches) {
+    let monthPart = matches[1].padStart(2, '0');
+    let dayPart = matches[2].padStart(2, '0');
+
+    return `${currentYear}-${monthPart}-${dayPart}`;
+  }
+
+  // 尝试匹配 YY-M-D, YY-MM-D, YY-M-DD 格式的日期
+  matches = shortYearDashDatePattern.exec(str);
+  if (matches) {
+    let yearPart = `20${matches[1]}`; // 假设是21世纪的年份，可根据需要调整
+    let monthPart = matches[2].padStart(2, '0');
+    let dayPart = matches[3].padStart(2, '0');
+
+    return `${yearPart}-${monthPart}-${dayPart}`;
+  }
 
   // 如果没有匹配到任何内容，返回空字符串或其他默认值
   return '';
-
 }
-
 // export function extractAndFormatDatesOrTimestamps(str) {
 //   // 匹配 YYYYMMDD, YYYY/MM/DD, YYYY-MM-DD 或者 Unix 时间戳 (10 or 13 digits)
 //   const dateOrTimestampPattern = /(\d{4})(\/|-)?(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])|\b\d{10}(?:\d{3})?\b/g;

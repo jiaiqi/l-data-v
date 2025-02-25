@@ -1,5 +1,4 @@
-<script setup>
-</script>
+<script setup></script>
 
 <template>
   <div id="app">
@@ -12,5 +11,9 @@ html,
 body {
   margin: 0;
   padding: 0;
+}
+
+:root {
+  --primary-color: #1890ff;
 }
 </style>
