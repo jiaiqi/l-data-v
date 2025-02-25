@@ -187,6 +187,7 @@ export default {
     linkToDetail() {
       return (
         this.$parent?.column?.linkToDetail === true &&
+        this.row?.__flag !== "add" &&
         this.detailButton?.permission
       );
     },
