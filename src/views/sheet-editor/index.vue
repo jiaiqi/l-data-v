@@ -1,5 +1,5 @@
 <template>
-  <div class="spreadsheet flex flex-col">
+  <div class="spreadsheet flex flex-col" ref="spreadsheet">
     <loading-view
       v-if="loading"
       mask
@@ -186,6 +186,13 @@
     ></select-parent-node>
 
     <login-dialog ref="loginRef"></login-dialog>
+    <drop-menu
+      v-if="showDropMenu"
+      v-model="showDropMenu"
+      :items="dropMenuItems"
+      :position="{ top: dTop, left: dLeft }"
+      @select="onRowButton"
+    />
   </div>
 </template>
 
@@ -196,6 +203,7 @@ import {
   onBatchOperate,
   onDelete,
 } from "../../service/api";
+
 import dayjs from "dayjs";
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/user.js";
@@ -222,7 +230,9 @@ import {
   extractAndFormatDatesOrTimestamps,
   extractConcatNumbersWithSingleDecimal,
 } from "@/common/DataUtil.js";
+import { rowButtonClick } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
+import DropMenu from "./components/drop-menu/drop-menu.vue";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
@@ -242,6 +252,7 @@ export default {
     broadcastChannel?.close();
     broadcastChannel = null;
   },
+  mounted() {},
   async created() {
     if (this.$route.query?.disabled) {
       this.disabled = true;
@@ -279,9 +290,14 @@ export default {
     loginDialog,
     LoadingView,
     ChooseTenant,
+    DropMenu,
   },
   data() {
     return {
+      showDropMenu: false,
+      dLeft: 0,
+      dTop: 0,
+      currentRowIndex: -1,
       currentCell: null,
       onHandler: false,
       disabled: false,
@@ -787,6 +803,10 @@ export default {
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
+          let oldRow = this.oldTableData.find((item) => item.__id === row.__id);
+          if(oldRow?.[column.field] === changeValue) {
+            return;
+          }
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
@@ -804,6 +824,8 @@ export default {
 
           if (row.__id && row.__flag !== "add") {
             row.__flag = "update";
+            console.log('update');
+
           }
           // if (column?.__field_info?.redundant_options?._target_column) {
           //   // 处理autocomplete对应的fk字段
@@ -878,6 +900,18 @@ export default {
   },
   computed: {
     ...mapState(useUserStore, ["userInfo", "tenants"]),
+    dropMenuItems() {
+      return this.v2data?.rowButton
+        ?.filter((item) => {
+          return !["edit"].includes(item.button_type);
+        })
+        ?.map((item) => {
+          return {
+            label: item.button_name,
+            ...item,
+          };
+        });
+    },
     setAllFields() {
       // 所有字段
       return this.v2data?.srv_cols || [];
@@ -968,7 +1002,10 @@ export default {
           selectionRangeKeys,
           selectionRangeIndexes,
         }) => {
-          console.log("---contextmenu header beforeShow--");
+          // if(selectionRangeKeys?.startColKey ==='_handler_btn' || selectionRangeKeys?.startColKey ==='_handler_btn'){
+          //   return false
+          // }
+          console.log("---contextmenu body beforeShow--");
           console.log("isWholeColSelection::", isWholeRowSelection);
           console.log("selectionRangeKeys::", selectionRangeKeys);
           console.log("selectionRangeIndexes::", selectionRangeIndexes);
@@ -1466,6 +1503,27 @@ export default {
     },
   },
   methods: {
+    onRowButton(item) {
+      console.log("onRowButton", item, this.tableData[this.currentRowIndex]);
+      const row = this.tableData[this.currentRowIndex];
+      if (row) {
+        rowButtonClick({
+          operate_item: item,
+          row,
+          mainData: this.mainData,
+          vm: this,
+        }).then((res) => {
+          if (res?.type === "deleteRowData") {
+            this.deleteRow([res.row]);
+          } else if (res?.type === "onDuplicateClicked") {
+
+          } else if(!res){
+            this.$message.error("功能待开发");
+          }
+        });
+      }
+      this.currentRowIndex = -1;
+    },
     // getInitData(cfg = {}) {
     //   const service = cfg.select_srv;
     //   const condition = cfg.condition.map(item => {
@@ -2100,7 +2158,8 @@ export default {
                               this.$refs["tableRef"].stopEditingCell();
                               this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                             }
-
+                            console.log("fkAutocomplete-select", rawData);
+                            
                             this.handlerRedundant(
                               data,
                               fkColumn,
@@ -2117,10 +2176,12 @@ export default {
                   (item.col_type?.indexOf("bx") === 0 &&
                     item?.option_list_v2?.serviceName)
                 ) {
+                  const fieldInfo = this.tableData[rowIndex]?.__flag=='add'?this.addColsMap[column.field]:this.updateColsMap[column.field];
                   return h(fkSelector, {
                     attrs: {
                       value: row[column.field],
                       size: "mini",
+                      fieldInfo:fieldInfo,
                       srvInfo:
                         this.updateColsMap[column.field]?.option_list_v2 ||
                         item.option_list_v2,
@@ -2158,6 +2219,8 @@ export default {
                         });
                         this.$refs["tableRef"].stopEditingCell();
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        console.log("fkSelector-select-handlerRedundant", event);
+                        
                         this.handlerRedundant(
                           event?.rawData,
                           column.field,
@@ -2550,19 +2613,58 @@ export default {
             },
           });
         }
-        return columns;
+        // return columns;
       }
-      columns = columns.concat(
-        COLUMN_KEYS.map((keyValue) => {
-          return {
-            title: keyValue,
-            field: keyValue,
-            key: keyValue,
-            width: 90,
-            edit: true,
-          };
-        })
-      );
+      // columns = columns.concat(
+      //   COLUMN_KEYS.map((keyValue) => {
+      //     return {
+      //       title: keyValue,
+      //       field: keyValue,
+      //       key: keyValue,
+      //       width: 90,
+      //       edit: true,
+      //     };
+      //   })
+      // );
+      if (!this.disabled) {
+        columns.push({
+          field: "_handler_btn",
+          key: "_handler_btn",
+          // operationColumn: true,
+          title: "操作",
+          width: 50,
+          fixed: "right",
+          renderBodyCell: function ({ row, column, rowIndex }, h) {
+            return h("div", {
+              domProps: { innerHTML: "<i class='i-ic-baseline-settings'></i>" },
+              // domProps: { innerHTML: "操作" },
+              attrs: {
+                style: "cursor:pointer;",
+                class: "hover:color-blue",
+              },
+              on: {
+                contextmenu: (event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  console.log(row, "onHandler");
+                },
+                click: (event) => {
+                  self.showDropMenu = true;
+                  console.log(row, rowIndex, event, "onHandler");
+                  self.dLeft = event.clientX;
+                  self.dTop = event.clientY;
+                  self.currentRowIndex = rowIndex;
+                  // self.tableData = self.tableData.filter(
+                  //   (item, index) => index !== rowIndex
+                  // );
+                  // self.emitListData();
+                  // self.tableData = self.tableData.splice(rowIndex,1);
+                },
+              },
+            });
+          },
+        });
+      }
       return columns;
     },
     handlerRedundant(rawData = {}, fkColumn, rowKey, rowIndex) {
@@ -2628,6 +2730,9 @@ export default {
             // 值都为空
             return;
           }
+          if (rawData?.[item.redundant.refedCol] === undefined) {
+            return;
+          }
           row[item.columns] = rawData?.[item.redundant.refedCol] || null;
           this.$set(this.tableData, rowIndex, row);
           console.log("handlerRedundant::", item.columns, row[item.columns]);
@@ -2645,7 +2750,8 @@ export default {
       }
     },
     buildReqParams() {
-      const tableData = JSON.parse(JSON.stringify(this.tableData));
+      const tableData = this.tableData;
+      // const tableData = JSON.parse(JSON.stringify(this.tableData));
       const reqData = [];
       const addDatas = [];
 
@@ -2676,6 +2782,8 @@ export default {
                   }
                 }
                 item.__flag = "update";
+                console.log('update');
+                
                 this.$set(item, "__flag", "update");
                 if (item[key] === "" || item[key] == undefined) {
                   item[key] = null;
@@ -3312,6 +3420,7 @@ export default {
             this.$set(row, "__children", cloneDeep(children));
             this.$set(row, "__unfold", true);
             tableData.splice(index + 1, 0, ...children);
+            // this.oldTableData.splice(index + 1, 0, ...cloneDeep(children));
           }
         }
       }
@@ -3372,11 +3481,13 @@ export default {
             tableData.splice(rowIndex + 1, 0, ...cloneDeep(resData));
             this.tableData = cloneDeep(tableData);
             let oldTableData = this.oldTableData;
+
             const oldRowDataIndex = oldTableData.findIndex(
               (item) => item.__id && item.__id === row.__id
             );
             oldTableData.splice(oldRowDataIndex + 1, 0, ...cloneDeep(resData));
             this.oldTableData = cloneDeep(oldTableData);
+
             // this.$set(this.tableData[rowIndex], "__unfold", load);
             callback?.(true);
           } else {
@@ -3503,8 +3614,9 @@ export default {
         }
 
         this.oldTableData = JSON.parse(JSON.stringify(this.tableData));
+
         this.recordManager = new RecordManager();
-        this.recordManager?.push(cloneDeep(this.oldTableData));
+        // this.recordManager?.push(cloneDeep(this.oldTableData));
 
         if (this.tableData?.length === 0 && insertNewRows) {
           this.insert2Rows(0);
@@ -3685,6 +3797,9 @@ export default {
         shiftDown = false;
       };
     },
+    onPageResize(event) {
+      console.log("onPageResize:", event);
+    },
   },
 };
 </script>
@@ -3725,7 +3840,7 @@ export default {
   }
 
   .table-body-cell__add {
-    background-color: #2EA269 !important;
+    background-color: #2ea269 !important;
     color: #fff !important;
 
     // border-top: 1px solid #a4da89;
@@ -3744,22 +3859,22 @@ export default {
     }
   }
   .table-body-cell__update-index {
-    background-color: rgba($color: #E83D4B, $alpha: 0.9) !important;
+    background-color: rgba($color: #e83d4b, $alpha: 0.9) !important;
     color: #fff !important;
   }
   .table-body-cell__update {
     // color: #2087cc !important;
-    color: #E83D4B !important;
+    color: #e83d4b !important;
 
     .el-input {
       .el-input__inner {
         // color: #2087cc !important;
-        color: #E83D4B !important;
+        color: #e83d4b !important;
       }
     }
 
     .el-tag {
-      color: #E83D4B !important;
+      color: #e83d4b !important;
     }
 
     // background-color: #2087CC !important;
