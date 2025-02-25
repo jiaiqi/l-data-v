@@ -687,7 +687,7 @@ export default {
       },
       // 单元格编辑配置
       editOption: {
-        beforeCellValueChange: ({ row, column, changeValue }) => {
+        beforeCellValueChange: ({ row, column, changeValue ,rowIndex}) => {
           const colType = column?.__field_info?.col_type;
           // console.log(row, column, changeValue);
           if (row.__flag === "add") {
@@ -742,7 +742,7 @@ export default {
             }
           }
         },
-        beforeStartCellEditing: ({ row, column, cellValue }) => {
+        beforeStartCellEditing: ({ row, column, cellValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
 
           let oldRowData = this.oldTableData.find(
@@ -798,13 +798,26 @@ export default {
             ["RichText", "Note"].includes(colType) &&
             cellValue === oldRowData?.[column.field]
           ) {
-            return false;
+            // 值未发生变化
+            // if (row.__flag === "update") {
+            //   this.tableData.forEach((item) => {
+            //     if (item.__id === row.__id) {
+            //       delete item.__flag;
+            //     }
+            //   });
+            // }
+            // return false;
           }
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
           let oldRow = this.oldTableData.find((item) => item.__id === row.__id);
+          console.log("afterCellValueChange");
+
           if (oldRow?.[column.field] === changeValue) {
+            if(row.__flag === "update"){
+              row.__flag = null;
+            }
             return;
           }
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
@@ -823,8 +836,8 @@ export default {
           }
 
           if (row.__id && row.__flag !== "add") {
-            row.__flag = "update";
-            console.log("update");
+            // row.__flag = "update";
+            console.log("update", changeValue, oldRow?.[column.field]);
           }
           // if (column?.__field_info?.redundant_options?._target_column) {
           //   // 处理autocomplete对应的fk字段
@@ -888,10 +901,9 @@ export default {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         console.log(currentSelection);
         this.calcReqData = this.buildReqParams();
-        if (
-          currentSelection?.selectionRangeIndexes?.startRowIndex &&
-          currentSelection?.selectionRangeIndexes?.startRowIndex !== -1
-        ) {
+        const startRowIndex =
+          currentSelection?.selectionRangeIndexes?.startRowIndex;
+        if (typeof startRowIndex === "number" && startRowIndex >= 0) {
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
         }
       },
@@ -2830,6 +2842,9 @@ export default {
                 }
                 updateObj[key] = item[key];
               }
+              // else if(item.__flag === "update"&&oldItem[key] === item[key]){
+              //   delete item.__flag;
+              // }
             }
           });
           if (Object.keys(updateObj)?.length) {
