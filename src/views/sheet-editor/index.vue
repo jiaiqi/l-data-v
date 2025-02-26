@@ -729,7 +729,7 @@ export default {
         beforeCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
           if (changeValue === row[column.field]) {
-           // 值没变
+            // 值没变
             return false;
           }
           if (row.__flag === "add") {
@@ -1592,8 +1592,24 @@ export default {
         }
         if (update) {
           const moment = dayjs;
-          const vm = this;
-          const ret = eval("var zz=" + func + "(row, vm, field); zz");
+
+          // const ret = eval("var zz=" + func + "(row, self, field); zz");
+          let ret = undefined;
+          try {
+            const commonUtil = {
+              $http,
+              moment,
+              dayjs,
+            };
+            console.log('commonUtil:',commonUtil);
+            
+            ret = eval(`(${func})(row,commonUtil,field)`);
+            // ret = eval("var zz=" + func + "(row, commonUtilObject, field); zz");
+          } catch (error) {
+            console.error("Error executing function:", error);
+            // 根据需求决定如何处理错误，例如返回默认值或抛出异常
+            ret = undefined;
+          }
           if (ret === "Invalid date") {
             return;
           }
