@@ -159,6 +159,7 @@ const buildSrvCols = (
       for (const item of calcCols) {
         if (item.__update_calc_trigger_col) {
           for (const col of item.__update_calc_trigger_col) {
+            if(col === item.columns) continue;
             if (!updateDepMap.has(col)) {
               updateDepMap.set(col, []);
             }
@@ -167,6 +168,7 @@ const buildSrvCols = (
         }
         if (item.__add_calc_trigger_col) {
           for (const col of item.__add_calc_trigger_col) {
+            if(col === item.columns) continue;
             if (!addDepMap.has(col)) {
               addDepMap.set(col, []);
             }
