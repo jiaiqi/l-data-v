@@ -193,9 +193,7 @@
       :position="{ top: dTop, left: dLeft }"
       @select="onRowButton"
     />
-    <el-dialog>
-
-    </el-dialog>
+    <el-dialog> </el-dialog>
   </div>
 </template>
 
@@ -236,7 +234,7 @@ import {
 import { rowButtonClick } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
-import outAdd from './components/out-comp/add.vue'
+import outAdd from "./components/out-comp/add.vue";
 import { eventCustomOption } from "./util/sheetOption.js";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
@@ -300,11 +298,11 @@ export default {
     LoadingView,
     ChooseTenant,
     DropMenu,
-    outAdd
+    outAdd,
   },
   data() {
     return {
-      dialogName:"",
+      dialogName: "",
       showDropMenu: false,
       dLeft: 0,
       dTop: 0,
@@ -656,75 +654,6 @@ export default {
       },
       // 单元格编辑配置
       editOption: {
-        beforeCellValueChange: ({ row, column, changeValue, rowIndex }) => {
-          const colType = column?.__field_info?.col_type;
-          // console.log(row, column, changeValue);
-          if (row.__flag === "add") {
-            // 新增行 处理in_add 为0或者add服务没有这个字段
-            if (!this.addColsMap[column.field]?.in_add) {
-              this.$message({
-                message: "新增行不支持编辑当前列",
-                type: "warning",
-              });
-              return false;
-            }
-            if(this.addColsMap[column.field].updatable!==1){
-              this.$message({
-                message: "当前列新增时不支持编辑",
-                type: "warning",
-              });
-              return false;
-            }
-          } else {
-            // 编辑行 处理in_update
-            if (!this.updateColsMap[column.field]?.in_update) {
-              this.$message({
-                message: "当前列不支持编辑",
-                type: "warning",
-              });
-              return false;
-            }
-            if(this.updateColsMap[column.field]?.updatable!==1){
-              this.$message({
-                message: "当前列不支持编辑",
-                type: "warning",
-              });
-              return false;
-            }
-          }
-          if (["DateTime", "Date"].includes(colType)) {
-            // 日期时间类型格式化
-            let dateStr = extractAndFormatDatesOrTimestamps(changeValue);
-            if (dateStr && dateStr !== changeValue) {
-              const index = this.tableData.findIndex(
-                (item) => item.__id === row.__id
-              );
-              let rowData = this.tableData[index];
-              this.$set(rowData, column.field, dateStr);
-              return false;
-            } else if (!dateStr && isNaN(new Date(changeValue).getTime())) {
-              this.$message({
-                message: "非合法日期字符串",
-                type: "warning",
-              });
-              return false;
-            } else {
-            }
-          }
-          if (
-            ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
-            colType.includes("decimal")
-          ) {
-            // 数字 校验
-            if (isNaN(Number(changeValue))) {
-              this.$message({
-                message: "请输入数字",
-                type: "warning",
-              });
-              return false;
-            }
-          }
-        },
         beforeStartCellEditing: ({ row, column, cellValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
           let oldRowData = this.oldTableData?.find(
@@ -739,7 +668,7 @@ export default {
               });
               return false;
             }
-            if(this.addColsMap[column.field].updatable!==1){
+            if (this.addColsMap[column.field].updatable !== 1) {
               this.$message({
                 message: "当前列新增时不支持编辑",
                 type: "warning",
@@ -755,7 +684,7 @@ export default {
               });
               return false;
             }
-            if(this.updateColsMap[column.field]?.updatable!==1){
+            if (this.updateColsMap[column.field]?.updatable !== 1) {
               this.$message({
                 message: "当前列不支持编辑",
                 type: "warning",
@@ -797,9 +726,84 @@ export default {
             // return false;
           }
         },
+        beforeCellValueChange: ({ row, column, changeValue, rowIndex }) => {
+          const colType = column?.__field_info?.col_type;
+          if (changeValue === row[column.field]) {
+           // 值没变
+            return false;
+          }
+          if (row.__flag === "add") {
+            // 新增行 处理in_add 为0或者add服务没有这个字段
+            if (!this.addColsMap[column.field]?.in_add) {
+              this.$message({
+                message: "新增行不支持编辑当前列",
+                type: "warning",
+              });
+              return false;
+            }
+            if (this.addColsMap[column.field].updatable !== 1) {
+              this.$message({
+                message: "当前列新增时不支持编辑",
+                type: "warning",
+              });
+              return false;
+            }
+          } else {
+            // 编辑行 处理in_update
+            if (!this.updateColsMap[column.field]?.in_update) {
+              this.$message({
+                message: "当前列不支持编辑",
+                type: "warning",
+              });
+              return false;
+            }
+            if (this.updateColsMap[column.field]?.updatable !== 1) {
+              this.$message({
+                message: "当前列不支持编辑",
+                type: "warning",
+              });
+              return false;
+            }
+          }
+          if (["DateTime", "Date"].includes(colType)) {
+            // 日期时间类型格式化
+            let dateStr = extractAndFormatDatesOrTimestamps(changeValue);
+            if (dateStr && dateStr !== changeValue) {
+              const index = this.tableData.findIndex(
+                (item) => item.__id === row.__id
+              );
+              let rowData = this.tableData[index];
+              this.$set(rowData, column.field, dateStr);
+              return false;
+            } else if (!dateStr && isNaN(new Date(changeValue).getTime())) {
+              this.$message({
+                message: "非合法日期字符串",
+                type: "warning",
+              });
+              return false;
+            } else {
+            }
+          }
+          if (
+            ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
+            colType.includes("decimal")
+          ) {
+            // 数字 校验
+            if (isNaN(Number(changeValue))) {
+              this.$message({
+                message: "请输入数字",
+                type: "warning",
+              });
+              return false;
+            }
+          }
+        },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
           let oldRow = this.oldTableData?.find(
+            (item) => item.__id === row.__id
+          );
+          let currentRow = this.tableData?.find(
             (item) => item.__id === row.__id
           );
 
@@ -809,6 +813,11 @@ export default {
             }
             return;
           }
+          console.log(
+            "afterCellValueChange::",
+            changeValue,
+            currentRow?.[column.field]
+          );
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
@@ -853,21 +862,47 @@ export default {
           //     // this.handlerRedundant({}, col, row.rowKey, rowIndex);
           //   }
           // }
-          console.log("afterCellValueChange", column);
-          const calcDependedCols = column?.__field_info?.calcDependedCols;
-          if (calcDependedCols?.length) {
-            if (changeValue !== oldRow?.[column.field]) {
-              console.log("calcDependedCols:", calcDependedCols);
-              calcDependedCols.forEach((key) => {
-                const calcCol = this.allFields.find(
-                  (item) => item.columns === key
-                );
-                if (calcCol?.redundant?.func) {
-                  this.handleRedundantCalc(calcCol, row);
-                }
-              });
-            }
+          let calcDependedCols = null;
+          if (row.__flag === "add") {
+            calcDependedCols = column.__field_info?.__add_calc_depended_cols;
+          } else {
+            calcDependedCols = column.__field_info?.__update_calc_depended_cols;
           }
+          if (
+            Array.isArray(calcDependedCols) &&
+            calcDependedCols.length &&
+            changeValue !== oldRow?.[column.field]
+          ) {
+            calcDependedCols.forEach((key) => {
+              const calcCol = this.allFields.find(
+                (item) => item.columns === key
+              );
+              if (calcCol?.redundant?.func) {
+                console.log(
+                  "toCalc::",
+                  changeValue,
+                  oldRow?.[column.field],
+                  row[column.field]
+                );
+
+                this.handleRedundantCalc(calcCol, row);
+              }
+            });
+          }
+          // const calcDependedCols = column?.__field_info?.calcDependedCols;
+          // if (calcDependedCols?.length) {
+          //   if (changeValue !== oldRow?.[column.field]) {
+          //     console.log("calcDependedCols:", calcDependedCols);
+          //     calcDependedCols.forEach((key) => {
+          //       const calcCol = this.allFields.find(
+          //         (item) => item.columns === key
+          //       );
+          //       if (calcCol?.redundant?.func) {
+          //         this.handleRedundantCalc(calcCol, row);
+          //       }
+          //     });
+          //   }
+          // }
           this.recordManager?.push(cloneDeep(this.tableData));
           if (this.childListType) {
             // 子表数据更新 通知主表
@@ -3293,7 +3328,7 @@ export default {
             //   console.log('updateIds:', updateIds);
             //   return this.miniUpdate(updateIds)
             // }
-            this.optimisticUpdate()
+            this.optimisticUpdate();
             return;
             if (this.listType === "treelist" && this.treeInfo.idCol) {
               let unfoldIds = this.tableData
@@ -3694,8 +3729,8 @@ export default {
         this.loading = false;
 
         if (res?.data?.length) {
-          if(res.page){
-            this.page = res.page
+          if (res.page) {
+            this.page = res.page;
           }
           res.data = res.data.map((item) => {
             item.__button_auth = this.setButtonAuth(

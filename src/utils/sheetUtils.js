@@ -135,15 +135,43 @@ const buildSrvCols = (
           break;
       }
     }
-    let calcCols = cols.filter(item=>item?.calc_trigger_col?.length)
-    if(calcCols.length>0){
+    let calcCols = []
+    for (let index = 0; index < cols.length; index++) {
+      const item = cols[index];
+      if(updateColsMap[item.columns]?.calc_trigger_col){
+        item.__update_calc_trigger_col = updateColsMap[item.columns]?.calc_trigger_col
+      }
+      if(addColsMap[item.columns]?.calc_trigger_col){
+        item.__add_calc_trigger_col = addColsMap[item.columns]?.calc_trigger_col
+      }
+      if(item.__update_calc_trigger_col || item.__add_calc_trigger_col){
+        calcCols.push(item)
+      }
+    }
+    if(calcCols?.length){
       cols.forEach(col=>{
-        const calcDependedCols = calcCols.filter(item=>item.calc_trigger_col.includes(col.columns)).map(item=>item.columns)
-        if(calcDependedCols?.length){
-          col.calcDependedCols = calcDependedCols
+        const updateCalcDependedCols = calcCols.filter(item=>item.__update_calc_trigger_col?.includes(col.columns)).map(item=>item.columns)
+        if(updateCalcDependedCols?.length){
+          col.__update_calc_depended_cols = updateCalcDependedCols
+        }
+        const addCalcDependedCols = calcCols.filter(item=>item.__add_calc_trigger_col?.includes(col.columns)).map(item=>item.columns)
+        if(addCalcDependedCols?.length){
+          col.__add_calc_depended_cols = addCalcDependedCols
         }
       })
     }
+    // cols.filter(item => item?.calc_trigger_col?.length || updateColsMap[item.columns]?.calc_trigger_col?.length || addColsMap[item.columns]?.calc_trigger_col?.length)
+
+    // if (calcCols.length > 0) {
+    //   cols.forEach(col => {
+    //     const calcDependedCols = calcCols.filter(item => item.calc_trigger_col.includes(col.columns)).map(item => item.columns)
+    //     if (calcDependedCols?.length) {
+    //       col.calcDependedCols = calcDependedCols
+    //     }
+    //   })
+    // }
+
+
     cols = cols.filter(
       (item) => item.in_list === 1 || item.in_update === 1 || item.in_add === 1
     );
