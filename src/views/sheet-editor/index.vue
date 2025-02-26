@@ -193,6 +193,9 @@
       :position="{ top: dTop, left: dLeft }"
       @select="onRowButton"
     />
+    <el-dialog>
+
+    </el-dialog>
   </div>
 </template>
 
@@ -233,6 +236,7 @@ import {
 import { rowButtonClick } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
+import outAdd from './components/out-comp/add.vue'
 import { eventCustomOption } from "./util/sheetOption.js";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
@@ -296,9 +300,11 @@ export default {
     LoadingView,
     ChooseTenant,
     DropMenu,
+    outAdd
   },
   data() {
     return {
+      dialogName:"",
       showDropMenu: false,
       dLeft: 0,
       dTop: 0,
@@ -662,9 +668,23 @@ export default {
               });
               return false;
             }
+            if(this.addColsMap[column.field].updatable!==1){
+              this.$message({
+                message: "当前列新增时不支持编辑",
+                type: "warning",
+              });
+              return false;
+            }
           } else {
             // 编辑行 处理in_update
             if (!this.updateColsMap[column.field]?.in_update) {
+              this.$message({
+                message: "当前列不支持编辑",
+                type: "warning",
+              });
+              return false;
+            }
+            if(this.updateColsMap[column.field]?.updatable!==1){
               this.$message({
                 message: "当前列不支持编辑",
                 type: "warning",
@@ -707,7 +727,6 @@ export default {
         },
         beforeStartCellEditing: ({ row, column, cellValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
-
           let oldRowData = this.oldTableData?.find(
             (item) => item.__id === row.__id
           );
@@ -720,9 +739,23 @@ export default {
               });
               return false;
             }
+            if(this.addColsMap[column.field].updatable!==1){
+              this.$message({
+                message: "当前列新增时不支持编辑",
+                type: "warning",
+              });
+              return false;
+            }
           } else {
             // 编辑行 处理in_update
             if (!this.updateColsMap?.[column.field]?.in_update) {
+              this.$message({
+                message: "当前列不支持编辑",
+                type: "warning",
+              });
+              return false;
+            }
+            if(this.updateColsMap[column.field]?.updatable!==1){
               this.$message({
                 message: "当前列不支持编辑",
                 type: "warning",
