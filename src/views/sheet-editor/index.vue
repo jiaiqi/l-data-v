@@ -3260,6 +3260,7 @@ export default {
             //   console.log('updateIds:', updateIds);
             //   return this.miniUpdate(updateIds)
             // }
+            this.optimisticUpdate()
             return;
             if (this.listType === "treelist" && this.treeInfo.idCol) {
               let unfoldIds = this.tableData
