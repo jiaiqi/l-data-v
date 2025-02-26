@@ -135,31 +135,82 @@ const buildSrvCols = (
           break;
       }
     }
-    let calcCols = []
-    for (let index = 0; index < cols.length; index++) {
-      const item = cols[index];
-      if(updateColsMap[item.columns]?.calc_trigger_col){
-        item.__update_calc_trigger_col = updateColsMap[item.columns]?.calc_trigger_col
+
+    let calcCols = [];
+
+    // 第一步：筛选并标记需要计算的列
+    for (const item of cols) {
+      if (Array.isArray(updateColsMap[item.columns]?.calc_trigger_col)) {
+        item.__update_calc_trigger_col = updateColsMap[item.columns].calc_trigger_col;
       }
-      if(addColsMap[item.columns]?.calc_trigger_col){
-        item.__add_calc_trigger_col = addColsMap[item.columns]?.calc_trigger_col
+      if (Array.isArray(addColsMap[item.columns]?.calc_trigger_col)) {
+        item.__add_calc_trigger_col = addColsMap[item.columns].calc_trigger_col;
       }
-      if(item.__update_calc_trigger_col || item.__add_calc_trigger_col){
-        calcCols.push(item)
+      if (item.__update_calc_trigger_col || item.__add_calc_trigger_col) {
+        calcCols.push(item);
       }
     }
-    if(calcCols?.length){
-      cols.forEach(col=>{
-        const updateCalcDependedCols = calcCols.filter(item=>item.__update_calc_trigger_col?.includes(col.columns)).map(item=>item.columns)
-        if(updateCalcDependedCols?.length){
-          col.__update_calc_depended_cols = updateCalcDependedCols
+
+    if (calcCols.length > 0) {
+      // 第二步：构建依赖关系
+      const updateDepMap = new Map();
+      const addDepMap = new Map();
+
+      for (const item of calcCols) {
+        if (item.__update_calc_trigger_col) {
+          for (const col of item.__update_calc_trigger_col) {
+            if (!updateDepMap.has(col)) {
+              updateDepMap.set(col, []);
+            }
+            updateDepMap.get(col).push(item.columns);
+          }
         }
-        const addCalcDependedCols = calcCols.filter(item=>item.__add_calc_trigger_col?.includes(col.columns)).map(item=>item.columns)
-        if(addCalcDependedCols?.length){
-          col.__add_calc_depended_cols = addCalcDependedCols
+        if (item.__add_calc_trigger_col) {
+          for (const col of item.__add_calc_trigger_col) {
+            if (!addDepMap.has(col)) {
+              addDepMap.set(col, []);
+            }
+            addDepMap.get(col).push(item.columns);
+          }
         }
-      })
+      }
+
+      // 第三步：更新每个列的依赖关系
+      for (const col of cols) {
+        if (updateDepMap.has(col.columns)) {
+          col.__update_calc_depended_cols = updateDepMap.get(col.columns);
+        }
+        if (addDepMap.has(col.columns)) {
+          col.__add_calc_depended_cols = addDepMap.get(col.columns);
+        }
+      }
     }
+
+    // let calcCols = []
+    // for (let index = 0; index < cols.length; index++) {
+    //   const item = cols[index];
+    //   if(updateColsMap[item.columns]?.calc_trigger_col){
+    //     item.__update_calc_trigger_col = updateColsMap[item.columns]?.calc_trigger_col
+    //   }
+    //   if(addColsMap[item.columns]?.calc_trigger_col){
+    //     item.__add_calc_trigger_col = addColsMap[item.columns]?.calc_trigger_col
+    //   }
+    //   if(item.__update_calc_trigger_col || item.__add_calc_trigger_col){
+    //     calcCols.push(item)
+    //   }
+    // }
+    // if(calcCols?.length){
+    //   cols.forEach(col=>{
+    //     const updateCalcDependedCols = calcCols.filter(item=>item.__update_calc_trigger_col?.includes(col.columns)).map(item=>item.columns)
+    //     if(updateCalcDependedCols?.length){
+    //       col.__update_calc_depended_cols = updateCalcDependedCols
+    //     }
+    //     const addCalcDependedCols = calcCols.filter(item=>item.__add_calc_trigger_col?.includes(col.columns)).map(item=>item.columns)
+    //     if(addCalcDependedCols?.length){
+    //       col.__add_calc_depended_cols = addCalcDependedCols
+    //     }
+    //   })
+    // }
     // cols.filter(item => item?.calc_trigger_col?.length || updateColsMap[item.columns]?.calc_trigger_col?.length || addColsMap[item.columns]?.calc_trigger_col?.length)
 
     // if (calcCols.length > 0) {
