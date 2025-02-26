@@ -56,7 +56,10 @@
         ></el-cascader-panel>
       </el-popover>
     </div>
-    <div v-else-if="!setDisabled" class="flex items-center justify-between w-full">
+    <div
+      v-else-if="!setDisabled"
+      class="flex items-center justify-between w-full"
+    >
       <span>{{ modelValue }}</span>
       <el-autocomplete
         append-to-body
@@ -255,11 +258,15 @@ export default {
                     (item) => item.value === this.value
                   );
                   if (matchedVal) {
+                    debugger;
+
                     this.$emit("select", cloneDeep(matchedVal));
                   }
                   this.$refs?.inputRef?.focus();
                 } else if (res?.length) {
                   // 模糊匹配结果数量为1
+                  debugger;
+
                   this.$emit("select", cloneDeep(res[0]));
                   if (this.$refs?.inputRef?.activated) {
                     this.$nextTick(() => {
@@ -270,7 +277,12 @@ export default {
               });
             });
           }
-          if (!newValue && newValue !== oldValue && newValue !== undefined) {
+          if (
+            !newValue &&
+            newValue !== oldValue &&
+            newValue !== undefined &&
+            oldValue !== undefined
+          ) {
             this.$emit("select", null);
           }
         }
@@ -451,6 +463,7 @@ export default {
         (item) => item[this.srvInfo.refed_col] === val
       );
       if (currentValue) {
+        debugger;
         this.$emit("select", currentValue);
         this.modelValue = currentValue.label;
       }
@@ -519,6 +532,8 @@ export default {
       this.getTableData();
     },
     onDBClick(row, column, cell, event) {
+      debugger;
+
       this.$emit("select", cloneDeep(row));
       // this.modelValue = row[this.srvInfo.refed_col];
       // this.$emit("input", this.modelValue);
@@ -601,6 +616,8 @@ export default {
       }
     },
     handleSelect(item) {
+      debugger;
+
       this.$emit("select", cloneDeep(item));
     },
     querySearch(queryString, callback) {
@@ -687,6 +704,8 @@ export default {
       if (res.data.state === "SUCCESS") {
         this.options = res.data.data;
         if (initValue && this.options?.length) {
+          debugger;
+
           this.$emit("select", cloneDeep(this.options[0]));
         } else if (queryString && this.options?.length) {
           // let matchedVal = this.options.filter(item => item[this.srvInfo.refed_col] === queryString)

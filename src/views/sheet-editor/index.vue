@@ -3660,6 +3660,9 @@ export default {
         this.loading = false;
 
         if (res?.data?.length) {
+          if(res.page){
+            this.page = res.page
+          }
           res.data = res.data.map((item) => {
             item.__button_auth = this.setButtonAuth(
               this.v2data?.rowButton,
