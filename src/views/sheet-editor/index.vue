@@ -233,6 +233,7 @@ import {
 import { rowButtonClick } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
+import { eventCustomOption } from "./util/sheetOption.js";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
@@ -314,8 +315,6 @@ export default {
       onPopup: false, //弹窗是否打开状态
       calcReqData: null,
       columnWidthMap: {}, //存储改变后的列宽
-      ctop: "-100vh",
-      cleft: "-100vw",
       changeParentdialogVisible: false,
       pageNo: uniqueId("pageNo"),
       listType: "list",
@@ -340,54 +339,14 @@ export default {
       v2data: {}, //select v2
       allFields: [], //所有字段
       columns: [], //表头字段
-      eventCustomOption: {
-        bodyCellEvents: ({ row, column, rowIndex }) => {
-          return {
-            click: (event) => {
-              console.log(this.$refs.tableRef?.cellSelectionData?.currentCell);
-            },
-            contextmenu: (event) => {
-              console.log("bodyCellEvents::", row, column, rowIndex, event);
-              this.cleft = event.x + "px";
-              this.ctop = event.y + "px";
-            },
-          };
-        },
-        bodyRowEvents: ({ row, rowIndex }) => {
-          return {
-            // click: (event) => {
-            //   console.log("click::", row, rowIndex, event);
-            // },
-            dblclick: (event) => {
-              console.log("dblclick::", row, rowIndex, event);
-              return false;
-            },
-            contextmenu: (event) => {
-              console.log("bodyRowEvents::", row, rowIndex, event);
-              event.preventDefault();
-              return false;
-            },
-            // mouseenter: (event) => {
-            //   console.log("mouseenter::", row, rowIndex, event);
-            // },
-            // mouseleave: (event) => {
-            //   console.log("mouseleave::", row, rowIndex, event);
-            // },
-          };
-        },
-      },
+      eventCustomOption: eventCustomOption,
       cellStyleOption: {
+        // 单元格自定义class
         bodyCellClass: ({ row, column, rowIndex }) => {
           // if (row?.__flag === "add") {
           if (row?.__flag === "add" && column.field === "index") {
             // 新增行直接显示为绿色背景 不用判断字段有没有值
             return "table-body-cell__add";
-            // 新增数据 整行某个字段有值后 增加class
-            // return Object.keys(row).some(
-            //   (key) => !["__flag", "rowKey", "__id"].includes(key) && !!row[key]
-            // )
-            //   ? "table-body-cell__add"
-            //   : "";
           }
           if (
             row?.__flag === "update" &&
@@ -687,7 +646,7 @@ export default {
       },
       // 单元格编辑配置
       editOption: {
-        beforeCellValueChange: ({ row, column, changeValue ,rowIndex}) => {
+        beforeCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
           // console.log(row, column, changeValue);
           if (row.__flag === "add") {
@@ -745,7 +704,7 @@ export default {
         beforeStartCellEditing: ({ row, column, cellValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
 
-          let oldRowData = this.oldTableData.find(
+          let oldRowData = this.oldTableData?.find(
             (item) => item.__id === row.__id
           );
           if (row.__flag === "add") {
@@ -798,24 +757,18 @@ export default {
             ["RichText", "Note"].includes(colType) &&
             cellValue === oldRowData?.[column.field]
           ) {
-            // 值未发生变化
-            // if (row.__flag === "update") {
-            //   this.tableData.forEach((item) => {
-            //     if (item.__id === row.__id) {
-            //       delete item.__flag;
-            //     }
-            //   });
-            // }
             // return false;
           }
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
-          let oldRow = this.oldTableData.find((item) => item.__id === row.__id);
+          let oldRow = this.oldTableData?.find(
+            (item) => item.__id === row.__id
+          );
           console.log("afterCellValueChange");
 
           if (oldRow?.[column.field] === changeValue) {
-            if(row.__flag === "update"){
+            if (row.__flag === "update") {
               row.__flag = null;
             }
             return;
@@ -885,7 +838,6 @@ export default {
         //     },
         // ],
       },
-
       // 行样式配置
       rowStyleOption: {
         clickHighlight: false,
@@ -905,6 +857,9 @@ export default {
           currentSelection?.selectionRangeIndexes?.startRowIndex;
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
+        }
+        if (Array.isArray(newValue) && newValue.length) {
+          console.log("newValue", newValue, oldValue);
         }
       },
     },
@@ -2088,7 +2043,7 @@ export default {
               }
               // if (item.bx_col_type === "fk") {
               columnObj.renderBodyCell = ({ row, column, rowIndex }, h) => {
-                const oldRowData = this.oldTableData.find(
+                const oldRowData = this.oldTableData?.find(
                   (item) => item.__id && item.__id === row.__id
                 );
                 let setColumn =
@@ -2807,11 +2762,13 @@ export default {
       const reqData = [];
       const addDatas = [];
 
-      tableData.forEach((item, index) => {
-        const oldItem = this.oldTableData.find(
+      this.tableData.forEach((item, index) => {
+        const oldItem = this.oldTableData?.find(
           (d) => d.__id && d.__id === item.__id
         );
-        if (item.__flag === null && oldItem) {
+        console.log("oldItem", oldItem, "\nnewItem：", item);
+
+        if (!item.__flag && oldItem) {
           const updateObj = {};
           Object.keys(item).forEach((key) => {
             if (
@@ -2834,17 +2791,12 @@ export default {
                   }
                 }
                 item.__flag = "update";
-                console.log("update");
-
                 this.$set(item, "__flag", "update");
                 if (item[key] === "" || item[key] == undefined) {
                   item[key] = null;
                 }
                 updateObj[key] = item[key];
               }
-              // else if(item.__flag === "update"&&oldItem[key] === item[key]){
-              //   delete item.__flag;
-              // }
             }
           });
           if (Object.keys(updateObj)?.length) {

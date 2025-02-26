@@ -13,7 +13,7 @@
         </div>
         <!-- 分组 -->
         <div class="group-box" v-if="groupByCols">
-          <div class="group-box-item" v-for="(groupItem, key) in groupByCols">
+          <div class="group-box-item" v-for="(groupItem, key) in groupByCols" :key="key">
             <el-radio-group @input="changeGroup($event, groupItem.list, key)" v-model="groupItem.value">
               <el-radio :label="index" :value="item.col_name" :key="index" v-for="(item, index) in groupItem.list"
                 @click.native="clickRadio($event, key, index)">
@@ -93,6 +93,7 @@
 <script>
 import * as XLSX from "xlsx";
 import dayjs from "dayjs";
+import { $http } from "@/common/http";
 
 export default {
   data() {
@@ -168,7 +169,7 @@ export default {
  */
     async getFileState(uuid, app) {
       const url = `/${app}/export/file/check?uuid=${uuid}`;
-      const res = await this.$http(url);
+      const res = await $http(url);
       console.log(res.data);
       if (res.data.state === "SUCCESS") {
         return res.data.resultMessage;
@@ -211,7 +212,7 @@ export default {
       if(req.page){
         delete req.page
       }
-      this.$http.post(url, req).then(res => {
+      $http.post(url, req).then(res => {
         if (res?.data?.data.uuid) {
           this.downloadexport(res?.data?.data.uuid);
         }
@@ -357,7 +358,7 @@ export default {
         }],
         page: { pageNo: 1, rownumber: 1 },
       };
-      this.$http.post(url, req).then((res) => {
+      $http.post(url, req).then((res) => {
         if (res?.data?.state === "SUCCESS" && res.data.data.length > 0) {
           const config = res.data.data[0];
           if (config?.default_srv_req_json) {
@@ -400,7 +401,7 @@ export default {
         ],
         page: { pageNo: 1, rownumber: 1 }
       };
-      this.$http.post(url, req).then((res) => {
+      $http.post(url, req).then((res) => {
         if (res?.data?.state === "SUCCESS" && res.data.data.length > 0) {
           this.config = res.data.data[0];
           try {
@@ -430,7 +431,7 @@ export default {
           },
         ],
       };
-      const res = await this.$http.post(url, req);
+      const res = await $http.post(url, req);
       if (Array.isArray(res.data.data)) {
         let groupFields = res.data.data;
         let cols = res.data.data.reduce((res, cur) => {
@@ -546,7 +547,7 @@ export default {
         ],
         order: [{ colName: "seq", orderType: "asc" }],
       };
-      const res = await this.$http.post(url, req);
+      const res = await $http.post(url, req);
       if (res?.data?.state === "SUCCESS") {
         this.listV2 = res.data.data;
         if (Array.isArray(res.data?.data?.srv_cols)) {
@@ -654,7 +655,7 @@ export default {
       const url = `/${this.srvReqJson.mapp}/select/${this.srvReqJson.serviceName}`;
       const req = this.buildListReq()
       this.onLoading = true;
-      const res = await this.$http.post(url, req);
+      const res = await $http.post(url, req);
       this.onLoading = false;
 
       if (res?.data?.state === "SUCCESS") {

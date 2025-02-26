@@ -8,7 +8,7 @@ let baseURL = window.backendIpAddr || `https://api.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.54:8104`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.241:8080`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
-const devTicket = 'xabxdzkj-5f14cc93-9304-4870-9653-c1e4b9daa6bc'
+const devTicket = 'xabxdzkj-e91b0843-fb42-4f4d-b7a2-db5c25749082'
 if (top?.pathConfig?.gateway) {
   baseURL = top?.pathConfig?.gateway;
 }
