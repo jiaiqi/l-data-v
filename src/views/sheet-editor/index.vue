@@ -253,7 +253,11 @@ export default {
     broadcastChannel?.close();
     broadcastChannel = null;
   },
-  mounted() {},
+  mounted() {
+    if (this.srvApp) {
+      sessionStorage.setItem("current_app", this.srvApp);
+    }
+  },
   async created() {
     if (this.$route.query?.disabled) {
       this.disabled = true;
@@ -765,7 +769,6 @@ export default {
           let oldRow = this.oldTableData?.find(
             (item) => item.__id === row.__id
           );
-          console.log("afterCellValueChange");
 
           if (oldRow?.[column.field] === changeValue) {
             if (row.__flag === "update") {
@@ -817,6 +820,21 @@ export default {
           //     // this.handlerRedundant({}, col, row.rowKey, rowIndex);
           //   }
           // }
+          console.log("afterCellValueChange", column);
+          const calcDependedCols = column?.__field_info?.calcDependedCols;
+          if (calcDependedCols?.length) {
+            if (changeValue !== oldRow?.[column.field]) {
+              console.log("calcDependedCols:", calcDependedCols);
+              calcDependedCols.forEach((key) => {
+                const calcCol = this.allFields.find(
+                  (item) => item.columns === key
+                );
+                if (calcCol?.redundant?.func) {
+                  this.handleRedundantCalc(calcCol, row);
+                }
+              });
+            }
+          }
           this.recordManager?.push(cloneDeep(this.tableData));
           if (this.childListType) {
             // 子表数据更新 通知主表
@@ -851,15 +869,27 @@ export default {
       deep: true,
       handler(newValue, oldValue) {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
-        console.log(currentSelection);
         this.calcReqData = this.buildReqParams();
         const startRowIndex =
           currentSelection?.selectionRangeIndexes?.startRowIndex;
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
         }
-        if (Array.isArray(newValue) && newValue.length) {
-          console.log("newValue", newValue, oldValue);
+        if (
+          Array.isArray(newValue) &&
+          newValue.length &&
+          newValue.length === oldValue?.length
+        ) {
+          // console.log("newValue", newValue, oldValue);
+          newValue.forEach((item, index) => {
+            const oldItem =
+              oldValue?.find((e) => e.__id && e.__id === item.__id) || {};
+            Object.keys(item).forEach((key) => {
+              if (item[key] !== oldItem[key]) {
+                console.log("newValue", item[key], oldItem[key]);
+              }
+            });
+          });
         }
       },
     },
@@ -1469,6 +1499,55 @@ export default {
     },
   },
   methods: {
+    handleRedundantCalc(fieldInfo, row) {
+      let func = fieldInfo.redundant.func;
+      const field = {
+        setSrvVal: (val) => {
+          row[fieldInfo.columns] = val;
+        },
+        getSrvVal: () => {
+          return row[fieldInfo.columns];
+        },
+        isEmpty: () => {
+          return [null, "", undefined].includes(row[fieldInfo.columns]);
+        },
+      };
+      if (func) {
+        let update = false;
+        if (fieldInfo.redundant.trigger == "isnull" && field.isEmpty()) {
+          update = true;
+        } else if (
+          !fieldInfo.redundant.trigger ||
+          fieldInfo.redundant.trigger == "always"
+        ) {
+          update = true;
+        }
+        if (update) {
+          const moment = dayjs;
+          const vm = this;
+          const ret = eval("var zz=" + func + "(row, vm, field); zz");
+          if (ret === "Invalid date") {
+            return;
+          }
+
+          if (typeof ret === "function") {
+            return;
+          }
+          if (ret !== undefined) {
+            if (typeof ret === "object" && ret instanceof Promise) {
+              ret.then((val) => {
+                debugger;
+                row[fieldInfo.columns] = val;
+              });
+            } else {
+              if (field.getSrvVal() !== ret) {
+                field.setSrvVal(ret);
+              }
+            }
+          }
+        }
+      }
+    },
     onRowButton(item) {
       const currentRowIndex = this.currentRowIndex;
       console.log("onRowButton", item, this.tableData[currentRowIndex]);
@@ -2766,8 +2845,6 @@ export default {
         const oldItem = this.oldTableData?.find(
           (d) => d.__id && d.__id === item.__id
         );
-        console.log("oldItem", oldItem, "\nnewItem：", item);
-
         if (!item.__flag && oldItem) {
           const updateObj = {};
           Object.keys(item).forEach((key) => {
