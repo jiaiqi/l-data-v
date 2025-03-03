@@ -255,7 +255,8 @@ export default {
   beforeDestroy() {
     broadcastChannel?.close();
     broadcastChannel = null;
-    window.removeEventListener("keydown", this.bindCtrlS);
+    
+    document.removeEventListener("keydown", this.bindListenKeydown);
     // 在组件销毁前清除定时器
     if (this.saveInterval) {
       clearInterval(this.saveInterval);
@@ -265,8 +266,8 @@ export default {
     if (this.srvApp) {
       sessionStorage.setItem("current_app", this.srvApp);
     }
-    window.removeEventListener("keydown", this.bindCtrlS);
-    window.addEventListener("keydown", this.bindCtrlS);
+    document.removeEventListener("keydown", this.bindListenKeydown);
+    document.addEventListener("keydown", this.bindListenKeydown);
     // 定时自动保存
     if (this.saveInterval) {
       clearInterval(this.saveInterval);
@@ -1651,11 +1652,26 @@ export default {
         trailing: false, // 函数是否在最后一次调用后的延迟时间结束时执行
       }
     ),
-    bindCtrlS(e = {}) {
+    bindListenKeydown(e = {}) {
+      // 绑定快捷键
+      
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        // ctrl+s 保存
         e.preventDefault(); // 阻止默认的保存行为
         console.log("CTRL+S");
         this.onCtrlS();
+      }else if((e.ctrlKey || e.metaKey)&&(e.key==='+' || e.key==='=')){
+      // }else if((e.ctrlKey || e.metaKey)&&e.key==='n'){
+        // ctrl+n 新建一行数据
+        console.log('CTRL +');
+        
+        e.preventDefault()
+        const selection = this.$refs?.tableRef?.getRangeCellSelection()
+        let index = 0
+        if(selection?.selectionRangeIndexes?.endRowIndex){
+          index = selection?.selectionRangeIndexes?.endRowIndex
+        }
+        this.insert2Rows(index)
       }
     },
     handleRedundantCalc(fieldInfo, row) {
