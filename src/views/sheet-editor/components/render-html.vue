@@ -19,7 +19,7 @@
         class="prefix-icon cursor-initial"
         v-else-if="column.isFirstCol"
       ></div>
-      <div class="text" v-html="html" style="" v-if="useEditor && html"></div>
+      <div class="text" v-html="recoverFileAddress(html)" style="" v-if="useEditor && html"></div>
       <a
         class="text"
         v-else-if="keyDispCol && column.columns === keyDispCol"
@@ -39,7 +39,7 @@
       <div
         class="old-value"
         v-else-if="[null, undefined, ''].includes(html) && oldValue"
-        v-html="oldValue"
+        v-html="recoverFileAddress(oldValue)"
       ></div>
     </div>
     <el-button
@@ -81,7 +81,7 @@
       />
       <div
         v-if="useEditor && dialogTableVisible && !editable"
-        v-html="innerHtml"
+        v-html="recoverFileAddress(innerHtml)"
         class="w-full overflow-auto"
         :style="{ height: dialogFullscreen ? 'calc(100vh - 155px)' : '300px' }"
       ></div>
@@ -360,14 +360,14 @@ export default {
     showTextarea() {
       this.ticket = sessionStorage.getItem("bx_auth_ticket");
       this.dialogTableVisible = true;
-      this.innerHtml = this.html;
+      this.innerHtml = this.recoverFileAddress(this.html);
       this.$emit("onfocus");
     },
     showRichEditor(event) {
       if (this.useEditor) {
         this.ticket = sessionStorage.getItem("bx_auth_ticket");
         this.dialogTableVisible = true;
-        this.innerHtml = this.html;
+        this.innerHtml = this.recoverFileAddress(this.html);
         this.$nextTick(() => {
           this.editor?.setHtml(this.html);
         });

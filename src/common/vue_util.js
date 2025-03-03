@@ -157,8 +157,9 @@ function init_util() {
     } else {
       // whole path does not have $srvApp,
       // try  page level
-      if (this.$route && this.$route.query && this.$route.query.srvApp) {
-        app = this.$route.query.srvApp;
+      const $route = Vue.prototype.$route || node?.$route
+      if ($route?.query?.srvApp) {
+        app = $route.query.srvApp;
       } else {
         // try top level
         let defaultApp =
@@ -1426,7 +1427,7 @@ function init_util() {
   };
 
   Vue.prototype.serviceApi = function (e) {
-    let defaultApp = this.resolveDefaultSrvApp();
+    let defaultApp = Vue.prototype.resolveDefaultSrvApp();
     var service_api = {
       selectOne: backendIpAddr + "/" + defaultApp + "/select",
       select: backendIpAddr + "/" + defaultApp + "/select",
@@ -1435,6 +1436,7 @@ function init_util() {
       approval: backendIpAddr + "/" + defaultApp + "/process/approval",
 
       uploadFile: backendIpAddr + "/file/upload",
+      downloadFilePrefix: backendIpAddr + "/file/download",
       downloadFile:
         backendIpAddr +
         "/file/download?" +
@@ -1463,6 +1465,30 @@ function init_util() {
     }
     return service_api;
   };
+  /**
+   * 渲染html字符串时，将html字符串中的$bxFileAddress$换为真实地址
+   * @param {*} val 
+   * @returns 
+   */
+  Vue.prototype.recoverFileAddress = (val = "")=> {
+    // 替换文件前缀
+    const prefix =  backendIpAddr + "/file/download";
+    val = val?.replaceAll?.("$bxFileAddress$", prefix) || "";
+    // 使用正则表达式来匹配 bx_auth_ticket 的值，并使用sessionStorage.bx_auth_ticket替换它
+    const ticketStr = `bx_auth_ticket=${sessionStorage.bx_auth_ticket}`;
+    val = val.replace(/(bx_auth_ticket=)[^&]+/ig, ticketStr);
+    return val;
+  }
+  /**
+   * 保存html字符串时，将html字符串中的真实地址换为$bxFileAddress$
+   * @param {*} val 
+   * @returns 
+   */
+  Vue.prototype.replaceFileAddressSuffix=(val = "")=> {
+    const prefix =  backendIpAddr + "/file/download";
+    val = val?.replaceAll?.(prefix, "$bxFileAddress$");
+    return val;
+  }
 }
 
 export default init_util;

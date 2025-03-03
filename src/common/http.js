@@ -1,6 +1,8 @@
 import axios from "axios";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 let bx_auth_ticket = "";
+export const webBaseUrl = `http://192.168.0.54:8080`
+// export const webBaseUrl = `http://localhost:8080`
 // let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
 // let baseURL = window.backendIpAddr || `https://xxld.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.151:180`;

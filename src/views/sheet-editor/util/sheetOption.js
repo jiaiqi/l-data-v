@@ -1,18 +1,18 @@
-export const eventCustomOption = {
-  bodyRowEvents: ({ row, rowIndex }) => {
-    return {
-      dblclick: (event) => {
-        console.log("dblclick::", row, rowIndex, event);
-        return false;
-      },
-      contextmenu: (event) => {
-        console.log("bodyRowEvents::", row, rowIndex, event);
-        event.preventDefault();
-        return false;
-      },
-    };
-  },
-}
+// export const eventCustomOption = {
+//   bodyRowEvents: ({ row, rowIndex }) => {
+//     return {
+//       dblclick: (event) => {
+//         console.log("dblclick::", row, rowIndex, event);
+//         return false;
+//       },
+//       contextmenu: (event) => {
+//         console.log("bodyRowEvents::", row, rowIndex, event);
+//         event.preventDefault();
+//         return false;
+//       },
+//     };
+//   },
+// }
 
 // export const cellStyleOption = {
 //   // 单元格自定义class

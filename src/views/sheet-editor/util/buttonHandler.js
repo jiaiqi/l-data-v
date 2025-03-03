@@ -437,7 +437,7 @@ export function getVersionNo(vm) {
 
 
 export function addTab(params) {
-  const { type, urlParams, tab_title, srv, button, app, vm } = params;
+  let { type, urlParams, tab_title, srv, button, app, vm } = params;
   console.log("addTab", type, urlParams, tab_title, srv, button, app);
   if (tab_title == undefined || tab_title == null || tab_title == "") {
     tab_title = "新标页签";

@@ -13,6 +13,15 @@ import './assets/iconfont/iconfont.css'
 import "./assets/main.css";
 import 'uno.css'
 
+// import './assets/bxhome/bxhome.css'
+// import './assets/bxhome/bxhome.umd.min.js'
+
+// import microApp from '@micro-zoe/micro-app'
+// microApp.start()
+// import * as BxForm from '@/components/bxpage/BxForm.common.js'
+// Vue.use(BxForm)
+
+
 import { $axios,getImagePath } from "@/common/http.js";
 Vue.prototype.$axios = $axios;
 

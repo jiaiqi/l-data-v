@@ -193,7 +193,7 @@
       :position="{ top: dTop, left: dLeft }"
       @select="onRowButton"
     />
-    <el-dialog> </el-dialog>
+    <out-form-dialog ref="outFormDialog"></out-form-dialog>
   </div>
 </template>
 
@@ -234,8 +234,7 @@ import {
 import { rowButtonClick } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
-import outAdd from "./components/out-comp/add.vue";
-import { eventCustomOption } from "./util/sheetOption.js";
+import OutFormDialog from "./components/out-comp/dialog.vue";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
@@ -298,7 +297,7 @@ export default {
     LoadingView,
     ChooseTenant,
     DropMenu,
-    outAdd,
+    OutFormDialog,
   },
   data() {
     return {
@@ -347,7 +346,50 @@ export default {
       v2data: {}, //select v2
       allFields: [], //所有字段
       columns: [], //表头字段
-      eventCustomOption: eventCustomOption,
+      eventCustomOption: {
+        bodyRowEvents: ({ row, rowIndex }) => {
+          return {
+            dblclick: (event) => {
+              console.log("dblclick::", row, rowIndex, event);
+              return false;
+            },
+            contextmenu: (event) => {
+              console.log("bodyRowEvents::", row, rowIndex, event);
+              event.preventDefault();
+              return false;
+            },
+          };
+        },
+        bodyCellEvents: ({ row, column, rowIndex }) => {
+          return {
+            dblclick: (event) => {
+              // 双击单元格
+              console.log("cell dblclick::", row, column, rowIndex, event);
+              if (column?.__field_info?.option_list_v3?.length) {
+                let finalOption = column?.__field_info?.option_list_v3.find(
+                  (item) => {
+                    return item.conds.every(
+                      (cond) =>
+                        row[cond.case_col] &&
+                        cond.case_val.includes(row[cond.case_col])
+                    );
+                  }
+                );
+                // fk类型 有满足条件的option_list
+                if (finalOption?.allow_input==='自行输入') {
+                  console.log("finalOption:", finalOption);
+                  this.$refs.outFormDialog?.doShow({
+                    row,
+                    field:column.__field_info,
+                    optionCfg:finalOption,
+                  });
+                }
+              }
+              return false;
+            },
+          };
+        },
+      },
       cellStyleOption: {
         // 单元格自定义class
         bodyCellClass: ({ row, column, rowIndex }) => {
@@ -668,7 +710,7 @@ export default {
               });
               return false;
             }
-            if (this.addColsMap[column.field].updatable !== 1) {
+            if (this.addColsMap[column.field].updatable === 0) {
               this.$message({
                 message: "当前列新增时不支持编辑",
                 type: "warning",
@@ -684,7 +726,7 @@ export default {
               });
               return false;
             }
-            if (this.updateColsMap[column.field]?.updatable !== 1) {
+            if (this.updateColsMap[column.field]?.updatable === 0) {
               this.$message({
                 message: "当前列不支持编辑",
                 type: "warning",
@@ -741,7 +783,7 @@ export default {
               });
               return false;
             }
-            if (this.addColsMap[column.field].updatable !== 1) {
+            if (this.addColsMap[column.field].updatable === 0) {
               this.$message({
                 message: "当前列新增时不支持编辑",
                 type: "warning",
@@ -757,7 +799,7 @@ export default {
               });
               return false;
             }
-            if (this.updateColsMap[column.field]?.updatable !== 1) {
+            if (this.updateColsMap[column.field]?.updatable === 0) {
               this.$message({
                 message: "当前列不支持编辑",
                 type: "warning",
@@ -1601,8 +1643,8 @@ export default {
               moment,
               dayjs,
             };
-            console.log('commonUtil:',commonUtil);
-            
+            console.log("commonUtil:", commonUtil);
+
             ret = eval(`(${func})(row,commonUtil,field)`);
             // ret = eval("var zz=" + func + "(row, commonUtilObject, field); zz");
           } catch (error) {
@@ -2677,8 +2719,10 @@ export default {
                         this.loadTree(event, row, rowIndex, callback);
                       },
                       change: (event) => {
+                        // 将html中的文件地址前缀替换为$bxFileAddress$
+                        event = this.replaceFileAddressSuffix(event);
                         this.$set(row, column.field, event);
-                        console.log("data-change:", row, column.field, event);
+                        // console.log("data-change:", row, column.field, event);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
                           colKey: column.field,
