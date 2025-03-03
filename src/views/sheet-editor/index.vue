@@ -235,6 +235,7 @@ import { rowButtonClick } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
 import OutFormDialog from "./components/out-comp/dialog.vue";
+import debounce from "lodash/debounce";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
@@ -254,11 +255,14 @@ export default {
   beforeDestroy() {
     broadcastChannel?.close();
     broadcastChannel = null;
+    window.removeEventListener("keydown", this.bindCtrlS);
   },
   mounted() {
     if (this.srvApp) {
       sessionStorage.setItem("current_app", this.srvApp);
     }
+    window.removeEventListener("keydown", this.bindCtrlS);
+    window.addEventListener("keydown", this.bindCtrlS);
   },
   async created() {
     if (this.$route.query?.disabled) {
@@ -1619,6 +1623,23 @@ export default {
     },
   },
   methods: {
+    onCtrlS: debounce(
+      function () {
+        this.saveData();
+      },
+      1000,
+      {
+        leading: true, // 函数是否在首次调用时立即执行
+        trailing: false, // 函数是否在最后一次调用后的延迟时间结束时执行
+      }
+    ),
+    bindCtrlS(e = {}) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault(); // 阻止默认的保存行为
+        console.log("CTRL+S");
+        this.onCtrlS();
+      }
+    },
     handleRedundantCalc(fieldInfo, row) {
       let func = fieldInfo.redundant.func;
       const field = {
@@ -3057,7 +3078,9 @@ export default {
           if (item.__update_col && Object.keys(item.__update_col).length) {
             // 有更新字段 且所有更新字段都为空 不继续后面处理
             const keys = Object.keys(item.__update_col);
-            if(keys.every(key=>[undefined,null,""].includes(item[key]))){
+            if (
+              keys.every((key) => [undefined, null, ""].includes(item[key]))
+            ) {
               return;
             }
           } else {
