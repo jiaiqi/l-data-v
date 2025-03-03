@@ -256,6 +256,10 @@ export default {
     broadcastChannel?.close();
     broadcastChannel = null;
     window.removeEventListener("keydown", this.bindCtrlS);
+    // 在组件销毁前清除定时器
+    if (this.saveInterval) {
+      clearInterval(this.saveInterval);
+    }
   },
   mounted() {
     if (this.srvApp) {
@@ -263,6 +267,19 @@ export default {
     }
     window.removeEventListener("keydown", this.bindCtrlS);
     window.addEventListener("keydown", this.bindCtrlS);
+    // 定时自动保存
+    if (this.saveInterval) {
+      clearInterval(this.saveInterval);
+    }
+    this.saveInterval = setInterval(() => {
+      const reqData = this.buildReqParams();
+      console.log("触发自动保存");
+      if (reqData?.length) {
+        this.saveData({ isAutoSave: true });
+      } else {
+        console.log("没有需要保存的内容");
+      }
+    }, 10 * 1000);
   },
   async created() {
     if (this.$route.query?.disabled) {
@@ -306,6 +323,7 @@ export default {
   },
   data() {
     return {
+      saveInterval: null, //用于储存定时保存的定时器
       dialogName: "",
       showDropMenu: false,
       dLeft: 0,
@@ -3310,7 +3328,7 @@ export default {
         _recordManager,
       };
     },
-    saveData() {
+    saveData(params = {}) {
       // const reqData = this.buildReqParams;
       const reqData = this.buildReqParams();
       if (!reqData?.length) {
@@ -3345,9 +3363,13 @@ export default {
         .then((res) => {
           this.onHandler = false;
           if (res?.state === "SUCCESS") {
+            let msg = res.resultMessage || "操作成功";
+            if (params?.isAutoSave) {
+              msg = "自动保存成功!";
+            }
             Message({
               showClose: true,
-              message: res.resultMessage || "操作成功",
+              message: msg,
               type: "success",
               duration: 800,
             });
