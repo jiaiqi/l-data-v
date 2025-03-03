@@ -246,6 +246,7 @@ const ignoreKeys = [
   "_buttons",
   "__unfold",
   "__indent",
+  "__update_col",
 ];
 
 export default {
@@ -376,12 +377,12 @@ export default {
                   }
                 );
                 // fk类型 有满足条件的option_list
-                if (finalOption?.allow_input==='自行输入') {
+                if (finalOption?.allow_input === "自行输入") {
                   console.log("finalOption:", finalOption);
                   this.$refs.outFormDialog?.doShow({
                     row,
-                    field:column.__field_info,
-                    optionCfg:finalOption,
+                    field: column.__field_info,
+                    optionCfg: finalOption,
                   });
                 }
               }
@@ -878,7 +879,16 @@ export default {
           if (row.__id && row.__flag !== "add") {
             // row.__flag = "update";
             console.log("update", changeValue, oldRow?.[column.field]);
+          } else if (row.__flag === "add") {
+            // 新增行已手动编辑
+            if (row.__update_col) {
+              row.__update_col[column.field] = true;
+            } else {
+              row.__update_col = {};
+              row.__update_col[column.field] = true;
+            }
           }
+
           // if (column?.__field_info?.redundant_options?._target_column) {
           //   // 处理autocomplete对应的fk字段
           //   console.log("changeValue:", changeValue, column.field);
@@ -3044,6 +3054,16 @@ export default {
           const addObj = {
             ...item,
           };
+          if (item.__update_col && Object.keys(item.__update_col).length) {
+            // 有更新字段 且所有更新字段都为空 不继续后面处理
+            const keys = Object.keys(item.__update_col);
+            if(keys.every(key=>[undefined,null,""].includes(item[key]))){
+              return;
+            }
+          } else {
+            // 没有更新字段 不继续后面处理
+            return;
+          }
           // Object.keys(addObj).forEach((key) => {
           //   if (addObj[key] === null || this.addColsMap?.[key]?.in_add === 0) {
           //     delete addObj[key];
@@ -3345,6 +3365,7 @@ export default {
                     "_buttons",
                     "__unfold",
                     "__indent",
+                    "__update_col",
                   ];
                   this.tableData = this.tableData.map((item) => {
                     if (item.__flag === "add") {
