@@ -7,9 +7,9 @@
     width="90vw"
   >
     <div :style="setStyle">
-      <div v-if="autoSaveTimeout && autoSaveTimeout > 0" class="top-tip">
+      <!-- <div v-if="autoSaveTimeout && autoSaveTimeout > 0" class="top-tip">
         <span> 自动保存倒计时：{{ autoSaveTimeout }} </span>
-      </div>
+      </div> -->
       <rich-text-editor
         v-if="editorType === 'RichText'"
         v-model="innerHtml"
@@ -41,10 +41,17 @@
           :disabled="!hasChange"
           @click="
             $emit('save', innerHtml, row, column, 'save');
-            dialogVisible = false;
+            stopAutoSave()
           "
-          >保存</el-button
         >
+          保存
+          <span v-if="autoSaveTimeout && autoSaveTimeout > 0"
+            class="text-sm"
+            title="自动保存倒计时"
+            >
+            {{ autoSaveTimeout }}
+          </span>
+        </el-button>
       </div>
     </div>
 
@@ -161,6 +168,8 @@ export default {
       if (this.autoSaveInterval) {
         clearInterval(this.autoSaveInterval);
       }
+      this.autoSaveInterval = null
+      this.autoSaveTimeout = 0
     },
     autoSave() {
       this.stopAutoSave();

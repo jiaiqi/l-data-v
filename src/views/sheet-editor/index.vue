@@ -39,12 +39,6 @@
         没有添加权限
       </div>
       <div flex-1>
-        <div
-          v-if="autoSaveTimeout && autoSaveTimeout > 0"
-          class="top-tip text-gray text-sm"
-        >
-          <span> 自动保存倒计时：{{ autoSaveTimeout }} </span>
-        </div>
         <el-radio-group
           v-model="listType"
           @input="listTypeChange"
@@ -95,6 +89,13 @@
         >
           <!-- 保存 -->
           <i class="i-ic-baseline-save"></i>
+          <span
+            v-if="autoSaveTimeout && autoSaveTimeout > 0"
+            class="text-sm"
+            title="自动保存倒计时"
+          >
+            {{ autoSaveTimeout }}
+          </span>
         </el-button>
         <el-button
           class="icon-button"
@@ -1086,6 +1087,11 @@ export default {
         // }
       },
     },
+    showFieldEditor(newVal){
+      if(newVal === true){
+        this.stopAutoSave()
+      }
+    }
   },
   computed: {
     ...mapState(useUserStore, ["userInfo", "tenants"]),
@@ -1747,6 +1753,8 @@ export default {
       if (this.autoSaveInterval) {
         clearInterval(this.autoSaveInterval);
       }
+      this.autoSaveInterval = null
+      this.autoSaveTimeout = 0
     },
     autoSave() {
       this.stopAutoSave();
