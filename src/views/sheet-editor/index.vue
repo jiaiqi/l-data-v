@@ -476,9 +476,9 @@ export default {
             const oldRow = this.oldTableData.find(
               (item) => item.__id && item.__id === row.__id
             );
-            if (row[column.field] !== oldRow[column.field]) {
-              if(!row.__flag){
-                row.__flag = 'update'
+            if (oldRow && row[column.field] !== oldRow[column.field]) {
+              if (!row.__flag) {
+                row.__flag = "update";
               }
               if (column.field === "index") {
                 return "table-body-cell__update-index";
@@ -1788,6 +1788,11 @@ export default {
     },
     autoSave() {
       this.stopAutoSave();
+      const reqData = this.buildReqParams();
+      if (!reqData?.length) {
+        console.log("没有需要保存的内容");
+        return ;
+      }
       this.autoSaveTimeout = 60 * 3;
       this.autoSaveInterval = setInterval(() => {
         const reqData = this.buildReqParams();
@@ -2266,6 +2271,7 @@ export default {
       if (Array.isArray(tableData) && tableData?.length) {
         this.tableData = cloneDeep(tableData);
       }
+      this.autoSave();
     },
     redo() {
       // ctrl+y 重做
@@ -2273,6 +2279,7 @@ export default {
       if (Array.isArray(tableData) && tableData?.length) {
         this.tableData = cloneDeep(tableData);
       }
+      this.autoSave();
     },
     buildColumns() {
       const self = this;
@@ -3184,15 +3191,15 @@ export default {
           this.$set(this.tableData, rowIndex, row);
           console.log("handlerRedundant::", item.columns, row[item.columns]);
 
-          if (this.allFields.find((e) => e.columns === item.columns)) {
-            this.$refs["tableRef"]?.startEditingCell?.({
-              rowKey: rowKey,
-              colKey: item.columns,
-              defaultValue: rawData?.[item.redundant.refedCol] || null,
-            });
-            this.$refs["tableRef"]?.stopEditingCell?.();
-            this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-          }
+          // if (this.allFields.find((e) => e.columns === item.columns)) {
+          //   this.$refs["tableRef"]?.startEditingCell?.({
+          //     rowKey: rowKey,
+          //     colKey: item.columns,
+          //     defaultValue: rawData?.[item.redundant.refedCol] || null,
+          //   });
+          //   this.$refs["tableRef"]?.stopEditingCell?.();
+          //   this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+          // }
         });
       }
     },
