@@ -470,24 +470,45 @@ export default {
             return "table-body-cell__add";
           }
           if (
-            row?.__flag === "update" &&
+            row &&
             !["__flag", "rowKey", "__id", "__unfold"].includes(column.field)
           ) {
-            if (column.field === "index") {
-              return "table-body-cell__update-index";
-            }
-            // 某行某列绑定的值跟备份的数据中此行此列绑定的值不同时  增加class
-            const oldRowData = this.oldTableData.find(
+            const oldRow = this.oldTableData.find(
               (item) => item.__id && item.__id === row.__id
             );
-
-            if (row[column.field] !== oldRowData[column.field]) {
+            if (row[column.field] !== oldRow[column.field]) {
+              if(!row.__flag){
+                row.__flag = 'update'
+              }
+              if (column.field === "index") {
+                return "table-body-cell__update-index";
+              }
               if (row[column.field] === null || row[column.field] === "") {
                 return "table-body-cell__update null-value";
               }
               return "table-body-cell__update";
             }
           }
+          // if (
+          //   row?.__flag === "update" &&
+          //   !["__flag", "rowKey", "__id", "__unfold"].includes(column.field)
+          // ) {
+          //   if (column.field === "index") {
+          //     return "table-body-cell__update-index";
+          //   }
+          //   // 某行某列绑定的值跟备份的数据中此行此列绑定的值不同时  增加class
+          //   const oldRowData = this.oldTableData.find(
+          //     (item) => item.__id && item.__id === row.__id
+          //   );
+          //   console.log('bodyCellClass',row[column.field] , oldRowData[column.field]);
+
+          //   if (row[column.field] !== oldRowData[column.field]) {
+          //     if (row[column.field] === null || row[column.field] === "") {
+          //       return "table-body-cell__update null-value";
+          //     }
+          //     return "table-body-cell__update";
+          //   }
+          // }
         },
       },
       insertRowNumber: 1,
@@ -768,6 +789,9 @@ export default {
       // 单元格编辑配置
       editOption: {
         beforeStartCellEditing: ({ row, column, cellValue, rowIndex }) => {
+          if (!row) {
+            return;
+          }
           const colType = column?.__field_info?.col_type;
           let oldRowData = this.oldTableData?.find(
             (item) => item.__id === row.__id
@@ -929,11 +953,11 @@ export default {
             }
             return;
           }
-          console.log(
-            "afterCellValueChange::",
-            changeValue,
-            currentRow?.[column.field]
-          );
+          // console.log(
+          //   "afterCellValueChange::",
+          //   changeValue,
+          //   currentRow?.[column.field]
+          // );
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||

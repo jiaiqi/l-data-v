@@ -436,7 +436,9 @@ export default {
   max-height: 100px;
   position: relative;
   display: flex;
-
+  .text{
+    width: 100%;
+  }
   .old-value {
     text-decoration: line-through;
     color: #f00;
@@ -492,7 +494,6 @@ export default {
   .text {
     display: contents;
     transition: all 0.2s ease;
-
     &:hover {
       color: #409eff;
       // text-decoration: underline;
