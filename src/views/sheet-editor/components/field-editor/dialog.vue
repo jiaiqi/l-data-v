@@ -136,6 +136,7 @@ export default {
     value(newVal) {
       // 监听外部值变化
       this.dialogVisible = newVal;
+      this.stopAutoSave();
     },
     dialogVisible(newVal) {
       // 触发v-model更新
@@ -156,10 +157,13 @@ export default {
     },
   },
   methods: {
-    autoSave() {
+    stopAutoSave() {
       if (this.autoSaveInterval) {
         clearInterval(this.autoSaveInterval);
       }
+    },
+    autoSave() {
+      this.stopAutoSave();
       if (this.innerHtml === this.html) {
         console.log("没有需要保存的内容");
         return;
@@ -215,6 +219,9 @@ export default {
         eve.preventDefault();
       }
     },
+  },
+  beforeDestroy() {
+    this.stopAutoSave();
   },
 };
 </script>

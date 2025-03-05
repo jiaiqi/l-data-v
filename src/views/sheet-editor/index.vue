@@ -39,6 +39,12 @@
         没有添加权限
       </div>
       <div flex-1>
+        <div
+          v-if="autoSaveTimeout && autoSaveTimeout > 0"
+          class="top-tip text-gray text-sm"
+        >
+          <span> 自动保存倒计时：{{ autoSaveTimeout }} </span>
+        </div>
         <el-radio-group
           v-model="listType"
           @input="listTypeChange"
@@ -274,9 +280,7 @@ export default {
 
     document.removeEventListener("keydown", this.bindListenKeydown);
     // 在组件销毁前清除定时器
-    if (this.saveInterval) {
-      clearInterval(this.saveInterval);
-    }
+    this.stopAutoSave();
   },
   mounted() {
     if (this.srvApp) {
@@ -285,10 +289,10 @@ export default {
     document.removeEventListener("keydown", this.bindListenKeydown);
     document.addEventListener("keydown", this.bindListenKeydown);
     // // 定时自动保存
-    // if (this.saveInterval) {
-    //   clearInterval(this.saveInterval);
+    // if (this.autoSaveInterval) {
+    //   clearInterval(this.autoSaveInterval);
     // }
-    // this.saveInterval = setInterval(() => {
+    // this.autoSaveInterval = setInterval(() => {
     //   const reqData = this.buildReqParams();
     //   console.log("触发自动保存");
     //   if (reqData?.length) {
@@ -343,7 +347,7 @@ export default {
     return {
       fieldEditorParams: null,
       showFieldEditor: false,
-      saveInterval: null, //用于储存定时保存的定时器
+      autoSaveInterval: null, //用于储存定时保存的定时器
       autoSaveTimeout: 0, //自动保存倒计时
       dialogName: "",
       showDropMenu: false,
@@ -1689,7 +1693,7 @@ export default {
     },
   },
   methods: {
-    dialogChange(event, row, column,type) {
+    dialogChange(event, row, column, type) {
       // 将html中的文件地址前缀替换为$bxFileAddress$
       event = this.replaceFileAddressSuffix(event);
       this.$set(row, column.field, event);
@@ -1701,15 +1705,15 @@ export default {
       });
       this.$refs["tableRef"].stopEditingCell();
       this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-      if(type==='save'){
-        this.$nextTick(()=>{
-          this.saveData()
-        })
+      if (type === "save") {
+        this.$nextTick(() => {
+          this.saveData();
+        });
       }
     },
-    dialogClose(){
+    dialogClose() {
       console.log("dialogClose:");
-      
+
       this.fieldEditorParams = {};
     },
     buildFieldEditorParams(row, column) {
@@ -1739,21 +1743,24 @@ export default {
         column,
       };
     },
-    autoSave() {
-      if (this.saveInterval) {
-        clearInterval(this.saveInterval);
+    stopAutoSave() {
+      if (this.autoSaveInterval) {
+        clearInterval(this.autoSaveInterval);
       }
+    },
+    autoSave() {
+      this.stopAutoSave();
       this.autoSaveTimeout = 60;
-      this.saveInterval = setInterval(() => {
+      this.autoSaveInterval = setInterval(() => {
         const reqData = this.buildReqParams();
         if (!reqData?.length) {
-          clearInterval(this.saveInterval);
+          clearInterval(this.autoSaveInterval);
           console.log("没有需要保存的内容");
         }
         this.autoSaveTimeout--;
         console.log(`自动保存倒计时：${this.autoSaveTimeout}`);
         if (this.autoSaveTimeout <= 0) {
-          clearInterval(this.saveInterval);
+          clearInterval(this.autoSaveInterval);
           console.log("即将进行自动保存");
           this.saveData({ isAutoSave: true });
         }
@@ -2901,7 +2908,7 @@ export default {
                         this.loadTree(event, row, rowIndex, callback);
                       },
                       event: (event) => {
-                        if(event==='showRichEditor'){
+                        if (event === "showRichEditor") {
                           this.buildFieldEditorParams(row, column);
                           this.showFieldEditor = true;
                         }
@@ -3515,9 +3522,8 @@ export default {
     },
     saveData(params = {}) {
       // const reqData = this.buildReqParams;
-      if (this.saveInterval) {
-        clearInterval(this.saveInterval);
-      }
+      this.stopAutoSave();
+
       const reqData = this.buildReqParams();
       if (!reqData?.length) {
         this.$message.error("没有需要保存的操作！");
@@ -3643,8 +3649,11 @@ export default {
             //   return this.miniUpdate(updateIds)
             // }
             this.optimisticUpdate();
-            if(this.fieldEditorParams?.row && this.fieldEditorParams?.column){
-              this.buildFieldEditorParams(this.fieldEditorParams?.row, this.fieldEditorParams?.column)
+            if (this.fieldEditorParams?.row && this.fieldEditorParams?.column) {
+              this.buildFieldEditorParams(
+                this.fieldEditorParams?.row,
+                this.fieldEditorParams?.column
+              );
             }
             return;
             if (this.listType === "treelist" && this.treeInfo.idCol) {
