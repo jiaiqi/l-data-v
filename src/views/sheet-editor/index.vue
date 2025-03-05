@@ -4250,7 +4250,7 @@ export default {
         if (e.key === "Shift") {
           shiftDown = true;
         }
-        if (ctrlDown && !this.onPopup) {
+        if (ctrlDown && !this.onPopup && !this.showFieldEditor) {
           if (
             (shiftDown && ["z", "Z"].includes(e.key)) ||
             (!shiftDown && ["Y", "y"].includes(e.key))
