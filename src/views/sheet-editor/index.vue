@@ -1764,7 +1764,7 @@ export default {
     },
     autoSave() {
       this.stopAutoSave();
-      this.autoSaveTimeout = 60;
+      this.autoSaveTimeout = 60 * 3;
       this.autoSaveInterval = setInterval(() => {
         const reqData = this.buildReqParams();
         if (!reqData?.length) {

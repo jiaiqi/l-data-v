@@ -177,7 +177,7 @@ export default {
         console.log("没有需要保存的内容");
         return;
       }
-      this.autoSaveTimeout = 60;
+      this.autoSaveTimeout = 60*3;
       this.autoSaveInterval = setInterval(() => {
         this.autoSaveTimeout--;
         console.log(`自动保存倒计时：${this.autoSaveTimeout}`);
