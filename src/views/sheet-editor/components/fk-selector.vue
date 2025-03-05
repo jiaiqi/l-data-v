@@ -96,6 +96,7 @@
         v-if="!isTree && !setDisabled"
       ></i>
     </div>
+    <div v-else>{{modelValue}}</div>
 
     <!-- <i
       class="el-icon-arrow-right cursor-pointer m-l-[-5px] text-#C0C4CC"
