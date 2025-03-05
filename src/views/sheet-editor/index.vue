@@ -194,6 +194,21 @@
       @select="onRowButton"
     />
     <out-form-dialog ref="outFormDialog"></out-form-dialog>
+    <field-editor-dialog
+      ref="fieldEditorDialog"
+      :disabled="disabled"
+      :detailButton="detailButton"
+      :serviceName="serviceName"
+      :app="srvApp"
+      :listType="listType"
+      :keyDispCol="(v2data && v2data.key_disp_col) || ''"
+      v-model="showFieldEditor"
+      v-bind="fieldEditorParams"
+      v-if="showFieldEditor"
+      @change="dialogChange"
+      @save="dialogChange"
+      @close="dialogClose"
+    ></field-editor-dialog>
   </div>
 </template>
 
@@ -235,6 +250,7 @@ import { rowButtonClick } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
 import OutFormDialog from "./components/out-comp/dialog.vue";
+import FieldEditorDialog from "./components/field-editor/dialog.vue";
 import debounce from "lodash/debounce";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
@@ -255,7 +271,7 @@ export default {
   beforeDestroy() {
     broadcastChannel?.close();
     broadcastChannel = null;
-    
+
     document.removeEventListener("keydown", this.bindListenKeydown);
     // 在组件销毁前清除定时器
     if (this.saveInterval) {
@@ -268,19 +284,19 @@ export default {
     }
     document.removeEventListener("keydown", this.bindListenKeydown);
     document.addEventListener("keydown", this.bindListenKeydown);
-    // 定时自动保存
-    if (this.saveInterval) {
-      clearInterval(this.saveInterval);
-    }
-    this.saveInterval = setInterval(() => {
-      const reqData = this.buildReqParams();
-      console.log("触发自动保存");
-      if (reqData?.length) {
-        this.saveData({ isAutoSave: true });
-      } else {
-        console.log("没有需要保存的内容");
-      }
-    }, 10 * 1000);
+    // // 定时自动保存
+    // if (this.saveInterval) {
+    //   clearInterval(this.saveInterval);
+    // }
+    // this.saveInterval = setInterval(() => {
+    //   const reqData = this.buildReqParams();
+    //   console.log("触发自动保存");
+    //   if (reqData?.length) {
+    //     this.saveData({ isAutoSave: true });
+    //   } else {
+    //     console.log("没有需要保存的内容");
+    //   }
+    // }, 60 * 1000);
   },
   async created() {
     if (this.$route.query?.disabled) {
@@ -321,10 +337,14 @@ export default {
     ChooseTenant,
     DropMenu,
     OutFormDialog,
+    FieldEditorDialog,
   },
   data() {
     return {
+      fieldEditorParams: null,
+      showFieldEditor: false,
       saveInterval: null, //用于储存定时保存的定时器
+      autoSaveTimeout: 0, //自动保存倒计时
       dialogName: "",
       showDropMenu: false,
       dLeft: 0,
@@ -389,6 +409,28 @@ export default {
             dblclick: (event) => {
               // 双击单元格
               console.log("cell dblclick::", row, column, rowIndex, event);
+              if (
+                column.edit &&
+                ["Note", "RichText", "snote"].includes(
+                  column?.__field_info?.col_type
+                )
+              ) {
+                // 富文本
+                event.stopPropagation();
+                console.log("弹出富文本编辑器");
+                this.buildFieldEditorParams(row, column);
+                this.showFieldEditor = true;
+                // event.stopPropagation()
+                this.$nextTick(() => {
+                  this.$refs["tableRef"].stopEditingCell();
+                  this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                });
+                return false;
+
+                // event.preventDefault()
+                // this.$refs.fieldEditorDialog.open();
+              }
+
               if (column?.__field_info?.option_list_v3?.length) {
                 let finalOption = column?.__field_info?.option_list_v3.find(
                   (item) => {
@@ -794,7 +836,10 @@ export default {
         },
         beforeCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
-          if (changeValue === row[column.field]) {
+          let oldRowData = this.oldTableData?.find(
+            (item) => item.__id === row.__id
+          );
+          if (oldRowData && changeValue === oldRowData[column.field]) {
             // 值没变
             return false;
           }
@@ -983,6 +1028,7 @@ export default {
             // 子表数据更新 通知主表
             this.emitListData(this.tableData);
           }
+          this.autoSave();
         },
       },
       // header 右键菜单配置
@@ -1018,22 +1064,22 @@ export default {
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
         }
-        if (
-          Array.isArray(newValue) &&
-          newValue.length &&
-          newValue.length === oldValue?.length
-        ) {
-          // console.log("newValue", newValue, oldValue);
-          newValue.forEach((item, index) => {
-            const oldItem =
-              oldValue?.find((e) => e.__id && e.__id === item.__id) || {};
-            Object.keys(item).forEach((key) => {
-              if (item[key] !== oldItem[key]) {
-                console.log("newValue", item[key], oldItem[key]);
-              }
-            });
-          });
-        }
+        // if (
+        //   Array.isArray(newValue) &&
+        //   newValue.length &&
+        //   newValue.length === oldValue?.length
+        // ) {
+        //   // console.log("newValue", newValue, oldValue);
+        //   newValue.forEach((item, index) => {
+        //     const oldItem =
+        //       oldValue?.find((e) => e.__id && e.__id === item.__id) || {};
+        //     Object.keys(item).forEach((key) => {
+        //       if (item[key] !== oldItem[key]) {
+        //         console.log("newValue", item[key], oldItem[key]);
+        //       }
+        //     });
+        //   });
+        // }
       },
     },
   },
@@ -1538,6 +1584,7 @@ export default {
             ![
               "disabled",
               "srvApp",
+              "menuapp",
               "isTree",
               "topTreeData",
               "fixedCol",
@@ -1642,6 +1689,76 @@ export default {
     },
   },
   methods: {
+    dialogChange(event, row, column,type) {
+      // 将html中的文件地址前缀替换为$bxFileAddress$
+      event = this.replaceFileAddressSuffix(event);
+      this.$set(row, column.field, event);
+      // console.log("data-change:", row, column.field, event);
+      this.$refs["tableRef"].startEditingCell({
+        rowKey: row.rowKey,
+        colKey: column.field,
+        defaultValue: event || null,
+      });
+      this.$refs["tableRef"].stopEditingCell();
+      this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+      if(type==='save'){
+        this.$nextTick(()=>{
+          this.saveData()
+        })
+      }
+    },
+    dialogClose(){
+      console.log("dialogClose:");
+      
+      this.fieldEditorParams = {};
+    },
+    buildFieldEditorParams(row, column) {
+      let editable = true;
+      if (row.__flag === "add") {
+        // 新增行 处理in_add
+        if (!this.addColsMap[column.field]?.in_add) {
+          editable = false;
+        }
+      } else {
+        // 编辑行 处理in_update
+        if (!this.updateColsMap[column.field]?.in_update) {
+          editable = false;
+        }
+      }
+      if (row.__flag !== "add" && !row?.__button_auth?.edit) {
+        editable = false;
+      }
+      const oldRowData = this.oldTableData?.find(
+        (item) => item.__id && item.__id === row.__id
+      );
+      this.fieldEditorParams = {
+        html: row[column.field],
+        oldValue: oldRowData?.[column.field],
+        editable,
+        row,
+        column,
+      };
+    },
+    autoSave() {
+      if (this.saveInterval) {
+        clearInterval(this.saveInterval);
+      }
+      this.autoSaveTimeout = 60;
+      this.saveInterval = setInterval(() => {
+        const reqData = this.buildReqParams();
+        if (!reqData?.length) {
+          clearInterval(this.saveInterval);
+          console.log("没有需要保存的内容");
+        }
+        this.autoSaveTimeout--;
+        console.log(`自动保存倒计时：${this.autoSaveTimeout}`);
+        if (this.autoSaveTimeout <= 0) {
+          clearInterval(this.saveInterval);
+          console.log("即将进行自动保存");
+          this.saveData({ isAutoSave: true });
+        }
+      }, 1000);
+    },
     onCtrlS: debounce(
       function () {
         this.saveData();
@@ -1654,24 +1771,24 @@ export default {
     ),
     bindListenKeydown(e = {}) {
       // 绑定快捷键
-      
+
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         // ctrl+s 保存
         e.preventDefault(); // 阻止默认的保存行为
         console.log("CTRL+S");
         this.onCtrlS();
-      }else if((e.ctrlKey || e.metaKey)&&(e.key==='+' || e.key==='=')){
-      // }else if((e.ctrlKey || e.metaKey)&&e.key==='n'){
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=")) {
+        // }else if((e.ctrlKey || e.metaKey)&&e.key==='n'){
         // ctrl+n 新建一行数据
-        console.log('CTRL +');
-        
-        e.preventDefault()
-        const selection = this.$refs?.tableRef?.getRangeCellSelection()
-        let index = 0
-        if(selection?.selectionRangeIndexes?.endRowIndex){
-          index = selection?.selectionRangeIndexes?.endRowIndex
+        console.log("CTRL +");
+
+        e.preventDefault();
+        const selection = this.$refs?.tableRef?.getRangeCellSelection();
+        let index = 0;
+        if (selection?.selectionRangeIndexes?.endRowIndex) {
+          index = selection?.selectionRangeIndexes?.endRowIndex;
         }
-        this.insert2Rows(index)
+        this.insert2Rows(index);
       }
     },
     handleRedundantCalc(fieldInfo, row) {
@@ -2783,6 +2900,12 @@ export default {
                       unfold: (event, callback) => {
                         this.loadTree(event, row, rowIndex, callback);
                       },
+                      event: (event) => {
+                        if(event==='showRichEditor'){
+                          this.buildFieldEditorParams(row, column);
+                          this.showFieldEditor = true;
+                        }
+                      },
                       change: (event) => {
                         // 将html中的文件地址前缀替换为$bxFileAddress$
                         event = this.replaceFileAddressSuffix(event);
@@ -3028,6 +3151,35 @@ export default {
         });
       }
     },
+    // 提取重复的更新数据处理逻辑
+    processUpdateData(item, oldItem, updateColsMap) {
+      const updateObj = {};
+      const nullVal = [null, undefined, ""];
+      Object.keys(item).forEach((key) => {
+        if (
+          key.indexOf("_") !== 0 &&
+          !ignoreKeys.includes(key) &&
+          updateColsMap?.[key]?.in_update !== 0
+        ) {
+          if (oldItem[key] !== item[key]) {
+            if (nullVal.includes(item[key]) && nullVal.includes(oldItem[key])) {
+              return;
+            }
+            const colInfo = updateColsMap?.[key];
+            if (["Date", "DateTime"].includes(colInfo?.col_type)) {
+              if (dayjs(item[key]).isSame(dayjs(oldItem[key]))) {
+                return;
+              }
+            }
+            if (item[key] === "" || item[key] == undefined) {
+              item[key] = null;
+            }
+            updateObj[key] = item[key];
+          }
+        }
+      });
+      return updateObj;
+    },
     buildReqParams() {
       const tableData = this.tableData;
       // const tableData = JSON.parse(JSON.stringify(this.tableData));
@@ -3039,36 +3191,41 @@ export default {
           (d) => d.__id && d.__id === item.__id
         );
         if (!item.__flag && oldItem) {
-          const updateObj = {};
-          Object.keys(item).forEach((key) => {
-            if (
-              key.indexOf("_") !== 0 &&
-              !ignoreKeys.includes(key) &&
-              this.updateColsMap?.[key]?.in_update !== 0
-            ) {
-              if (oldItem[key] !== item[key]) {
-                const nullVal = [null, undefined, ""];
-                if (
-                  nullVal.includes(item[key]) &&
-                  nullVal.includes(oldItem[key])
-                ) {
-                  return;
-                }
-                const colInfo = this.updateColsMap?.[key];
-                if (["Date", "DateTime"].includes(colInfo?.col_type)) {
-                  if (dayjs(item[key]).isSame(dayjs(oldItem[key]))) {
-                    return;
-                  }
-                }
-                item.__flag = "update";
-                this.$set(item, "__flag", "update");
-                if (item[key] === "" || item[key] == undefined) {
-                  item[key] = null;
-                }
-                updateObj[key] = item[key];
-              }
-            }
-          });
+          // const updateObj = {};
+          // Object.keys(item).forEach((key) => {
+          //   if (
+          //     key.indexOf("_") !== 0 &&
+          //     !ignoreKeys.includes(key) &&
+          //     this.updateColsMap?.[key]?.in_update !== 0
+          //   ) {
+          //     if (oldItem[key] !== item[key]) {
+          //       const nullVal = [null, undefined, ""];
+          //       if (
+          //         nullVal.includes(item[key]) &&
+          //         nullVal.includes(oldItem[key])
+          //       ) {
+          //         return;
+          //       }
+          //       const colInfo = this.updateColsMap?.[key];
+          //       if (["Date", "DateTime"].includes(colInfo?.col_type)) {
+          //         if (dayjs(item[key]).isSame(dayjs(oldItem[key]))) {
+          //           return;
+          //         }
+          //       }
+          //       item.__flag = "update";
+          //       this.$set(item, "__flag", "update");
+          //       if (item[key] === "" || item[key] == undefined) {
+          //         item[key] = null;
+          //       }
+          //       updateObj[key] = item[key];
+          //     }
+          //   }
+          // });
+          const updateObj = this.processUpdateData(
+            item,
+            oldItem,
+            this.updateColsMap
+          );
           if (Object.keys(updateObj)?.length) {
             reqData.push({
               serviceName: this.updateButton.service_name,
@@ -3081,30 +3238,42 @@ export default {
           item.id &&
           this.updateButton?.service_name
         ) {
-          const updateObj = {};
-          if (oldItem) {
-            Object.keys(oldItem).forEach((key) => {
-              if (
-                key.indexOf("_") !== 0 &&
-                !ignoreKeys.includes(key) &&
-                this.updateColsMap?.[key]?.in_update !== 0
-              ) {
-                if (oldItem[key] !== item[key]) {
-                  if (item[key] === "" || item[key] == undefined) {
-                    item[key] = null;
-                  }
-                  updateObj[key] = item[key];
-                }
-              }
+          const updateObj = this.processUpdateData(
+            item,
+            oldItem,
+            this.updateColsMap
+          );
+          if (Object.keys(updateObj)?.length) {
+            reqData.push({
+              serviceName: this.updateButton.service_name,
+              condition: [{ colName: "id", ruleType: "eq", value: item.id }],
+              data: [updateObj],
             });
-            if (Object.keys(updateObj)?.length) {
-              reqData.push({
-                serviceName: this.updateButton.service_name,
-                condition: [{ colName: "id", ruleType: "eq", value: item.id }],
-                data: [updateObj],
-              });
-            }
           }
+          // const updateObj = {};
+          // if (oldItem) {
+          //   Object.keys(oldItem).forEach((key) => {
+          //     if (
+          //       key.indexOf("_") !== 0 &&
+          //       !ignoreKeys.includes(key) &&
+          //       this.updateColsMap?.[key]?.in_update !== 0
+          //     ) {
+          //       if (oldItem[key] !== item[key]) {
+          //         if (item[key] === "" || item[key] == undefined) {
+          //           item[key] = null;
+          //         }
+          //         updateObj[key] = item[key];
+          //       }
+          //     }
+          //   });
+          //   if (Object.keys(updateObj)?.length) {
+          //     reqData.push({
+          //       serviceName: this.updateButton.service_name,
+          //       condition: [{ colName: "id", ruleType: "eq", value: item.id }],
+          //       data: [updateObj],
+          //     });
+          //   }
+          // }
         } else if (item.__flag === "add" && this.addButton?.service_name) {
           const addObj = {
             ...item,
@@ -3278,52 +3447,52 @@ export default {
       });
     },
     // 局部刷新
-    async miniUpdate({ updateList, addList }) {
-      console.log("updateList:", updateList, "addList:", addList);
-      if (Array.isArray(updateList) && updateList.length > 0) {
-      }
-      if (Array.isArray(addList) && addList.length > 0) {
-        let tableData = cloneDeep(this.tableData);
-        let oldAddData = tableData.filter((item) => !item.id);
-        tableData = tableData.filter((item) => !!item.id);
-        if (oldAddData.length === addList.length) {
-          tableData.push(
-            ...addList.map((item, index) => {
-              item.__button_auth = this.setButtonAuth(
-                this.v2data?.rowButton,
-                item
-              );
-              item.rowKey = oldAddData[index].rowKey;
-              item.__id = oldAddData[index].__id;
-              if (oldAddData[index].__indent) {
-                item.__indent = oldAddData[index].__indent;
-              }
-              if (oldAddData[index].__parent_row) {
-                item.__parent_row = oldAddData[index].__parent_row;
-              }
-              return item;
-            })
-          );
-        } else {
-          tableData.push(
-            ...addList.map((item, index) => {
-              item.__button_auth = this.setButtonAuth(
-                this.v2data?.rowButton,
-                item
-              );
-              const __id = uniqueId("table_item_");
+    // async miniUpdate({ updateList, addList }) {
+    //   console.log("updateList:", updateList, "addList:", addList);
+    //   if (Array.isArray(updateList) && updateList.length > 0) {
+    //   }
+    //   if (Array.isArray(addList) && addList.length > 0) {
+    //     let tableData = cloneDeep(this.tableData);
+    //     let oldAddData = tableData.filter((item) => !item.id);
+    //     tableData = tableData.filter((item) => !!item.id);
+    //     if (oldAddData.length === addList.length) {
+    //       tableData.push(
+    //         ...addList.map((item, index) => {
+    //           item.__button_auth = this.setButtonAuth(
+    //             this.v2data?.rowButton,
+    //             item
+    //           );
+    //           item.rowKey = oldAddData[index].rowKey;
+    //           item.__id = oldAddData[index].__id;
+    //           if (oldAddData[index].__indent) {
+    //             item.__indent = oldAddData[index].__indent;
+    //           }
+    //           if (oldAddData[index].__parent_row) {
+    //             item.__parent_row = oldAddData[index].__parent_row;
+    //           }
+    //           return item;
+    //         })
+    //       );
+    //     } else {
+    //       tableData.push(
+    //         ...addList.map((item, index) => {
+    //           item.__button_auth = this.setButtonAuth(
+    //             this.v2data?.rowButton,
+    //             item
+    //           );
+    //           const __id = uniqueId("table_item_");
 
-              item.rowKey = __id;
-              item.__id = __id;
-              return item;
-            })
-          );
-        }
-        this.tableData = tableData;
-        this.oldTableData = cloneDeep(tableData);
-        this.recordManager = new RecordManager();
-      }
-    },
+    //           item.rowKey = __id;
+    //           item.__id = __id;
+    //           return item;
+    //         })
+    //       );
+    //     }
+    //     this.tableData = tableData;
+    //     this.oldTableData = cloneDeep(tableData);
+    //     this.recordManager = new RecordManager();
+    //   }
+    // },
     // 乐观更新 保存更新前的状态
     optimisticUpdate() {
       let _oldTableData = cloneDeep(this.oldTableData);
@@ -3346,6 +3515,9 @@ export default {
     },
     saveData(params = {}) {
       // const reqData = this.buildReqParams;
+      if (this.saveInterval) {
+        clearInterval(this.saveInterval);
+      }
       const reqData = this.buildReqParams();
       if (!reqData?.length) {
         this.$message.error("没有需要保存的操作！");
@@ -3471,6 +3643,9 @@ export default {
             //   return this.miniUpdate(updateIds)
             // }
             this.optimisticUpdate();
+            if(this.fieldEditorParams?.row && this.fieldEditorParams?.column){
+              this.buildFieldEditorParams(this.fieldEditorParams?.row, this.fieldEditorParams?.column)
+            }
             return;
             if (this.listType === "treelist" && this.treeInfo.idCol) {
               let unfoldIds = this.tableData
@@ -3728,6 +3903,8 @@ export default {
       if (load) {
         // 加载当前数据的子数据
         let loadingInstance = Loading.service({ fullscreen: true });
+        console.time("渲染时长：");
+        console.time("请求时长：");
         onSelect(
           this.serviceName,
           this.srvApp,
@@ -3747,7 +3924,7 @@ export default {
               this.isTree && this.listType === "treelist" ? "treelist" : "list",
           }
         ).then((res) => {
-          loadingInstance.close();
+          console.timeEnd("请求时长：");
           if (res?.state === "SUCCESS") {
             let tableData = cloneDeep(this.tableData);
             let __indent = 40;
@@ -3784,10 +3961,15 @@ export default {
             oldTableData.splice(oldRowDataIndex + 1, 0, ...cloneDeep(resData));
             this.oldTableData = cloneDeep(oldTableData);
 
-            // this.$set(this.tableData[rowIndex], "__unfold", load);
-            callback?.(true);
+            this.$set(this.tableData[rowIndex], "__unfold", load);
+            loadingInstance.close();
+            this.$nextTick(() => {
+              console.timeEnd("渲染时长：");
+              callback?.(true);
+            });
           } else {
             // this.$set(this.tableData[rowIndex], "__unfold", load);
+            loadingInstance.close();
             callback?.(false);
           }
         });

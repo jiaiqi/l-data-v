@@ -19,7 +19,12 @@
         class="prefix-icon cursor-initial"
         v-else-if="column.isFirstCol"
       ></div>
-      <div class="text" v-html="recoverFileAddress(html)" style="" v-if="useEditor && html"></div>
+      <div
+        class="text"
+        v-html="recoverFileAddress(html)"
+        style=""
+        v-if="useEditor && html"
+      ></div>
       <a
         class="text"
         v-else-if="keyDispCol && column.columns === keyDispCol"
@@ -71,21 +76,21 @@
       custom-class="editor-dialog"
       :key="ticket"
     >
-      <Toolbar
+      <!-- <Toolbar
         style="border-bottom: 1px solid #ccc"
         :editor="editor"
         :defaultConfig="toolbarConfig"
         :mode="mode"
         v-if="editable && useEditor && dialogTableVisible"
         :key="ticket + 1"
-      />
+      /> -->
       <div
         v-if="useEditor && dialogTableVisible && !editable"
         v-html="recoverFileAddress(innerHtml)"
         class="w-full overflow-auto"
         :style="{ height: dialogFullscreen ? 'calc(100vh - 155px)' : '300px' }"
       ></div>
-      <Editor
+      <!-- <Editor
         v-else-if="useEditor && dialogTableVisible"
         v-model="innerHtml"
         :class="{ 'is-rich-text': true }"
@@ -98,7 +103,7 @@
         @onCreated="onCreated"
         @customPaste="customPaste"
         :key="ticket + 2"
-      />
+      /> -->
       <el-input
         type="textarea"
         :rows="10"
@@ -352,7 +357,9 @@ export default {
     },
     changeFold() {
       this.loadingFold = true;
+      console.time("展开折叠操作完成");
       this.$emit("unfold", !this.unfold, (res) => {
+        console.timeEnd("展开折叠操作完成");
         this.loadingFold = false;
         this.unfold = !this.unfold;
       });
@@ -365,15 +372,17 @@ export default {
     },
     showRichEditor(event) {
       if (this.useEditor) {
-        this.ticket = sessionStorage.getItem("bx_auth_ticket");
-        this.dialogTableVisible = true;
-        this.innerHtml = this.recoverFileAddress(this.html);
-        this.$nextTick(() => {
-          this.editor?.setHtml(this.html);
-        });
-        this.editor?.focus();
-        this.$emit("onfocus");
-        // 阻止冒泡 拦截表格组件的双击事件
+        this.$emit("event", "showRichEditor");
+
+        //   this.ticket = sessionStorage.getItem("bx_auth_ticket");
+        //   this.dialogTableVisible = true;
+        //   this.innerHtml = this.recoverFileAddress(this.html);
+        //   this.$nextTick(() => {
+        //     this.editor?.setHtml(this.html);
+        //   });
+        //   this.editor?.focus();
+        //   this.$emit("onfocus");
+        //   // 阻止冒泡 拦截表格组件的双击事件
         event.stopPropagation();
       }
     },
