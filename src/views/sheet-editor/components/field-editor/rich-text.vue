@@ -133,6 +133,7 @@ export default {
     },
     innerHtml(newVal) {
       // 监听内部值变化
+      if(newVal==='<p><br></p>'&&!this.value) return
       this.$emit("input", newVal);
     },
   },

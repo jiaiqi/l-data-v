@@ -46,7 +46,7 @@
         >
           保存
           <span v-if="autoSaveTimeout && autoSaveTimeout > 0"
-            class="text-sm"
+            class="text-xs"
             title="自动保存倒计时"
             >
             {{ autoSaveTimeout }}

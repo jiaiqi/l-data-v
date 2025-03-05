@@ -91,7 +91,7 @@
           <i class="i-ic-baseline-save"></i>
           <span
             v-if="autoSaveTimeout && autoSaveTimeout > 0"
-            class="text-sm"
+            class="text-xs"
             title="自动保存倒计时"
           >
             {{ autoSaveTimeout }}
@@ -1087,11 +1087,17 @@ export default {
         // }
       },
     },
-    showFieldEditor(newVal){
-      if(newVal === true){
-        this.stopAutoSave()
+    showFieldEditor(newVal) {
+      if (newVal === true) {
+        this.stopAutoSave();
+      } else {
+        const reqData = this.buildReqParams();
+        // 弹窗关闭 继续倒计时保存
+        if (reqData?.length) {
+          this.autoSave();
+        }
       }
-    }
+    },
   },
   computed: {
     ...mapState(useUserStore, ["userInfo", "tenants"]),
@@ -1753,8 +1759,8 @@ export default {
       if (this.autoSaveInterval) {
         clearInterval(this.autoSaveInterval);
       }
-      this.autoSaveInterval = null
-      this.autoSaveTimeout = 0
+      this.autoSaveInterval = null;
+      this.autoSaveTimeout = 0;
     },
     autoSave() {
       this.stopAutoSave();
@@ -1762,13 +1768,13 @@ export default {
       this.autoSaveInterval = setInterval(() => {
         const reqData = this.buildReqParams();
         if (!reqData?.length) {
-          clearInterval(this.autoSaveInterval);
           console.log("没有需要保存的内容");
+          return this.stopAutoSave();
         }
         this.autoSaveTimeout--;
         console.log(`自动保存倒计时：${this.autoSaveTimeout}`);
         if (this.autoSaveTimeout <= 0) {
-          clearInterval(this.autoSaveInterval);
+          this.stopAutoSave();
           console.log("即将进行自动保存");
           this.saveData({ isAutoSave: true });
         }
