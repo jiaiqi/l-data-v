@@ -11,5 +11,5 @@
       "jsx": "preserve"
   },
   //提高 IDE 性能
-  "exclude": ["node_modules", "dist", "build"]
+  "exclude": ["node_modules", "dist", "build","dataview"]
 }

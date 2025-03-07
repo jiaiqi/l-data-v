@@ -7,9 +7,6 @@
     width="90vw"
   >
     <div :style="setStyle">
-      <!-- <div v-if="autoSaveTimeout && autoSaveTimeout > 0" class="top-tip">
-        <span> 自动保存倒计时：{{ autoSaveTimeout }} </span>
-      </div> -->
       <rich-text-editor
         v-if="editorType === 'RichText'"
         v-model="innerHtml"
@@ -128,7 +125,7 @@ export default {
         )
       ) {
         return "RichText";
-      }
+      }else return this.column?.__field_info?.col_type
     },
   },
   watch: {

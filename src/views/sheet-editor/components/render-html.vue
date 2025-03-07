@@ -433,11 +433,14 @@ export default {
   min-height: 20px;
   text-align: left;
   --w-e-textarea-bg-color: transparent;
-  max-height: 100px;
+  max-height: 50px;
   position: relative;
   display: flex;
   .text{
     width: 100%;
+    ::v-deep p{
+      margin: 0;
+    }
   }
   .old-value {
     text-decoration: line-through;

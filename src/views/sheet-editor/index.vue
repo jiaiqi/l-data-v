@@ -346,7 +346,10 @@ export default {
   },
   data() {
     return {
+      bx_auth_ticket:null,
+      currentSelection: null,
       fieldEditorParams: null,
+      fieldEditorPosition:{},
       showFieldEditor: false,
       autoSaveInterval: null, //用于储存定时保存的定时器
       autoSaveTimeout: 0, //自动保存倒计时
@@ -411,6 +414,14 @@ export default {
         },
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
+            click: (event) => {
+              const currentSelection =
+                this.$refs?.tableRef?.getRangeCellSelection();
+              this.currentSelection = currentSelection;
+              console.log(event);
+              
+              // console.log("cell click::",currentSelection, row, column, rowIndex, event);
+            },
             dblclick: (event) => {
               // 双击单元格
               console.log("cell dblclick::", row, column, rowIndex, event);
@@ -1791,7 +1802,7 @@ export default {
       const reqData = this.buildReqParams();
       if (!reqData?.length) {
         console.log("没有需要保存的内容");
-        return ;
+        return;
       }
       this.autoSaveTimeout = 60 * 3;
       this.autoSaveInterval = setInterval(() => {
@@ -2204,6 +2215,7 @@ export default {
       if (this.serviceName) {
         this.startLoading();
         const v2Data = await this.getV2Data();
+        this.bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
         if (v2Data === false) {
           return;
         }
@@ -2679,7 +2691,7 @@ export default {
                       },
                     },
                   });
-                } else if (["Date", "DateTime"].includes(item.col_type)) {
+                } else if (["Date", "DateTime"].includes(item.col_type)&&false) {
                   if (this.disabled) {
                     return row[column.field] || "";
                   }
@@ -4066,6 +4078,9 @@ export default {
       return obj;
     },
     async getList(insertNewRows = true, unfoldIds) {
+      if(sessionStorage.getItem("bx_auth_ticket") && this.bx_auth_ticket !== sessionStorage.getItem("bx_auth_ticket")){
+        this.initPage()
+      }
       if (!unfoldIds && this.listType === "treelist" && this.treeInfo.idCol) {
         unfoldIds = this.tableData
           .filter((item) => !!item?.__unfold)
