@@ -10,6 +10,7 @@
       :type="editorType.toLowerCase()"
       placeholder="选择日期"
       :value-format="dateFormat"
+      :clearable="false"
       @change="$emit('change', modelValue, row, column)"
       @blur="handleClose"
     >
@@ -284,9 +285,14 @@ export default {
   align-items: center;
   justify-content: center;
   ::v-deep .el-date-editor{
+    height: 100%;
+    line-height: 100%;
     background: transparent;
     .el-input__inner{
+          height: 100%;
+    line-height: 100%;
     background: transparent;
+    padding-right: 0;
       border: none;
     }
   }
