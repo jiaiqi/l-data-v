@@ -273,6 +273,15 @@ const ignoreKeys = [
   "__update_col",
 ];
 
+function getElementFullInfo(element) {
+  const rect = element.getBoundingClientRect();
+  return {
+    left: rect.left + window.scrollX,
+    top: rect.top + window.scrollY,
+    width: rect.width,
+    height: rect.height,
+  };
+}
 export default {
   name: "SheetEditor",
   beforeDestroy() {
@@ -346,10 +355,10 @@ export default {
   },
   data() {
     return {
-      bx_auth_ticket:null,
+      bx_auth_ticket: null,
       currentSelection: null,
       fieldEditorParams: null,
-      fieldEditorPosition:{},
+      fieldEditorPosition: {},
       showFieldEditor: false,
       autoSaveInterval: null, //用于储存定时保存的定时器
       autoSaveTimeout: 0, //自动保存倒计时
@@ -415,58 +424,84 @@ export default {
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
             click: (event) => {
-              const currentSelection =
-                this.$refs?.tableRef?.getRangeCellSelection();
-              this.currentSelection = currentSelection;
-              console.log(event);
-              
-              // console.log("cell click::",currentSelection, row, column, rowIndex, event);
+              if (column.edit) {
+                const colType = column?.__field_info?.col_type;
+                const currentCellEl = document.querySelector(
+                  ".ve-table-body-td.ve-table-cell-selection"
+                );
+                if (currentCellEl) {
+                  const { offsetLeft, offsetTop, offsetWidth, offsetHeight } =
+                    currentCellEl;
+                  if (["Date", "DateTime"].includes(colType)) {
+                    event.stopPropagation();
+                    const position = getElementFullInfo(currentCellEl);
+                    if (position.width && position.height) {
+                      this.buildFieldEditorParams(row, column, { position });
+                      this.showFieldEditor = true;
+                    }
+                  } else {
+                    this.buildFieldEditorParams();
+                    this.showFieldEditor = false;
+                  }
+
+                  console.log(
+                    `offsetLeft:${offsetLeft},offsetTop:${offsetTop},offsetWidth:${offsetWidth},offsetHeight:${offsetHeight}`
+                  );
+                }
+              }
             },
             dblclick: (event) => {
               // 双击单元格
               console.log("cell dblclick::", row, column, rowIndex, event);
-              if (
-                column.edit &&
-                ["Note", "RichText", "snote"].includes(
-                  column?.__field_info?.col_type
-                )
-              ) {
-                // 富文本
-                event.stopPropagation();
-                console.log("弹出富文本编辑器");
-                this.buildFieldEditorParams(row, column);
-                this.showFieldEditor = true;
-                // event.stopPropagation()
-                this.$nextTick(() => {
-                  this.$refs["tableRef"].stopEditingCell();
-                  this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-                });
-                return false;
+              const colType = column?.__field_info?.col_type;
+              const currentCellEl =
+                this.$refs.tableRef?.$refs?.cellSelectionRef?.currentCellEl;
+              console.log({ ...currentCellEl });
 
-                // event.preventDefault()
-                // this.$refs.fieldEditorDialog.open();
-              }
+              if (column.edit) {
+                if (["Note", "RichText", "snote"].includes(colType)) {
+                  // 富文本
+                  event.stopPropagation();
+                  console.log("弹出富文本编辑器");
+                  this.buildFieldEditorParams(row, column);
+                  this.showFieldEditor = true;
+                  // event.stopPropagation()
+                  this.$nextTick(() => {
+                    this.$refs["tableRef"].stopEditingCell();
+                    this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                  });
+                  return false;
 
-              if (column?.__field_info?.option_list_v3?.length) {
-                let finalOption = column?.__field_info?.option_list_v3.find(
-                  (item) => {
-                    return item.conds.every(
-                      (cond) =>
-                        row[cond.case_col] &&
-                        cond.case_val.includes(row[cond.case_col])
-                    );
-                  }
-                );
-                // fk类型 有满足条件的option_list
-                if (finalOption?.allow_input === "自行输入") {
-                  console.log("finalOption:", finalOption);
-                  this.$refs.outFormDialog?.doShow({
-                    row,
-                    field: column.__field_info,
-                    optionCfg: finalOption,
+                  // event.preventDefault()
+                  // this.$refs.fieldEditorDialog.open();
+                } else if (["Date", "DateTime"].includes(colType)) {
+                  event.stopPropagation();
+                  this.$nextTick(() => {
+                    this.$refs["tableRef"].stopEditingCell();
                   });
                 }
               }
+
+              // if (column?.__field_info?.option_list_v3?.length) {
+              //   let finalOption = column?.__field_info?.option_list_v3.find(
+              //     (item) => {
+              //       return item.conds.every(
+              //         (cond) =>
+              //           row[cond.case_col] &&
+              //           cond.case_val.includes(row[cond.case_col])
+              //       );
+              //     }
+              //   );
+              //   // fk类型 有满足条件的option_list
+              //   if (finalOption?.allow_input === "自行输入") {
+              //     console.log("finalOption:", finalOption);
+              //     this.$refs.outFormDialog?.doShow({
+              //       row,
+              //       field: column.__field_info,
+              //       optionCfg: finalOption,
+              //     });
+              //   }
+              // }
               return false;
             },
           };
@@ -1751,7 +1786,8 @@ export default {
         defaultValue: event || null,
       });
       this.$refs["tableRef"].stopEditingCell();
-      this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+      // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+      this.showFieldEditor = false;
       if (type === "save") {
         this.$nextTick(() => {
           this.saveData();
@@ -1763,7 +1799,11 @@ export default {
 
       this.fieldEditorParams = {};
     },
-    buildFieldEditorParams(row, column) {
+    buildFieldEditorParams(row, column, params) {
+      if (!row || !column) {
+        this.fieldEditorParams = {};
+        this.showFieldEditor = false
+      }
       let editable = true;
       if (row.__flag === "add") {
         // 新增行 处理in_add
@@ -1788,6 +1828,7 @@ export default {
         editable,
         row,
         column,
+        position: params?.position,
       };
     },
     stopAutoSave() {
@@ -2691,7 +2732,10 @@ export default {
                       },
                     },
                   });
-                } else if (["Date", "DateTime"].includes(item.col_type)&&false) {
+                } else if (
+                  ["Date", "DateTime"].includes(item.col_type) &&
+                  false
+                ) {
                   if (this.disabled) {
                     return row[column.field] || "";
                   }
@@ -4078,8 +4122,11 @@ export default {
       return obj;
     },
     async getList(insertNewRows = true, unfoldIds) {
-      if(sessionStorage.getItem("bx_auth_ticket") && this.bx_auth_ticket !== sessionStorage.getItem("bx_auth_ticket")){
-        this.initPage()
+      if (
+        sessionStorage.getItem("bx_auth_ticket") &&
+        this.bx_auth_ticket !== sessionStorage.getItem("bx_auth_ticket")
+      ) {
+        this.initPage();
       }
       if (!unfoldIds && this.listType === "treelist" && this.treeInfo.idCol) {
         unfoldIds = this.tableData

@@ -433,7 +433,7 @@ export default {
   min-height: 20px;
   text-align: left;
   --w-e-textarea-bg-color: transparent;
-  max-height: 50px;
+  max-height: 80px;
   position: relative;
   display: flex;
   .text{

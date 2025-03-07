@@ -1,15 +1,33 @@
 <template>
+  <div
+    class="date-picker"
+    :style="setPosition"
+    v-if="['Date', 'DateTime'].includes(editorType)"
+  >
+    <el-date-picker
+      v-model="modelValue"
+      align="right"
+      :type="editorType.toLowerCase()"
+      placeholder="选择日期"
+      :value-format="dateFormat"
+      @change="$emit('change', modelValue, row, column)"
+      @blur="handleClose"
+    >
+    </el-date-picker>
+  </div>
+
   <el-dialog
-    :visible="dialogVisible"
+    :visible="editorVisible"
     @close="handleClose"
     :before-close="handleClose"
     :close-on-click-modal="false"
     width="90vw"
+    v-else
   >
     <div :style="setStyle">
       <rich-text-editor
         v-if="editorType === 'RichText'"
-        v-model="innerHtml"
+        v-model="modelValue"
         :mode="mode"
         :editable="editable"
         :dialogFullscreen="dialogFullscreen"
@@ -28,8 +46,8 @@
           type="primary"
           plain
           @click="
-            $emit('change', innerHtml, row, column);
-            dialogVisible = false;
+            $emit('change', modelValue, row, column);
+            editorVisible = false;
           "
           >确认</el-button
         >
@@ -37,15 +55,16 @@
           type="primary"
           :disabled="!hasChange"
           @click="
-            $emit('save', innerHtml, row, column, 'save');
-            stopAutoSave()
+            $emit('save', modelValue, row, column, 'save');
+            stopAutoSave();
           "
         >
           保存
-          <span v-if="autoSaveTimeout && autoSaveTimeout > 0"
+          <span
+            v-if="autoSaveTimeout && autoSaveTimeout > 0"
             class="text-xs"
             title="自动保存倒计时"
-            >
+          >
             {{ autoSaveTimeout }}
           </span>
         </el-button>
@@ -87,6 +106,7 @@ export default {
     serviceName: String,
     detailButton: Object,
     keyDispCol: String,
+    position: Object,
   },
   data() {
     return {
@@ -98,18 +118,32 @@ export default {
       toolbarConfig: {},
       editor: null,
       mode: "default", // or 'simple'
-      innerHtml: "",
+      modelValue: "",
       unfold: false, //默认收起
       loadingFold: false,
       dialogFullscreen: false,
-      dialogVisible: this.value, // 控制对话框显示
+      editorVisible: this.value, // 控制对话框显示
       autoSaveInterval: null, //用于储存定时保存的定时器
       autoSaveTimeout: 0, //自动保存倒计时
     };
   },
   computed: {
+    setPosition() {
+      if (this.position && this.position.width && this.value) {
+        return {
+          left: this.position.left+1 + "px",
+          top: this.position.top+1 + "px",
+          width: this.position.width -4 + "px",
+          height: this.position.height - 4+ "px",
+        };
+      } else {
+        return {
+          display: "none",
+        };
+      }
+    },
     hasChange() {
-      return this.innerHtml !== this.html;
+      return this.modelValue !== this.html;
     },
     setStyle() {
       let str = "";
@@ -125,24 +159,31 @@ export default {
         )
       ) {
         return "RichText";
-      }else return this.column?.__field_info?.col_type
+      } else return this.column?.__field_info?.col_type;
+    },
+    dateFormat() {
+      if (this.editorType === "Date") {
+        return "yyyy-MM-dd";
+      } else if (this.editorType === "DateTime") {
+        return "yyyy-MM-dd HH:mm:ss";
+      }
     },
   },
   watch: {
     html: {
       immediate: true,
       handler(newVal = "") {
-        if (this.innerHtml !== newVal) {
-          this.innerHtml = newVal;
+        if (this.modelValue !== newVal) {
+          this.modelValue = newVal;
         }
       },
     },
     value(newVal) {
       // 监听外部值变化
-      this.dialogVisible = newVal;
+      this.editorVisible = newVal;
       this.stopAutoSave();
     },
-    dialogVisible(newVal) {
+    editorVisible(newVal) {
       // 触发v-model更新
       this.$emit("input", newVal);
       if (newVal) {
@@ -154,7 +195,7 @@ export default {
         this.initialIndex = 0;
       }
     },
-    innerHtml(newVal) {
+    modelValue(newVal) {
       if (newVal !== this.html) {
         this.autoSave();
       }
@@ -165,16 +206,16 @@ export default {
       if (this.autoSaveInterval) {
         clearInterval(this.autoSaveInterval);
       }
-      this.autoSaveInterval = null
-      this.autoSaveTimeout = 0
+      this.autoSaveInterval = null;
+      this.autoSaveTimeout = 0;
     },
     autoSave() {
       this.stopAutoSave();
-      if (this.innerHtml === this.html) {
+      if (this.modelValue === this.html) {
         console.log("没有需要保存的内容");
         return;
       }
-      this.autoSaveTimeout = 60*3;
+      this.autoSaveTimeout = 60 * 3;
       this.autoSaveInterval = setInterval(() => {
         this.autoSaveTimeout--;
         console.log(`自动保存倒计时：${this.autoSaveTimeout}`);
@@ -183,14 +224,14 @@ export default {
           clearInterval(this.autoSaveInterval);
           console.log("即将进行自动保存");
           // this.saveData({ isAutoSave: true });
-          this.$emit("save", this.innerHtml, this.row, this.column, "save");
+          this.$emit("save", this.modelValue, this.row, this.column, "save");
         }
       }, 1000);
     },
     handleOpen(params = {}) {},
     handleClose() {
       // 对话框关闭处理
-      this.dialogVisible = false;
+      this.editorVisible = false;
       this.$emit("close");
     },
     dblListener(eve) {
@@ -233,6 +274,23 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.date-picker {
+  z-index: 9;
+  position: fixed;
+  // border: 1px solid #4B89FF;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  ::v-deep .el-date-editor{
+    background: transparent;
+    .el-input__inner{
+    background: transparent;
+      border: none;
+    }
+  }
+}
 .top-tip {
   margin-top: -40px;
 }

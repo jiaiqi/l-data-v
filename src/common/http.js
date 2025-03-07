@@ -21,7 +21,7 @@ if (pathConfig) {
     if (pathConfig?.gateway) {
       baseURL = pathConfig?.gateway;
     }
-  } catch (error) {}
+  } catch (error) { }
 }
 window.backendIpAddr = baseURL
 
@@ -38,7 +38,7 @@ console.log("env:", import.meta.env);
 
 export const $axios = axios.create({
   baseURL,
-  timeout: 200 * 1000,
+  timeout: 20 * 1000,
   withCredentials: true,
   // headers: {'X-Custom-Header': 'foobar'}
 });
@@ -46,9 +46,9 @@ $axios.interceptors.request.use(
   function (config) {
     // 在发送请求之前做些什么
     bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
-    if (import.meta?.env?.DEV === true&&!sessionStorage.logined) {
+    if (import.meta?.env?.DEV === true && !sessionStorage.logined) {
       bx_auth_ticket = devTicket
-      sessionStorage.setItem('bx_auth_ticket',devTicket)
+      sessionStorage.setItem('bx_auth_ticket', devTicket)
     }
     config.headers.set("bx_auth_ticket", bx_auth_ticket);
     return config;
@@ -82,7 +82,7 @@ $axios.interceptors.response.use(
           let currentTenant = sessionStorage.currentTenant;
           sessionStorage.clear()
           localStorage.clear()
-          if(currentTenant){
+          if (currentTenant) {
             sessionStorage.currentTenant = currentTenant
           }
           if (getRootWindow()?.layer) {
@@ -92,7 +92,7 @@ $axios.interceptors.response.use(
                 console.info("1");
                 login_page = "/" + top.getLoginAddress();
               }
-            } catch (exception) {}
+            } catch (exception) { }
             getRootWindow()?.layer.open({
               title: false,
               type: 2,
@@ -110,10 +110,10 @@ $axios.interceptors.response.use(
                   console.info("1");
                   login_page = "/" + top.getMainAddress();
                 }
-              } catch (exception) {}
+              } catch (exception) { }
               window.location.href = window.location.origin + login_page;
-            }else {
-              
+            } else {
+
             }
           }
         } else if (response.data.resultCode == "0000") {
@@ -137,12 +137,21 @@ $axios.interceptors.response.use(
   function (error) {
     // 超出 2xx 范围的状态码都会触发该函数。
     // 对响应错误做点什么
-    console.log(error);
-    Message({
-      showClose: true,
-      message: error?.data?.resultMessage || JSON.stringify(error),
-      type: "error",
-    });
+    console.error(error);
+    if (error?.message?.indexOf("timeout") === 0) {
+      Message({
+        showClose: true,
+        message: "网络请求超时,请稍候重试!",
+        type: "error",
+      });
+    } else {
+      Message({
+        showClose: true,
+        message: error?.data?.resultMessage || error?.message || JSON.stringify(error),
+        type: "error",
+      });
+    }
+
     return Promise.reject(error);
   }
 );
@@ -181,9 +190,8 @@ export const getImagePath = (no, notThumb) => {
     if (no.indexOf("&bx_auth_ticket") !== -1) {
       no = no.split("&bx_auth_ticket")[0];
     }
-    let url = `${serviceApi.imageFileNo}${no}&bx_auth_ticket=${
-      bx_auth_ticket || sessionStorage.getItem("bx_auth_ticket")
-    }`;
+    let url = `${serviceApi.imageFileNo}${no}&bx_auth_ticket=${bx_auth_ticket || sessionStorage.getItem("bx_auth_ticket")
+      }`;
     return url;
   } else {
     return "";
