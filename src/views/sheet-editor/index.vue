@@ -1787,12 +1787,12 @@ export default {
       });
       this.$refs["tableRef"].stopEditingCell();
       // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-      this.showFieldEditor = false;
       if (type === "save") {
         this.$nextTick(() => {
           this.saveData();
         });
       }
+      // this.showFieldEditor = false;
     },
     dialogClose() {
       console.log("dialogClose:");
