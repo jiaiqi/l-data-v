@@ -792,8 +792,8 @@ export default {
                 } = selectionRangeIndexes;
                 // 选中区域大于一行或者一列
                 if (
-                  endRowIndex - startRowIndex > 0 ||
-                  endColIndex - startColIndex > 0
+                  endRowIndex - startRowIndex >= 0 ||
+                  endColIndex - startColIndex >= 0
                 ) {
                   const columns = this.columns.filter(
                     (item) =>
@@ -818,7 +818,7 @@ export default {
                 }
               }
             }
-            return isValid;
+            return false;
           }
         },
         afterPaste: ({ selectionRangeIndexes }) => {
@@ -2709,7 +2709,6 @@ export default {
                           if (cfg?.case_col in row) {
                             row[cfg.case_col] = cfg?.case_val;
                           }
-                          this.$set(this.tableData, rowIndex, row);
                           this.$refs["tableRef"].startEditingCell({
                             rowKey: row.rowKey,
                             colKey: cfg.case_col,
@@ -2717,6 +2716,7 @@ export default {
                           });
                           this.$refs["tableRef"].stopEditingCell();
                           this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                          // this.$set(this.tableData, rowIndex, row);
                         }
                       },
                       onfocus: () => {
@@ -2728,17 +2728,17 @@ export default {
                       select: (event) => {
                         // fk选项发生变化
                         console.log("fkSelector-select 1", event);
-                        if (row[column.field] !== event.value) {
-                          row[column.field] = event.value;
+                        const currentRow = this.tableData[rowIndex];
+                        if (currentRow[column.field] !== event.value) {
+                          // row[column.field] = event.value;
                         } else {
                           return;
                         }
                         console.log("fkSelector-select", event);
-                        this.$set(this.tableData, rowIndex, row);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
                           colKey: column.field,
-                          defaultValue: row[column.field],
+                          defaultValue: event.value,
                         });
                         this.$refs["tableRef"].stopEditingCell();
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
@@ -2746,7 +2746,7 @@ export default {
                           "fkSelector-select-handlerRedundant",
                           event
                         );
-
+                        // this.$set(this.tableData, rowIndex, row);
                         this.handlerRedundant(
                           event?.rawData,
                           column.field,
@@ -2757,7 +2757,6 @@ export default {
                       input: (event) => {
                         console.log("fkSelector-input", event);
                         row[column.field] = event;
-                        this.$set(this.tableData, rowIndex, row);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
                           colKey: column.field,
@@ -2765,6 +2764,7 @@ export default {
                         });
                         this.$refs["tableRef"].stopEditingCell();
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        // this.$set(this.tableData, rowIndex, row);
                         // this.handlerRedundant(
                         //   {},
                         //   column.field,

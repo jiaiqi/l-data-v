@@ -28,7 +28,7 @@
     <div class="remark">
       <el-popover
         placement="right bottom"
-        width="500"
+        width="800"
         v-model="visible"
         v-if="fieldInfo && fieldInfo.remark"
       >
