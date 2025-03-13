@@ -215,8 +215,9 @@ const onBatchAdd = async (data = {}, serviceName = "", app = "daq") => {
 };
 
 // 获取fk字段的下拉值
-const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
+const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber, params = {}) => {
   let { option_list_v2 } = col;
+  const { mainData } = params;
   app = option_list_v2?.srv_app || app || sessionStorage.getItem("current_app");
   if (app && app.indexOf("${") > -1) {
     app = renderStr(app, { data: row });
@@ -261,6 +262,8 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
         } else if (item.value?.value_type) {
           if (item.value?.value_type === "constant") {
             item.value = item.value?.value;
+          } else if (item.value.value_type === 'mainData' && item.value.value_key && mainData) {
+            item.value = mainData[item.value.value_key]
           } else if (item.value?.value_key && row) {
             item.value = row[item.value?.value_key];
           }
@@ -269,6 +272,12 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber) => {
           item.value.lastIndexOf("'") === item.value.length - 1
         ) {
           item.value = item.value.replace(/\'/gi, "");
+        }
+      } else if (typeof item.value === 'object' && item.value.value_type) {
+        if (item.value?.value_type === "constant") {
+          item.value = item.value?.value;
+        } else if (item.value?.value_key && row) {
+          item.value = row[item.value?.value_key];
         }
       }
       if (item.value_exp) {

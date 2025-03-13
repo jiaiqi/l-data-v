@@ -25,6 +25,27 @@
     width="90vw"
     v-else
   >
+    <div class="remark">
+      <el-popover
+        placement="right bottom"
+        width="500"
+        v-model="visible"
+        v-if="fieldInfo && fieldInfo.remark"
+      >
+        <div class="p-2 m-2 b-gray b-1px b-dashed rounded-sm">
+        <div v-html="recoverFileAddress(fieldInfo.remark)"></div>
+
+        </div>
+        <!-- <div style="text-align: right; margin: 0">
+          <el-button type="primary" size="mini" @click="visible = false"
+            >确定</el-button
+          >
+        </div> -->
+        <div slot="reference" class="text-orange cursor-pointer inline-block">
+          <i class="el-icon-warning"></i> 提示
+        </div>
+      </el-popover>
+    </div>
     <div :style="setStyle">
       <rich-text-editor
         v-if="editorType === 'RichText'"
@@ -33,6 +54,18 @@
         :editable="editable"
         :dialogFullscreen="dialogFullscreen"
       ></rich-text-editor>
+      <el-input
+        type="textarea"
+        :rows="10"
+        :disabled="!editable"
+        :placeholder="
+          (column && column.__field_info && column.__field_info.placeholder) ||
+          '请输入内容'
+        "
+        v-model="modelValue"
+        v-else-if="editorType === 'MultilineText'"
+      >
+      </el-input>
       <div class="text-orange text-center" v-if="!disabled && !editable">
         <span class="mr-20px"> 当前字段不可编辑 </span>
         <el-button type="text" @click="dialogFullscreen = !dialogFullscreen">
@@ -42,33 +75,40 @@
           <span v-else>退出全屏</span>
         </el-button>
       </div>
-      <div class="text-center m-t-5" v-if="!disabled && editable">
-        <el-button
-          type="primary"
-          plain
-          @click="
-            $emit('change', modelValue, row, column);
-            editorVisible = false;
-          "
-          >确认</el-button
-        >
-        <el-button
-          type="primary"
-          :disabled="!hasChange"
-          @click="
-            $emit('save', modelValue, row, column, 'save');
-            stopAutoSave();
-          "
-        >
-          保存
-          <span
-            v-if="autoSaveTimeout && autoSaveTimeout > 0"
-            class="text-xs"
-            title="自动保存倒计时"
+      <div
+        class="text-center m-t-5 flex justify-between"
+        v-if="!disabled && editable"
+      >
+        <div></div>
+        <div class="flex-1 text-center">
+          <el-button
+            type="primary"
+            plain
+            @click="
+              $emit('change', modelValue, row, column);
+              editorVisible = false;
+            "
+            >确认</el-button
           >
-            {{ autoSaveTimeout }}
-          </span>
-        </el-button>
+          <el-button
+            type="primary"
+            :disabled="!hasChange"
+            @click="
+              $emit('save', modelValue, row, column, 'save');
+              stopAutoSave();
+            "
+          >
+            保存
+            <span
+              v-if="autoSaveTimeout && autoSaveTimeout > 0"
+              class="text-xs"
+              title="自动保存倒计时"
+            >
+              {{ autoSaveTimeout }}
+            </span>
+          </el-button>
+        </div>
+        <div></div>
       </div>
     </div>
 
@@ -126,16 +166,20 @@ export default {
       editorVisible: this.value, // 控制对话框显示
       autoSaveInterval: null, //用于储存定时保存的定时器
       autoSaveTimeout: 0, //自动保存倒计时
+      visible: false,
     };
   },
   computed: {
+    fieldInfo() {
+      return this.column?.__field_info;
+    },
     setPosition() {
       if (this.position && this.position.width && this.value) {
         return {
-          left: this.position.left+1 + "px",
-          top: this.position.top+1 + "px",
-          width: this.position.width -4 + "px",
-          height: this.position.height - 4+ "px",
+          left: this.position.left + 1 + "px",
+          top: this.position.top + 1 + "px",
+          width: this.position.width - 4 + "px",
+          height: this.position.height - 4 + "px",
         };
       } else {
         return {
@@ -284,20 +328,24 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  ::v-deep .el-date-editor{
+  ::v-deep .el-date-editor {
     height: 100%;
     line-height: 100%;
     background: transparent;
-    .el-input__inner{
-          height: 100%;
-    line-height: 100%;
-    background: transparent;
-    padding-right: 0;
+    .el-input__inner {
+      height: 100%;
+      line-height: 100%;
+      background: transparent;
+      padding-right: 0;
       border: none;
     }
   }
 }
 .top-tip {
   margin-top: -40px;
+}
+.remark {
+  margin-top: -50px;
+  line-height: 40px;
 }
 </style>

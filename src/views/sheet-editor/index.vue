@@ -481,6 +481,15 @@ export default {
 
                   // event.preventDefault()
                   // this.$refs.fieldEditorDialog.open();
+                } else if (["MultilineText"].includes(colType)) {
+                  event.stopPropagation();
+                  console.log("弹出多行文本编辑器");
+                  this.buildFieldEditorParams(row, column);
+                  this.showFieldEditor = true;
+                  this.$nextTick(() => {
+                    this.$refs["tableRef"].stopEditingCell();
+                  });
+                  return false;
                 } else if (["Date", "DateTime"].includes(colType)) {
                   event.stopPropagation();
                   this.$nextTick(() => {
@@ -3579,14 +3588,18 @@ export default {
       // }
       const url = `/${this.srvApp}/operate/srvsys_table_columns_update`;
       const req = this.calcTableColumnWidthReq;
-      let validReq = req.filter(item=>{
-        if(item?.condition?.some(cond=>cond?.ruleType==='eq'&&(!cond.value||!cond.colName))){
-          return false
+      let validReq = req.filter((item) => {
+        if (
+          item?.condition?.some(
+            (cond) => cond?.ruleType === "eq" && (!cond.value || !cond.colName)
+          )
+        ) {
+          return false;
         }
-        return true
-      })
-      if(!validReq?.length){
-        return
+        return true;
+      });
+      if (!validReq?.length) {
+        return;
       }
       this.startLoading();
       $http.post(url, validReq).then((res) => {

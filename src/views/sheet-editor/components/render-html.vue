@@ -365,10 +365,11 @@ export default {
       });
     },
     showTextarea() {
-      this.ticket = sessionStorage.getItem("bx_auth_ticket");
-      this.dialogTableVisible = true;
-      this.innerHtml = this.recoverFileAddress(this.html);
-      this.$emit("onfocus");
+      // this.ticket = sessionStorage.getItem("bx_auth_ticket");
+      // this.dialogTableVisible = true;
+      // this.innerHtml = this.recoverFileAddress(this.html);
+      // this.$emit("onfocus");
+      this.$emit("event", "showRichEditor");
     },
     showRichEditor(event) {
       if (this.useEditor) {
