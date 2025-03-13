@@ -9,7 +9,10 @@ const buildSrvCols = (
   childListType,
   colSrv
 ) => {
-  const { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
+  let { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
+  // updateColsMap = updateColsMap || {};
+  // addColsMap = addColsMap || {};
+  // listColsMap = listColsMap || {};
   if (Array.isArray(cols) && cols.length > 0) {
     // 冗余字段auto complete特性
     const fkCols = cols.reduce((res, cur) => {

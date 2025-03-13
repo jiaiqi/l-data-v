@@ -313,6 +313,9 @@ export default {
     // }, 60 * 1000);
   },
   async created() {
+    if (this.$route.query?.listType) {
+      this.listType = this.$route.query?.listType;
+    }
     if (this.$route.query?.disabled) {
       this.disabled = true;
     }
@@ -396,9 +399,9 @@ export default {
       },
       sortState: [], // 表头排序
       filterState: {}, //筛选
-      listColsMap: null, //列表字段映射
-      addColsMap: null, //新增字段映射
-      updateColsMap: null, //编辑字段映射
+      listColsMap: {}, //列表字段映射
+      addColsMap: {}, //新增字段映射
+      updateColsMap: {}, //编辑字段映射
       loading: false,
       isFetched: false, //数据加载完成
       recordManager: new RecordManager(), //编辑记录
@@ -426,6 +429,9 @@ export default {
             click: (event) => {
               if (column.edit) {
                 const colType = column?.__field_info?.col_type;
+                if (!colType) {
+                  return;
+                }
                 const currentCellEl = document.querySelector(
                   ".ve-table-body-td.ve-table-cell-selection"
                 );
@@ -454,6 +460,7 @@ export default {
               // 双击单元格
               console.log("cell dblclick::", row, column, rowIndex, event);
               const colType = column?.__field_info?.col_type;
+              if (!colType) return;
               const currentCellEl =
                 this.$refs.tableRef?.$refs?.cellSelectionRef?.currentCellEl;
               console.log({ ...currentCellEl });
@@ -706,6 +713,7 @@ export default {
               this.columns.forEach((col) => {
                 const oldVal = this.oldTableData[realIndex]?.[col.field];
                 const colType = col?.__field_info?.col_type;
+                if (!colType) return;
                 if (colType && this.oldTableData[realIndex]) {
                   const changeValue = element[col.field];
                   if (changeValue) {
@@ -835,10 +843,10 @@ export default {
       // 单元格编辑配置
       editOption: {
         beforeStartCellEditing: ({ row, column, cellValue, rowIndex }) => {
-          if (!row) {
+          const colType = column?.__field_info?.col_type;
+          if (!row || !colType) {
             return;
           }
-          const colType = column?.__field_info?.col_type;
           let oldRowData = this.oldTableData?.find(
             (item) => item.__id === row.__id
           );
@@ -911,10 +919,16 @@ export default {
         },
         beforeCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
+          if (!colType) {
+            return;
+          }
           let oldRowData = this.oldTableData?.find(
             (item) => item.__id === row.__id
           );
-          if (oldRowData && changeValue === oldRowData[column.field]) {
+          let currentRow = this.tableData?.find(
+            (item) => item.__id === row.__id
+          );
+          if (currentRow && changeValue === currentRow[column.field]) {
             // 值没变
             return false;
           }
@@ -972,7 +986,7 @@ export default {
           }
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
-            colType.includes("decimal")
+            colType?.includes("decimal")
           ) {
             // 数字 校验
             if (isNaN(Number(changeValue))) {
@@ -986,6 +1000,9 @@ export default {
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
+          if (!colType) {
+            return;
+          }
           let oldRow = this.oldTableData?.find(
             (item) => item.__id === row.__id
           );
@@ -1007,7 +1024,7 @@ export default {
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
-            colType.includes("decimal")
+            colType?.includes("decimal")
           ) {
             if (changeValue && typeof changeValue === "string") {
               this.tableData.forEach((item) => {
@@ -1676,6 +1693,7 @@ export default {
               "fixedCol",
               "initCond",
               "colSrv", // 用来查找显示的列的服务
+              "listType",
             ].includes(key)
           ) {
             defaultConditions.push({
@@ -1712,23 +1730,35 @@ export default {
       }
     },
     addChildButton() {
-      return this.v2data?.rowButton?.find((item) =>
-        item.button_type.includes("addchild")
+      return this.v2data?.rowButton?.find(
+        (item) =>
+          item.button_type.includes("addchild") &&
+          item.permission &&
+          item.service_name
       );
     },
     addButton() {
-      return this.v2data?.gridButton?.find((item) =>
-        item.button_type.includes("add")
+      return this.v2data?.gridButton?.find(
+        (item) =>
+          item.button_type.includes("add") &&
+          item.permission &&
+          item.service_name
       );
     },
     deleteButton() {
-      return this.v2data?.rowButton?.find((item) =>
-        item.button_type.includes("delete")
+      return this.v2data?.rowButton?.find(
+        (item) =>
+          item.button_type.includes("delete") &&
+          item.permission &&
+          item.service_name
       );
     },
     updateButton() {
-      return this.v2data?.rowButton?.find((item) =>
-        item.button_type?.includes("edit")
+      return this.v2data?.rowButton?.find(
+        (item) =>
+          item.button_type?.includes("edit") &&
+          item.permission &&
+          item.service_name
       );
     },
     detailButton() {
@@ -1802,7 +1832,8 @@ export default {
     buildFieldEditorParams(row, column, params) {
       if (!row || !column) {
         this.fieldEditorParams = {};
-        this.showFieldEditor = false
+        this.showFieldEditor = false;
+        return;
       }
       let editable = true;
       if (row.__flag === "add") {
@@ -2633,7 +2664,8 @@ export default {
                 } else if (
                   item.bx_col_type === "fk" ||
                   (item.col_type?.indexOf("bx") === 0 &&
-                    item?.option_list_v2?.serviceName)
+                    item?.option_list_v2?.serviceName) ||
+                  (item.col_type === "fk" && item.option_list_v2?.serviceName)
                 ) {
                   const fieldInfo =
                     this.tableData[rowIndex]?.__flag == "add"
@@ -2714,6 +2746,7 @@ export default {
                         );
                       },
                       input: (event) => {
+                        console.log("fkSelector-input", event);
                         row[column.field] = event;
                         this.$set(this.tableData, rowIndex, row);
                         this.$refs["tableRef"].startEditingCell({
@@ -3880,7 +3913,7 @@ export default {
                   ["Integer", "Float", "Money", "int", "Int"].includes(
                     colType
                   ) ||
-                  colType.includes("decimal")
+                  colType?.includes("decimal")
                 ) {
                   // 数字类型 初始值处理
                   val = Number(val);
@@ -3944,7 +3977,7 @@ export default {
       if (!ids?.length) {
         return tableData;
       }
-      tableData = cloneDeep(tableData);
+      // tableData = cloneDeep(tableData);
       let loadingInstance = Loading.service({ fullscreen: true });
       const res = await onSelect(
         this.serviceName,
@@ -3962,7 +3995,11 @@ export default {
           vpage_no: this.v2data?.vpage_no,
           order: this.sortState,
           use_type:
-            this.isTree && this.listType === "treelist" ? "treelist" : "list",
+            this.isTree && this.listType === "treelist"
+              ? "treelist"
+              : this.listType
+              ? this.listType
+              : "list",
         }
       );
       loadingInstance.close();
@@ -4031,7 +4068,11 @@ export default {
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
             use_type:
-              this.isTree && this.listType === "treelist" ? "treelist" : "list",
+              this.isTree && this.listType === "treelist"
+                ? "treelist"
+                : this.listType
+                ? this.listType
+                : "list",
           }
         ).then((res) => {
           console.timeEnd("请求时长：");

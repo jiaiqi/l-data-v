@@ -361,7 +361,7 @@ export default {
       this.$emit("unfold", !this.unfold, (res) => {
         console.timeEnd("展开折叠操作完成");
         this.loadingFold = false;
-        this.unfold = !this.unfold;
+        this.unfold = this.row?.__unfold ?? !this.unfold;
       });
     },
     showTextarea() {
