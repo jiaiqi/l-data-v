@@ -61,7 +61,7 @@
       v-else-if="srvInfo && srvInfo.refed_col"
       class="flex items-center justify-between w-full"
     >
-      <div>{{ modelValue }}</div>
+      <div>{{ modelLabel || modelValue }}</div>
       <el-select
         ref="inputRef"
         v-model="modelValue"
@@ -245,15 +245,21 @@ export default {
         // 如果有v3 则使用v3
         const option_list_v3 = this.optionListV3;
         const data = this.row;
-        result = option_list_v3.find(
-          (item) =>
-            !item.conds?.length ||
-            item.conds?.every(
-              (cond) =>
-                data?.[cond.case_col] &&
-                cond.case_val?.includes?.(data?.[cond.case_col])
-            )
-        );
+        if (option_list_v3.find((item) => !item.conds)) {
+          debugger;
+
+          result = option_list_v3.find((item) => !item.conds);
+        } else {
+          result = option_list_v3.find(
+            (item) =>
+              !item.conds?.length ||
+              item.conds?.every(
+                (cond) =>
+                  data?.[cond.case_col] &&
+                  cond.case_val?.includes?.(data?.[cond.case_col])
+              )
+          );
+        }
       } else if (this.fieldInfo?.option_list_v2) {
         result = this.fieldInfo.option_list_v2;
       }
@@ -623,7 +629,10 @@ export default {
         data: [],
       };
       if (!option?.key_disp_col && !option?.refed_col) {
-        return;
+        this.loading = false;
+        return new Promise((resolve) => {
+          resolve([]);
+        });
       }
       if (queryString && queryString !== "$firstRowData") {
         if (option.key_disp_col) {
