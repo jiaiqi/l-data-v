@@ -1270,11 +1270,11 @@ export default {
                   value: serviceName,
                   ruleType: "in",
                 },
-                {
-                  colName: "table_name",
-                  value: this.columnWidthMap[key].fieldInfo.table_name,
-                  ruleType: "eq",
-                },
+                // {
+                //   colName: "table_name",
+                //   value: this.columnWidthMap[key].fieldInfo.table_name,
+                //   ruleType: "eq",
+                // },
               ],
             });
           }
@@ -3559,7 +3559,7 @@ export default {
         .then((res) => {
           if (res?.data?.state === "SUCCESS") {
             this.$message.success(res.data.resultMessage);
-            this.updateTableColumn();
+            // this.updateTableColumn();
             this.columnWidthMap = {};
             this.getV2Data(true).then(() => {
               this.loading = false;
@@ -3574,10 +3574,22 @@ export default {
     },
     // 更新表字段的最小宽度
     updateTableColumn() {
+      // if(!this.columnWidthMap[key].fieldInfo.table_name){
+      //   return
+      // }
       const url = `/${this.srvApp}/operate/srvsys_table_columns_update`;
       const req = this.calcTableColumnWidthReq;
+      let validReq = req.filter(item=>{
+        if(item?.condition?.some(cond=>cond?.ruleType==='eq'&&(!cond.value||!cond.colName))){
+          return false
+        }
+        return true
+      })
+      if(!validReq?.length){
+        return
+      }
       this.startLoading();
-      $http.post(url, req).then((res) => {
+      $http.post(url, validReq).then((res) => {
         this.loading = false;
         if (res?.data?.state === "SUCCESS") {
           // this.$message.success(res.data.resultMessage);

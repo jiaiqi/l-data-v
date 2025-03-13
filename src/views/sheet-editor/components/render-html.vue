@@ -108,7 +108,7 @@
         type="textarea"
         :rows="10"
         :disabled="!editable"
-        placeholder="请输入内容"
+        :placeholder="column&&column.placeholder || '请输入内容'"
         v-model="innerHtml"
         v-else
       >
