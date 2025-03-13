@@ -37,6 +37,11 @@ const buildSrvCols = (
           init_expr: addColsMap[cur.columns]?.init_expr || cur.init_expr,
           // redundant:cur.redundant||updateColsMap?.[cur.columns]?.redundant||addColsMap?.[cur.columns]?.redundant,
         };
+        if(res[cur.columns].init_expr==='$firstRowData'){
+          // 默认选中首行数据
+          res[cur.columns].init_expr = null
+          res[cur.columns]._selected_first_row = true
+        }
       }
       return res;
     }, {});

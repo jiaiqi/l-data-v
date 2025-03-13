@@ -96,7 +96,7 @@
         v-if="!isTree && !setDisabled"
       ></i>
     </div>
-    <div v-else>{{modelValue}}</div>
+    <div v-else>{{ modelValue }}</div>
 
     <!-- <i
       class="el-icon-arrow-right cursor-pointer m-l-[-5px] text-#C0C4CC"
@@ -229,12 +229,14 @@ export default {
       return this.srvInfo?.srv_app || this.app;
     },
     isTree() {
-      return this.optionListV2?.is_tree && this.optionListV2?.parent_col ? true : false;
+      return this.optionListV2?.is_tree && this.optionListV2?.parent_col
+        ? true
+        : false;
     },
     optionListV3() {
       return this.fieldInfo?.option_list_v3;
     },
-    srvInfo(){
+    srvInfo() {
       return this.optionListV2;
     },
     optionListV2() {
@@ -298,7 +300,10 @@ export default {
         if (this.modelValue !== newValue) {
           this.modelValue = newValue;
           // this.remoteMethod(this.value);
-          if ((this.row?.__flag === "add" || this.row?.__flag === "update") && newValue) {
+          if (
+            (this.row?.__flag === "add" || this.row?.__flag === "update") &&
+            newValue
+          ) {
             if (this.isTree) {
               this.$refs?.treePopover?.doShow();
               // this.remoteMethod(newValue);
@@ -350,10 +355,10 @@ export default {
   },
   methods: {
     multiTabSelectChange(item, cfg) {
-      if(cfg?.case_col){
-        this.$emit('multi-tab-option-select-change', item, cfg);
+      if (cfg?.case_col) {
+        this.$emit("multi-tab-option-select-change", item, cfg);
       }
-      this.onSelectChange(item[cfg.refed_col||cfg.refedCol]);
+      this.onSelectChange(item[cfg.refed_col || cfg.refedCol]);
       // this.field?.form?.allFields?.[cfg.case_col]?.setSrvVal?.(cfg.case_val);
       // this.$nextTick(() => {
       //   this.handleSelect(item, cfg);
@@ -450,7 +455,10 @@ export default {
         this.row,
         this.app,
         this.pageNo,
-        this.rownumber
+        this.rownumber,
+        {
+          mainData: this.$route.query,
+        }
       ).then((res) => {
         if (res?.data?.length && option?.refed_col) {
           this.tableData = res.data.map((item) => {
@@ -548,11 +556,14 @@ export default {
         // srvInfo;
       }
       getFkOptions(
-        { ...this.column, option_list_v2:srvInfo },
+        { ...this.column, option_list_v2: srvInfo },
         this.row,
         this.app,
         this.pageNo,
-        this.rownumber
+        this.rownumber,
+        {
+          mainData: this.$route.query,
+        }
       ).then((res) => {
         if (res?.data?.length && srvInfo?.refed_col) {
           this.tableData = res.data.map((item) => {
@@ -585,13 +596,13 @@ export default {
       this.getTableData();
 
       // if (!this.tableColumns?.length) {
-        this.getFkColumns();
+      this.getFkColumns();
       // }
     },
     filterMethod(node, query) {},
     remoteMethod(query) {
-      if(this.useMultiTabOptionSelect){
-        return 
+      if (this.useMultiTabOptionSelect) {
+        return;
       }
       let queryString = this.value;
       if (query && typeof query === "string") {
@@ -614,26 +625,33 @@ export default {
       if (!option?.key_disp_col && !option?.refed_col) {
         return;
       }
-      if (option.key_disp_col && queryString) {
-        relation_condition.data.push({
-          colName: option.key_disp_col,
-          value: queryString,
-          ruleType: "[like]",
-        });
-      }
-      if (option.refed_col && queryString) {
-        relation_condition.data.push({
-          colName: option.refed_col,
-          value: queryString,
-          ruleType: "[like]",
-        });
+      if (queryString && queryString !== "$firstRowData") {
+        if (option.key_disp_col) {
+          relation_condition.data.push({
+            colName: option.key_disp_col,
+            value: queryString,
+            ruleType: "[like]",
+          });
+        }
+        if (option.refed_col) {
+          relation_condition.data.push({
+            colName: option.refed_col,
+            value: queryString,
+            ruleType: "[like]",
+          });
+        }
       }
       option.relation_condition = relation_condition;
       return new Promise((resolve) => {
         getFkOptions(
           { ...this.column, option_list_v2: option },
           this.row,
-          this.app
+          this.app,
+          null,
+          null,
+          {
+            mainData: this.$route.query,
+          }
         ).then((res) => {
           if (res?.data?.length && option?.refed_col) {
             this.options = res.data.map((item) => {
@@ -644,6 +662,11 @@ export default {
             });
             this.allOptions.push(...this.options);
             if (this.modelValue) {
+              if (this.modelValue === "$firstRowData") {
+                if (res.data.length) {
+                  this.modelValue = res.data[0][option.refed_col];
+                }
+              }
               let currentValue = this.options.find(
                 (item) => item[option.refed_col] === this.modelValue
               );
@@ -664,7 +687,7 @@ export default {
         });
       });
     },
-    
+
     buildRelationConditionInfo(dispLoader, queryString) {
       let self = this;
       let relaTemp = {
