@@ -287,8 +287,7 @@ export default {
   beforeDestroy() {
     broadcastChannel?.close();
     broadcastChannel = null;
-
-    document.removeEventListener("keydown", this.bindListenKeydown);
+    this.removeDocumentEventListener()
     // 在组件销毁前清除定时器
     this.stopAutoSave();
   },
@@ -296,21 +295,7 @@ export default {
     if (this.srvApp) {
       sessionStorage.setItem("current_app", this.srvApp);
     }
-    document.removeEventListener("keydown", this.bindListenKeydown);
-    document.addEventListener("keydown", this.bindListenKeydown);
-    // // 定时自动保存
-    // if (this.autoSaveInterval) {
-    //   clearInterval(this.autoSaveInterval);
-    // }
-    // this.autoSaveInterval = setInterval(() => {
-    //   const reqData = this.buildReqParams();
-    //   console.log("触发自动保存");
-    //   if (reqData?.length) {
-    //     this.saveData({ isAutoSave: true });
-    //   } else {
-    //     console.log("没有需要保存的内容");
-    //   }
-    // }, 60 * 1000);
+    this.initDocumentEventListener()
   },
   async created() {
     if (this.$route.query?.listType) {
@@ -1183,10 +1168,14 @@ export default {
         // }
       },
     },
-    showFieldEditor(newVal) {
+    showFieldEditor(newVal, oldVal) {
       if (newVal === true) {
         this.stopAutoSave();
+        this.removeDocumentEventListener();
       } else {
+        if (oldVal === true) {
+          this.initDocumentEventListener();
+        }
         const reqData = this.buildReqParams();
         // 弹窗关闭 继续倒计时保存
         if (reqData?.length) {
@@ -1911,9 +1900,17 @@ export default {
         trailing: false, // 函数是否在最后一次调用后的延迟时间结束时执行
       }
     ),
+    // 初始化document事件监听
+    initDocumentEventListener() {
+      document.removeEventListener("keydown", this.bindListenKeydown);
+      document.addEventListener("keydown", this.bindListenKeydown);
+    },
+    // 移除document事件监听
+    removeDocumentEventListener() {
+      document.removeEventListener("keydown", this.bindListenKeydown);
+    },
     bindListenKeydown(e = {}) {
       // 绑定快捷键
-
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         // ctrl+s 保存
         e.preventDefault(); // 阻止默认的保存行为
@@ -1931,7 +1928,16 @@ export default {
           index = selection?.selectionRangeIndexes?.endRowIndex;
         }
         this.insert2Rows(index);
+      }else{
+        var keyCode = e.keyCode || e.which;
+    if (keyCode === 116) {  // F5键的keyCode为116
+        e.preventDefault();  // 阻止默认行为
+        console.log('F5被按下');
+        // 刷新页面
+        this.refreshData()
+    }
       }
+
     },
     handleRedundantCalc(fieldInfo, row) {
       let func = fieldInfo.redundant.func;

@@ -240,6 +240,16 @@ export default {
     },
   },
   methods: {
+    onKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      // 监听ctrl+s
+        e.preventDefault();
+        if (this.editorVisible && this.editable && this.hasChange) {
+          this.$emit('save', this.modelValue, this.row, this.column, 'save');
+          this.stopAutoSave();
+        }
+      }
+    },
     stopAutoSave() {
       if (this.autoSaveInterval) {
         clearInterval(this.autoSaveInterval);
@@ -305,7 +315,11 @@ export default {
       }
     },
   },
+  mounted() {
+    document.addEventListener('keydown', this.onKeyDown);
+  },
   beforeDestroy() {
+    document.removeEventListener('keydown', this.onKeyDown);
     this.stopAutoSave();
   },
 };
