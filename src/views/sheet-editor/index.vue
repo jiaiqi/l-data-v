@@ -2519,6 +2519,11 @@ export default {
                     }
                   },
                   "sort-change": (event) => {
+                    const reqData = this.buildReqParams();
+                    if (Array.isArray(reqData) && reqData.length) {
+                      this.$message.error("请先保存已编辑的数据");
+                      return;
+                    }
                     const curSortIndex = this.sortState.findIndex(
                       (item) => item.colName && item.colName === event
                     );
