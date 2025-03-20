@@ -3938,6 +3938,9 @@ export default {
                 if (val === "new Date()" || val?.indexOf("new Da") > -1) {
                   // 兼容单词书写错误的情况
                   val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
+                  if (colType === "Date") {
+                    val = dayjs(val).format("YYYY-MM-DD");
+                  }
                 }
                 if (
                   ["Integer", "Float", "Money", "int", "Int"].includes(

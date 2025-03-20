@@ -25,22 +25,15 @@
     width="90vw"
     v-else
   >
-    <div class="remark">
+    <div class="remark" v-if="fieldInfo && fieldInfo.remark">
       <el-popover
         placement="right bottom"
         width="800"
         v-model="visible"
-        v-if="fieldInfo && fieldInfo.remark"
       >
         <div class="p-2 m-2 b-gray b-1px b-dashed rounded-sm">
         <div v-html="recoverFileAddress(fieldInfo.remark)"></div>
-
         </div>
-        <!-- <div style="text-align: right; margin: 0">
-          <el-button type="primary" size="mini" @click="visible = false"
-            >确定</el-button
-          >
-        </div> -->
         <div slot="reference" class="text-orange cursor-pointer inline-block">
           <i class="el-icon-warning"></i> 提示
         </div>
@@ -341,9 +334,7 @@ export default {
     }
   }
 }
-.top-tip {
-  margin-top: -40px;
-}
+
 .remark {
   margin-top: -50px;
   line-height: 40px;
