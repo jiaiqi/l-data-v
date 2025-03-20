@@ -704,8 +704,6 @@ export default {
       if (res.data.state === "SUCCESS") {
         this.options = res.data.data;
         if (initValue && this.options?.length) {
-          debugger;
-
           this.$emit("select", cloneDeep(this.options[0]));
         } else if (queryString && this.options?.length) {
           // let matchedVal = this.options.filter(item => item[this.srvInfo.refed_col] === queryString)

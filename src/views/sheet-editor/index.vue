@@ -1,36 +1,13 @@
 <template>
   <div class="spreadsheet flex flex-col" ref="spreadsheet">
-    <loading-view
-      v-if="loading"
-      mask
-      type="surround"
-      :maskOpacity="0.2"
-      showText
-      textColor="#fff"
-    ></loading-view>
-    <div
-      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full"
-      v-if="disabled !== true"
-    >
-      <div
-        class="flex flex-1 items-center text-sm"
-        v-if="addButton && addButton.service_name"
-      >
+    <loading-view v-if="loading" mask type="surround" :maskOpacity="0.2" showText textColor="#fff"></loading-view>
+    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full" v-if="disabled !== true">
+      <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
         <div class="m-r-2">添加</div>
-        <el-input-number
-          size="mini"
-          v-model="insertRowNumber"
-          style="width: 100px"
-        />
+        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
         <div class="m-x-2">行</div>
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="batchInsertRows"
-          :disabled="insertRowNumber === 0"
-          title="添加"
-        >
+        <el-button class="icon-button" size="mini" type="primary" @click="batchInsertRows"
+          :disabled="insertRowNumber === 0" title="添加">
           <!-- 添加 -->
           <i class="i-ic-baseline-add"></i>
         </el-button>
@@ -39,22 +16,14 @@
         没有添加权限
       </div>
       <div flex-1>
-        <el-radio-group
-          v-model="listType"
-          @input="listTypeChange"
-          size="mini"
-          v-if="isTree"
-        >
+        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
       </div>
-
+  
       <div class="flex flex-items-center flex-1 justify-end">
-        <div
-          class="color-map flex flex-items-center m-r-20"
-          v-if="childListType !== 'add'"
-        >
+        <div class="color-map flex flex-items-center m-r-20" v-if="childListType !== 'add'">
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
             <div class="color bg-[#2EA269] w-4 h-4 m-r-2 rounded"></div>
@@ -65,52 +34,27 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="refreshData"
-          v-if="childListType !== 'add'"
-          title="刷新（F5）"
-        >
+        <el-button class="icon-button" size="mini" type="primary" @click="refreshData" v-if="childListType !== 'add'"
+          title="刷新（F5）">
           <!-- 刷新 -->
-
+  
           <i class="i-ic-baseline-refresh"></i>
         </el-button>
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="saveData"
-          :disabled="!calcReqData || calcReqData.length == 0"
-          v-if="childListType !== 'add'"
-          v-loading="onHandler"
-          title="保存（Ctrl+S）"
-        >
+        <el-button class="icon-button" size="mini" type="primary" @click="saveData"
+          :disabled="!calcReqData || calcReqData.length == 0" v-if="childListType !== 'add'" v-loading="onHandler"
+          title="保存（Ctrl+S）">
           <!-- 保存 -->
           <i class="i-ic-baseline-save"></i>
-          <span
-            v-if="autoSaveTimeout && autoSaveTimeout > 0"
-            class="text-xs"
-            title="自动保存倒计时"
-          >
+          <span v-if="autoSaveTimeout && autoSaveTimeout > 0" class="text-xs" title="自动保存倒计时">
             {{ autoSaveTimeout }}
           </span>
         </el-button>
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="saveColumnWidth"
-          v-loading="onHandler"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
-          v-if="
-            !childListType &&
-            calcColumnWidthReq &&
-            calcColumnWidthReq.length > 0
-          "
-          title="保存列宽"
-        >
+        <el-button class="icon-button" size="mini" type="primary" @click="saveColumnWidth" v-loading="onHandler"
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0" v-if="
+                !childListType &&
+                calcColumnWidthReq &&
+                calcColumnWidthReq.length > 0
+              " title="保存列宽">
           <!-- 保存列宽 -->
           <i class="i-ic-baseline-view-column"></i>
         </el-button>
@@ -118,106 +62,47 @@
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
-      <ve-table
-        :columns="columns"
-        border-x
-        border-y
-        :table-data="tableData"
-        v-if="disabled"
-        ref="tableRef"
-        style="word-break: break-word; width: 100vw; height: 100%"
-        max-height="calc(100vh - 40px)"
-        fixed-header
-      />
+      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
+        style="word-break: break-word; width: 100vw; height: 100%" max-height="calc(100vh - 40px)" fixed-header />
       <div class="custom-style" v-else>
-        <ve-table
-          ref="tableRef"
-          style="word-break: break-word; width: 100vw"
-          max-height="calc(100vh - 80px)"
-          fixed-header
-          :scroll-width="0"
-          border-y
-          :columns="columns"
-          :table-data="tableData"
-          row-key-field-name="rowKey"
-          :virtual-scroll-option="virtualScrollOption"
-          :cell-autofill-option="cellAutofillOption"
-          :cell-style-option="cellStyleOption"
-          :edit-option="editOption"
-          :clipboard-option="clipboardOption"
-          :contextmenu-body-option="contextmenuBodyOption"
-          :contextmenu-header-option="contextmenuHeaderOption"
-          :row-style-option="rowStyleOption"
-          :column-width-resize-option="columnWidthResizeOption"
-          :event-custom-option="eventCustomOption"
-          :columnHiddenOption="columnHiddenOption"
-        />
+        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
+          :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
       </div>
     </div>
-    <div
-      class="empty-data"
-      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
-    >
+    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">
       暂无数据
     </div>
     <!--    列表为新增子表时不显示分页-->
-    <div
-      class="text-center flex justify-between"
-      v-if="childListType !== 'add'"
-    >
+    <div class="text-center flex justify-between" v-if="childListType !== 'add'">
       <div class="position-relative">
         <choose-tenant />
       </div>
-      <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]"
-        :page-size="page.rownumber"
-        layout="total, sizes, pager,  jumper"
-        :total="page.total"
-      >
+      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
+        :total="page.total">
       </el-pagination>
       <div class="flex items-center">
         <!-- <div class="help-button"><i class="el-icon-question"></i></div> -->
       </div>
     </div>
-
-    <select-parent-node
-      ref="changeParentRef"
-      :topTreeData="topTreeData"
-      :srvApp="srvApp"
-      :options="
-        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-      "
-      :option-info="parentColOption"
-      @confirm="updateParentNo"
-    ></select-parent-node>
-
+  
+    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="
+            tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+          " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
+  
     <login-dialog ref="loginRef"></login-dialog>
-    <drop-menu
-      v-if="showDropMenu"
-      v-model="showDropMenu"
-      :items="dropMenuItems"
-      :position="{ top: dTop, left: dLeft }"
-      @select="onRowButton"
-    />
+    <drop-menu v-if="showDropMenu" v-model="showDropMenu" :items="dropMenuItems" :position="{ top: dTop, left: dLeft }"
+      @select="onRowButton" />
     <out-form-dialog ref="outFormDialog"></out-form-dialog>
-    <field-editor-dialog
-      ref="fieldEditorDialog"
-      :disabled="disabled"
-      :detailButton="detailButton"
-      :serviceName="serviceName"
-      :app="srvApp"
-      :listType="listType"
-      :keyDispCol="(v2data && v2data.key_disp_col) || ''"
-      v-model="showFieldEditor"
-      v-bind="fieldEditorParams"
-      v-if="showFieldEditor"
-      @change="dialogChange"
-      @save="dialogChange"
-      @close="dialogClose"
-    ></field-editor-dialog>
+    <field-editor-dialog ref="fieldEditorDialog" :disabled="disabled" :detailButton="detailButton"
+      :serviceName="serviceName" :app="srvApp" :listType="listType" :keyDispCol="(v2data && v2data.key_disp_col) || ''"
+      v-model="showFieldEditor" v-bind="fieldEditorParams" v-if="showFieldEditor" @change="dialogChange"
+      @save="dialogChange" @close="dialogClose"></field-editor-dialog>
   </div>
 </template>
 
@@ -763,14 +648,7 @@ export default {
               });
             }
             if (isValid) {
-              // 获取选中单元格信息
-              const rangeCellSelection =
-                this.$refs["tableRef"].getRangeCellSelection();
-              // 选中单元格起始索引
-              const selectionRangeIndexes =
-                rangeCellSelection.selectionRangeIndexes;
-              // 只有复制了单行单列 才可以这样批量粘贴
-              if (selectionRangeIndexes && data?.length == 1) {
+              if (selectionRangeIndexes && data?.length) {
                 const {
                   startRowIndex,
                   endRowIndex,
@@ -790,16 +668,24 @@ export default {
                   );
                   for (let i = startRowIndex; i <= endRowIndex; i++) {
                     const row = this.tableData[i];
-                    for (let j = startColIndex; j <= endColIndex; j++) {
-                      const col = columns[j];
-                      this.$refs["tableRef"].startEditingCell({
-                        rowKey: row.rowKey,
-                        colKey: col.field,
-                        defaultValue: data[0][selectionRangeKeys.startColKey],
-                      });
-                      this.$refs["tableRef"].stopEditingCell();
-                      this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-                    }
+                    // for (let j = 0; j < data.length; j++) {
+                      const obj = data[i-startRowIndex];
+                      if (typeof obj === 'object') {
+                        for (const key in obj) {
+                          if (Object.hasOwnProperty.call(obj, key)) {
+                            const element = obj[key];
+                            if (element) {
+                              this.$refs["tableRef"].startEditingCell({
+                                rowKey: row.rowKey,
+                                colKey: key,
+                                defaultValue: element,
+                              });
+                              this.$refs["tableRef"].stopEditingCell();
+                              this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                            }
+                          }
+                        }
+                      }
                   }
                   return false;
                 }
@@ -808,9 +694,10 @@ export default {
             return false;
           }
         },
-        afterPaste: ({ selectionRangeIndexes }) => {
+        afterPaste: ({ data, selectionRangeIndexes, selectionRangeKeys }) => {
           //selectionRangeIndexes ：拷贝区域的索引信息
-          this.triggerEditCell(selectionRangeIndexes);
+          // this.triggerEditCell(selectionRangeIndexes,'afterPaste');
+          // return false
         },
         afterCut: ({ selectionRangeIndexes }) => {
           const { startRowIndex, endRowIndex, startColIndex, endColIndex } =
@@ -1486,19 +1373,16 @@ export default {
             });
 
             // 删除选中行数据
-            let text = `此操作将永久删除该第${
-              selectionRangeIndexes.startRowIndex + 1
-            }至第${
-              selectionRangeIndexes.endRowIndex + 1
-            }行数据，是否继续操作？`;
+            let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
+              }至第${selectionRangeIndexes.endRowIndex + 1
+              }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
-                selectionRangeIndexes.startRowIndex ==
+              selectionRangeIndexes.startRowIndex ==
               0
             ) {
-              text = `此操作将永久删除该第${
-                selectionRangeIndexes.startRowIndex + 1
-              }行数据，是否继续操作？`;
+              text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
+                }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -2089,7 +1973,7 @@ export default {
         if (typeof data === "string") {
           data = JSON.parse(data);
         }
-      } catch (e) {}
+      } catch (e) { }
       console.log("child-listener", data);
       if (data?.childListCfg) {
         console.log("childListCfg", data.childListCfg);
@@ -2866,8 +2750,8 @@ export default {
                   if (this.disabled) {
                     return row[column.field]
                       ? item.option_list_v2.find(
-                          (e) => e.value === row[column.field]
-                        )?.label || ""
+                        (e) => e.value === row[column.field]
+                      )?.label || ""
                       : "";
                   }
                   return h(
@@ -4045,8 +3929,8 @@ export default {
             this.isTree && this.listType === "treelist"
               ? "treelist"
               : this.listType
-              ? this.listType
-              : "list",
+                ? this.listType
+                : "list",
         }
       );
       loadingInstance.close();
@@ -4118,8 +4002,8 @@ export default {
               this.isTree && this.listType === "treelist"
                 ? "treelist"
                 : this.listType
-                ? this.listType
-                : "list",
+                  ? this.listType
+                  : "list",
           }
         ).then((res) => {
           console.timeEnd("请求时长：");
@@ -4313,8 +4197,8 @@ export default {
         const use_type = this.colSrv?.includes("_add")
           ? "add"
           : this.colSrv?.includes("_update")
-          ? "update"
-          : "list";
+            ? "update"
+            : "list";
         const res = await getServiceV2(
           this.colSrv,
           use_type,
@@ -4401,7 +4285,7 @@ export default {
                       moreConfig.query_init_value;
                   }
                 }
-              } catch (error) {}
+              } catch (error) { }
             }
             return item;
           });
@@ -4437,16 +4321,19 @@ export default {
 </script>
 <style lang="scss">
 .el-button {
-  & + & {
+  &+& {
     margin-left: 5px;
   }
+
   &.icon-button {
     padding: 4px;
   }
+
   [class*="i-ic-"] {
     font-size: 16px;
   }
 }
+
 .empty-data {
   display: flex;
   align-items: center;
@@ -4490,10 +4377,12 @@ export default {
       color: #eee;
     }
   }
+
   .table-body-cell__update-index {
     background-color: rgba($color: #e83d4b, $alpha: 0.9) !important;
     color: #fff !important;
   }
+
   .table-body-cell__update {
     // color: #2087cc !important;
     color: #e83d4b !important;
@@ -4557,6 +4446,7 @@ export default {
     }
   }
 }
+
 .help-button {
   font-size: 18px;
   padding: 0 20px;

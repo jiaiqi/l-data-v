@@ -246,8 +246,6 @@ export default {
         const option_list_v3 = this.optionListV3;
         const data = this.row;
         if (option_list_v3.find((item) => !item.conds)) {
-          debugger;
-
           result = option_list_v3.find((item) => !item.conds);
         } else {
           result = option_list_v3.find(
