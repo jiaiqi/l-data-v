@@ -71,7 +71,7 @@
           type="primary"
           @click="refreshData"
           v-if="childListType !== 'add'"
-          title="刷新"
+          title="刷新（F5）"
         >
           <!-- 刷新 -->
 
@@ -85,7 +85,7 @@
           :disabled="!calcReqData || calcReqData.length == 0"
           v-if="childListType !== 'add'"
           v-loading="onHandler"
-          title="保存"
+          title="保存（Ctrl+S）"
         >
           <!-- 保存 -->
           <i class="i-ic-baseline-save"></i>
@@ -178,7 +178,9 @@
         :total="page.total"
       >
       </el-pagination>
-      <div class=""></div>
+      <div class="flex items-center">
+        <!-- <div class="help-button"><i class="el-icon-question"></i></div> -->
+      </div>
     </div>
 
     <select-parent-node
@@ -287,7 +289,8 @@ export default {
   beforeDestroy() {
     broadcastChannel?.close();
     broadcastChannel = null;
-    this.removeDocumentEventListener()
+    // 移除事件监听
+    this.removeDocumentEventListener();
     // 在组件销毁前清除定时器
     this.stopAutoSave();
   },
@@ -295,7 +298,6 @@ export default {
     if (this.srvApp) {
       sessionStorage.setItem("current_app", this.srvApp);
     }
-    this.initDocumentEventListener()
   },
   async created() {
     if (this.$route.query?.listType) {
@@ -327,7 +329,7 @@ export default {
     });
     this.$nextTick(() => {
       this.unfold();
-      this.bindKeyboardEvent(this.undo, this.redo);
+      this.initDocumentEventListener();
     });
   },
   components: {
@@ -435,9 +437,9 @@ export default {
                     this.showFieldEditor = false;
                   }
 
-                  console.log(
-                    `offsetLeft:${offsetLeft},offsetTop:${offsetTop},offsetWidth:${offsetWidth},offsetHeight:${offsetHeight}`
-                  );
+                  // console.log(
+                  //   `offsetLeft:${offsetLeft},offsetTop:${offsetTop},offsetWidth:${offsetWidth},offsetHeight:${offsetHeight}`
+                  // );
                 }
               }
             },
@@ -1150,32 +1152,16 @@ export default {
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
         }
-        // if (
-        //   Array.isArray(newValue) &&
-        //   newValue.length &&
-        //   newValue.length === oldValue?.length
-        // ) {
-        //   // console.log("newValue", newValue, oldValue);
-        //   newValue.forEach((item, index) => {
-        //     const oldItem =
-        //       oldValue?.find((e) => e.__id && e.__id === item.__id) || {};
-        //     Object.keys(item).forEach((key) => {
-        //       if (item[key] !== oldItem[key]) {
-        //         console.log("newValue", item[key], oldItem[key]);
-        //       }
-        //     });
-        //   });
-        // }
       },
     },
     showFieldEditor(newVal, oldVal) {
       if (newVal === true) {
         this.stopAutoSave();
-        this.removeDocumentEventListener();
+        // this.removeDocumentEventListener();
       } else {
-        if (oldVal === true) {
-          this.initDocumentEventListener();
-        }
+        // if (oldVal === true) {
+        //   this.initDocumentEventListener();
+        // }
         const reqData = this.buildReqParams();
         // 弹窗关闭 继续倒计时保存
         if (reqData?.length) {
@@ -1902,42 +1888,62 @@ export default {
     ),
     // 初始化document事件监听
     initDocumentEventListener() {
-      document.removeEventListener("keydown", this.bindListenKeydown);
-      document.addEventListener("keydown", this.bindListenKeydown);
+      this.removeDocumentEventListener()
+      document.addEventListener("keydown", this.bindKeydownListener);
     },
     // 移除document事件监听
     removeDocumentEventListener() {
-      document.removeEventListener("keydown", this.bindListenKeydown);
+      document.removeEventListener("keydown", this.bindKeydownListener);
     },
-    bindListenKeydown(e = {}) {
+    bindKeydownListener(e = {}) {
       // 绑定快捷键
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        // ctrl+s 保存
-        e.preventDefault(); // 阻止默认的保存行为
-        console.log("CTRL+S");
-        this.onCtrlS();
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=")) {
-        // }else if((e.ctrlKey || e.metaKey)&&e.key==='n'){
-        // ctrl+n 新建一行数据
-        console.log("CTRL +");
-
-        e.preventDefault();
-        const selection = this.$refs?.tableRef?.getRangeCellSelection();
-        let index = 0;
-        if (selection?.selectionRangeIndexes?.endRowIndex) {
-          index = selection?.selectionRangeIndexes?.endRowIndex;
-        }
-        this.insert2Rows(index);
-      }else{
-        var keyCode = e.keyCode || e.which;
-    if (keyCode === 116) {  // F5键的keyCode为116
-        e.preventDefault();  // 阻止默认行为
-        console.log('F5被按下');
-        // 刷新页面
-        this.refreshData()
-    }
+      const keyCode = e.keyCode || e.which;
+      keyCode === 116 && e.preventDefault(); // 禁止F5刷新
+      if (this.showFieldEditor) {
+        // 弹出表单字段编辑器时 不触发快捷键
+        return;
       }
-
+      if (e.ctrlKey || e.metaKey) {
+        if (["z", "Z"].includes(e.key)) {
+          if (e.shiftKey) {
+            // shift+ctrl+ Z 重做
+            this.redo?.();
+          } else {
+            // ctrl + Z  撤销
+            this.undo?.();
+          }
+        } else if (["Y", "y"].includes(e.key)) {
+          // ctrl + Y  重做
+          this.redo?.();
+        } else if (e.key === "s") {
+          // ctrl+s 保存
+          e.preventDefault(); // 阻止默认的保存行为
+          console.log("CTRL+S");
+          this.onCtrlS();
+        } else if (e.key === "+" || e.key === "=") {
+          // ctrl+ + 新建一行数据
+          console.log("CTRL +");
+          e.preventDefault();
+          const selection = this.$refs?.tableRef?.getRangeCellSelection();
+          let index = 0;
+          if (selection?.selectionRangeIndexes?.endRowIndex) {
+            index = selection?.selectionRangeIndexes?.endRowIndex;
+          }
+          this.insert2Rows(index);
+        }
+      } else {
+        if (keyCode === 116) {
+          // F5键的keyCode为116
+          console.log("F5被按下");
+          // 刷新页面
+          this.$message({
+            type: "info",
+            message: "刷新数据",
+            duration: 500,
+          });
+          this.refreshData();
+        }
+      }
     },
     handleRedundantCalc(fieldInfo, row) {
       let func = fieldInfo.redundant.func;
@@ -2413,7 +2419,7 @@ export default {
             )?.length;
             if (length > 6) {
               // 去掉符号的字符数长度大于6
-              console.log(`${item.label}:${length}`);
+              // console.log(`${item.label}:${length}`);
               width = length * 30;
             }
             if (item.col_span) {
@@ -3730,6 +3736,8 @@ export default {
             let msg = res.resultMessage || "操作成功";
             if (params?.isAutoSave) {
               msg = "自动保存成功!";
+            } else {
+              msg = "保存成功!";
             }
             Message({
               showClose: true,
@@ -4336,10 +4344,6 @@ export default {
           return pre;
         }, {});
         this.v2data = res.data;
-        // if (res.data.is_tree === true && this.listType === "list") {
-        //   // 树列表 停止执行之后的逻辑 改为加载树列表逻辑
-        //   return false;
-        // }
         this.initExprCols = res.data.srv_cols.reduce((pre, cur) => {
           if (cur.init_expr) {
             pre.push(cur);
@@ -4427,55 +4431,6 @@ export default {
     },
     scrolling({ startRowIndex }) {
       this.startRowIndex = startRowIndex;
-    },
-    // 取消监听撤销重做事件
-    unbindKeyboardEvent() {},
-    /**
-     * @description 绑定ctrl+z ctrl+y事件
-     * @param {*} callBackCZ 撤销/回退事件
-     * @param {*} callBackCY 前进事件
-     */
-    bindKeyboardEvent(callBackCZ = null, callBackCY = null) {
-      //记录特殊键被按下
-      let ctrlDown = false;
-      let shiftDown = false;
-      window.addEventListener("keydown", (e) => {
-        if (["Control", "Meta"].includes(e.key)) {
-          ctrlDown = true;
-        }
-        if (e.key === "Shift") {
-          shiftDown = true;
-        }
-        if (ctrlDown && !this.onPopup && !this.showFieldEditor) {
-          if (
-            (shiftDown && ["z", "Z"].includes(e.key)) ||
-            (!shiftDown && ["Y", "y"].includes(e.key))
-          ) {
-            // 前进/重做 shift+ctrl+z | ctrl+y
-            callBackCY?.();
-          } else if (!shiftDown && ["z", "Z"].includes(e.key)) {
-            //后退/撤销 ctrl+z
-            callBackCZ?.();
-          }
-        }
-      });
-      // 松开按键
-      window.addEventListener("keyup", function (e) {
-        if (["Control", "Meta"].includes(e.key)) {
-          ctrlDown = false;
-        }
-        if (e.key === "Shift") {
-          shiftDown = false;
-        }
-      });
-      // 浏览器脱离焦点，释放
-      window.onblur = function () {
-        ctrlDown = false;
-        shiftDown = false;
-      };
-    },
-    onPageResize(event) {
-      console.log("onPageResize:", event);
     },
   },
 };
@@ -4601,5 +4556,12 @@ export default {
       color: #ccc;
     }
   }
+}
+.help-button {
+  font-size: 18px;
+  padding: 0 20px;
+  background: #ececf4;
+  border-radius: 8px;
+  cursor: pointer;
 }
 </style>
