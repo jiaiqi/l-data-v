@@ -22,16 +22,6 @@ const router = new VueRouter({
       component: () => import('@/views/table-graph/index.vue')
     },
     // {
-    //   path: "/",
-    //   name: "pageEditor",
-    //   component: HomeView,
-    // },
-    // {
-    //   path: "/dataview",
-    //   name: "dataview",
-    //   component: ()=>import("@/views/page-editor/index.vue"),
-    // },
-    // {
     //   path: "/player",
     //   name: "player",
     //   component: () => import("@/views/video-player.vue"),
