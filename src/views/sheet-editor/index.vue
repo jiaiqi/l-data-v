@@ -1,29 +1,66 @@
 <template>
-  <div class="spreadsheet flex flex-col" ref="spreadsheet">
-    <loading-view v-if="loading" mask type="surround" :maskOpacity="0.2" showText textColor="#fff"></loading-view>
-    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full" v-if="disabled !== true">
-      <div class="flex flex-1 items-center text-sm" v-if="addButton && addButton.service_name">
+  <div
+    class="spreadsheet flex flex-col"
+    ref="spreadsheet"
+  >
+    <loading-view
+      v-if="loading"
+      mask
+      type="surround"
+      :maskOpacity="0.2"
+      showText
+      textColor="#fff"
+    ></loading-view>
+    <div
+      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full"
+      v-if="disabled !== true"
+    >
+      <div
+        class="flex flex-1 items-center text-sm"
+        v-if="addButton && addButton.service_name"
+      >
         <div class="m-r-2">添加</div>
-        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
+        <el-input-number
+          size="mini"
+          v-model="insertRowNumber"
+          style="width: 100px"
+        />
         <div class="m-x-2">行</div>
-        <el-button class="icon-button" size="mini" type="primary" @click="batchInsertRows"
-          :disabled="insertRowNumber === 0" title="添加">
+        <el-button
+          class="icon-button"
+          title="添加(ctrl + 加号键)"
+          size="mini"
+          type="primary"
+          @click="batchInsertRows"
+          :disabled="insertRowNumber === 0"
+        >
           <!-- 添加 -->
           <i class="i-ic-baseline-add"></i>
         </el-button>
       </div>
-      <div class="text-sm text-gray cursor-not-allowed" v-else>
+      <div
+        class="text-sm text-gray cursor-not-allowed"
+        v-else
+      >
         没有添加权限
       </div>
       <div flex-1>
-        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
+        <el-radio-group
+          v-model="listType"
+          @input="listTypeChange"
+          size="mini"
+          v-if="isTree"
+        >
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
       </div>
-  
+
       <div class="flex flex-items-center flex-1 justify-end">
-        <div class="color-map flex flex-items-center m-r-20" v-if="childListType !== 'add'">
+        <div
+          class="color-map flex flex-items-center m-r-20"
+          v-if="childListType !== 'add'"
+        >
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
             <div class="color bg-[#2EA269] w-4 h-4 m-r-2 rounded"></div>
@@ -34,75 +71,164 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <el-button class="icon-button" size="mini" type="primary" @click="refreshData" v-if="childListType !== 'add'"
-          title="刷新（F5）">
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="primary"
+          @click="refreshData"
+          v-if="childListType !== 'add'"
+          title="刷新（F5）"
+        >
           <!-- 刷新 -->
-  
+
           <i class="i-ic-baseline-refresh"></i>
         </el-button>
-        <el-button class="icon-button" size="mini" type="primary" @click="saveData"
-          :disabled="!calcReqData || calcReqData.length == 0" v-if="childListType !== 'add'" v-loading="onHandler"
-          title="保存（Ctrl+S）">
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="primary"
+          @click="saveData"
+          :disabled="!calcReqData || calcReqData.length == 0"
+          v-if="childListType !== 'add'"
+          v-loading="onHandler"
+          title="保存（Ctrl+S）"
+        >
           <!-- 保存 -->
           <i class="i-ic-baseline-save"></i>
-          <span v-if="autoSaveTimeout && autoSaveTimeout > 0" class="text-xs" title="自动保存倒计时">
+          <span
+            v-if="autoSaveTimeout && autoSaveTimeout > 0"
+            class="text-xs"
+            title="自动保存倒计时"
+          >
             {{ autoSaveTimeout }}
           </span>
         </el-button>
-        <el-button class="icon-button" size="mini" type="primary" @click="saveColumnWidth" v-loading="onHandler"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0" v-if="
-                !childListType &&
-                calcColumnWidthReq &&
-                calcColumnWidthReq.length > 0
-              " title="保存列宽">
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="primary"
+          @click="saveColumnWidth"
+          v-loading="onHandler"
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
+          v-if="
+            !childListType &&
+            calcColumnWidthReq &&
+            calcColumnWidthReq.length > 0
+          "
+          title="保存列宽"
+        >
           <!-- 保存列宽 -->
           <i class="i-ic-baseline-view-column"></i>
         </el-button>
       </div>
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
-    <div class="flex-1 list-container" v-if="isFetched || childListType">
-      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
-        style="word-break: break-word; width: 100vw; height: 100%" max-height="calc(100vh - 40px)" fixed-header />
-      <div class="custom-style" v-else>
-        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)" fixed-header
-          :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+    <div
+      class="flex-1 list-container"
+      v-if="isFetched || childListType"
+    >
+      <ve-table
+        :columns="columns"
+        border-x
+        border-y
+        :table-data="tableData"
+        v-if="disabled"
+        ref="tableRef"
+        style="word-break: break-word; width: 100vw; height: 100%"
+        max-height="calc(100vh - 40px)"
+        fixed-header
+      />
+      <div
+        class="custom-style"
+        v-else
+      >
+        <ve-table
+          ref="tableRef"
+          style="word-break: break-word; width: 100vw"
+          max-height="calc(100vh - 80px)"
+          fixed-header
+          :scroll-width="0"
+          border-y
+          :columns="columns"
+          :table-data="tableData"
+          row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption"
+          :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption"
+          :edit-option="editOption"
+          :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption"
+          :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption"
+          :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption"
+          :columnHiddenOption="columnHiddenOption"
+        />
       </div>
     </div>
-    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">
+    <div
+      class="empty-data"
+      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
+    >
       暂无数据
     </div>
     <!--    列表为新增子表时不显示分页-->
-    <div class="text-center flex justify-between" v-if="childListType !== 'add'">
+    <div
+      class="text-center flex justify-between"
+      v-if="childListType !== 'add'"
+    >
       <div class="position-relative">
         <choose-tenant />
       </div>
-      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
-        :total="page.total">
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]"
+        :page-size="page.rownumber"
+        layout="total, sizes, pager,  jumper"
+        :total="page.total"
+      >
       </el-pagination>
       <div class="flex items-center">
         <!-- <div class="help-button"><i class="el-icon-question"></i></div> -->
       </div>
     </div>
-  
-    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="
-            tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-          " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
-  
+
+    <select-parent-node
+      ref="changeParentRef"
+      :topTreeData="topTreeData"
+      :srvApp="srvApp"
+      :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+        "
+      :option-info="parentColOption"
+      @confirm="updateParentNo"
+    ></select-parent-node>
+
     <login-dialog ref="loginRef"></login-dialog>
-    <drop-menu v-if="showDropMenu" v-model="showDropMenu" :items="dropMenuItems" :position="{ top: dTop, left: dLeft }"
-      @select="onRowButton" />
+    <drop-menu
+      v-if="showDropMenu"
+      v-model="showDropMenu"
+      :items="dropMenuItems"
+      :position="{ top: dTop, left: dLeft }"
+      @select="onRowButton"
+    />
     <out-form-dialog ref="outFormDialog"></out-form-dialog>
-    <field-editor-dialog ref="fieldEditorDialog" :disabled="disabled" :detailButton="detailButton"
-      :serviceName="serviceName" :app="srvApp" :listType="listType" :keyDispCol="(v2data && v2data.key_disp_col) || ''"
-      v-model="showFieldEditor" v-bind="fieldEditorParams" v-if="showFieldEditor" @change="dialogChange"
-      @save="dialogChange" @close="dialogClose"></field-editor-dialog>
+    <field-editor-dialog
+      ref="fieldEditorDialog"
+      :disabled="disabled"
+      :detailButton="detailButton"
+      :serviceName="serviceName"
+      :app="srvApp"
+      :listType="listType"
+      :keyDispCol="(v2data && v2data.key_disp_col) || ''"
+      v-model="showFieldEditor"
+      v-bind="fieldEditorParams"
+      v-if="showFieldEditor"
+      @change="dialogChange"
+      @save="dialogChange"
+      @close="dialogClose"
+    ></field-editor-dialog>
   </div>
 </template>
 
@@ -669,23 +795,23 @@ export default {
                   for (let i = startRowIndex; i <= endRowIndex; i++) {
                     const row = this.tableData[i];
                     // for (let j = 0; j < data.length; j++) {
-                      const obj = data[i-startRowIndex];
-                      if (typeof obj === 'object') {
-                        for (const key in obj) {
-                          if (Object.hasOwnProperty.call(obj, key)) {
-                            const element = obj[key];
-                            if (element) {
-                              this.$refs["tableRef"].startEditingCell({
-                                rowKey: row.rowKey,
-                                colKey: key,
-                                defaultValue: element,
-                              });
-                              this.$refs["tableRef"].stopEditingCell();
-                              this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
-                            }
+                    const obj = data[i - startRowIndex];
+                    if (typeof obj === "object") {
+                      for (const key in obj) {
+                        if (Object.hasOwnProperty.call(obj, key)) {
+                          const element = obj[key];
+                          if (element) {
+                            this.$refs["tableRef"].startEditingCell({
+                              rowKey: row.rowKey,
+                              colKey: key,
+                              defaultValue: element,
+                            });
+                            this.$refs["tableRef"].stopEditingCell();
+                            this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
                           }
                         }
                       }
+                    }
                   }
                   return false;
                 }
@@ -1772,7 +1898,7 @@ export default {
     ),
     // 初始化document事件监听
     initDocumentEventListener() {
-      this.removeDocumentEventListener()
+      this.removeDocumentEventListener();
       document.addEventListener("keydown", this.bindKeydownListener);
     },
     // 移除document事件监听
@@ -2199,15 +2325,25 @@ export default {
         if (this.childListType === "add") return (this.loading = false); //新增时不查子表数据
         this.buildInitCond();
         this.loading = false;
+        // if (refresh) {
+        //   setTimeout(() => {
+        //     this.isFetched = false;
+        //     this.getList().then(() => {
+        //       this.isFetched = true;
+        //     });
+        //   }, 300);
+        // }
         if (refresh) {
-          setTimeout(() => {
-            this.isFetched = false;
-            this.getList().then(() => {
-              this.isFetched = true;
-            });
-          }, 500);
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              this.isFetched = false;
+              this.getList().then(() => {
+                this.isFetched = true;
+                resolve();
+              });
+            }, 300);
+          });
         }
-        return;
       }
     },
     listTypeChange(val) {
@@ -3580,8 +3716,14 @@ export default {
         _recordManager,
       };
     },
-    saveData(params = {}) {
+    async saveData(params = {}) {
       // const reqData = this.buildReqParams;
+      if (
+        sessionStorage.getItem("bx_auth_ticket") &&
+        this.bx_auth_ticket !== sessionStorage.getItem("bx_auth_ticket")
+      ) {
+        await this.initPage();
+      }
       this.stopAutoSave();
 
       const reqData = this.buildReqParams();
@@ -3738,6 +3880,7 @@ export default {
               type: "error",
             });
             if (res.resultCode === "0011") {
+              this.bx_auth_ticket = "";
               this.$refs?.loginRef?.open(() => {
                 this.initPage(false).then(() => {
                   if (!this.tableData.length) {
@@ -4098,7 +4241,7 @@ export default {
         sessionStorage.getItem("bx_auth_ticket") &&
         this.bx_auth_ticket !== sessionStorage.getItem("bx_auth_ticket")
       ) {
-        this.initPage();
+        return this.initPage();
       }
       if (!unfoldIds && this.listType === "treelist" && this.treeInfo.idCol) {
         unfoldIds = this.tableData

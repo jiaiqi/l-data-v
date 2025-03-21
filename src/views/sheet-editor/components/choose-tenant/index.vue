@@ -1,9 +1,7 @@
 <template>
   <el-dropdown v-if="tenants && tenants.length > 1">
     <span class="el-dropdown-link">
-      <div
-        class="px-10px flex items-center text-sm cursor-pointer hover-text-blue"
-      >
+      <div class="px-10px flex items-center text-sm cursor-pointer hover-text-blue">
         <span v-if="currentTenant && currentTenant.tenant_name">
           {{ currentTenant.tenant_name }}
         </span>
@@ -15,7 +13,10 @@
       v-if="tenants && tenants.length"
       class="max-h-50vh overflow-auto"
     >
-      <el-dropdown-item v-for="(item, index) in tenants" :key="index">
+      <el-dropdown-item
+        v-for="(item, index) in tenants"
+        :key="index"
+      >
         <span
           class="w-full inline-block"
           @click.stop.prevent="setCurrentTenant(item)"
@@ -50,11 +51,12 @@ const setCurrentTenant = (item) => {
     }
   )
     .then(() => {
-      userStore.setCurrentTenant(item);
-      Message({
-        type: "success",
-        message: "操作成功!",
+      return userStore.setCurrentTenant(item).then(() => {
+        if (window.confirm("租户登录成功，是否刷新页面？")) {
+          top.window.location.reload()
+        }
       });
+
     })
     .catch(() => {
       Message({
@@ -65,4 +67,7 @@ const setCurrentTenant = (item) => {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style
+  lang="scss"
+  scoped
+></style>

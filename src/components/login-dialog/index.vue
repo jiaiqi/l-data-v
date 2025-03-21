@@ -123,7 +123,7 @@ export default {
               const currentTenant = JSON.parse(sessionStorage.currentTenant)
               const tenant = tenantList.find(item=>item.tenant_no===currentTenant.tenant_no)
               if(tenant?.tenant_no){
-                this.setCurrentTenant(tenant)
+                await this.setCurrentTenant(tenant)
               }
             }
           }
