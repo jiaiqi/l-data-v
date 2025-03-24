@@ -1,5 +1,5 @@
 <template>
-  <div v-if="['Date', 'DateTime', 'FkAutocomplete'].includes(editorType)">
+  <div v-if="!['RichText', 'MultilineText'].includes(editorType) && editorVisible">
     <div
       class="editor editor-wrap"
       :class="{ 'focus': onfocus === true }"
@@ -18,19 +18,19 @@
         v-if="['Date', 'DateTime'].includes(editorType)"
       >
       </el-date-picker>
-      <fk-autocomplete
-        class="fk-autocomplete"
+      <finder
+        class="finder"
         :row="row"
         :app="app"
         :operate-type="operateType"
         :field-info="fieldInfo"
         v-model="modelValue"
-        @change="onFkAutoCompleteChange"
+        @change="onFinderChange"
         @focus="onfocus = true"
         @blur="onfocus = false"
-        v-else-if="['FkAutocomplete'].includes(editorType)"
+        v-else-if="['FkAutocomplete', 'FK'].includes(editorType)"
       >
-      </fk-autocomplete>
+      </finder>
     </div>
   </div>
 
@@ -40,7 +40,7 @@
     :before-close="handleClose"
     :close-on-click-modal="false"
     width="90vw"
-    v-else
+    v-else-if="editorVisible"
   >
     <div
       class="remark"
@@ -150,13 +150,14 @@
 </template>
 
 <script>
-import FkAutocomplete from "./fk-autocomplete.vue";
+import { isRichText, isFk, isFkAutoComplete } from '@/utils/sheetUtils.js'
+import Finder from "./finder.vue";
 import RichTextEditor from "./rich-text.vue";
 export default {
   name: "FieldEditorDialog",
   components: {
     RichTextEditor,
-    FkAutocomplete,
+    Finder,
   },
   props: {
     value: {
@@ -235,12 +236,14 @@ export default {
 
     editorType() {
       const colType = this.fieldInfo?.col_type;
-      if (["Note", "RichText", "snote"].includes(colType)) {
+      if (isRichText(this.fieldInfo)) {
         return "RichText";
-      } else if ("String" === colType) {
+      } else if (isFkAutoComplete(this.fieldInfo)) {
         if (this.fieldInfo?.redundant_options?._target_column) {
           return "FkAutocomplete";
         }
+      } else if (isFk(this.fieldInfo)) {
+        return "FK";
       }
       return colType;
     },
@@ -285,7 +288,12 @@ export default {
     },
   },
   methods: {
-    onFkAutoCompleteChange(item) {
+    onFinderChange(item) {
+      if (isFk(this.fieldInfo)) {
+        this.modelValue = item.value;
+        this.$emit('fk-change', item, this.row, this.column)
+        return
+      }
       if (item && item.option) {
         this.modelValue = item.label;
       }
@@ -369,7 +377,7 @@ export default {
   mounted() {
     document.addEventListener("keydown", this.onKeyDown);
     this.$parent.$refs.tableRef.$el.querySelector('.ve-table-content-wrapper').appendChild(this.$el)
-    if(!['Date', 'DateTime', 'FkAutocomplete'].includes(this.editorType)){
+    if (!['Date', 'DateTime', 'FkAutocomplete'].includes(this.editorType)) {
       this.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
     }
   },
@@ -407,16 +415,20 @@ export default {
     align-items: center;
     height: 100%;
 
-    .el-input__inner,.el-input__icon {
+    .el-input__inner,
+    .el-input__icon {
       display: flex;
       align-items: center;
       height: 100%;
     }
-    .el-input__prefix{
+
+    .el-input__prefix {
       display: flex;
       align-items: center;
       left: 0;
+   
     }
+
     .el-input__suffix {
       display: flex;
       align-items: center;
@@ -439,6 +451,7 @@ export default {
       line-height: 100%;
       background: transparent;
       padding-right: 0;
+      padding-left: 20px;
       border: none;
     }
   }

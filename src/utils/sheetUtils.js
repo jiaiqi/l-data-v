@@ -37,7 +37,7 @@ const buildSrvCols = (
           init_expr: addColsMap[cur.columns]?.init_expr || cur.init_expr,
           // redundant:cur.redundant||updateColsMap?.[cur.columns]?.redundant||addColsMap?.[cur.columns]?.redundant,
         };
-        if(res[cur.columns].init_expr==='$firstRowData'){
+        if (res[cur.columns].init_expr === '$firstRowData') {
           // 默认选中首行数据
           res[cur.columns].init_expr = null
           res[cur.columns]._selected_first_row = true
@@ -175,7 +175,7 @@ const buildSrvCols = (
       for (const item of calcCols) {
         if (item.__update_calc_trigger_col) {
           for (const col of item.__update_calc_trigger_col) {
-            if(col === item.columns) continue;
+            if (col === item.columns) continue;
             if (!updateDepMap.has(col)) {
               updateDepMap.set(col, []);
             }
@@ -184,7 +184,7 @@ const buildSrvCols = (
         }
         if (item.__add_calc_trigger_col) {
           for (const col of item.__add_calc_trigger_col) {
-            if(col === item.columns) continue;
+            if (col === item.columns) continue;
             if (!addDepMap.has(col)) {
               addDepMap.set(col, []);
             }
@@ -525,7 +525,21 @@ const sheet2json = (data, oldData) => {
     return res;
   }
 };
-function isFkAutoComplete(column) {
-  return column && column.col_type==='String' && column?.redundant_options?._target_column && true
+function isRichText(column){
+  return column?.col_type && ["Note", "RichText", "snote"].includes(column.col_type)
 }
-export { json2sheet, sheet2json, buildSrvCols, buildDataVerification,isFkAutoComplete };
+function isFkAutoComplete(column) {
+  return column && column.col_type === 'String' && column?.redundant_options?._target_column && true
+}
+function isFk(column) {
+  if (column?.col_type && column?.bx_col_type) {
+    const fkTypes = ["User", "Dept", "bxsys_user", "bxsys_dept", "fk"];
+    return fkTypes.includes(column.col_type) ||
+      column.bx_col_type === "fk" ||
+      column.bx_col_type?.indexOf("bx") === 0 ||
+      column.col_type === 'fk' ||
+      column.col_type?.includes("bx") === 0
+  }
+  return false
+}
+export { json2sheet, sheet2json, buildSrvCols, buildDataVerification,isRichText, isFkAutoComplete, isFk };

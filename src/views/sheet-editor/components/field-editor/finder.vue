@@ -1,11 +1,31 @@
 <template>
+  <el-select
+    v-model="inputVal"
+    filterable
+    remote
+    :placeholder="placeholder"
+    :remote-method="querySearch"
+    :loading="loading"
+    @focus="onFocus"
+    @blur="$emit('blur')"
+    @change="handleSelect"
+    v-if="isFk"
+  >
+    <el-option
+      v-for="item in options"
+      :key="item.value"
+      :label="item.label"
+      :value="item.value"
+    >
+    </el-option>
+  </el-select>
   <el-autocomplete
     class="inline-input"
     v-model="inputVal"
     clearable
     :trigger-on-focus="true"
     :fetch-suggestions="querySearch"
-    placeholder="请输入内容"
+    :placeholder="placeholder"
     value-key="label"
     suffix-icon="el-icon-edit"
     :clearable="false"
@@ -13,13 +33,14 @@
     @blur="$emit('blur')"
     @select="handleSelect"
     @clear="handleClear"
+    v-else
   >
   </el-autocomplete>
 </template>
 
 <script>
 import { cloneDeep } from 'lodash-es';
-
+import { isFk } from "@/utils/sheetUtils";
 
 export default {
   name: "FkAutocomplete",
@@ -64,23 +85,29 @@ export default {
       inputVal: "",
       selected: null,
       oldValue: null,
-      focus: false
+      focus: false,
+      options: [],
+      loading: false
     }
   },
-
+  beforeDestroy() {
+    this.options = [];
+  },
   computed: {
-    isFkAutoComplete() {
-      return this.fieldInfo?.col_type === 'String' && this.optionListFinal && !this.fieldInfo?.option_list_v2
+    placeholder() {
+      return this.fieldInfo?.placeholder || `请输入关键词`
+    },
+    isFk() {
+      return isFk(this.fieldInfo);
     },
     modelValue() {
       let value = this.value;
       return value;
     },
-    optionsV2List() {
-      let optionsV2 = this.fieldInfo;
-      return optionsV2;
-    },
     optionListV3() {
+      if (isFk(this.fieldInfo)) {
+        return this.fieldInfo?.option_list_v3
+      }
       return this.fieldInfo?.[`_${this.operateType}_option_list`]
     },
     optionListFinal() {
@@ -171,6 +198,9 @@ export default {
     onFocus() {
       this.$emit('focus')
       this.$parent.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
+      if (this.isFk) {
+        this.querySearch('')
+      }
     },
 
     getDependField() {
@@ -211,49 +241,20 @@ export default {
         });
       }
     },
-    handleSelect(item) {
-      console.log(item);
-      this.selected = item;
-      this.$emit("change", item);
-      return
-      if (this.field.stringAutocompleteInput) {
-        return;
-      }
-      let dependField = this.getDependField();
-      // let dependField; //fk字段
-      // if (this.field.form.fields && Array.isArray(this.field.form.fields)) {
-      //   for (let f of this.field.form.fields) {
-      //     if (f.info.name == this.field.info.redundant.dependField) {
-      //       dependField = f;
-      //     }
-      //   }
-      // } else {
-      //   dependField =
-      //     this.field.form.fields[this.field.info.redundant.dependField];
-      // }
-
-      let dependType = dependField?.info?.editor;
-      switch (dependType) {
-        case "finder":
-        case "tree-finder":
-          if (item) {
-            dependField.model = item.option;
-            dependField.finderSelected = item.value;
-            this.$set(dependField, "model", item.option);
-            this.$emit("change", dependField);
-          } else {
-            dependField.model = null;
-            dependField.finderSelected = null;
-            this.$set(dependField, "model", null);
-            this.$emit("change", dependField);
-          }
-          break;
-
-        default:
-          break;
+    handleSelect(val) {
+      console.log(val);
+      this.selected = val;
+      if (this.isFk) {
+        const option = this.options.find((item) => {
+          return item.value === val;
+        });
+        this.$emit("change", option);
+      } else {
+        this.$emit("change", val);
       }
     },
     querySearch(queryString = "", cb) {
+      this.loading = false
       let req = cloneDeep(this.optionsReq);
       if (req["relation_condition"]) {
         req.relation_condition.data[0].value = queryString ?? "";
@@ -277,9 +278,11 @@ export default {
             return result;
           });
         }
+        this.options = results;
+        this.loading = false
         // 调用 callback 返回建议列表的数据
-        cb(results);
-      }));
+        cb?.(results);
+      }))
     },
   },
 }

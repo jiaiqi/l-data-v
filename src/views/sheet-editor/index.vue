@@ -214,7 +214,7 @@
       @select="onRowButton"
     />
     <out-form-dialog ref="outFormDialog"></out-form-dialog>
-    <field-editor-dialog
+    <field-editor
       ref="fieldEditorDialog"
       :disabled="disabled"
       :detailButton="detailButton"
@@ -227,9 +227,10 @@
       v-if="showFieldEditor"
       @change="dialogChange"
       @fk-autocomplete-change="fkAutocompleteChange"
+      @fk-change="fkChange"
       @save="dialogChange"
       @close="dialogClose"
-    ></field-editor-dialog>
+    ></field-editor>
   </div>
 </template>
 
@@ -244,7 +245,7 @@ import {
 import dayjs from "dayjs";
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/user.js";
-import { buildSrvCols, isFkAutoComplete } from "../../utils/sheetUtils";
+import { buildSrvCols, isFkAutoComplete, isFk } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
 import { uniqueId, cloneDeep } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
@@ -271,7 +272,7 @@ import { rowButtonClick } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
 import OutFormDialog from "./components/out-comp/dialog.vue";
-import FieldEditorDialog from "./components/field-editor/dialog.vue";
+import FieldEditor from "./components/field-editor/index.vue";
 import debounce from "lodash/debounce";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
@@ -355,7 +356,7 @@ export default {
     ChooseTenant,
     DropMenu,
     OutFormDialog,
-    FieldEditorDialog,
+    FieldEditor,
   },
   data() {
     return {
@@ -442,7 +443,7 @@ export default {
                     // const position = getElementFullInfo(currentCellEl);
                     this.buildFieldEditorParams(row, column);
                     this.showFieldEditor = true;
-                  } else if (isFkAutoComplete(column?.__field_info)) {
+                  } else if (isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
                     event.stopPropagation();
                     this.buildFieldEditorParams(row, column);
                     this.showFieldEditor = true;
@@ -1822,6 +1823,23 @@ export default {
         })
       }
     },
+    fkChange(item, row, column) {
+      this.$refs["tableRef"].startEditingCell({
+        rowKey: row.rowKey,
+        colKey: column.field,
+        defaultValue: item?.value || null,
+      });
+      this.$refs["tableRef"].stopEditingCell();
+      const rowIndex = this.tableData.findIndex(
+        (item) => item.rowKey === row.rowKey
+      );
+      this.handlerRedundant(
+        item.option,
+        column.key,
+        row.rowKey,
+        rowIndex
+      );
+    },
     fkAutocompleteChange(item, row, column) {
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
@@ -1829,7 +1847,6 @@ export default {
         defaultValue: item?.label || null,
       });
       this.$refs["tableRef"].stopEditingCell();
-
       // 对应的fk字段
       const rawData = item.option
       const fkColumn =
@@ -1890,9 +1907,9 @@ export default {
       this.fieldEditorParams = {};
     },
     buildFieldEditorParams(row, column, params) {
+      this.showFieldEditor = false;
       if (!row || !column) {
         this.fieldEditorParams = {};
-        this.showFieldEditor = false;
         return;
       }
       let editable = true;
@@ -2776,10 +2793,7 @@ export default {
                     },
                   });
                 } else if (
-                  item.bx_col_type === "fk" ||
-                  (item.col_type?.indexOf("bx") === 0 &&
-                    item?.option_list_v2?.serviceName) ||
-                  (item.col_type === "fk" && item.option_list_v2?.serviceName)
+                  isFk(item) && false
                 ) {
                   const fieldInfo =
                     this.tableData[rowIndex]?.__flag == "add"
