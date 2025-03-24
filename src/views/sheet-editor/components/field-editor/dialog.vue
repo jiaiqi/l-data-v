@@ -1,20 +1,34 @@
 <template>
-  <div
-    class="date-picker"
-    :style="setPosition"
-    v-if="['Date', 'DateTime'].includes(editorType)"
-  >
-    <el-date-picker
-      v-model="modelValue"
-      align="right"
-      :type="editorType.toLowerCase()"
-      placeholder="选择日期"
-      :value-format="dateFormat"
-      :clearable="false"
-      @change="$emit('change', modelValue, row, column)"
-      @blur="handleClose"
+  <div v-if="['Date', 'DateTime', 'FkAutocomplete'].includes(editorType)">
+    <div
+      class="editor editor-wrap"
+      :style="setPosition"
+      @click.stop=""
     >
-    </el-date-picker>
+      <el-date-picker
+        v-model="modelValue"
+        align="right"
+        :type="editorType.toLowerCase()"
+        placeholder="选择日期"
+        :value-format="dateFormat"
+        :clearable="false"
+        @change="$emit('change', modelValue, row, column)"
+        @blur="handleClose"
+        v-if="['Date', 'DateTime'].includes(editorType)"
+      >
+      </el-date-picker>
+      <fk-autocomplete
+        class="fk-autocomplete"
+        :row="row"
+        :app="app"
+        :operate-type="operateType"
+        :field-info="fieldInfo"
+        v-model="modelValue"
+        @change="onFkAutoCompleteChange"
+        v-else-if="['FkAutocomplete'].includes(editorType)"
+      >
+      </fk-autocomplete>
+    </div>
   </div>
 
   <el-dialog
@@ -25,16 +39,22 @@
     width="90vw"
     v-else
   >
-    <div class="remark" v-if="fieldInfo && fieldInfo.remark">
+    <div
+      class="remark"
+      v-if="fieldInfo && fieldInfo.remark"
+    >
       <el-popover
         placement="right bottom"
         width="800"
         v-model="visible"
       >
         <div class="p-2 m-2 b-gray b-1px b-dashed rounded-sm">
-        <div v-html="recoverFileAddress(fieldInfo.remark)"></div>
+          <div v-html="recoverFileAddress(fieldInfo.remark)"></div>
         </div>
-        <div slot="reference" class="text-orange cursor-pointer inline-block">
+        <div
+          slot="reference"
+          class="text-orange cursor-pointer inline-block"
+        >
           <i class="el-icon-warning"></i> 提示
         </div>
       </el-popover>
@@ -51,19 +71,30 @@
         type="textarea"
         :rows="10"
         :disabled="!editable"
-        :placeholder="
-          (column && column.__field_info && column.__field_info.placeholder) ||
+        :placeholder="(column && column.__field_info && column.__field_info.placeholder) ||
           '请输入内容'
-        "
+          "
         v-model="modelValue"
         v-else-if="editorType === 'MultilineText'"
       >
       </el-input>
-      <div class="text-orange text-center" v-if="!disabled && !editable">
+      <div
+        class="text-orange text-center"
+        v-if="!disabled && !editable"
+      >
         <span class="mr-20px"> 当前字段不可编辑 </span>
-        <el-button type="text" @click="dialogFullscreen = !dialogFullscreen">
-          <i class="el-icon-full-screen" v-if="!dialogFullscreen"></i>
-          <i class="el-icon-switch-button" v-else></i>
+        <el-button
+          type="text"
+          @click="dialogFullscreen = !dialogFullscreen"
+        >
+          <i
+            class="el-icon-full-screen"
+            v-if="!dialogFullscreen"
+          ></i>
+          <i
+            class="el-icon-switch-button"
+            v-else
+          ></i>
           <span v-if="!dialogFullscreen">全屏</span>
           <span v-else>退出全屏</span>
         </el-button>
@@ -79,16 +110,15 @@
             plain
             @click="
               $emit('change', modelValue, row, column);
-              editorVisible = false;
+            editorVisible = false;
             "
-            >确认</el-button
-          >
+          >确认</el-button>
           <el-button
             type="primary"
             :disabled="!hasChange"
             @click="
               $emit('save', modelValue, row, column, 'save');
-              stopAutoSave();
+            stopAutoSave();
             "
           >
             保存
@@ -117,11 +147,13 @@
 </template>
 
 <script>
+import FkAutocomplete from "./fk-autocomplete.vue";
 import RichTextEditor from "./rich-text.vue";
 export default {
   name: "FieldEditorDialog",
   components: {
     RichTextEditor,
+    FkAutocomplete,
   },
   props: {
     value: {
@@ -141,6 +173,7 @@ export default {
     detailButton: Object,
     keyDispCol: String,
     position: Object,
+    setCellSelection: Function,
   },
   data() {
     return {
@@ -166,13 +199,16 @@ export default {
     fieldInfo() {
       return this.column?.__field_info;
     },
+    operateType() {
+      return this.row?.__flag || 'update'
+    },
     setPosition() {
       if (this.position && this.position.width && this.value) {
         return {
-          left: this.position.left + 1 + "px",
-          top: this.position.top + 1 + "px",
-          width: this.position.width - 4 + "px",
-          height: this.position.height - 4 + "px",
+          left: this.position.left + 3 + "px",
+          top: this.position.top + 3 + "px",
+          width: this.position.width - 8 + "px",
+          height: this.position.height - 8 + "px",
         };
       } else {
         return {
@@ -190,14 +226,17 @@ export default {
       }
       return str;
     },
+
     editorType() {
-      if (
-        ["Note", "RichText", "snote"].includes(
-          this.column?.__field_info?.col_type
-        )
-      ) {
+      const colType = this.fieldInfo?.col_type;
+      if (["Note", "RichText", "snote"].includes(colType)) {
         return "RichText";
-      } else return this.column?.__field_info?.col_type;
+      } else if ("String" === colType) {
+        if (this.fieldInfo?.redundant_options?._target_column) {
+          return "FkAutocomplete";
+        }
+      }
+      return colType;
     },
     dateFormat() {
       if (this.editorType === "Date") {
@@ -240,12 +279,18 @@ export default {
     },
   },
   methods: {
+    onFkAutoCompleteChange(item) {
+      if (item && item.option) {
+        this.modelValue = item.label;
+      }
+      this.$emit('fk-autocomplete-change', item, this.row, this.column);
+    },
     onKeyDown(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      // 监听ctrl+s
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        // 监听ctrl+s
         e.preventDefault();
         if (this.editorVisible && this.editable && this.hasChange) {
-          this.$emit('save', this.modelValue, this.row, this.column, 'save');
+          this.$emit("save", this.modelValue, this.row, this.column, "save");
           this.stopAutoSave();
         }
       }
@@ -276,7 +321,7 @@ export default {
         }
       }, 1000);
     },
-    handleOpen(params = {}) {},
+    handleOpen(params = {}) { },
     handleClose() {
       // 对话框关闭处理
       this.editorVisible = false;
@@ -286,7 +331,7 @@ export default {
       console.log(eve);
       if (
         eve.target?.offsetParent?.className.indexOf("w-e-image-container") >
-          -1 &&
+        -1 &&
         eve.target.currentSrc
       ) {
         this.url = eve.target.currentSrc;
@@ -316,29 +361,44 @@ export default {
     },
   },
   mounted() {
-    document.addEventListener('keydown', this.onKeyDown);
+    document.addEventListener("keydown", this.onKeyDown);
+    this.$parent.$refs.tableRef.$el.querySelector('.ve-table-content-wrapper').appendChild(this.$el)
   },
   beforeDestroy() {
-    document.removeEventListener('keydown', this.onKeyDown);
+    document.removeEventListener("keydown", this.onKeyDown);
     this.stopAutoSave();
   },
 };
 </script>
 
 <style lang="scss" scoped>
-.date-picker {
-  z-index: 9;
+.shade {
+  background-color: rgba($color: #000000, $alpha: 0.2);
   position: fixed;
-  // border: 1px solid #4B89FF;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: 99999;
+}
+
+
+
+.editor-wrap {
+  position: absolute;
   overflow: hidden;
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 0;
+
+  // border: 2px solid #4B89FF;
   ::v-deep .el-date-editor {
     height: 100%;
     line-height: 100%;
     background: transparent;
+
     .el-input__inner {
       height: 100%;
       line-height: 100%;
@@ -348,6 +408,12 @@ export default {
     }
   }
 }
+
+// .fk-autocomplete {
+//   z-index: 9;
+//   position: fixed;
+//   overflow: hidden;
+// }
 
 .remark {
   margin-top: -50px;

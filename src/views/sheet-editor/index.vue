@@ -226,6 +226,7 @@
       v-bind="fieldEditorParams"
       v-if="showFieldEditor"
       @change="dialogChange"
+      @fk-autocomplete-change="fkAutocompleteChange"
       @save="dialogChange"
       @close="dialogClose"
     ></field-editor-dialog>
@@ -243,7 +244,7 @@ import {
 import dayjs from "dayjs";
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/user.js";
-import { buildSrvCols } from "../../utils/sheetUtils";
+import { buildSrvCols, isFkAutoComplete } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
 import { uniqueId, cloneDeep } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
@@ -289,8 +290,10 @@ const ignoreKeys = [
 function getElementFullInfo(element) {
   const rect = element.getBoundingClientRect();
   return {
-    left: rect.left + window.scrollX,
-    top: rect.top + window.scrollY,
+    left: rect.left,
+    top: rect.top,
+    // left: rect.left + window.scrollX,
+    // top: rect.top + window.scrollY,
     width: rect.width,
     height: rect.height,
   };
@@ -434,15 +437,15 @@ export default {
                   ".ve-table-body-td.ve-table-cell-selection"
                 );
                 if (currentCellEl) {
-                  const { offsetLeft, offsetTop, offsetWidth, offsetHeight } =
-                    currentCellEl;
                   if (["Date", "DateTime"].includes(colType)) {
                     event.stopPropagation();
-                    const position = getElementFullInfo(currentCellEl);
-                    if (position.width && position.height) {
-                      this.buildFieldEditorParams(row, column, { position });
-                      this.showFieldEditor = true;
-                    }
+                    // const position = getElementFullInfo(currentCellEl);
+                    this.buildFieldEditorParams(row, column);
+                    this.showFieldEditor = true;
+                  } else if (isFkAutoComplete(column?.__field_info)) {
+                    event.stopPropagation();
+                    this.buildFieldEditorParams(row, column);
+                    this.showFieldEditor = true;
                   } else {
                     this.buildFieldEditorParams();
                     this.showFieldEditor = false;
@@ -493,6 +496,15 @@ export default {
                   this.$nextTick(() => {
                     this.$refs["tableRef"].stopEditingCell();
                   });
+                } else if (["String"].includes(colType)) {
+                  if (column?.__field_info?.redundant_options?._target_column) {
+                    // fk-autocomplete
+                    event.stopPropagation();
+
+                    this.$nextTick(() => {
+                      this.$refs["tableRef"].stopEditingCell();
+                    })
+                  }
                 }
               }
 
@@ -1799,6 +1811,50 @@ export default {
     },
   },
   methods: {
+    fkAutocompleteChange(item, row, column) {
+      this.$refs["tableRef"].startEditingCell({
+        rowKey: row.rowKey,
+        colKey: column.field,
+        defaultValue: item?.label || null,
+      });
+      this.$refs["tableRef"].stopEditingCell();
+
+      // 对应的fk字段
+      const rawData = item.option
+      const fkColumn =
+        column?.__field_info?.redundant?.dependField;
+      const rowIndex = this.tableData.findIndex(
+        (item) => item.rowKey === row.rowKey
+      );
+      if (fkColumn) {
+        const fkColumnInfo = this.setAllFields.find(
+          (item) => item.columns === fkColumn
+        );
+        if (fkColumnInfo) {
+          let data = rawData || {};
+          row[fkColumn] = item.value;
+          row[`_${fkColumn}_data`] = rawData;
+          this.$set(this.tableData, rowIndex, row);
+          if (
+            this.allFields.find((e) => e.columns === fkColumn)
+          ) {
+            this.$refs["tableRef"].startEditingCell({
+              rowKey: row.rowKey,
+              colKey: fkColumn,
+              defaultValue: row[fkColumn],
+            });
+            this.$refs["tableRef"].stopEditingCell();
+            this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+          }
+          this.handlerRedundant(
+            data,
+            fkColumn,
+            row.rowKey,
+            rowIndex
+          );
+        }
+      }
+    },
     dialogChange(event, row, column, type) {
       // 将html中的文件地址前缀替换为$bxFileAddress$
       event = this.replaceFileAddressSuffix(event);
@@ -1847,13 +1903,15 @@ export default {
       const oldRowData = this.oldTableData?.find(
         (item) => item.__id && item.__id === row.__id
       );
+      const position = this.$refs?.tableRef?.$refs?.cellSelectionRef?.cellSelectionRect?.currentCellRect;
       this.fieldEditorParams = {
         html: row[column.field],
+        cellValue: row[column.field],
         oldValue: oldRowData?.[column.field],
         editable,
         row,
         column,
-        position: params?.position,
+        position,
       };
     },
     stopAutoSave() {
@@ -2639,7 +2697,7 @@ export default {
                     // }
                   }
                 }
-                if (setColumn.redundant_options) {
+                if (setColumn.redundant_options && false) {
                   return h(fkAutocomplete, {
                     attrs: {
                       row,
@@ -4006,6 +4064,7 @@ export default {
               }
               if (fk_init_expr) {
                 dataItem[`_${fk_column}_init_val`] = val;
+                field[`_${fk_column}_init_val`] = val;
               } else {
                 dataItem[field.columns] = val;
               }
@@ -4035,7 +4094,15 @@ export default {
         }
 
         this.tableData.splice(index, 0, dataItem);
+        // let autocompleteKeys = Object.keys(dataItem).filter(key => key && key.includes('_init_val'))
+        // if (Array.isArray(autocompleteKeys) && autocompleteKeys.length) {
+        //   // 给autocomplete字段设置初始值
+
+        // }
       }
+    },
+    initFkOption() {
+
     },
     batchInsertRows() {
       console.log(this.$refs.tableRef.getRangeCellSelection());

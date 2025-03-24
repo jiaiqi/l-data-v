@@ -108,7 +108,7 @@
         type="textarea"
         :rows="10"
         :disabled="!editable"
-        :placeholder="column&&column.placeholder || '请输入内容'"
+        :placeholder="(column && column.placeholder) || '请输入内容'"
         v-model="innerHtml"
         v-else
       >
@@ -187,6 +187,17 @@ export default {
   },
   created() {
     this.ticket = sessionStorage.getItem("bx_auth_ticket");
+    if (this.row?.__flag === "add") {
+      const redundant = this.column?.redundant;
+      const dependField = redundant?.dependField;
+      const refedCol = redundant?.refedCol;
+      if (dependField && refedCol) {
+        if (this.row[`_${dependField}_init_val`]) {
+          debugger;
+          this.getFkOptions(this.column.redundant_options,this.row[`_${dependField}_init_val`])
+        }
+      }
+    }
   },
   computed: {
     linkToDetail() {
@@ -294,6 +305,69 @@ export default {
     };
   },
   methods: {
+    buildAutocompltetReq(optionsV2, val) {
+      let refedCol = optionsV2?.refed_col || optionsV2?.key_disp_col;
+      let req = {
+        serviceName: optionsV2.serviceName,
+        srvApp: optionsV2.srv_app || null,
+        colNames: ["*"],
+        condition: [
+          {
+            colName: refedCol,
+            ruleType: 'eq',
+            value: val,
+          },
+        ],
+        page: {
+          pageNo: 1,
+          rownumber: 50,
+        },
+      };
+
+      if (optionsV2?.conditions?.length) {
+        const formModel = this.row;
+        optionsV2.conditions.forEach((item) => {
+          const obj = {
+            colName: item.colName,
+            ruleType: item.ruleType,
+          };
+          if (item.value?.indexOf("data.") === 0) {
+            obj.value = formModel[item.value.replace("data.", "")];
+          } else if (
+            item.value &&
+            item.value.startsWith("'") &&
+            item.value.endsWith("'")
+          ) {
+            obj.value = item.value.replace(/'/g, "");
+          } else {
+            obj.ruleType = "like";
+            obj.value = item.value;
+          }
+          if (obj.value) {
+            req.condition.push(obj);
+          }
+        });
+      }
+      return req;
+    },
+    async getFkOptions(optionsV2, val) {
+      let req = this.buildAutocompltetReq(optionsV2, val);
+      if (req) {
+        const valColumn = optionsV2.refed_col;
+        const labelCol = optionsV2.key_disp_col;
+        const url = `/${this.app}/select/${req.serviceName}`;
+        this.$http.post(url, req).then((response) => {
+          if (response && response.data && response.data.data) {
+            let options = response.data.data;
+            if(Array.isArray(options)&&options.length){
+              const data = options[0]
+              this.$emit('change',data[this.column.redundant.refedCol])
+            }
+          }
+          // 调用 callback 返回建议列表的数据
+        });
+      }
+    },
     toDetail() {
       if (this.linkToDetail) {
         let address = `/vpages/#/detail/${this.serviceName}/${this.row.id}?srvApp=${this.app}`;
@@ -437,9 +511,9 @@ export default {
   max-height: 80px;
   position: relative;
   display: flex;
-  .text{
+  .text {
     width: 100%;
-    ::v-deep p{
+    ::v-deep p {
       margin: 0;
     }
   }

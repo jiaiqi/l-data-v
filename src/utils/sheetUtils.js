@@ -119,6 +119,10 @@ const buildSrvCols = (
         col.redundant_options = {
           ...fkCols[dependField],
         };
+        col._add_option_list_v2 = addColsMap?.[dependField]?.option_list_v2
+        col._update_option_list_v2 = updateColsMap?.[dependField]?.option_list_v2
+        col._add_option_list = addColsMap?.[dependField]?.option_list_v3
+        col._update_option_list = updateColsMap?.[dependField]?.option_list_v3
       }
       if (col?.col_type === "String" && col?.redundant?.dependField) {
         // 只让冗余的disp col 字段具备fk字段的效果
@@ -128,6 +132,10 @@ const buildSrvCols = (
             ...fkCols[dependField],
             autocompleteInput: true,
           };
+          col._add_option_list_v2 = addColsMap?.[dependField]?.option_list_v2
+          col._update_option_list_v2 = updateColsMap?.[dependField]?.option_list_v2
+          col._add_option_list = addColsMap?.[dependField]?.option_list_v3
+          col._update_option_list = updateColsMap?.[dependField]?.option_list_v3
         }
       }
       switch (col.bx_col_type) {
@@ -517,5 +525,7 @@ const sheet2json = (data, oldData) => {
     return res;
   }
 };
-
-export { json2sheet, sheet2json, buildSrvCols, buildDataVerification };
+function isFkAutoComplete(column) {
+  return column && column.col_type==='String' && column?.redundant_options?._target_column && true
+}
+export { json2sheet, sheet2json, buildSrvCols, buildDataVerification,isFkAutoComplete };
