@@ -1172,6 +1172,7 @@ export default {
       handler(newValue, oldValue) {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         this.calcReqData = this.buildReqParams();
+        this.buildFieldEditorParams(this.fieldEditorParams?.row, this.fieldEditorParams?.column)
         const startRowIndex =
           currentSelection?.selectionRangeIndexes?.startRowIndex;
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {

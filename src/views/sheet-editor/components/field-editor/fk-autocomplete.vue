@@ -10,17 +10,11 @@
     suffix-icon="el-icon-edit"
     :clearable="false"
     @focus="onFocus"
+    @blur="$emit('blur')"
     @select="handleSelect"
     @clear="handleClear"
   >
   </el-autocomplete>
-  <!-- <div class="fk-autocomplete">
-    <input
-      v-model="inputVal"
-      class="input"
-    ></input>
-    <i class="el-icon-edit icon"></i>
-  </div> -->
 </template>
 
 <script>
@@ -70,6 +64,7 @@ export default {
       inputVal: "",
       selected: null,
       oldValue: null,
+      focus: false
     }
   },
 
@@ -128,12 +123,12 @@ export default {
             {
               colName: optionsV2.key_disp_col,
               ruleType: "[like]",
-              value: this.inputVal,
+              value: this.inputVal || '',
             },
             {
               colName: refedCol,
               ruleType: "[like]",
-              value: this.inputVal,
+              value: this.inputVal || '',
             },
           ]
         }
@@ -174,6 +169,7 @@ export default {
 
   methods: {
     onFocus() {
+      this.$emit('focus')
       this.$parent.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
     },
 
@@ -257,13 +253,13 @@ export default {
           break;
       }
     },
-    querySearch(queryString, cb) {
+    querySearch(queryString = "", cb) {
       let req = cloneDeep(this.optionsReq);
       if (req["relation_condition"]) {
-        req.relation_condition.data[0].value = queryString;
-        req.relation_condition.data[1].value = queryString;
+        req.relation_condition.data[0].value = queryString ?? "";
+        req.relation_condition.data[1].value = queryString ?? "";
       } else if (req["condition"]) {
-        req["condition"][0].value = queryString;
+        req["condition"][0].value = queryString ?? "";
       }
       const valColumn = this.optionListFinal.refed_col;
       const labelCol = this.optionListFinal.key_disp_col;

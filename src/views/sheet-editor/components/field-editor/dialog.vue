@@ -2,6 +2,7 @@
   <div v-if="['Date', 'DateTime', 'FkAutocomplete'].includes(editorType)">
     <div
       class="editor editor-wrap"
+      :class="{ 'focus': onfocus === true }"
       :style="setPosition"
       @click.stop=""
     >
@@ -25,6 +26,8 @@
         :field-info="fieldInfo"
         v-model="modelValue"
         @change="onFkAutoCompleteChange"
+        @focus="onfocus = true"
+        @blur="onfocus = false"
         v-else-if="['FkAutocomplete'].includes(editorType)"
       >
       </fk-autocomplete>
@@ -180,9 +183,7 @@ export default {
       url: "",
       srcList: [],
       initialIndex: 0,
-      dialogTableVisible: false,
       ticket: null,
-      toolbarConfig: {},
       editor: null,
       mode: "default", // or 'simple'
       modelValue: "",
@@ -193,6 +194,7 @@ export default {
       autoSaveInterval: null, //用于储存定时保存的定时器
       autoSaveTimeout: 0, //自动保存倒计时
       visible: false,
+      onfocus: false
     };
   },
   computed: {
@@ -204,11 +206,16 @@ export default {
     },
     setPosition() {
       if (this.position && this.position.width && this.value) {
+        let left = this.onfocus ? this.position.left : this.position.left + 3
+        let top = this.onfocus ? this.position.top : this.position.top + 3
+        let width = this.onfocus ? this.position.width : this.position.width - 8
+        let height = this.onfocus ? this.position.height : this.position.height - 8
+
         return {
-          left: this.position.left + 3 + "px",
-          top: this.position.top + 3 + "px",
-          width: this.position.width - 8 + "px",
-          height: this.position.height - 8 + "px",
+          left: left + "px",
+          top: top + "px",
+          width: width + "px",
+          height: height + "px",
         };
       } else {
         return {
@@ -393,7 +400,29 @@ export default {
   justify-content: center;
   z-index: 0;
 
-  // border: 2px solid #4B89FF;
+  ::v-deep .el-input {
+    display: flex;
+    align-items: center;
+    height: 100%;
+
+    .el-input__inner {
+      display: flex;
+      align-items: center;
+      height: 100%;
+    }
+
+    .el-input__suffix {
+      display: flex;
+      align-items: center;
+      right: 0;
+    }
+  }
+
+
+  &.focus {
+    border: 2px solid #4B89FF;
+  }
+
   ::v-deep .el-date-editor {
     height: 100%;
     line-height: 100%;

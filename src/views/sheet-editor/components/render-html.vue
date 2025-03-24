@@ -193,7 +193,6 @@ export default {
       const refedCol = redundant?.refedCol;
       if (dependField && refedCol) {
         if (this.row[`_${dependField}_init_val`]) {
-          debugger;
           this.getFkOptions(this.column.redundant_options,this.row[`_${dependField}_init_val`])
         }
       }
