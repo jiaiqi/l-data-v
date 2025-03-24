@@ -176,7 +176,6 @@ export default {
     detailButton: Object,
     keyDispCol: String,
     position: Object,
-    setCellSelection: Function,
   },
   data() {
     return {
@@ -370,6 +369,9 @@ export default {
   mounted() {
     document.addEventListener("keydown", this.onKeyDown);
     this.$parent.$refs.tableRef.$el.querySelector('.ve-table-content-wrapper').appendChild(this.$el)
+    if(!['Date', 'DateTime', 'FkAutocomplete'].includes(this.editorType)){
+      this.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
+    }
   },
   beforeDestroy() {
     document.removeEventListener("keydown", this.onKeyDown);
@@ -405,12 +407,16 @@ export default {
     align-items: center;
     height: 100%;
 
-    .el-input__inner {
+    .el-input__inner,.el-input__icon {
       display: flex;
       align-items: center;
       height: 100%;
     }
-
+    .el-input__prefix{
+      display: flex;
+      align-items: center;
+      left: 0;
+    }
     .el-input__suffix {
       display: flex;
       align-items: center;

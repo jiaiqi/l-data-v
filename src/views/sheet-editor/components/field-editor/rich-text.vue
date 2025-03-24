@@ -168,6 +168,9 @@ export default {
   },
   created() {
     this.ticket = sessionStorage.getItem("bx_auth_ticket");
+    this.$nextTick(() => {
+      this.$parent.$parent.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
+    });
   },
 };
 </script>

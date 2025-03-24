@@ -1185,6 +1185,7 @@ export default {
         this.stopAutoSave();
         // this.removeDocumentEventListener();
       } else {
+        this.setCellSelection()
         // if (oldVal === true) {
         //   this.initDocumentEventListener();
         // }
@@ -1812,6 +1813,15 @@ export default {
     },
   },
   methods: {
+    setCellSelection(rowKey, colKey) {
+      rowKey = rowKey || this.fieldEditorParams?.row?.__id
+      colKey = colKey || this.fieldEditorParams?.column?.key
+      if (rowKey && colKey) {
+        this.$nextTick(() => {
+          this.$refs["tableRef"].setCellSelection({ rowKey, colKey });
+        })
+      }
+    },
     fkAutocompleteChange(item, row, column) {
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
@@ -1876,8 +1886,7 @@ export default {
       // this.showFieldEditor = false;
     },
     dialogClose() {
-      console.log("dialogClose:");
-
+      this.$parent?.setCellSelection?.()
       this.fieldEditorParams = {};
     },
     buildFieldEditorParams(row, column, params) {
