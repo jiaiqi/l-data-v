@@ -464,26 +464,29 @@ export default {
                 if (!colType) {
                   return;
                 }
-                const currentCellEl = document.querySelector(
-                  ".ve-table-body-td.ve-table-cell-selection"
-                );
-                if (currentCellEl) {
-                  this.fieldEditorParams?.html ? this.fieldEditorParams.html = '' : ''
-                  this.buildFieldEditorParams();
-                  this.showFieldEditor = false;
-                  this.$nextTick(() => {
-                    if (["Date", "DateTime"].includes(colType)) {
-                      event.stopPropagation();
-                      // const position = getElementFullInfo(currentCellEl);
-                      this.buildFieldEditorParams(row, column);
-                      this.showFieldEditor = true;
-                    } else if (isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
-                      event.stopPropagation();
-                      this.buildFieldEditorParams(row, column);
-                      this.showFieldEditor = true;
-                    }
-                  })
+                const currentCellSelection = this.$refs.tableRef.cellSelectionData.currentCell
+                if (currentCellSelection && currentCellSelection?.colKey === column.key && currentCellSelection?.rowKey === row.rowKey) {
+                  if (["Date", "DateTime"].includes(colType) || isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
+                    this.$nextTick(() => {
+                      this.clearFieldEditorParams();
+                      setTimeout(() => {
+                        this.$nextTick(() => {
+                          if (["Date", "DateTime"].includes(colType)) {
+                            event.stopPropagation();
+                            // const position = getElementFullInfo(currentCellEl);
+                            this.buildFieldEditorParams(row, column);
+                            this.showFieldEditor = true;
+                          } else if (isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
+                            event.stopPropagation();
+                            this.buildFieldEditorParams(row, column);
+                            this.showFieldEditor = true;
+                          }
+                        })
+                      }, 200);
+                    })
+                  }
                 }
+
               }
             },
             dblclick: (event) => {
@@ -1211,7 +1214,7 @@ export default {
       handler(newValue, oldValue) {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         this.calcReqData = this.buildReqParams();
-        this.buildFieldEditorParams(this.fieldEditorParams?.row, this.fieldEditorParams?.column)
+        // this.buildFieldEditorParams(this.fieldEditorParams?.row, this.fieldEditorParams?.column)
         const startRowIndex =
           currentSelection?.selectionRangeIndexes?.startRowIndex;
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {
@@ -1243,7 +1246,7 @@ export default {
         if (['select', 'refresh'].includes(item.button_type)) {
           return false
         }
-        if(['增加弹出']?.includes(item.operate_type)){
+        if (['增加弹出']?.includes(item.operate_type)) {
           return false
         }
         if (item.permission === false) {
@@ -1963,6 +1966,10 @@ export default {
       // this.$parent?.setCellSelection?.()
       this.fieldEditorParams = null;
     },
+    clearFieldEditorParams() {
+      this.fieldEditorParams = null;
+      this.showFieldEditor = false
+    },
     buildFieldEditorParams(row, column, params) {
       if (!row || !column) {
         this.fieldEditorParams = null;
@@ -2339,7 +2346,7 @@ export default {
             // dialog操作完成之后的回调 刷新列表
             // this.loadTableData();
 
-          },{vm:this});
+          }, { vm: this });
         }
         // }
       } else if ("batch_approve" == type) {
