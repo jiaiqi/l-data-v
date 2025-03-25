@@ -71,6 +71,57 @@
             <div class="text">更新</div>
           </div>
         </div>
+        <el-popover
+          width="400"
+          trigger="hover"
+          v-if="childListType !== 'add' && gridButton && gridButton.length"
+        >
+          <div class="grid-button-box">
+            <el-button
+              size="mini"
+              type="primary"
+              :title="item.button_name"
+              v-for="item in gridButton"
+              class="button"
+              @click="onGridButton(item)"
+            >
+              {{ item.button_name }}
+            </el-button>
+          </div>
+          <el-button
+            class="icon-button mr-1"
+            size="mini"
+            type="primary"
+            title="操作按钮"
+            slot="reference"
+          >
+            <i class="i-ic-baseline-density-medium"></i>
+          </el-button>
+        </el-popover>
+
+        <!-- <el-dropdown v-if="childListType !== 'add' && gridButton && gridButton.length">
+          <el-button
+            class="icon-button"
+            size="mini"
+            type="primary"
+            title="操作按钮"
+          >
+            <i class="i-ic-baseline-density-medium"></i>
+          </el-button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item v-for="item in gridButton">
+              <el-button
+                size="mini"
+                type="primary"
+                plain
+                style="min-width: 100px;"
+                :title="item.button_name"
+              >
+                {{ item.button_name }}
+              </el-button></el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown> -->
+
         <el-button
           class="icon-button"
           size="mini"
@@ -191,7 +242,6 @@
       >
       </el-pagination>
       <div class="flex items-center">
-        <!-- <div class="help-button"><i class="el-icon-question"></i></div> -->
       </div>
     </div>
 
@@ -268,7 +318,7 @@ import {
   extractAndFormatDatesOrTimestamps,
   extractConcatNumbersWithSingleDecimal,
 } from "@/common/DataUtil.js";
-import { rowButtonClick } from "./util/buttonHandler.js";
+import { rowButtonClick,customizeOperate } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
 import OutFormDialog from "./components/out-comp/dialog.vue";
@@ -1200,6 +1250,17 @@ export default {
   },
   computed: {
     ...mapState(useUserStore, ["userInfo", "tenants"]),
+    gridButton() {
+      return this.v2data?.gridButton?.filter(item => {
+        if (['select', 'refresh'].includes(item.button_type)) {
+          return false
+        }
+        if (item.permission === false) {
+          return false
+        }
+        return true
+      })
+    },
     dropMenuItems() {
       return this.v2data?.rowButton
         ?.filter((item) => {
@@ -2103,6 +2164,191 @@ export default {
             }
           }
         }
+      }
+    },
+    onGridButton(button) {
+      //　列表头部按钮
+      console.log("gridButtonClick", button);
+      let self = this;
+      var type = button.button_type;
+      var exeservice = button.service_name;
+      var tab_title = button.service_view_name;
+      var operate_type = button.operate_type;
+      var moreConfig = null;
+      if (button.more_config && typeof button.more_config === "string") {
+        try {
+          moreConfig = JSON.parse(button.more_config);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      if (
+        button.hasOwnProperty("always_show") &&
+        button.always_show &&
+        !button.permission
+      ) {
+        // 无权限的按钮永久显示，操作弹出配置提示信息
+        this.$alert(
+          button.tip_msg ? button.tip_msg : "您无法进行该操作",
+          "提示",
+          {
+            confirmButtonText: "确定",
+          }
+        );
+        return;
+      }
+      if (
+        button.action_validate &&
+        this.evalActionValidator(button.action_validate, this.tableData) !== true
+      ) {
+        return;
+      }
+
+      if ("select" == type) {
+
+      } else if ("extjs" === type) {
+        button.handlerFunc && button.handlerFunc();
+      } else if ("shrink" == type) {
+        self.selectFormShow = false;
+      } else if ("refresh" == type) {
+        self.refreshData();
+      } else if ("batch_delete" == type) {
+        // self.batchDeleteData(exeservice);
+      } else if ("add" == type) {
+        self.insert2Rows();
+      } else if ("confirmadd" == type) {
+        if (this.multipleSelection.length == 0) {
+          this.$alert("请选择需要添加的数据", "提示", {
+            confirmButtonText: "确定",
+          });
+        } else {
+          var relation_col = "";
+          var referenced_column_name = "";
+          let map_table = this.mapcondition.map_table;
+          var table_col_realtion = button.table_col_realtion;
+          for (var item of table_col_realtion) {
+            if (item.table_name == map_table) {
+              relation_col = item["column_name"];
+              referenced_column_name = item["referenced_column_name"];
+              break;
+            }
+          }
+
+          if (relation_col != "") {
+            let bxRequests = [];
+            let bxRequest = {};
+            bxRequests.push(bxRequest);
+            bxRequest.serviceName = this.mapcondition.addservice;
+            bxRequest.data = [];
+
+            for (var item of this.multipleSelection) {
+              var dataMap = {};
+              dataMap[this.mapcondition.input_col_name] =
+                this.mapcondition.input_col_value;
+              dataMap[relation_col] = item[referenced_column_name];
+              bxRequest.data.push(dataMap);
+            }
+
+            this.operate(bxRequests).then((response) => {
+              var state = response.body.state;
+
+              if ("SUCCESS" == state) {
+                this.$message({
+                  type: "success",
+                  message: "添加成功!",
+                });
+
+                // this.loadTableData()
+                this.$emit("action-complete");
+              } else {
+                this.$message({
+                  type: "error",
+                  message: response.body.resultMessage,
+                });
+              }
+            });
+          }
+        }
+      } else if ("batchadd" == type) {
+        console.log("batchadd", button);
+        // if (button.hasOwnProperty("btn_cfg_json")) {
+        //   this.buildBatchConfig(button);
+        // } else {
+        //   console.error(button);
+        // }
+
+
+      } else if ("batchupdate" == type) { //批量添加
+        console.log("batchupdate", button);
+        // if (this.header_view_model != "normal") {
+        //   this.header_view_model = "normal";
+        //   this.gridHeader = this.noramlHeaders;
+        // }
+        // this.onBatchUpdateClick();
+        // this.onInplaceEditClicked();
+      } else if ("saveall" == type) {
+        this.saveData()
+        // this.onSaveAllClicked();
+      } else if ("apply" == type) {
+        // var urlParams = `/${exeservice}?time=${(new Date()).getTime()}`;
+        // var urlParams = `/${exeservice}`;
+        // this.addTab(
+        //   "start-proc",
+        //   urlParams,
+        //   tab_title,
+        //   null,
+        //   button,
+        //   button.application
+        // );
+      } else if ("export" == type) {
+        // this.onExportClicked();
+        // this.activeForm = "export"   // 显示导出配置
+      } else if ("import" == type) {
+        // this.onImportClicked(button);
+      } else if ("customize" == type) {
+        var operate_params_cfg = button.operate_params;
+        var select_data = button.select_data;
+        debugger
+        // if (
+        //   (select_data == null ||
+        //     select_data == undefined ||
+        //     select_data == "是") &&
+        //   this.multipleSelection <= 0 &&
+        //   operate_params_cfg != undefined &&
+        //   operate_params_cfg != "" &&
+        //   operate_params_cfg != null
+        // ) {
+        //   this.$alert("请选择操作数据", "提示", {
+        //     confirmButtonText: "确定",
+        //   });
+        // } else {
+        var me = this;
+
+        if (button.operate_type == "修改") {
+          this.customize_update(button, this.multipleSelection);
+        } else if (button.operate_type == "删除") {
+          this.customize_delete(operate_item, this.multipleSelection);
+        } else if (button.operate_type == "增加") {
+          this.customize_add(button, this.multipleSelection);
+        } else if (button.operate_type == "增加弹出") {
+          console.log("customize button", button);
+          customizeOperate(button, this.multipleSelection, (e) => {
+            // dialog操作完成之后的回调 刷新列表
+            this.loadTableData();
+          });
+          // this.customize_add(button, this.multipleSelection);
+        } else {
+          button.listservice = this.service;
+          customizeOperate(button, this.multipleSelection, (e) => {
+            // dialog操作完成之后的回调 刷新列表
+            // this.loadTableData();
+            
+          });
+        }
+        // }
+      } else if ("batch_approve" == type) {
+        // this.onBatchApprove(this.multipleSelection, button);
       }
     },
     onRowButton(item) {
@@ -3993,7 +4239,7 @@ export default {
      * @param {*} parentRow 父节点数据
      * @param {*} itemData 新增数据
      */
-    insert2Rows(index, parentRow, itemData) {
+    insert2Rows(index = 0, parentRow, itemData) {
       // 插入到第几行
       if (this.childListType) {
         // 作为子表 只插到最后一行
@@ -4681,11 +4927,15 @@ export default {
   }
 }
 
-.help-button {
-  font-size: 18px;
-  padding: 0 20px;
-  background: #ececf4;
-  border-radius: 8px;
-  cursor: pointer;
+.grid-button-box {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+
+  .el-button+.el-button {
+    margin-left: unset;
+  }
+
+  .button {}
 }
 </style>

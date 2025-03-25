@@ -53,3 +53,34 @@ export const resolveDefaultSrvApp = function (vm = {}) {
   }
   return app;
 };
+
+export function getDispExps(item, data, params={}) {
+  var result = true;
+  let mainData = params?.mainData;
+  //催办按钮只在 我的申请页面显示
+  if (params?.listType != "mine" && item.button_type == "urge") {
+    return false;
+  }
+
+  try {
+    var disp_exps = item.disp_exps;
+    if (disp_exps != undefined && disp_exps != "" && disp_exps != null) {
+      result = eval(disp_exps);
+    }
+  } catch (err) { }
+
+  // 使用后端返回的参数控制按钮显示隐藏
+  if(typeof item?._btn_index==='number'&&Array.isArray(data?._buttons)){
+    if(data._buttons[item._btn_index] === 1){
+      result = true
+    }
+  }
+
+  if (
+    item.button_type === "batchupdate" &&
+    this.showBatchEditButton !== true
+  ) {
+    result = false;
+  }
+  return result;
+}

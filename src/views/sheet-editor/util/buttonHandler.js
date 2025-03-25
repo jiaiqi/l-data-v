@@ -140,7 +140,7 @@ export function deleteRowData(params) {
     }
   } else {
     return {
-      type:'cancel'
+      type: 'cancel'
     }
   }
 }
@@ -532,6 +532,52 @@ export function customize_add(operate_item, data) {
 }
 export function customizeOperate(operate_item, data, callback) {
   console.log("customizeOperate", operate_item, data, callback);
+  if (butinfo.btn_cfg_json) {
+    butinfo.btn_cfg = butinfo.btn_cfg_json;
+    try {
+      butinfo.btn_cfg = JSON.parse(butinfo.btn_cfg_json);
+    } catch (e) {
+      //TODO handle the exception
+    }
+    if (butinfo?.btn_cfg?.sys_func === "支付") {
+      butinfo.more_config = "showDetailQR";
+      this.customizeurlFoward(butinfo, operateData);
+      return;
+    }
+  }
+  let type = butinfo.button_type;
+  var application = butinfo.application;
+  var operate_type = butinfo.operate_type;
+  if (type == "batchadd") {
+    this.customize_popup(butinfo, operateData);
+    return;
+  } else {
+  }
+  if (operate_type == "操作") {
+    this.customize_operate(butinfo, operateData);
+  } else if (operate_type == "流程申请") {
+    this.customize_apply(butinfo, operateData);
+  } else if (operate_type == "修改") {
+    this.customize_update(butinfo, operateData);
+  } else if (operate_type == "删除") {
+    this.customize_delete(butinfo, operateData);
+  } else if (operate_type == "增加") {
+    this.customize_add(butinfo, operateData);
+  } else if (operate_type == "草稿") {
+    return this.customize_save(butinfo, operateData);
+  } else if (operate_type.endsWith("URL跳转")) {
+    this.customizeurlFoward(butinfo, operateData);
+  } else if (operate_type.endsWith("地址访问")) {
+    this.addressRequest(butinfo, operateData);
+  } else if (operate_type.endsWith("跳转")) {
+    this.customize_forward(butinfo, operateData);
+  } else if (operate_type.endsWith("弹出")) {
+    this.customize_popup(butinfo, operateData, callback);
+  } else if (operate_type === "选择填充表格") {
+    this.customize_popup(butinfo, operateData);
+  } else {
+    alert("暂未实现");
+  }
 }
 
 export function onBatchApprove(data, button) {
