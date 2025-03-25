@@ -1243,6 +1243,9 @@ export default {
         if (['select', 'refresh'].includes(item.button_type)) {
           return false
         }
+        if(['增加弹出']?.includes(item.operate_type)){
+          return false
+        }
         if (item.permission === false) {
           return false
         }
@@ -2302,7 +2305,6 @@ export default {
       } else if ("customize" == type) {
         var operate_params_cfg = button.operate_params;
         var select_data = button.select_data;
-        debugger
         // if (
         //   (select_data == null ||
         //     select_data == undefined ||
@@ -2337,7 +2339,7 @@ export default {
             // dialog操作完成之后的回调 刷新列表
             // this.loadTableData();
 
-          });
+          },{vm:this});
         }
         // }
       } else if ("batch_approve" == type) {
@@ -4811,12 +4813,11 @@ export default {
     padding: 4px;
 
     .icon {
-      transform: rotate(0);
+      transform: rotate(180deg);
       transition: all .3s ease-in-out;
 
       &.show {
-        transform: rotate(180deg);
-
+        transform: rotate(0);
       }
     }
 
@@ -4956,7 +4957,7 @@ export default {
     transform: translateX(0);
     opacity: 1;
     width: unset;
-
+    z-index: 9;
   }
 
   // display: grid;
