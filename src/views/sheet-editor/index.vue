@@ -3421,6 +3421,11 @@ export default {
                       },
                       change: (event) => {
                         // 将html中的文件地址前缀替换为$bxFileAddress$
+                        if(isFkAutoComplete(column.__field_info)){
+                         return this.fkAutocompleteChange(event,row,column)
+                        }else if(isFk(column.__field_info)){
+                          return this.fkChange(event,row,column)
+                        }
                         event = this.replaceFileAddressSuffix(event);
                         this.$set(row, column.field, event);
                         // console.log("data-change:", row, column.field, event);
@@ -3431,6 +3436,7 @@ export default {
                         });
                         this.$refs["tableRef"].stopEditingCell();
                         this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                       
                       },
                     },
                   });

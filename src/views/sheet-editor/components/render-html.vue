@@ -359,8 +359,12 @@ export default {
           if (response && response.data && response.data.data) {
             let options = response.data.data;
             if(Array.isArray(options)&&options.length){
-              const data = options[0]
-              this.$emit('change',data[this.column.redundant.refedCol])
+              const data = {
+                option:options[0],
+                value: options[0][valColumn],
+                label: options[0][labelCol],
+              }
+              this.$emit('change',data)
             }
           }
           // 调用 callback 返回建议列表的数据
