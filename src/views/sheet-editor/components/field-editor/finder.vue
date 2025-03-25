@@ -21,6 +21,7 @@
   </el-select>
   <el-autocomplete
     class="inline-input"
+    ref="inputRef"
     v-model="inputVal"
     clearable
     :trigger-on-focus="true"
@@ -195,6 +196,39 @@ export default {
 
 
   methods: {
+    triggerAutocomplete(val) {
+      // this.$refs.autocomplete.activated = true
+      // this.searchKey = val
+      // this.$refs.autocomplete.getData(val)
+      this.querySearch(val).then((res) => {
+        if (res?.length > 1) {
+          // 模糊匹配结果数量大于1
+          // let matchedVal = res.find(
+          //   (item) => item.value === this.value
+          // );
+          // if (matchedVal) {
+          //   debugger;
+
+          //   this.$emit("select", cloneDeep(matchedVal));
+          // }
+          this.$parent.$parent.clearCellSelection()
+          this.inputVal = val
+          this.$nextTick(() => {
+            this.$refs.inputRef.activated = true
+            this.$refs?.inputRef?.focus();
+          })
+          // this.$refs.inputRef.getData(val)
+        } else if (res?.length) {
+          // 模糊匹配结果数量为1 直接选中
+          this.$emit("change", cloneDeep(res[0]));
+          if (this.$refs?.inputRef?.activated) {
+            // this.$nextTick(() => {
+            this.$refs.inputRef.activated = false;
+            // });
+          }
+        }
+      });
+    },
     onFocus() {
       this.$emit('focus')
       this.$parent.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
@@ -266,7 +300,7 @@ export default {
       const labelCol = this.optionListFinal.key_disp_col;
       let results = [];
       const url = `/${this.app}/select/${req.serviceName}`;
-      this.$http.post(url, req).then(((response) => {
+      return this.$http.post(url, req).then(((response) => {
         if (response && response.data && response.data.data) {
           let options = response.data.data;
           results = options.map((item) => {
@@ -282,6 +316,7 @@ export default {
         this.loading = false
         // 调用 callback 返回建议列表的数据
         cb?.(results);
+        return results
       }))
     },
   },

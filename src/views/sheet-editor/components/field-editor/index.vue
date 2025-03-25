@@ -20,6 +20,7 @@
       </el-date-picker>
       <finder
         class="finder"
+        ref="finder"
         :row="row"
         :app="app"
         :operate-type="operateType"
@@ -288,6 +289,9 @@ export default {
     },
   },
   methods: {
+    triggerAutocomplete(val){
+      this.$refs.finder?.triggerAutocomplete?.(val)
+    },
     onFinderChange(item) {
       if (isFk(this.fieldInfo)) {
         this.modelValue = item.value;

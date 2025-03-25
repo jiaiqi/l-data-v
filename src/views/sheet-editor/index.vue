@@ -71,12 +71,11 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <el-popover
-          width="400"
-          trigger="hover"
-          v-if="childListType !== 'add' && gridButton && gridButton.length"
-        >
-          <div class="grid-button-box">
+        <div class="relative">
+          <div
+            class="grid-button-box"
+            :class="{ show: showGridButton }"
+          >
             <el-button
               size="mini"
               type="primary"
@@ -92,35 +91,20 @@
             class="icon-button mr-1"
             size="mini"
             type="primary"
-            title="操作按钮"
-            slot="reference"
+            @click="showGridButton = !showGridButton"
           >
-            <i class="i-ic-baseline-density-medium"></i>
+            <i
+              class="i-ic-sharp-keyboard-double-arrow-right"
+              v-if="showGridButton"
+              title="收起操作按钮"
+            ></i>
+            <i
+              class="i-ic-sharp-keyboard-double-arrow-left"
+              title="展开操作按钮"
+              v-else
+            ></i>
           </el-button>
-        </el-popover>
-
-        <!-- <el-dropdown v-if="childListType !== 'add' && gridButton && gridButton.length">
-          <el-button
-            class="icon-button"
-            size="mini"
-            type="primary"
-            title="操作按钮"
-          >
-            <i class="i-ic-baseline-density-medium"></i>
-          </el-button>
-          <el-dropdown-menu slot="dropdown">
-            <el-dropdown-item v-for="item in gridButton">
-              <el-button
-                size="mini"
-                type="primary"
-                plain
-                style="min-width: 100px;"
-                :title="item.button_name"
-              >
-                {{ item.button_name }}
-              </el-button></el-dropdown-item>
-          </el-dropdown-menu>
-        </el-dropdown> -->
+        </div>
 
         <el-button
           class="icon-button"
@@ -265,7 +249,7 @@
     />
     <out-form-dialog ref="outFormDialog"></out-form-dialog>
     <field-editor
-      ref="fieldEditorDialog"
+      ref="fieldEditor"
       :disabled="disabled"
       :detailButton="detailButton"
       :serviceName="serviceName"
@@ -318,7 +302,7 @@ import {
   extractAndFormatDatesOrTimestamps,
   extractConcatNumbersWithSingleDecimal,
 } from "@/common/DataUtil.js";
-import { rowButtonClick,customizeOperate } from "./util/buttonHandler.js";
+import { rowButtonClick, customizeOperate } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
 import OutFormDialog from "./components/out-comp/dialog.vue";
@@ -410,6 +394,7 @@ export default {
   },
   data() {
     return {
+      showGridButton: false,
       bx_auth_ticket: null,
       currentSelection: null,
       fieldEditorParams: null,
@@ -994,9 +979,9 @@ export default {
           if (!colType) {
             return;
           }
-          let oldRowData = this.oldTableData?.find(
-            (item) => item.__id === row.__id
-          );
+          // let oldRowData = this.oldTableData?.find(
+          //   (item) => item.__id === row.__id
+          // );
           let currentRow = this.tableData?.find(
             (item) => item.__id === row.__id
           );
@@ -1037,6 +1022,14 @@ export default {
               return false;
             }
           }
+          if(isFkAutoComplete(column.__field_info)){
+            this.buildFieldEditorParams(row,column)
+            this.showFieldEditor = true;
+            this.$nextTick(()=>{
+              this.$refs.fieldEditor?.triggerAutocomplete?.(changeValue)
+            })
+            return false
+          }
           if (["DateTime", "Date"].includes(colType)) {
             // 日期时间类型格式化
             let dateStr = extractAndFormatDatesOrTimestamps(changeValue);
@@ -1069,6 +1062,7 @@ export default {
               return false;
             }
           }
+          
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
@@ -1884,6 +1878,9 @@ export default {
         })
       }
     },
+    clearCellSelection(){
+      this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+    },
     fkChange(item, row, column) {
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
@@ -1964,7 +1961,7 @@ export default {
       // this.showFieldEditor = false;
     },
     dialogClose() {
-      this.$parent?.setCellSelection?.()
+      // this.$parent?.setCellSelection?.()
       this.fieldEditorParams = {};
     },
     buildFieldEditorParams(row, column, params) {
@@ -2343,7 +2340,7 @@ export default {
           customizeOperate(button, this.multipleSelection, (e) => {
             // dialog操作完成之后的回调 刷新列表
             // this.loadTableData();
-            
+
           });
         }
         // }
@@ -4050,7 +4047,10 @@ export default {
         sessionStorage.getItem("bx_auth_ticket") &&
         this.bx_auth_ticket !== sessionStorage.getItem("bx_auth_ticket")
       ) {
-        await this.initPage();
+        if (confirm('登录信息更新，即将刷新页面')) {
+          await this.initPage(false);
+        }
+        return
       }
       this.stopAutoSave();
 
@@ -4928,13 +4928,31 @@ export default {
 }
 
 .grid-button-box {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
+  overflow: hidden;
+  transition: all .3s ease;
+  position: fixed;
+  right: 120px;
+  transform: translateX(100%);
+  background-color: #fff;
+  opacity: 0;
+  width: 0;
+  padding: 0 5px;
 
-  .el-button+.el-button {
-    margin-left: unset;
+  &.show {
+    display: flex;
+    transform: translateX(0);
+    opacity: 1;
+    width: unset;
+
   }
+
+  // display: grid;
+  // grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  // gap: 10px;
+
+  // .el-button+.el-button {
+  //   margin-left: unset;
+  // }
 
   .button {}
 }
