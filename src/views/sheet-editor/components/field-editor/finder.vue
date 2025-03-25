@@ -1,6 +1,7 @@
 <template>
-  <el-select
+  <!-- <el-select
     v-model="inputVal"
+    ref="inputRef"
     filterable
     remote
     :placeholder="placeholder"
@@ -18,7 +19,7 @@
       :value="item.value"
     >
     </el-option>
-  </el-select>
+  </el-select> -->
   <el-autocomplete
     class="inline-input"
     ref="inputRef"
@@ -28,13 +29,13 @@
     :fetch-suggestions="querySearch"
     :placeholder="placeholder"
     value-key="label"
-    suffix-icon="el-icon-edit"
+    :suffix-icon="isFk?'el-icon-arrow-down':'el-icon-edit'"
     :clearable="false"
     @focus="onFocus"
     @blur="$emit('blur')"
     @select="handleSelect"
     @clear="handleClear"
-    v-else
+    @change="handleChange"
   >
   </el-autocomplete>
 </template>
@@ -44,7 +45,7 @@ import { cloneDeep } from 'lodash-es';
 import { isFk } from "@/utils/sheetUtils";
 
 export default {
-  name: "FkAutocomplete",
+  name: "Finder",
   props: {
     app: {
       type: String,
@@ -75,7 +76,12 @@ export default {
     value: {
       immediate: true,
       handler(newValue, oldValue) {
+        // if ([null, undefined, ''].includes(newValue) && [null, undefined, ''].includes(oldValue)) {
+        //   return
+        // }
         if (newValue !== oldValue) {
+          this.inputVal = newValue;
+        }else if(newValue!==this.inputVal){
           this.inputVal = newValue;
         }
       }
@@ -93,6 +99,7 @@ export default {
   },
   beforeDestroy() {
     this.options = [];
+    this.inputVal = ''
   },
   computed: {
     placeholder() {
@@ -201,30 +208,25 @@ export default {
       // this.searchKey = val
       // this.$refs.autocomplete.getData(val)
       this.querySearch(val).then((res) => {
+        this.$parent.$parent.clearCellSelection()
         if (res?.length > 1) {
           // 模糊匹配结果数量大于1
           // let matchedVal = res.find(
-          //   (item) => item.value === this.value
+          //   (item) => item.value === val
           // );
           // if (matchedVal) {
-          //   debugger;
-
-          //   this.$emit("select", cloneDeep(matchedVal));
+          //   this.$emit("change", cloneDeep(matchedVal));
           // }
-          this.$parent.$parent.clearCellSelection()
           this.inputVal = val
           this.$nextTick(() => {
             this.$refs.inputRef.activated = true
             this.$refs?.inputRef?.focus();
           })
-          // this.$refs.inputRef.getData(val)
         } else if (res?.length) {
           // 模糊匹配结果数量为1 直接选中
           this.$emit("change", cloneDeep(res[0]));
           if (this.$refs?.inputRef?.activated) {
-            // this.$nextTick(() => {
             this.$refs.inputRef.activated = false;
-            // });
           }
         }
       });
@@ -274,6 +276,9 @@ export default {
           }
         });
       }
+    },
+    handleChange(val){
+      console.log(val);
     },
     handleSelect(val) {
       console.log(val);

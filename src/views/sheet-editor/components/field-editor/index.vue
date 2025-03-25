@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!['RichText', 'MultilineText'].includes(editorType) && editorVisible">
+  <div v-if="setPosition && !['RichText', 'MultilineText'].includes(editorType) && value">
     <div
       class="editor editor-wrap"
       :class="{ 'focus': onfocus === true }"
@@ -41,7 +41,7 @@
     :before-close="handleClose"
     :close-on-click-modal="false"
     width="90vw"
-    v-else-if="editorVisible"
+    v-else-if="editorVisible&&['MultilineText','RichText'].includes(editorType)"
   >
     <div
       class="remark"
@@ -155,7 +155,7 @@ import { isRichText, isFk, isFkAutoComplete } from '@/utils/sheetUtils.js'
 import Finder from "./finder.vue";
 import RichTextEditor from "./rich-text.vue";
 export default {
-  name: "FieldEditorDialog",
+  name: "FieldEditor",
   components: {
     RichTextEditor,
     Finder,
@@ -211,17 +211,15 @@ export default {
         let top = this.onfocus ? this.position.top : this.position.top + 3
         let width = this.onfocus ? this.position.width : this.position.width - 8
         let height = this.onfocus ? this.position.height : this.position.height - 8
-
-        return {
+        const pos = {
           left: left + "px",
           top: top + "px",
           width: width + "px",
           height: height + "px",
-        };
+        }
+        return `left:${left}px;top:${top}px;width:${width}px;height:${height}px;`
       } else {
-        return {
-          display: "none",
-        };
+        return ""
       }
     },
     hasChange() {
@@ -236,6 +234,7 @@ export default {
     },
 
     editorType() {
+      if (!this.editorVisible) return false
       const colType = this.fieldInfo?.col_type;
       if (isRichText(this.fieldInfo)) {
         return "RichText";
@@ -265,10 +264,14 @@ export default {
         }
       },
     },
-    value(newVal) {
-      // 监听外部值变化
-      this.editorVisible = newVal;
-      this.stopAutoSave();
+    value: {
+      immediate: true,
+      handler(newVal) {
+        // 监听外部值变化
+        console.log('editorVisible:', newVal);
+        this.editorVisible = newVal;
+        this.stopAutoSave();
+      }
     },
     editorVisible(newVal) {
       // 触发v-model更新
@@ -280,6 +283,7 @@ export default {
         this.srcList = [];
         this.url = "";
         this.initialIndex = 0;
+        this.modelValue = ''
       }
     },
     modelValue(newVal) {
@@ -289,7 +293,7 @@ export default {
     },
   },
   methods: {
-    triggerAutocomplete(val){
+    triggerAutocomplete(val) {
       this.$refs.finder?.triggerAutocomplete?.(val)
     },
     onFinderChange(item) {
@@ -381,13 +385,15 @@ export default {
   mounted() {
     document.addEventListener("keydown", this.onKeyDown);
     this.$parent.$refs.tableRef.$el.querySelector('.ve-table-content-wrapper').appendChild(this.$el)
-    if (!['Date', 'DateTime', 'FkAutocomplete'].includes(this.editorType)) {
+    if (!['Date', 'DateTime', 'FkAutocomplete', "FK"].includes(this.editorType)) {
       this.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
     }
   },
   beforeDestroy() {
     document.removeEventListener("keydown", this.onKeyDown);
     this.stopAutoSave();
+    this.modelValue = ''
+
   },
 };
 </script>
@@ -430,7 +436,7 @@ export default {
       display: flex;
       align-items: center;
       left: 0;
-   
+
     }
 
     .el-input__suffix {

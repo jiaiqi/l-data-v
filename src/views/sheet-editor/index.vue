@@ -473,23 +473,21 @@ export default {
                   ".ve-table-body-td.ve-table-cell-selection"
                 );
                 if (currentCellEl) {
-                  if (["Date", "DateTime"].includes(colType)) {
-                    event.stopPropagation();
-                    // const position = getElementFullInfo(currentCellEl);
-                    this.buildFieldEditorParams(row, column);
-                    this.showFieldEditor = true;
-                  } else if (isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
-                    event.stopPropagation();
-                    this.buildFieldEditorParams(row, column);
-                    this.showFieldEditor = true;
-                  } else {
-                    this.buildFieldEditorParams();
-                    this.showFieldEditor = false;
-                  }
-
-                  // console.log(
-                  //   `offsetLeft:${offsetLeft},offsetTop:${offsetTop},offsetWidth:${offsetWidth},offsetHeight:${offsetHeight}`
-                  // );
+                  this.fieldEditorParams?.html ? this.fieldEditorParams.html = '' : ''
+                  this.buildFieldEditorParams();
+                  this.showFieldEditor = false;
+                  this.$nextTick(() => {
+                    if (["Date", "DateTime"].includes(colType)) {
+                      event.stopPropagation();
+                      // const position = getElementFullInfo(currentCellEl);
+                      this.buildFieldEditorParams(row, column);
+                      this.showFieldEditor = true;
+                    } else if (isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
+                      event.stopPropagation();
+                      this.buildFieldEditorParams(row, column);
+                      this.showFieldEditor = true;
+                    }
+                  })
                 }
               }
             },
@@ -1022,12 +1020,13 @@ export default {
               return false;
             }
           }
-          if(isFkAutoComplete(column.__field_info)){
-            this.buildFieldEditorParams(row,column)
+          if (isFkAutoComplete(column.__field_info) || isFk(column.__field_info) && this.showFieldEditor !== true) {
+            this.buildFieldEditorParams(row, column)
             this.showFieldEditor = true;
-            this.$nextTick(()=>{
+            this.$nextTick(() => {
               this.$refs.fieldEditor?.triggerAutocomplete?.(changeValue)
             })
+            this.clearCellSelection()
             return false
           }
           if (["DateTime", "Date"].includes(colType)) {
@@ -1062,7 +1061,7 @@ export default {
               return false;
             }
           }
-          
+
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
@@ -1878,10 +1877,11 @@ export default {
         })
       }
     },
-    clearCellSelection(){
+    clearCellSelection() {
       this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
     },
     fkChange(item, row, column) {
+      this.setCellSelection()
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
@@ -1899,6 +1899,7 @@ export default {
       );
     },
     fkAutocompleteChange(item, row, column) {
+      this.setCellSelection()
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
@@ -1962,12 +1963,12 @@ export default {
     },
     dialogClose() {
       // this.$parent?.setCellSelection?.()
-      this.fieldEditorParams = {};
+      this.fieldEditorParams = null;
     },
     buildFieldEditorParams(row, column, params) {
-      this.showFieldEditor = false;
       if (!row || !column) {
-        this.fieldEditorParams = {};
+        this.fieldEditorParams = null;
+        this.showFieldEditor = false
         return;
       }
       let editable = true;
