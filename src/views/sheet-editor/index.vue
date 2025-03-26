@@ -4058,16 +4058,30 @@ export default {
         _recordManager,
       };
     },
+    async refreshV2() {
+      const v2Res = await getServiceV2(
+        this.serviceName,
+        this.listType,
+        this.srvApp,
+        true
+      );
+      if (res?.state === 'SUCCESS') {
+        this.v2data = v2Res.data
+      } else {
+        this.$message.error('登录信息更新，请重新加载页面')
+      }
+      return v2Res?.data
+    },
     async saveData(params = {}) {
       // const reqData = this.buildReqParams;
       if (
         sessionStorage.getItem("bx_auth_ticket") &&
         this.bx_auth_ticket !== sessionStorage.getItem("bx_auth_ticket")
       ) {
-        if (confirm('登录信息更新，即将刷新页面')) {
-          await this.initPage(false);
-        }
-        return
+        // if (confirm('登录信息更新，即将刷新页面')) {
+        //   await this.initPage(false);
+        // }
+        await this.refreshV2()
       }
       this.stopAutoSave();
 
@@ -4595,7 +4609,7 @@ export default {
         sessionStorage.getItem("bx_auth_ticket") &&
         this.bx_auth_ticket !== sessionStorage.getItem("bx_auth_ticket")
       ) {
-        return this.initPage();
+        await this.refreshV2()
       }
       if (!unfoldIds && this.listType === "treelist" && this.treeInfo.idCol) {
         unfoldIds = this.tableData

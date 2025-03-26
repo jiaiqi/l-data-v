@@ -125,7 +125,7 @@
             stopAutoSave();
             "
           >
-            保存
+            仅保存
             <span
               v-if="autoSaveTimeout && autoSaveTimeout > 0"
               class="text-xs"
