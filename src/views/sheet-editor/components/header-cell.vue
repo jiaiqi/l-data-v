@@ -18,8 +18,14 @@
         <el-tooltip class="item" effect="dark" content="必填" placement="bottom-center" v-if="column.isRequired">
           <span class="required color-red m-r-2 font-bold">*</span>
         </el-tooltip>
-        <el-tooltip class="item" effect="dark" content="当前列可编辑" placement="bottom-end" v-if="column.editable">
+        <el-tooltip class="item" effect="dark" content="可编辑列" placement="bottom-end" v-if="column.editable">
           <i class="el-icon-edit-outline"></i>
+        </el-tooltip>
+        <el-tooltip class="item" effect="dark" content="autocomplete" placement="bottom-end" v-if="isFkAutoComplete(column)">
+          <i class="el-icon-edit"></i>
+        </el-tooltip>
+        <el-tooltip class="item" effect="dark" content="fk" placement="bottom-end" v-if="isFk(column)">
+          <i class="el-icon-search"></i>
         </el-tooltip>
       </div>
 
@@ -42,6 +48,8 @@
 
 <script>
 import headerFilter from "./header-filter.vue";
+import { isFkAutoComplete ,isFk} from '@/utils/sheetUtils.js'
+
 export default {
   components: {
     headerFilter,
@@ -61,6 +69,8 @@ export default {
       oldCheckedOption: [],
       onFilter: false,
       filterVisible: false,
+      isFkAutoComplete,
+      isFk
     };
   },
   methods: {
