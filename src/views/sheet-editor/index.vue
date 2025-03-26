@@ -251,7 +251,8 @@
       :app="srvApp"
       :listType="listType"
       :keyDispCol="(v2data && v2data.key_disp_col) || ''"
-      v-model="showFieldEditor"
+      :value="currentCellValue"
+      :show.sync="showFieldEditor"
       v-bind="fieldEditorParams"
       v-if="showFieldEditor"
       @change="dialogChange"
@@ -1209,6 +1210,7 @@ export default {
     };
   },
   watch: {
+
     tableData: {
       deep: true,
       handler(newValue, oldValue) {
@@ -1241,6 +1243,12 @@ export default {
   },
   computed: {
     ...mapState(useUserStore, ["userInfo", "tenants"]),
+    currentCellValue() {
+      if (this.fieldEditorParams?.row && this.fieldEditorParams?.column) {
+        const { row, column } = this.fieldEditorParams
+        return row[column.field]
+      }
+    },
     gridButton() {
       return this.v2data?.gridButton?.filter(item => {
         if (['select', 'refresh'].includes(item.button_type)) {
@@ -1996,8 +2004,6 @@ export default {
       );
       const position = this.$refs?.tableRef?.$refs?.cellSelectionRef?.cellSelectionRect?.currentCellRect;
       this.fieldEditorParams = {
-        html: row[column.field],
-        cellValue: row[column.field],
         oldValue: oldRowData?.[column.field],
         editable,
         row,

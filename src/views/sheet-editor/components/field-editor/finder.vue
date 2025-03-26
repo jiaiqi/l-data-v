@@ -29,7 +29,6 @@
     :fetch-suggestions="querySearch"
     :placeholder="placeholder"
     value-key="label"
-    :suffix-icon="isFk?'el-icon-arrow-down':'el-icon-edit'"
     :clearable="false"
     @focus="onFocus"
     @blur="$emit('blur')"

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="setPosition && !['RichText', 'MultilineText'].includes(editorType) && value">
+  <div v-if="setPosition && !['RichText', 'MultilineText'].includes(editorType) && show">
     <div
       class="editor editor-wrap"
       :class="{ 'focus': onfocus === true }"
@@ -41,7 +41,7 @@
     :before-close="handleClose"
     :close-on-click-modal="false"
     width="90vw"
-    v-else-if="editorVisible&&['MultilineText','RichText'].includes(editorType)"
+    v-else-if="editorVisible && ['MultilineText', 'RichText'].includes(editorType)"
   >
     <div
       class="remark"
@@ -162,11 +162,14 @@ export default {
   },
   props: {
     value: {
-      // v-model绑定
+      // v-model绑定 控制显示隐藏
+      type: [String, Number],
+      default: '',
+    },
+    show: {
       type: Boolean,
       default: false,
     },
-    html: [String, Number],
     oldValue: [String, Number],
     editable: Boolean,
     disabled: Boolean,
@@ -191,7 +194,7 @@ export default {
       unfold: false, //默认收起
       loadingFold: false,
       dialogFullscreen: false,
-      editorVisible: this.value, // 控制对话框显示
+      editorVisible: this.show, // 控制对话框显示
       autoSaveInterval: null, //用于储存定时保存的定时器
       autoSaveTimeout: 0, //自动保存倒计时
       visible: false,
@@ -206,7 +209,7 @@ export default {
       return this.row?.__flag || 'update'
     },
     setPosition() {
-      if (this.position && this.position.width && this.value) {
+      if (this.position && this.position.width && this.show) {
         let left = this.onfocus ? this.position.left : this.position.left + 3
         let top = this.onfocus ? this.position.top : this.position.top + 3
         let width = this.onfocus ? this.position.width : this.position.width - 8
@@ -223,7 +226,7 @@ export default {
       }
     },
     hasChange() {
-      return this.modelValue !== this.html;
+      return this.modelValue !== this.value;
     },
     setStyle() {
       let str = "";
@@ -256,7 +259,7 @@ export default {
     },
   },
   watch: {
-    html: {
+    value: {
       immediate: true,
       handler(newVal = "") {
         if (this.modelValue !== newVal) {
@@ -264,18 +267,22 @@ export default {
         }
       },
     },
-    value: {
+    show: {
       immediate: true,
       handler(newVal) {
         // 监听外部值变化
         console.log('editorVisible:', newVal);
-        this.editorVisible = newVal;
-        this.stopAutoSave();
+        if (this.editorVisible !== newVal) {
+          this.editorVisible = newVal;
+          this.stopAutoSave();
+        }
       }
     },
     editorVisible(newVal) {
       // 触发v-model更新
-      this.$emit("input", newVal);
+      if (newVal !== this.show) {
+        this.$emit("update:show", newVal);
+      }
       if (newVal) {
         window.addEventListener("dblclick", this.dblListener);
       } else {
@@ -287,7 +294,7 @@ export default {
       }
     },
     modelValue(newVal) {
-      if (newVal !== this.html) {
+      if (newVal !== this.value) {
         this.autoSave();
       }
     },
@@ -326,7 +333,7 @@ export default {
     },
     autoSave() {
       this.stopAutoSave();
-      if (this.modelValue === this.html) {
+      if (this.modelValue === this.value) {
         console.log("没有需要保存的内容");
         return;
       }
