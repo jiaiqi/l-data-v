@@ -247,25 +247,28 @@
       @select="onRowButton"
     />
     <out-form-dialog ref="outFormDialog"></out-form-dialog>
-    <field-editor
-      ref="fieldEditor"
-      :disabled="disabled"
-      :detailButton="detailButton"
-      :serviceName="serviceName"
-      :app="srvApp"
-      :listType="listType"
-      :keyDispCol="(v2data && v2data.key_disp_col) || ''"
-      :value="currentCellValue"
-      :show.sync="showFieldEditor"
-      v-bind="fieldEditorParams"
-      v-if="showFieldEditor"
-      @change="dialogChange"
-      @fk-autocomplete-change="fkAutocompleteChange"
-      @fk-change="fkChange"
-      @fks-change="fksChange"
-      @save="dialogChange"
-      @close="dialogClose"
-    ></field-editor>
+
+    <Teleport to=".ve-table-content-wrapper">
+      <field-editor
+        ref="fieldEditor"
+        :disabled="disabled"
+        :detailButton="detailButton"
+        :serviceName="serviceName"
+        :app="srvApp"
+        :listType="listType"
+        :keyDispCol="(v2data && v2data.key_disp_col) || ''"
+        :value="currentCellValue"
+        :show.sync="showFieldEditor"
+        v-bind="fieldEditorParams"
+        v-if="showFieldEditor"
+        @change="dialogChange"
+        @fk-autocomplete-change="fkAutocompleteChange"
+        @fk-change="fkChange"
+        @fks-change="fksChange"
+        @save="dialogChange"
+        @close="dialogClose"
+      ></field-editor>
+    </Teleport>
   </div>
 </template>
 
@@ -299,6 +302,8 @@ import IconFold from "../../components/icons/icon-fold.vue";
 import IconUnfold from "../../components/icons/icon-unfold.vue";
 import LoadingView from "./components/loading/index.vue";
 import ChooseTenant from "./components/choose-tenant/index.vue";
+import Teleport from 'vue2-teleport';
+
 import {
   extractAndFormatDatesOrTimestamps,
   extractConcatNumbersWithSingleDecimal,
@@ -399,6 +404,7 @@ export default {
     DropMenu,
     OutFormDialog,
     FieldEditor,
+    Teleport
   },
   data() {
     return {
@@ -503,9 +509,9 @@ export default {
               console.log("cell dblclick::", row, column, rowIndex, event);
               const colType = column?.__field_info?.col_type;
               if (!colType) return;
-              const currentCellEl =
-                this.$refs.tableRef?.$refs?.cellSelectionRef?.currentCellEl;
-              console.log({ ...currentCellEl });
+              // const currentCellEl =
+              //   this.$refs.tableRef?.$refs?.cellSelectionRef?.currentCellEl;
+              // console.log({ ...currentCellEl });
 
               if (column.edit) {
                 if (["Note", "RichText", "snote"].includes(colType)) {
@@ -516,8 +522,9 @@ export default {
                   this.showFieldEditor = true;
                   // event.stopPropagation()
                   this.$nextTick(() => {
-                    this.$refs["tableRef"].stopEditingCell();
-                    this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                    // this.$refs["tableRef"].stopEditingCell();
+                    debugger
+                    this.clearCellSelection();
                   });
                   return false;
 
@@ -529,7 +536,7 @@ export default {
                   this.buildFieldEditorParams(row, column);
                   this.showFieldEditor = true;
                   this.$nextTick(() => {
-                    this.$refs["tableRef"].stopEditingCell();
+                    this.clearCellSelection();
                   });
                   return false;
                 } else if (["Date", "DateTime"].includes(colType)) {
@@ -541,7 +548,6 @@ export default {
                   if (column?.__field_info?.redundant_options?._target_column) {
                     // fk-autocomplete
                     event.stopPropagation();
-
                     this.$nextTick(() => {
                       this.$refs["tableRef"].stopEditingCell();
                     })
@@ -861,7 +867,7 @@ export default {
                               defaultValue: element,
                             });
                             this.$refs["tableRef"].stopEditingCell();
-                            this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                            this.clearCellSelection();
                           }
                         }
                       }
@@ -898,7 +904,7 @@ export default {
                 defaultValue: row[col.field],
               });
               this.$refs["tableRef"].stopEditingCell();
-              this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+              this.clearCellSelection();
             }
           }
         },
@@ -963,7 +969,7 @@ export default {
             }
             this.$nextTick(() => {
               this.$refs["tableRef"].stopEditingCell();
-              this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+              this.clearCellSelection();
             });
             return false;
           }
@@ -1258,8 +1264,8 @@ export default {
         return row[column.field]
       }
     },
-    currentRowData(){
-      if(typeof this.currentRowIndex==='number' && this.currentRowIndex>-1){
+    currentRowData() {
+      if (typeof this.currentRowIndex === 'number' && this.currentRowIndex > -1) {
         return this.tableData[this.currentRowIndex]
       }
     },
@@ -1279,9 +1285,9 @@ export default {
     },
     rowButton() {
       return this.v2data?.rowButton
-        ?.filter((item,index) => {
+        ?.filter((item, index) => {
           item._index = index
-          return !["edit"].includes(item.button_type)&&item.permission;
+          return !["edit"].includes(item.button_type) && item.permission;
         })
         ?.map((item) => {
           return {
@@ -1902,7 +1908,7 @@ export default {
       }
     },
     clearCellSelection() {
-      this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+      this.$refs?.tableRef?.clearCellSelectionCurrentCell?.()
     },
     fksChange(item, row, column) {
       this.setCellSelection()
@@ -1977,7 +1983,7 @@ export default {
               defaultValue: row[fkColumn],
             });
             this.$refs["tableRef"].stopEditingCell();
-            this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+            this.clearCellSelection();
           }
           this.handlerRedundant(
             data,
@@ -1999,7 +2005,7 @@ export default {
         defaultValue: event || null,
       });
       this.$refs["tableRef"].stopEditingCell();
-      // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+      // this.clearCellSelection();
       if (type === "save") {
         this.$nextTick(() => {
           this.saveData();
@@ -2008,7 +2014,7 @@ export default {
       // this.showFieldEditor = false;
     },
     dialogClose() {
-      // this.$parent?.setCellSelection?.()
+      this.$parent?.setCellSelection?.()
       this.fieldEditorParams = null;
     },
     clearFieldEditorParams() {
@@ -2785,7 +2791,7 @@ export default {
             defaultValue: row[col.field],
           });
           this.$refs["tableRef"]?.stopEditingCell?.();
-          // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+          // this.clearCellSelection();
         }
       }
     },
@@ -3056,7 +3062,7 @@ export default {
                     },
                     on: {
                       onfocus: () => {
-                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        this.clearCellSelection();
                       },
                       input: (event) => {
                         row[column.field] = event;
@@ -3067,7 +3073,7 @@ export default {
                           defaultValue: event,
                         });
                         this.$refs["tableRef"].stopEditingCell();
-                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        this.clearCellSelection();
                       },
                       select: (rawData) => {
                         // 对应的fk字段
@@ -3092,7 +3098,7 @@ export default {
                                 defaultValue: row[fkColumn],
                               });
                               this.$refs["tableRef"].stopEditingCell();
-                              this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                              this.clearCellSelection();
                             }
                             console.log("fkAutocomplete-select", rawData);
 
@@ -3149,12 +3155,12 @@ export default {
                             defaultValue: row[cfg.case_col],
                           });
                           this.$refs["tableRef"].stopEditingCell();
-                          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                          this.clearCellSelection();
                           // this.$set(this.tableData, rowIndex, row);
                         }
                       },
                       onfocus: () => {
-                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        this.clearCellSelection();
                       },
                       modelChange: (event) => {
                         console.log("fkSelector-modelChange", event);
@@ -3175,7 +3181,7 @@ export default {
                           defaultValue: event.value,
                         });
                         this.$refs["tableRef"].stopEditingCell();
-                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        this.clearCellSelection();
                         console.log(
                           "fkSelector-select-handlerRedundant",
                           event
@@ -3197,7 +3203,7 @@ export default {
                           defaultValue: event,
                         });
                         this.$refs["tableRef"].stopEditingCell();
-                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        this.clearCellSelection();
                         // this.$set(this.tableData, rowIndex, row);
                         // this.handlerRedundant(
                         //   {},
@@ -3261,7 +3267,7 @@ export default {
                       //     defaultValue: event || null,
                       //   });
                       //   this.$refs["tableRef"].stopEditingCell();
-                      //   this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                      //   this.clearCellSelection();
                       // },
                       input: (event) => {
                         console.log("el-date-picker-input", event);
@@ -3272,7 +3278,7 @@ export default {
                           defaultValue: event || null,
                         });
                         this.$refs["tableRef"].stopEditingCell();
-                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        this.clearCellSelection();
                       },
                     },
                   });
@@ -3309,7 +3315,7 @@ export default {
                             defaultValue: event,
                           });
                           this.$refs["tableRef"].stopEditingCell();
-                          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                          this.clearCellSelection();
                         },
                       },
                     },
@@ -3355,7 +3361,7 @@ export default {
                             defaultValue: event.toString(),
                           });
                           this.$refs["tableRef"].stopEditingCell();
-                          this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                          this.clearCellSelection();
                         },
                       },
                     },
@@ -3417,7 +3423,7 @@ export default {
                           //   defaultValue: event || null,
                           // });
                           // this.$refs["tableRef"].stopEditingCell();
-                          // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                          // this.clearCellSelection();
                           return;
                         }
                         this.$set(row, column.field, event);
@@ -3433,7 +3439,7 @@ export default {
                         //   defaultValue: event || null,
                         // });
                         // this.$refs["tableRef"].stopEditingCell();
-                        // this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        // this.clearCellSelection();
                         // this.calcReqData = this.buildReqParams()
                       },
                     },
@@ -3479,7 +3485,7 @@ export default {
                         // this.$set(row,'_$vue',vm)
                       },
                       onfocus: () => {
-                        this.$refs["tableRef"].clearCellSelectionCurrentCell();
+                        this.clearCellSelection();
                       },
                       onpopup: (val) => {
                         this.onPopup = val;
@@ -3491,6 +3497,7 @@ export default {
                         if (event === "showRichEditor") {
                           this.buildFieldEditorParams(row, column);
                           this.showFieldEditor = true;
+                          this.clearCellSelection()
                         }
                       },
                       change: (event) => {
@@ -3509,7 +3516,7 @@ export default {
                           defaultValue: event || null,
                         });
                         this.$refs["tableRef"].stopEditingCell();
-                        this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+                        this.clearCellSelection();
 
                       },
                     },
@@ -3739,7 +3746,7 @@ export default {
           //     defaultValue: rawData?.[item.redundant.refedCol] || null,
           //   });
           //   this.$refs["tableRef"]?.stopEditingCell?.();
-          //   this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
+          //   this.clearCellSelection();
           // }
         });
       }

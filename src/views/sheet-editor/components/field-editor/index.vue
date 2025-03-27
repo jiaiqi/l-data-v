@@ -1,39 +1,38 @@
 <template>
-  <div v-if="setPosition && !['RichText', 'MultilineText'].includes(editorType) && show">
-    <div
-      class="editor editor-wrap"
-      :class="{ 'focus': onfocus === true }"
-      :style="setPosition"
-      @click.stop=""
+  <div
+    class="editor-wrap"
+    :class="{ 'focus': onfocus === true }"
+    :style="setPosition"
+    @click.stop=""
+    v-if="setPosition && !['RichText', 'MultilineText'].includes(editorType) && show"
+  >
+    <el-date-picker
+      v-model="modelValue"
+      align="right"
+      :type="editorType.toLowerCase()"
+      placeholder="选择日期"
+      :value-format="dateFormat"
+      :clearable="false"
+      @change="$emit('change', modelValue, row, column)"
+      @blur="handleClose"
+      v-if="['Date', 'DateTime'].includes(editorType)"
     >
-      <el-date-picker
-        v-model="modelValue"
-        align="right"
-        :type="editorType.toLowerCase()"
-        placeholder="选择日期"
-        :value-format="dateFormat"
-        :clearable="false"
-        @change="$emit('change', modelValue, row, column)"
-        @blur="handleClose"
-        v-if="['Date', 'DateTime'].includes(editorType)"
-      >
-      </el-date-picker>
-      <finder
-        class="finder"
-        ref="finder"
-        :row="row"
-        :column="fieldInfo"
-        :app="app"
-        :operate-type="operateType"
-        :field-info="fieldInfo"
-        v-model="modelValue"
-        @change="onFinderChange"
-        @focus="onfocus = true"
-        @blur="onfocus = false"
-        v-else-if="['autocomplete', 'fk', 'fks', 'fkjsons', 'fkjson'].includes(editorType)"
-      >
-      </finder>
-    </div>
+    </el-date-picker>
+    <finder
+      class="finder"
+      ref="finder"
+      :row="row"
+      :column="fieldInfo"
+      :app="app"
+      :operate-type="operateType"
+      :field-info="fieldInfo"
+      v-model="modelValue"
+      @change="onFinderChange"
+      @focus="onfocus = true"
+      @blur="onfocus = false"
+      v-else-if="['autocomplete', 'fk', 'fks', 'fkjsons', 'fkjson'].includes(editorType)"
+    >
+    </finder>
   </div>
 
   <el-dialog
@@ -323,7 +322,7 @@ export default {
         this.$emit('fk-autocomplete-change', item, this.row, this.column);
       }
       const colType = this.fieldInfo.col_type
-      if(['fks','fkjson','fkjsons'].includes(colType)){
+      if (['fks', 'fkjson', 'fkjsons'].includes(colType)) {
         this.$emit('fks-change', item, this.row, this.column);
       }
     },
@@ -404,10 +403,10 @@ export default {
   },
   mounted() {
     document.addEventListener("keydown", this.onKeyDown);
-    this.$parent.$refs.tableRef.$el.querySelector('.ve-table-content-wrapper').appendChild(this.$el)
-    if (!['Date', 'DateTime', 'autocomplete', "fk",'fks','fkjson','fkjsons'].includes(this.editorType)) {
-      this.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
-    }
+    // this.$parent.$refs.tableRef.$el.querySelector('.ve-table-content-wrapper').appendChild(this.$el)
+    // if (!['Date', 'DateTime', 'autocomplete', "fk", 'fks', 'fkjson', 'fkjsons'].includes(this.editorType)) {
+    //   this.$parent.clearCellSelection()
+    // }
 
   },
   beforeDestroy() {
@@ -419,7 +418,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
 .editor-wrap {
   position: absolute;
   overflow: hidden;
@@ -459,9 +457,11 @@ export default {
   &.focus {
     border: 2px solid #4B89FF;
   }
-  .finder{
+
+  .finder {
     width: 100%;
   }
+
   ::v-deep .el-date-editor {
     height: 100%;
     line-height: 100%;

@@ -31,6 +31,7 @@
     "vue-easytable": "^2.27.1",
     "vue-grid-layout": "^2.4.0",
     "vue-router": "^3.5.4",
+    "vue2-teleport": "^1.1.4",
     "vuedraggable": "^2.24.3",
     "xlsx": "^0.18.5"
   },
