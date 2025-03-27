@@ -1,6 +1,7 @@
 <template>
   <div
     class="spreadsheet flex flex-col"
+    :class="{'child-list':childListType}"
     ref="spreadsheet"
   >
     <loading-view
@@ -5017,7 +5018,12 @@ export default {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-
+  &.child-list{
+    height: unset;
+    .ve-table-container{
+      height: auto!important;
+    }
+  }
   .el-select,
   .el-autocomplete {
     .el-input__inner {
