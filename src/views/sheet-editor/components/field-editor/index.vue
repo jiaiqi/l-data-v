@@ -22,6 +22,7 @@
         class="finder"
         ref="finder"
         :row="row"
+        :column="fieldInfo"
         :app="app"
         :operate-type="operateType"
         :field-info="fieldInfo"
@@ -29,7 +30,7 @@
         @change="onFinderChange"
         @focus="onfocus = true"
         @blur="onfocus = false"
-        v-else-if="['FkAutocomplete', 'FK'].includes(editorType)"
+        v-else-if="['autocomplete', 'fk', 'fks', 'fkjsons', 'fkjson'].includes(editorType)"
       >
       </finder>
     </div>
@@ -151,7 +152,7 @@
 </template>
 
 <script>
-import { isRichText, isFk, isFkAutoComplete } from '@/utils/sheetUtils.js'
+import { isRichText, isFk, isFkAutoComplete, getFieldType } from '@/utils/sheetUtils.js'
 import Finder from "./finder.vue";
 import RichTextEditor from "./rich-text.vue";
 export default {
@@ -198,10 +199,23 @@ export default {
       autoSaveInterval: null, //用于储存定时保存的定时器
       autoSaveTimeout: 0, //自动保存倒计时
       visible: false,
-      onfocus: false
+      onfocus: false,
     };
   },
   computed: {
+    editorType() {
+      if (this.show) {
+        if (isRichText(this.fieldInfo)) {
+          return "RichText"
+        }
+        if (isFkAutoComplete(this.fieldInfo)) {
+          return 'autocomplete';
+        } else if (isFk(this.fieldInfo)) {
+          return 'fk';
+        }
+        return getFieldType(this.fieldInfo);
+      }
+    },
     fieldInfo() {
       return this.column?.__field_info;
     },
@@ -236,20 +250,7 @@ export default {
       return str;
     },
 
-    editorType() {
-      if (!this.editorVisible) return false
-      const colType = this.fieldInfo?.col_type;
-      if (isRichText(this.fieldInfo)) {
-        return "RichText";
-      } else if (isFkAutoComplete(this.fieldInfo)) {
-        if (this.fieldInfo?.redundant_options?._target_column) {
-          return "FkAutocomplete";
-        }
-      } else if (isFk(this.fieldInfo)) {
-        return "FK";
-      }
-      return colType;
-    },
+
     dateFormat() {
       if (this.editorType === "Date") {
         return "yyyy-MM-dd";
@@ -271,7 +272,6 @@ export default {
       immediate: true,
       handler(newVal) {
         // 监听外部值变化
-        console.log('editorVisible:', newVal);
         if (this.editorVisible !== newVal) {
           this.editorVisible = newVal;
           this.stopAutoSave();
@@ -279,7 +279,7 @@ export default {
       }
     },
     editorVisible(newVal) {
-      // 触发v-model更新
+      console.log('editorVisible:', newVal);
       if (newVal !== this.show) {
         this.$emit("update:show", newVal);
       }
@@ -298,6 +298,13 @@ export default {
         this.autoSave();
       }
     },
+    // column:{
+    //   immediate: true,
+    //   deep:true,
+    //   handler(newVal) {
+
+    //   },
+    // }
   },
   methods: {
     triggerAutocomplete(val) {
@@ -309,10 +316,16 @@ export default {
         this.$emit('fk-change', item, this.row, this.column)
         return
       }
-      if (item && item.option) {
+      if (item && item?.option) {
         this.modelValue = item.label;
       }
-      this.$emit('fk-autocomplete-change', item, this.row, this.column);
+      if (isFkAutoComplete(this.fieldInfo)) {
+        this.$emit('fk-autocomplete-change', item, this.row, this.column);
+      }
+      const colType = this.fieldInfo.col_type
+      if(['fks','fkjson','fkjsons'].includes(colType)){
+        this.$emit('fks-change', item, this.row, this.column);
+      }
     },
     onKeyDown(e) {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -392,31 +405,20 @@ export default {
   mounted() {
     document.addEventListener("keydown", this.onKeyDown);
     this.$parent.$refs.tableRef.$el.querySelector('.ve-table-content-wrapper').appendChild(this.$el)
-    if (!['Date', 'DateTime', 'FkAutocomplete', "FK"].includes(this.editorType)) {
+    if (!['Date', 'DateTime', 'autocomplete', "fk",'fks','fkjson','fkjsons'].includes(this.editorType)) {
       this.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
     }
+
   },
   beforeDestroy() {
     document.removeEventListener("keydown", this.onKeyDown);
     this.stopAutoSave();
     this.modelValue = ''
-
   },
 };
 </script>
 
 <style lang="scss" scoped>
-.shade {
-  background-color: rgba($color: #000000, $alpha: 0.2);
-  position: fixed;
-  width: 100vw;
-  height: 100vh;
-  top: 0;
-  left: 0;
-  z-index: 99999;
-}
-
-
 
 .editor-wrap {
   position: absolute;
@@ -425,7 +427,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 0;
+  z-index: 9;
 
   ::v-deep .el-input {
     display: flex;
@@ -457,7 +459,9 @@ export default {
   &.focus {
     border: 2px solid #4B89FF;
   }
-
+  .finder{
+    width: 100%;
+  }
   ::v-deep .el-date-editor {
     height: 100%;
     line-height: 100%;

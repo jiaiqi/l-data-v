@@ -1,25 +1,17 @@
 <template>
-  <!-- <el-select
-    v-model="inputVal"
-    ref="inputRef"
-    filterable
-    remote
-    :placeholder="placeholder"
-    :remote-method="querySearch"
-    :loading="loading"
-    @focus="onFocus"
-    @blur="$emit('blur')"
-    @change="handleSelect"
-    v-if="isFk"
-  >
-    <el-option
-      v-for="item in options"
-      :key="item.value"
-      :label="item.label"
-      :value="item.value"
-    >
-    </el-option>
-  </el-select> -->
+  <table-picker
+    v-bind="$props"
+    :srvApp="app"
+    :formModel="row"
+    :field="field"
+    :selectedGridData="multiSelected"
+    :finder-selected="value"
+    :defaultValues="defaultValues"
+    :mainformDatas="mainformDatas"
+    :disabled="false"
+    @on-selected="onPickerSelected"
+    v-if="field && ['fks', 'fkjson', 'fkjsons'].includes(colType)"
+  ></table-picker>
   <el-autocomplete
     class="inline-input"
     ref="inputRef"
@@ -33,24 +25,30 @@
     @focus="onFocus"
     @blur="$emit('blur')"
     @select="handleSelect"
-    @clear="handleClear"
-    @change="handleChange"
+    v-else-if="['autocomplete', 'fk'].includes(editorType)"
   >
   </el-autocomplete>
+
+
 </template>
 
 <script>
 import { cloneDeep } from 'lodash-es';
-import { isFk } from "@/utils/sheetUtils";
-
+import { isFk, isFkAutoComplete, getFieldType } from "@/utils/sheetUtils.js";
+import { FieldInfo } from '@/common/model/FieldInfo.js'
+import { Field } from '@/common/model/Field.js'
+import TablePicker from './table-picker.vue'
 export default {
   name: "Finder",
+  components: {
+    TablePicker
+  },
   props: {
     app: {
       type: String,
       default: ""
     },
-    fieldInfo: {
+    column: {
       type: Object,
       default: () => {
         return {};
@@ -70,31 +68,56 @@ export default {
         return {};
       }
     },
+    defaultValues: {
+      type: Object,
+      default: () => {
+        return {};
+      }
+    },
+    mainformDatas: {
+      type: Object,
+      default: () => {
+        return {};
+      }
+    }
   },
   watch: {
     value: {
       immediate: true,
       handler(newValue, oldValue) {
-        // if ([null, undefined, ''].includes(newValue) && [null, undefined, ''].includes(oldValue)) {
-        //   return
-        // }
         if (newValue !== oldValue) {
           this.inputVal = newValue;
-        }else if(newValue!==this.inputVal){
+        } else if (newValue !== this.inputVal) {
           this.inputVal = newValue;
+        }
+      }
+    },
+    column: {
+      immediate: true,
+      deep: true,
+      handler(newValue, oldValue) {
+        if (newValue !== oldValue) {
+          this.initField()
+          if (['fks', 'fkjson', 'fkjsons'].includes(this.editorType)) {
+            // this.onFocus()
+          }
         }
       }
     }
   },
   data() {
     return {
+      field: null,
       inputVal: "",
-      selected: null,
       oldValue: null,
       focus: false,
       options: [],
-      loading: false
+      loading: false,
+      selected: "",
+      multiSelected: []
     }
+  },
+  created() {
   },
   beforeDestroy() {
     this.options = [];
@@ -102,20 +125,31 @@ export default {
   },
   computed: {
     placeholder() {
-      return this.fieldInfo?.placeholder || `请输入关键词`
+      return this.column?.placeholder || `请输入关键词`
+    },
+    colType() {
+      return this.column?.col_type
+    },
+    editorType() {
+      if (isFkAutoComplete(this.column)) {
+        return 'autocomplete';
+      } else if (isFk(this.column)) {
+        return 'fk';
+      }
+      return getFieldType(this.column);
     },
     isFk() {
-      return isFk(this.fieldInfo);
+      return isFk(this.column);
     },
     modelValue() {
       let value = this.value;
       return value;
     },
     optionListV3() {
-      if (isFk(this.fieldInfo)) {
-        return this.fieldInfo?.option_list_v3
-      }
-      return this.fieldInfo?.[`_${this.operateType}_option_list`]
+      if (isFk(this.column)) {
+        return this.column?.option_list_v3
+      } else if (this.editorType === 'autocomplete')
+        return this.column?.[`_${this.operateType}_option_list`]
     },
     optionListFinal() {
       let result = null
@@ -134,16 +168,14 @@ export default {
       }
       return result;
     },
-    optionsReq() {
+    setOptionsReq() {
       let optionsV2 = this.optionListFinal;
       let refedCol = optionsV2?.refed_col || optionsV2?.key_disp_col;
       let req = {
         serviceName: optionsV2.serviceName,
         srvApp: optionsV2.srv_app || null,
         colNames: ["*"],
-        condition: [
-
-        ],
+        condition: [],
         page: {
           pageNo: 1,
           rownumber: 50,
@@ -200,27 +232,38 @@ export default {
     },
   },
 
-
   methods: {
+    onPickerSelected(selected) {
+      this.field.model = selected;
+      this.selected = selected;
+      this.$emit('change', selected)
+    },
+    initField() {
+      let filter = (srvCol) => srvCol[`in_${this.operateType}`] != 0
+      let srvCol = this.column
+      let fi = new FieldInfo(srvCol, this.formType);
+      let f = new Field(fi, this);
+      f.vif = !(filter && !filter(srvCol))
+      if (fi.editor == 'multiselect') {
+        f.model = [];
+      }
+      this.field = f
+    },
     triggerAutocomplete(val) {
-      // this.$refs.autocomplete.activated = true
-      // this.searchKey = val
-      // this.$refs.autocomplete.getData(val)
       this.querySearch(val).then((res) => {
         this.$parent.$parent.clearCellSelection()
         if (res?.length > 1) {
-          // 模糊匹配结果数量大于1
-          // let matchedVal = res.find(
-          //   (item) => item.value === val
-          // );
-          // if (matchedVal) {
-          //   this.$emit("change", cloneDeep(matchedVal));
-          // }
-          this.inputVal = val
-          this.$nextTick(() => {
-            this.$refs.inputRef.activated = true
-            this.$refs?.inputRef?.focus();
-          })
+          // 模糊匹配结果数量大于1 显示下拉框
+          // this.$nextTick(() => {
+          //   this.$refs.inputRef.activated = true
+          //   this.$refs?.inputRef?.focus();
+          // })
+          let key = isFk(this.column) ? 'value' : 'label'
+          let option = res.find(item => item[key] && item[key] === val)
+          if (option) {
+            this.inputVal = val
+            this.$emit("change", cloneDeep(res[0]));
+          }
         } else if (res?.length) {
           // 模糊匹配结果数量为1 直接选中
           this.$emit("change", cloneDeep(res[0]));
@@ -237,51 +280,7 @@ export default {
         this.querySearch('')
       }
     },
-
-    getDependField() {
-      let dependField; //fk字段
-      if (this.field.form.fields && Array.isArray(this.field.form.fields)) {
-        for (let f of this.field.form.fields) {
-          if (f.info.name == this.field.info.redundant.dependField) {
-            dependField = f;
-          }
-        }
-      } else {
-        dependField =
-          this.field.form.fields[this.field.info.redundant.dependField];
-      }
-      return dependField;
-    },
-    handleClear() {
-      // 清空autocomplete字段时候，是否清空fk字段的值的逻辑
-      const dependField = this.getDependField();
-      const redundant = this.field.info?.redundant;
-      if (redundant?.trigger) {
-        if (redundant?.trigger === "isnull") {
-          // 为空的时候才进行冗余 配置了isnull的字段清空时不改变fk字段的值
-          return;
-        }
-      }
-      const refedCol = redundant?.refedCol;
-      const refedColVal = dependField.model[refedCol];
-      if (refedCol && refedColVal) {
-        this.$nextTick(() => {
-          if (this.oldValue && this.oldValue === refedColVal) {
-            // 当前字段的值跟fk字段中冗余到当前字段的值一致时，才清空fk字段的值
-            dependField.model = null;
-            dependField.finderSelected = null;
-            this.$set(dependField, "model", null);
-            this.$emit("change", dependField);
-          }
-        });
-      }
-    },
-    handleChange(val){
-      console.log(val);
-    },
     handleSelect(val) {
-      console.log(val);
-      this.selected = val;
       if (this.isFk) {
         const option = this.options.find((item) => {
           return item.value === val;
@@ -292,8 +291,7 @@ export default {
       }
     },
     querySearch(queryString = "", cb) {
-      this.loading = false
-      let req = cloneDeep(this.optionsReq);
+      let req = cloneDeep(this.setOptionsReq);
       if (req["relation_condition"]) {
         req.relation_condition.data[0].value = queryString ?? "";
         req.relation_condition.data[1].value = queryString ?? "";
@@ -317,7 +315,6 @@ export default {
           });
         }
         this.options = results;
-        this.loading = false
         // 调用 callback 返回建议列表的数据
         cb?.(results);
         return results
@@ -334,13 +331,6 @@ export default {
   display: flex;
   align-items: center;
   position: relative;
-}
-
-
-.icon {
-  // position: absolute;
-  // right: 0;
-  // transform: translateX(100%);
 }
 
 .input {

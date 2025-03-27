@@ -12,26 +12,41 @@
         v-if="showUnfold && column.isFirstCol"
         @click="changeFold"
       >
-        <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
-        <div class="unfold-icon el-icon-plus" v-else></div>
+        <div
+          class="fold-icon el-icon-minus"
+          v-if="unfold === true"
+        ></div>
+        <div
+          class="unfold-icon el-icon-plus"
+          v-else
+        ></div>
       </div>
       <div
         class="prefix-icon cursor-initial"
         v-else-if="column.isFirstCol"
       ></div>
+      <div v-if="isFks && selected">
+        <el-tag
+          style="margin-right: 4px; margin-bottom: 2px"
+          size="mini"
+          :type="['', 'success', 'warning', 'danger'][tIndex % 4]"
+          v-for="(tag, tIndex) in getFkJson"
+          :key="tIndex"
+        >{{ tag || "" }}
+        </el-tag>
+      </div>
       <div
         class="text"
         v-html="recoverFileAddress(html)"
         style=""
-        v-if="useEditor && html"
+        v-else-if="useEditor && html"
       ></div>
       <a
         class="text"
         v-else-if="keyDispCol && column.columns === keyDispCol"
         :title="linkToDetail ? '点击查看详情' : ''"
         @click="toDetail"
-        >{{ html }}</a
-      >
+      >{{ html }}</a>
       <span
         class="text"
         style=""
@@ -53,16 +68,14 @@
       circle
       @click.stop="showRichEditor"
       v-if="useEditor && !disabled"
-      ><i class="el-icon-edit"></i
-    ></el-button>
+    ><i class="el-icon-edit"></i></el-button>
     <el-button
       size="mini"
       class="edit-btn"
       circle
       @click.stop="showTextarea"
       v-if="'MultilineText' === column.col_type && !disabled"
-      ><i class="el-icon-edit"></i
-    ></el-button>
+    ><i class="el-icon-edit"></i></el-button>
 
     <el-dialog
       :fullscreen="dialogFullscreen"
@@ -113,24 +126,38 @@
         v-else
       >
       </el-input>
-      <div class="text-orange text-center" v-if="!disabled && !editable">
+      <div
+        class="text-orange text-center"
+        v-if="!disabled && !editable"
+      >
         <span class="mr-20px"> 当前字段不可编辑 </span>
-        <el-button type="text" @click="dialogFullscreen = !dialogFullscreen">
-          <i class="el-icon-full-screen" v-if="!dialogFullscreen"></i>
-          <i class="el-icon-switch-button" v-else></i>
+        <el-button
+          type="text"
+          @click="dialogFullscreen = !dialogFullscreen"
+        >
+          <i
+            class="el-icon-full-screen"
+            v-if="!dialogFullscreen"
+          ></i>
+          <i
+            class="el-icon-switch-button"
+            v-else
+          ></i>
           <span v-if="!dialogFullscreen">全屏</span>
           <span v-else>退出全屏</span>
         </el-button>
       </div>
-      <div class="text-center m-t-5" v-if="!disabled && editable">
+      <div
+        class="text-center m-t-5"
+        v-if="!disabled && editable"
+      >
         <el-button
           type="primary"
           @click="
             $emit('change', innerHtml);
-            dialogTableVisible = false;
+          dialogTableVisible = false;
           "
-          >确认</el-button
-        >
+        >确认</el-button>
       </div>
     </el-dialog>
     <el-image
@@ -184,6 +211,14 @@ export default {
         this.loadingFold = false;
       },
     },
+    html: {
+      immediate: true,
+      handler() {
+        if (['fks', 'fkjson', 'fkjsons'].includes(this.colType)) {
+          this.initSelected()
+        }
+      }
+    },
   },
   created() {
     this.ticket = sessionStorage.getItem("bx_auth_ticket");
@@ -193,12 +228,49 @@ export default {
       const refedCol = redundant?.refedCol;
       if (dependField && refedCol) {
         if (this.row[`_${dependField}_init_val`]) {
-          this.getFkOptions(this.column.redundant_options,this.row[`_${dependField}_init_val`])
+          this.getFkOptions(this.column.redundant_options, this.row[`_${dependField}_init_val`])
         }
       }
     }
   },
   computed: {
+    getFkJson() {
+      let val = this.html;
+      let result = [];
+
+      let colType = this.colType;
+
+      let fmt = this.column?.fmt;
+      let valueCol = fmt && fmt.primary_col;
+      let dispCol = fmt && fmt.disp_col;
+      switch (colType) {
+        case "fks":
+          result = val ? val.split(",") : [];
+          break;
+        case "fkjson":
+          try {
+            result = val ? JSON.parse(val) : {};
+          } catch (error) {
+            console.log(error);
+          }
+          if (result && result[dispCol]) {
+            result = [result[dispCol] || result[valueCol]];
+          }
+          break;
+        case "fkjsons":
+          try {
+            result = val ? JSON.parse(val) : [];
+          } catch (error) { }
+          if (Array.isArray(result) && result.length > 0) {
+            result = result.map((item) => item[dispCol] || item[valueCol]);
+          }
+          break;
+      }
+      return result;
+    },
+    isFks() {
+      return ['fks', 'fkjson', 'fkjsons'].includes(this.colType)
+    },
     linkToDetail() {
       return (
         this.$parent?.column?.linkToDetail === true &&
@@ -301,9 +373,44 @@ export default {
       unfold: false, //默认收起
       loadingFold: false,
       dialogFullscreen: false,
+      selected: null
     };
   },
   methods: {
+
+    initSelected() {
+      let obj = {};
+      if (["fkjson", "fkjsons"].includes(this.colType) && this.html) {
+        try {
+          obj = JSON.parse(this.html);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+      let fmt = this.column?.fmt;
+      let valueCol = fmt && fmt.primary_col;
+      if (this.html)
+        switch (this.colType) {
+          case "fkjson":
+            if (obj && obj[valueCol]) {
+              this.selected = obj[valueCol];
+            }
+            break;
+          case "fkjsons":
+            if (Array.isArray(obj)) {
+              this.selected = obj
+                .map((item) => item[valueCol])
+                .filter((item) => item && item);
+            }
+            break;
+          case "fk":
+            this.selected = this.html;
+            break;
+          case "fks":
+            this.selected = this.html.split(",");
+            break;
+        }
+    },
     buildAutocompltetReq(optionsV2, val) {
       let refedCol = optionsV2?.refed_col || optionsV2?.key_disp_col;
       let req = {
@@ -358,13 +465,13 @@ export default {
         this.$http.post(url, req).then((response) => {
           if (response && response.data && response.data.data) {
             let options = response.data.data;
-            if(Array.isArray(options)&&options.length){
+            if (Array.isArray(options) && options.length) {
               const data = {
-                option:options[0],
+                option: options[0],
                 value: options[0][valColumn],
                 label: options[0][labelCol],
               }
-              this.$emit('change',data)
+              this.$emit('change', data)
             }
           }
           // 调用 callback 返回建议列表的数据
@@ -404,7 +511,7 @@ export default {
       console.log(eve);
       if (
         eve.target?.offsetParent?.className.indexOf("w-e-image-container") >
-          -1 &&
+        -1 &&
         eve.target.currentSrc
       ) {
         this.url = eve.target.currentSrc;
@@ -514,12 +621,15 @@ export default {
   max-height: 80px;
   position: relative;
   display: flex;
+
   .text {
     width: 100%;
+
     ::v-deep p {
       margin: 0;
     }
   }
+
   .old-value {
     text-decoration: line-through;
     color: #f00;
@@ -575,6 +685,7 @@ export default {
   .text {
     display: contents;
     transition: all 0.2s ease;
+
     &:hover {
       color: #409eff;
       // text-decoration: underline;

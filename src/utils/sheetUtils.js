@@ -529,17 +529,37 @@ function isRichText(column){
   return column?.col_type && ["Note", "RichText", "snote"].includes(column.col_type)
 }
 function isFkAutoComplete(column) {
-  return column && column.col_type === 'String' && column?.redundant_options?._target_column && true
+  return column?.col_type === 'String' && column?.redundant_options?._target_column && true
 }
 function isFk(column) {
+  if(['fks','fkjson','fkjsons'].includes(column?.col_type)){
+    return false
+  }
   if (column?.col_type && column?.bx_col_type) {
     const fkTypes = ["User", "Dept", "bxsys_user", "bxsys_dept", "fk"];
     return fkTypes.includes(column.col_type) ||
       column.bx_col_type === "fk" ||
-      column.bx_col_type?.indexOf("bx") === 0 ||
       column.col_type === 'fk' ||
       column.col_type?.includes("bx") === 0
   }
   return false
 }
+
+
+export function getFieldType (column){
+  let result = 'Text'
+  if(["fks", "fkjson", "fkjsons"].includes(column?.col_type)){
+    result = column.col_type
+  }else if(isFk(column)){
+    result = 'fk'
+  }else if(isFkAutoComplete(column)){
+    result = 'autocomplete'
+  }else if(isRichText(column)){
+    result = 'RichText'
+  }else if(column?.col_type){
+    result = column.col_type
+  }
+  return result
+}
+
 export { json2sheet, sheet2json, buildSrvCols, buildDataVerification,isRichText, isFkAutoComplete, isFk };

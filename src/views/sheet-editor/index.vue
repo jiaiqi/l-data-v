@@ -258,6 +258,7 @@
       @change="dialogChange"
       @fk-autocomplete-change="fkAutocompleteChange"
       @fk-change="fkChange"
+      @fks-change="fksChange"
       @save="dialogChange"
       @close="dialogClose"
     ></field-editor>
@@ -275,7 +276,7 @@ import {
 import dayjs from "dayjs";
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/user.js";
-import { buildSrvCols, isFkAutoComplete, isFk } from "../../utils/sheetUtils";
+import { buildSrvCols, isFkAutoComplete, isFk, getFieldType } from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
 import { uniqueId, cloneDeep } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
@@ -466,22 +467,17 @@ export default {
                   return;
                 }
                 const currentCellSelection = this.$refs.tableRef.cellSelectionData.currentCell
+                console.log('cell click::', colType);
+
                 if (currentCellSelection && currentCellSelection?.colKey === column.key && currentCellSelection?.rowKey === row.rowKey) {
-                  if (["Date", "DateTime"].includes(colType) || isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
+                  if (["Date", "DateTime"].includes(colType) || ["fks", "fkjson", "fkjsons"].includes(colType) || isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
                     this.$nextTick(() => {
                       this.clearFieldEditorParams();
                       setTimeout(() => {
                         this.$nextTick(() => {
-                          if (["Date", "DateTime"].includes(colType)) {
-                            event.stopPropagation();
-                            // const position = getElementFullInfo(currentCellEl);
-                            this.buildFieldEditorParams(row, column);
-                            this.showFieldEditor = true;
-                          } else if (isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
-                            event.stopPropagation();
-                            this.buildFieldEditorParams(row, column);
-                            this.showFieldEditor = true;
-                          }
+                          event.stopPropagation();
+                          this.buildFieldEditorParams(row, column);
+                          this.showFieldEditor = true;
                         })
                       }, 200);
                     })
@@ -631,6 +627,7 @@ export default {
           this.$set(this.columnWidthMap, column.field, {
             width: columnWidth,
             fieldInfo: column.__field_info,
+            column: column.__field_info,
           });
         },
       },
@@ -1002,6 +999,14 @@ export default {
               });
               return false;
             }
+            // if (isFkAutoComplete(column.__field_info) || isFk(column.__field_info) && this.showFieldEditor !== true) {
+            //   this.buildFieldEditorParams(row, column)
+            //   this.showFieldEditor = true;
+            //   this.$nextTick(() => {
+            //     this.$refs.fieldEditor?.triggerAutocomplete?.(changeValue)
+            //   })
+            //   this.clearCellSelection()
+            // }
           } else {
             // 编辑行 处理in_update
             if (!this.updateColsMap[column.field]?.in_update) {
@@ -1019,15 +1024,7 @@ export default {
               return false;
             }
           }
-          if (isFkAutoComplete(column.__field_info) || isFk(column.__field_info) && this.showFieldEditor !== true) {
-            this.buildFieldEditorParams(row, column)
-            this.showFieldEditor = true;
-            this.$nextTick(() => {
-              this.$refs.fieldEditor?.triggerAutocomplete?.(changeValue)
-            })
-            this.clearCellSelection()
-            return false
-          }
+
           if (["DateTime", "Date"].includes(colType)) {
             // 日期时间类型格式化
             let dateStr = extractAndFormatDatesOrTimestamps(changeValue);
@@ -1889,6 +1886,28 @@ export default {
     clearCellSelection() {
       this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
     },
+    fksChange(item, row, column) {
+      this.setCellSelection()
+      let val = item
+      if (typeof item === 'object') {
+        val = JSON.stringify(item)
+      }
+      this.$refs["tableRef"].startEditingCell({
+        rowKey: row.rowKey,
+        colKey: column.field,
+        defaultValue: val || null,
+      });
+      this.$refs["tableRef"].stopEditingCell();
+      const rowIndex = this.tableData.findIndex(
+        (item) => item.rowKey === row.rowKey
+      );
+      this.handlerRedundant(
+        item.option,
+        column.key,
+        row.rowKey,
+        rowIndex
+      );
+    },
     fkChange(item, row, column) {
       this.setCellSelection()
       this.$refs["tableRef"].startEditingCell({
@@ -2064,8 +2083,12 @@ export default {
       // 绑定快捷键
       const keyCode = e.keyCode || e.which;
       keyCode === 116 && e.preventDefault(); // 禁止F5刷新
+      if (keyCode === 27 && this.showFieldEditor) {
+        this.showFieldEditor = false
+      }
       if (this.showFieldEditor) {
         // 弹出表单字段编辑器时 不触发快捷键
+
         return;
       }
       if (e.ctrlKey || e.metaKey) {
@@ -2260,7 +2283,7 @@ export default {
             }
 
             this.operate(bxRequests).then((response) => {
-              var state = response.body.state;
+              var state = response.data.state;
 
               if ("SUCCESS" == state) {
                 this.$message({
@@ -2273,7 +2296,7 @@ export default {
               } else {
                 this.$message({
                   type: "error",
-                  message: response.body.resultMessage,
+                  message: response.data.resultMessage,
                 });
               }
             });
@@ -2760,6 +2783,7 @@ export default {
             return startRowIndex + rowIndex + 1;
           },
         },
+       
       ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
         let minWidth = (window.innerWidth + 50) / this.allFields.length;
@@ -4942,6 +4966,7 @@ export default {
 .spreadsheet {
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
 
   .el-select,
   .el-autocomplete {

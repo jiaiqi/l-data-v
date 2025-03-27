@@ -157,7 +157,7 @@ function init_util() {
     } else {
       // whole path does not have $srvApp,
       // try  page level
-      const $route = Vue.prototype.$route || node?.$route
+      const $route = node?.$route
       if ($route?.query?.srvApp) {
         app = $route.query.srvApp;
       } else {
@@ -376,7 +376,7 @@ function init_util() {
 
       try {
         // if (service_name === 'srvsso_user_add') {
-        //   response.body.data.validators = [{
+        //   response.data.data.validators = [{
         //     in_table_validate: "function(data, vm) {\n" +
         //       "            if (!data.email || !data.real_name) {\n" +
         //       "              return true\n" +
@@ -691,8 +691,8 @@ function init_util() {
     };
     url = url + "?" + service_name;
     return this.$http.post(url, params).then((response) => {
-      if (response.body.data && response.body.data.length > 0) {
-        response.body = response.body.data[0];
+      if (response.data.data && response.data.data.length > 0) {
+        response.body = response.data.data[0];
       }
       return response;
     });
