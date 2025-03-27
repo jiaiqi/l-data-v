@@ -6,14 +6,14 @@ export const webBaseUrl = `http://192.168.0.54:8080`
 // let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
 // let baseURL = window.backendIpAddr || `https://xxld.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.151:180`;
-// let baseURL = window.backendIpAddr || `https://api.100xsys.cn`;
-let baseURL = window.backendIpAddr || `http://192.168.0.54:8104`;
+let baseURL = window.backendIpAddr || `https://api.100xsys.cn`;
+// let baseURL = window.backendIpAddr || `http://192.168.0.54:8104`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.241:8080`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
 const devTicket = 'xabxdzkj-e91b0843-fb42-4f4d-b7a2-db5c25749082'
-if (top?.pathConfig?.gateway) {
-  baseURL = top?.pathConfig?.gateway;
-}
+// if (top?.pathConfig?.gateway) {
+//   baseURL = top?.pathConfig?.gateway;
+// }
 let pathConfig = sessionStorage.pathConfig;
 if (pathConfig) {
   try {

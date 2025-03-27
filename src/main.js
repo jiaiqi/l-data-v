@@ -28,8 +28,8 @@ Vue.prototype.$axios = $axios;
 import VueUtil from '@/common/vue_util'
 VueUtil()
 
-import VueInit from "@/common/vue_init.js";
-VueInit();
+// import VueInit from "@/common/vue_init.js";
+// VueInit();
 
 Vue.use(PiniaVuePlugin);
 

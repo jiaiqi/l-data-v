@@ -346,6 +346,10 @@ export async function rowButtonClick(params) {
     })
   } else if ("addchild" == type) {
     onAddChildClicked(row);
+    return {
+      row: row,
+      type:'addchild'
+    }
   } else if ("duplicate" == type) {
     if (storageType === "mem") {
       returnData.activeData = row;

@@ -17,6 +17,11 @@ const router = new VueRouter({
       component: HomeView
     },
     {
+      path: "/:broadCastName/:childListType/:mainService/:app/:service",
+      name: "childList",
+      component: () => import("@/views/sheet-editor/index.vue"),
+    },
+    {
       path: "/table-graph",
       name: "TableGraph",
       component: () => import('@/views/table-graph/index.vue')
@@ -53,6 +58,11 @@ const router = new VueRouter({
     },
     {
       path: "/childList/:childListType/:broadCastName/:app/:service",
+      name: "childList",
+      component: () => import("@/views/sheet-editor/index.vue"),
+    },
+    {
+      path: "/child-list/:broadCastName/:childListType/:mainService/:app/:service",
       name: "childList",
       component: () => import("@/views/sheet-editor/index.vue"),
     },

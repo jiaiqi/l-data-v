@@ -12,11 +12,11 @@
       textColor="#fff"
     ></loading-view>
     <div
-      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 p-x-5 w-full"
+      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 w-full"
       v-if="disabled !== true"
     >
       <div
-        class="flex flex-1 items-center text-sm"
+        class="flex flex-1 items-center text-sm p-x-2"
         v-if="addButton && addButton.service_name"
       >
         <div class="m-r-2">添加</div>
@@ -42,9 +42,9 @@
         class="text-sm text-gray cursor-not-allowed"
         v-else
       >
-        没有添加权限
+        <!-- 没有添加权限 -->
       </div>
-      <div flex-1>
+      <div class="p-x-2 flex-1">
         <el-radio-group
           v-model="listType"
           @input="listTypeChange"
@@ -56,10 +56,10 @@
         </el-radio-group>
       </div>
 
-      <div class="flex flex-items-center flex-1 justify-end">
+      <div class="flex flex-items-center flex-1 justify-end p-x-2">
         <div
           class="color-map flex flex-items-center m-r-20"
-          v-if="childListType !== 'add'"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
         >
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
@@ -71,7 +71,10 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <div class="relative">
+        <div
+          class="relative"
+          v-if="gridButton && gridButton.length"
+        >
           <div
             class="grid-button-box"
             :class="{ show: showGridButton }"
@@ -106,7 +109,7 @@
           size="mini"
           type="primary"
           @click="refreshData"
-          v-if="childListType !== 'add'"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
           title="刷新（F5）"
         >
           <!-- 刷新 -->
@@ -119,7 +122,7 @@
           type="primary"
           @click="saveData"
           :disabled="!calcReqData || calcReqData.length == 0"
-          v-if="childListType !== 'add'"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
           v-loading="onHandler"
           title="保存（Ctrl+S）"
         >
@@ -205,7 +208,7 @@
     <!--    列表为新增子表时不显示分页-->
     <div
       class="text-center flex justify-between"
-      v-if="childListType !== 'add'"
+      v-if="!['add', 'addchildlist'].includes(childListType)"
     >
       <div class="position-relative">
         <choose-tenant />
@@ -238,7 +241,8 @@
     <drop-menu
       v-if="showDropMenu"
       v-model="showDropMenu"
-      :items="dropMenuItems"
+      :row="currentRowData"
+      :items="rowButton"
       :position="{ top: dTop, left: dLeft }"
       @select="onRowButton"
     />
@@ -317,6 +321,7 @@ const ignoreKeys = [
   "__unfold",
   "__indent",
   "__update_col",
+  "listType"
 ];
 
 function getElementFullInfo(element) {
@@ -349,8 +354,14 @@ export default {
     if (this.$route.query?.listType) {
       this.listType = this.$route.query?.listType;
     }
+    if (this.$route.query.isTree) {
+      this.listType = 'treelist'
+    }
     if (this.$route.query?.disabled) {
       this.disabled = true;
+    }
+    if (this.$route.params?.mainService) {
+      this.mainService = this.$route.params?.mainService
     }
     if (this.$route.params?.childListType) {
       // 子表类型 add|update|detail
@@ -409,6 +420,7 @@ export default {
       disabled: false,
       initData: null,
       mainData: null,
+      mainService: "",
       childListCfg: {
         foreign_key: null,
         data_source_cfg: null,
@@ -423,7 +435,7 @@ export default {
       changeParentdialogVisible: false,
       pageNo: uniqueId("pageNo"),
       listType: "list",
-      childListType: null, //子表类型 add/update/detail
+      childListType: null, //子表类型 addchildlist/updatechildlist/detaillist
       treeList: [],
       page: {
         //分页信息
@@ -1246,6 +1258,11 @@ export default {
         return row[column.field]
       }
     },
+    currentRowData(){
+      if(typeof this.currentRowIndex==='number' && this.currentRowIndex>-1){
+        return this.tableData[this.currentRowIndex]
+      }
+    },
     gridButton() {
       return this.v2data?.gridButton?.filter(item => {
         if (['select', 'refresh'].includes(item.button_type)) {
@@ -1254,16 +1271,17 @@ export default {
         if (['增加弹出']?.includes(item.operate_type)) {
           return false
         }
-        if (item.permission === false) {
+        if (!item.permission) {
           return false
         }
         return true
       })
     },
-    dropMenuItems() {
+    rowButton() {
       return this.v2data?.rowButton
-        ?.filter((item) => {
-          return !["edit"].includes(item.button_type);
+        ?.filter((item,index) => {
+          item._index = index
+          return !["edit"].includes(item.button_type)&&item.permission;
         })
         ?.map((item) => {
           return {
@@ -2039,6 +2057,10 @@ export default {
     },
     autoSave() {
       this.stopAutoSave();
+      if (['add', 'addchildlist'].includes(this.childListType)) {
+        // add子表不自动保存
+        return
+      }
       const reqData = this.buildReqParams();
       if (!reqData?.length) {
         console.log("没有需要保存的内容");
@@ -2186,7 +2208,6 @@ export default {
           if (ret !== undefined) {
             if (typeof ret === "object" && ret instanceof Promise) {
               ret.then((val) => {
-                debugger;
                 row[fieldInfo.columns] = val;
               });
             } else {
@@ -2397,6 +2418,22 @@ export default {
             this.deleteRow([res.row]);
           } else if (res?.type === "onDuplicateClicked") {
             this.insert2Rows(currentRowIndex, null, row);
+          } else if (res?.type === "addchild") {
+            // 树形表添加下级节点
+            if (res?.row?.__id) {
+              // this.$set(this.tableData[startRowIndex], "__unfold", true);
+              // if(this.tableData[startRowIndex]?._$vue){
+              //   this.tableData[startRowIndex]?._$vue?.changeFold()
+              // }
+              if (row.__unfold === true) {
+                this.insert2Rows(currentRowIndex + 1, res.row);
+              } else {
+                this.loadTree(true, row, currentRowIndex).then((data) => {
+                  this.insert2Rows(currentRowIndex + data.length + 1, res.row);
+                })
+              }
+            }
+
           } else if (!res) {
             this.$message.error("功能待开发");
           }
@@ -2783,7 +2820,7 @@ export default {
             return startRowIndex + rowIndex + 1;
           },
         },
-       
+
       ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
         let minWidth = (window.innerWidth + 50) / this.allFields.length;
@@ -3437,6 +3474,9 @@ export default {
                         this.$refs?.loginRef?.open(() => {
                           callback?.(true);
                         });
+                      },
+                      created: (vm) => {
+                        // this.$set(row,'_$vue',vm)
                       },
                       onfocus: () => {
                         this.$refs["tableRef"].clearCellSelectionCurrentCell();
@@ -4296,7 +4336,7 @@ export default {
      */
     insert2Rows(index = 0, parentRow, itemData) {
       // 插入到第几行
-      if (this.childListType) {
+      if (this.childListType && !parentRow) {
         // 作为子表 只插到最后一行
         index = this.tableData.length;
       }
@@ -4510,7 +4550,7 @@ export default {
       }
       return tableData;
     },
-    loadTree(load, row, rowIndex, callback) {
+    async loadTree(load, row, rowIndex, callback) {
       // 将展开状态存储到行数据
       this.$set(this.tableData[rowIndex], "__unfold", load);
       if (load) {
@@ -4518,7 +4558,7 @@ export default {
         let loadingInstance = Loading.service({ fullscreen: true });
         console.time("渲染时长：");
         console.time("请求时长：");
-        onSelect(
+        const res = await onSelect(
           this.serviceName,
           this.srvApp,
           [
@@ -4536,60 +4576,59 @@ export default {
             use_type:
               this.isTree && this.listType === "treelist"
                 ? "treelist"
-                : this.listType
-                  ? this.listType
-                  : "list",
+                : this.listType || "list",
           }
-        ).then((res) => {
-          console.timeEnd("请求时长：");
-          if (res?.state === "SUCCESS") {
-            let tableData = cloneDeep(this.tableData);
-            let __indent = 40;
-            if (row.__indent === 0 || row.__indent > 0) {
-              __indent = row.__indent + 40;
-            }
+        )
+        console.timeEnd("请求时长：");
+        if (res?.state === "SUCCESS") {
+          let tableData = cloneDeep(this.tableData);
+          let __indent = 40;
+          if (row.__indent === 0 || row.__indent > 0) {
+            __indent = row.__indent + 40;
+          }
 
-            let resData = res.data.map((item) => {
-              const __id = uniqueId("table_item_");
-              item.__button_auth = this.setButtonAuth(
-                this.v2data?.rowButton,
-                item
-              );
-
-              let dataItem = {
-                rowKey: __id,
-                __id,
-                __flag: null,
-                ...item,
-                __indent,
-                // 给每一行子数据存储它的父数据
-                __parent_row: cloneDeep(row),
-              };
-              return dataItem;
-            });
-            this.$set(row, "__children", cloneDeep(resData));
-            tableData.splice(rowIndex + 1, 0, ...cloneDeep(resData));
-            this.tableData = cloneDeep(tableData);
-            let oldTableData = this.oldTableData;
-
-            const oldRowDataIndex = oldTableData.findIndex(
-              (item) => item.__id && item.__id === row.__id
+          let resData = res.data.map((item) => {
+            const __id = uniqueId("table_item_");
+            item.__button_auth = this.setButtonAuth(
+              this.v2data?.rowButton,
+              item
             );
-            oldTableData.splice(oldRowDataIndex + 1, 0, ...cloneDeep(resData));
-            this.oldTableData = cloneDeep(oldTableData);
 
-            this.$set(this.tableData[rowIndex], "__unfold", load);
-            loadingInstance.close();
-            this.$nextTick(() => {
-              console.timeEnd("渲染时长：");
-              callback?.(true);
-            });
-          } else {
-            // this.$set(this.tableData[rowIndex], "__unfold", load);
-            loadingInstance.close();
-            callback?.(false);
-          }
-        });
+            let dataItem = {
+              rowKey: __id,
+              __id,
+              __flag: null,
+              ...item,
+              __indent,
+              // 给每一行子数据存储它的父数据
+              __parent_row: cloneDeep(row),
+            };
+            return dataItem;
+          });
+          tableData[rowIndex].__children = cloneDeep(resData)
+          // this.$set(row, "__children", cloneDeep(resData));
+          tableData.splice(rowIndex + 1, 0, ...cloneDeep(resData));
+          this.tableData = cloneDeep(tableData);
+          let oldTableData = this.oldTableData;
+
+          const oldRowDataIndex = oldTableData.findIndex(
+            (item) => item.__id && item.__id === row.__id
+          );
+          oldTableData.splice(oldRowDataIndex + 1, 0, ...cloneDeep(resData));
+          this.oldTableData = cloneDeep(oldTableData);
+
+          this.$set(this.tableData[rowIndex], "__unfold", load);
+          loadingInstance.close();
+          this.$nextTick(() => {
+            console.timeEnd("渲染时长：");
+            callback?.(true);
+          });
+          return resData
+        } else {
+          // this.$set(this.tableData[rowIndex], "__unfold", load);
+          loadingInstance.close();
+          callback?.(false);
+        }
       } else {
         // 隐藏当前数据的子数据
         this.tableData = this.tableData.filter((item) => {
@@ -4751,9 +4790,13 @@ export default {
       }
     },
     async getV2Data(force = false) {
+      let useType = this.listType
+      if (useType !== 'treelist' && this.childListType?.includes('list')) {
+        useType = this.childListType
+      }
       const res = await getServiceV2(
         this.serviceName,
-        this.listType,
+        useType,
         this.srvApp,
         force
       );
@@ -4776,10 +4819,10 @@ export default {
         if (editBtn?.service_name) {
           const ress = await getServiceV2(
             editBtn.service_name,
-            this.childListType === "update" ? "updatechildlist" : "update",
+            "update",
             this.srvApp,
             false,
-            this.childListCfg?.foreign_key?.adapt_main_srv
+            this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
           );
           this.updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
@@ -4795,7 +4838,7 @@ export default {
             "add",
             this.srvApp,
             false,
-            this.childListCfg?.foreign_key?.adapt_main_srv
+            this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
           );
           this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
@@ -4996,8 +5039,8 @@ export default {
 .grid-button-box {
   overflow: hidden;
   transition: all .3s ease;
-  position: fixed;
-  right: 120px;
+  position: absolute;
+  right: 40px;
   transform: translateX(100%);
   background-color: #fff;
   opacity: 0;

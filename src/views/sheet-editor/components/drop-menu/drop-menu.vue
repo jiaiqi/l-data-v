@@ -3,7 +3,7 @@
     <div class="drop-menu-mask" ref="maskRef" @click="closeMenu"></div>
     <ul class="drop-menu-content" ref="menuRef" :style="menuStyle">
       <li
-        v-for="(item, index) in items"
+        v-for="(item, index) in setItems"
         :key="index"
         @click="selectItem(item)"
         class="drop-menu-item"
@@ -26,6 +26,12 @@ export default {
       type: Array,
       required: true,
     },
+    row:{
+      type: Object,
+      default: () => {
+        return {}
+      }
+    },
     position: {
       type: Object,
       required: true,
@@ -33,6 +39,14 @@ export default {
     },
   },
   computed: {
+    setItems(){
+      if(Array.isArray(this.row?._buttons)&&this.row?._buttons.length){
+        const buttonsPermission = this.row?._buttons
+        return this.items.filter(item=>typeof item._index==='number'?buttonsPermission[item._index]===1:true)
+      }else{
+        return this.items
+      }
+    },
     menuStyle() {
       return {
         // top: this.position.top + "px",

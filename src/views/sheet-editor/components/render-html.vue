@@ -232,6 +232,7 @@ export default {
         }
       }
     }
+    this.$emit('created',this)
   },
   computed: {
     getFkJson() {
