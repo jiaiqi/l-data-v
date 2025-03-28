@@ -275,20 +275,20 @@ export default {
     },
     onFocus() {
       this.$emit('focus')
-      this.$parent.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
+      this.$parent.$parent.$parent.clearCellSelection()
       if (this.isFk) {
         this.querySearch('')
       }
     },
     handleSelect(val) {
-      if (this.isFk) {
-        const option = this.options.find((item) => {
-          return item.value === val;
-        });
-        this.$emit("change", option);
-      } else {
+      // if (this.isFk) {
+      //   const option = this.options.find((item) => {
+      //     return item.value === val;
+      //   });
+      //   this.$emit("change", option);
+      // } else {
         this.$emit("change", val);
-      }
+      // }
     },
     querySearch(queryString = "", cb) {
       let req = cloneDeep(this.setOptionsReq);

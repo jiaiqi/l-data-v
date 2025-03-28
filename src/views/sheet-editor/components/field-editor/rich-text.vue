@@ -10,7 +10,7 @@
     <div
       v-if="!editable"
       v-html="recoverFileAddress(innerHtml)"
-      class="w-full overflow-auto"
+      class="w-full overflow-auto select-text"
       :style="{ height: dialogFullscreen ? 'calc(100vh - 155px)' : 'calc(100vh - 30vh - 200px)' }"
     ></div>
     <Editor
