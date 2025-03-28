@@ -329,6 +329,9 @@ export async function rowButtonClick(params) {
       button,
       vm,
     });
+    return {
+      type: "detail",
+    }
   } else if ("procdetail" == type) {
     const urlParams = `/${row['proc_instance_no']}?srvApp=${resolveDefaultSrvApp()}`;
     // "/" +
@@ -344,6 +347,9 @@ export async function rowButtonClick(params) {
       button,
       vm,
     })
+    return {
+      type: "procdetail",
+    }
   } else if ("addchild" == type) {
     onAddChildClicked(row);
     return {
