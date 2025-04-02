@@ -164,6 +164,7 @@ export default {
     },
     onCreated(editor) {
       this.editor = Object.seal(editor); // 一定要用 Object.seal() ，否则会报错
+      this.$parent.$parent?.$parent?.$parent?.clearCellSelection()
     },
   },
   created() {

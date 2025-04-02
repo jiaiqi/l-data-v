@@ -4162,7 +4162,7 @@ export default {
         return;
       }
       if (
-        !this.updateButton?.service_name ||
+        (!this.updateButton?.service_name&&!this.addButton?.service_name) ||
         !Array.isArray(reqData) ||
         !reqData.length
       ) {
