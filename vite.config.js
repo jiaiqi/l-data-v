@@ -4,9 +4,6 @@ import { defineConfig } from "vite";
 // import legacy from "@vitejs/plugin-legacy";
 import vue2 from "@vitejs/plugin-vue2";
 import UnoCSS from "unocss/vite";
-// import { visualizer } from "rollup-plugin-visualizer";
-// import viteCompression from 'vite-plugin-compression'
-// import { VitePWA } from 'vite-plugin-pwa';
 // import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vitejs.dev/config/
@@ -19,19 +16,7 @@ export default defineConfig({
     //   additionalLegacyPolyfills: ["regenerator-runtime/runtime"], // 面向IE11时需要此插件
     // }),
     UnoCSS(),
-    // visualizer({ open: true }), // 自动开启分析页面
-    // viteCompression({
-    //   verbose: true,
-    //   disable: false,
-    //   threshold: 10240,
-    //   algorithm: 'gzip',
-    //   ext: '.gz',
-    // }),
-    // VitePWA({
-    //   registerType: 'autoUpdate',
-    //   devOptions: {
-    //     enabled: true,
-    //   },
+
     //   workbox:{
     //     maximumFileSizeToCacheInBytes: 5000000,
     //   },

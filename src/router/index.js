@@ -21,11 +21,11 @@ const router = new VueRouter({
       name: "childList",
       component: () => import("@/views/sheet-editor/index.vue"),
     },
-    {
-      path: "/table-graph",
-      name: "TableGraph",
-      component: () => import('@/views/table-graph/index.vue')
-    },
+    // {
+    //   path: "/table-graph",
+    //   name: "TableGraph",
+    //   component: () => import('@/views/table-graph/index.vue')
+    // },
     // {
     //   path: "/player",
     //   name: "player",
