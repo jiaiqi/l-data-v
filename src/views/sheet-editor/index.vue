@@ -2006,7 +2006,8 @@ export default {
         defaultValue: event || null,
       });
       this.$refs["tableRef"].stopEditingCell();
-      // this.clearCellSelection();
+
+      this.clearCellSelection();
       if (type === "save") {
         this.$nextTick(() => {
           this.saveData();
