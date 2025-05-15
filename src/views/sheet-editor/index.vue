@@ -1,67 +1,29 @@
 <template>
-  <div
-    class="spreadsheet flex flex-col"
-    :class="{'child-list':childListType}"
-    ref="spreadsheet"
-  >
-    <loading-view
-      v-if="loading"
-      mask
-      type="surround"
-      :maskOpacity="0.2"
-      showText
-      textColor="#fff"
-    ></loading-view>
-    <div
-      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 w-full"
-      v-if="disabled !== true"
-    >
-      <div
-        class="flex flex-1 items-center text-sm p-x-2"
-        v-if="addButton && addButton.service_name"
-      >
+  <div class="spreadsheet flex flex-col" :class="{ 'child-list': childListType }" ref="spreadsheet">
+    <loading-view v-if="loading" mask type="surround" :maskOpacity="0.2" showText textColor="#fff"></loading-view>
+    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 w-full" v-if="disabled !== true">
+      <div class="flex flex-1 items-center text-sm p-x-2" v-if="addButton && addButton.service_name">
         <div class="m-r-2">添加</div>
-        <el-input-number
-          size="mini"
-          v-model="insertRowNumber"
-          style="width: 100px"
-        />
+        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
         <div class="m-x-2">行</div>
-        <el-button
-          class="icon-button"
-          title="添加(ctrl + 加号键)"
-          size="mini"
-          type="primary"
-          @click="batchInsertRows"
-          :disabled="insertRowNumber === 0"
-        >
+        <el-button class="icon-button" title="添加(ctrl + 加号键)" size="mini" type="primary" @click="batchInsertRows"
+          :disabled="insertRowNumber === 0">
           <!-- 添加 -->
           <i class="i-ic-baseline-add"></i>
         </el-button>
       </div>
-      <div
-        class="text-sm text-gray cursor-not-allowed"
-        v-else
-      >
+      <div class="text-sm text-gray cursor-not-allowed" v-else>
         <!-- 没有添加权限 -->
       </div>
-      <div class="p-x-2 flex-1">
-        <el-radio-group
-          v-model="listType"
-          @input="listTypeChange"
-          size="mini"
-          v-if="isTree"
-        >
+      <div class="p-x-2 flex-1 flex justify-center">
+        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
       </div>
 
       <div class="flex flex-items-center flex-1 justify-end p-x-2">
-        <div
-          class="color-map flex flex-items-center m-r-20"
-          v-if="!['add', 'addchildlist'].includes(childListType)"
-        >
+        <div class="color-map flex flex-items-center m-r-20" v-if="!['add', 'addchildlist'].includes(childListType)">
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
             <div class="color bg-[#2EA269] w-4 h-4 m-r-2 rounded"></div>
@@ -72,203 +34,89 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <div
-          class="relative"
-          v-if="gridButton && gridButton.length"
-        >
-          <div
-            class="grid-button-box"
-            :class="{ show: showGridButton }"
-          >
-            <el-button
-              size="mini"
-              type="primary"
-              :title="item.button_name"
-              v-for="item in gridButton"
-              class="button"
-              @click="onGridButton(item)"
-            >
+        <div class="relative" v-if="gridButton && gridButton.length">
+          <div class="grid-button-box" :class="{ show: showGridButton }">
+            <el-button size="mini" type="primary" :title="item.button_name" v-for="item in gridButton" class="button"
+              @click="onGridButton(item)">
               {{ item.button_name }}
             </el-button>
           </div>
-          <el-button
-            class="icon-button mr-1"
-            size="mini"
-            type="primary"
-            @click="showGridButton = !showGridButton"
-          >
-            <i
-              class="i-ic-sharp-keyboard-double-arrow-right icon"
-              :class="{ show: showGridButton }"
-              :title="showGridButton ? '收起操作按钮' : '展开操作按钮'"
-            ></i>
+          <el-button class="icon-button mr-1" size="mini" type="primary" @click="showGridButton = !showGridButton">
+            <i class="i-ic-sharp-keyboard-double-arrow-right icon" :class="{ show: showGridButton }"
+              :title="showGridButton ? '收起操作按钮' : '展开操作按钮'"></i>
           </el-button>
         </div>
 
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="refreshData"
-          v-if="!['add', 'addchildlist'].includes(childListType)"
-          title="刷新（F5）"
-        >
+        <el-button class="icon-button" size="mini" type="primary" @click="refreshData"
+          v-if="!['add', 'addchildlist'].includes(childListType)" title="刷新（F5）">
           <!-- 刷新 -->
 
           <i class="i-ic-baseline-refresh"></i>
         </el-button>
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="saveData"
-          :disabled="!calcReqData || calcReqData.length == 0"
-          v-if="!['add', 'addchildlist'].includes(childListType)"
-          v-loading="onHandler"
-          title="保存（Ctrl+S）"
-        >
+        <el-button class="icon-button" size="mini" type="primary" @click="saveData"
+          :disabled="!calcReqData || calcReqData.length == 0" v-if="!['add', 'addchildlist'].includes(childListType)"
+          v-loading="onHandler" title="保存（Ctrl+S）">
           <!-- 保存 -->
           <i class="i-ic-baseline-save"></i>
-          <span
-            v-if="autoSaveTimeout && autoSaveTimeout > 0"
-            class="text-xs"
-            title="自动保存倒计时"
-          >
+          <span v-if="autoSaveTimeout && autoSaveTimeout > 0" class="text-xs" title="自动保存倒计时">
             {{ autoSaveTimeout }}
           </span>
         </el-button>
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="saveColumnWidth"
-          v-loading="onHandler"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
-          v-if="
+        <el-button class="icon-button" size="mini" type="primary" @click="saveColumnWidth" v-loading="onHandler"
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0" v-if="
             !childListType &&
             calcColumnWidthReq &&
             calcColumnWidthReq.length > 0
-          "
-          title="保存列宽"
-        >
+          " title="保存列宽">
           <!-- 保存列宽 -->
           <i class="i-ic-baseline-view-column"></i>
         </el-button>
       </div>
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
-    <div
-      class="flex-1 list-container"
-      v-if="isFetched || childListType"
-    >
-      <ve-table
-        :columns="columns"
-        border-x
-        border-y
-        :table-data="tableData"
-        v-if="disabled"
-        ref="tableRef"
-        style="word-break: break-word; width: 100vw; height: 100%"
-        max-height="calc(100vh - 40px)"
-        fixed-header
-      />
-      <div
-        class="custom-style"
-        v-else
-      >
-        <ve-table
-          ref="tableRef"
-          style="word-break: break-word; width: 100vw"
-          max-height="calc(100vh - 80px)"
-          fixed-header
-          :scroll-width="0"
-          border-y
-          :columns="columns"
-          :table-data="tableData"
-          row-key-field-name="rowKey"
-          :virtual-scroll-option="virtualScrollOption"
-          :cell-autofill-option="cellAutofillOption"
-          :cell-style-option="cellStyleOption"
-          :edit-option="editOption"
-          :clipboard-option="clipboardOption"
-          :contextmenu-body-option="contextmenuBodyOption"
-          :contextmenu-header-option="contextmenuHeaderOption"
-          :row-style-option="rowStyleOption"
-          :column-width-resize-option="columnWidthResizeOption"
-          :event-custom-option="eventCustomOption"
-          :columnHiddenOption="columnHiddenOption"
-        />
+    <div class="flex-1 list-container" v-if="isFetched || childListType">
+      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
+        style="word-break: break-word; width: 100vw; height: 100%" max-height="calc(100vh - 40px)" fixed-header />
+      <div class="custom-style" v-else>
+        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)"
+          fixed-header :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
       </div>
     </div>
-    <div
-      class="empty-data"
-      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
-    >
+    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">
       暂无数据
     </div>
     <!--    列表为新增子表时不显示分页-->
-    <div
-      class="text-center flex justify-between"
-      v-if="!['add', 'addchildlist'].includes(childListType)"
-    >
+    <div class="text-center flex justify-between" v-if="!['add', 'addchildlist'].includes(childListType)">
       <div class="position-relative">
         <choose-tenant />
       </div>
-      <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]"
-        :page-size="page.rownumber"
-        layout="total, sizes, pager,  jumper"
-        :total="page.total"
-      >
+      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
+        :total="page.total">
       </el-pagination>
       <div class="flex items-center">
       </div>
     </div>
 
-    <select-parent-node
-      ref="changeParentRef"
-      :topTreeData="topTreeData"
-      :srvApp="srvApp"
-      :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-        "
-      :option-info="parentColOption"
-      @confirm="updateParentNo"
-    ></select-parent-node>
+    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+      " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
 
     <login-dialog ref="loginRef"></login-dialog>
-    <drop-menu
-      v-if="showDropMenu"
-      v-model="showDropMenu"
-      :row="currentRowData"
-      :items="rowButton"
-      :position="{ top: dTop, left: dLeft }"
-      @select="onRowButton"
-    />
+    <drop-menu v-if="showDropMenu" v-model="showDropMenu" :row="currentRowData" :items="rowButton"
+      :position="{ top: dTop, left: dLeft }" @select="onRowButton" />
     <out-form-dialog ref="outFormDialog"></out-form-dialog>
 
     <Teleport to=".ve-table-content-wrapper">
-      <field-editor
-        ref="fieldEditor"
-        :disabled="disabled"
-        :detailButton="detailButton"
-        :serviceName="serviceName"
-        :app="srvApp"
-        :listType="listType"
-        :keyDispCol="(v2data && v2data.key_disp_col) || ''"
-        :value="currentCellValue"
-        :show.sync="showFieldEditor"
-        v-bind="fieldEditorParams"
-        v-if="showFieldEditor"
-        @change="dialogChange"
-        @fk-autocomplete-change="fkAutocompleteChange"
-        @fk-change="fkChange"
-        @fks-change="fksChange"
-        @save="dialogChange"
-        @close="dialogClose"
-      ></field-editor>
+      <field-editor ref="fieldEditor" :disabled="disabled" :detailButton="detailButton" :serviceName="serviceName"
+        :app="srvApp" :listType="listType" :keyDispCol="(v2data && v2data.key_disp_col) || ''" :value="currentCellValue"
+        :show.sync="showFieldEditor" v-bind="fieldEditorParams" v-if="showFieldEditor" @change="dialogChange"
+        @fk-autocomplete-change="fkAutocompleteChange" @fk-change="fkChange" @fks-change="fksChange"
+        @save="dialogChange" @close="dialogClose"></field-editor>
     </Teleport>
   </div>
 </template>
@@ -3715,8 +3563,14 @@ export default {
             const oldValByFk =
               fieldModelObj?.oldModel?.[item?.redundant?.refedCol];
             console.log(oldValByFk, "oldValByFk");
-            if (oldValByFk && row[item.columns] !== oldValByFk) {
-              return;
+             if (oldValByFk && row[item?.redundant?.refedCol] !== oldValByFk) {
+              // 如果当前行的值跟fk字段的值不一致，则不处理
+              console.log(
+                "handlerRedundant::unchange",
+                item.columns,
+                row[item.columns]
+              );
+             return;
             }
           }
           if (!item?.redundant?.refedCol) return;
@@ -4163,7 +4017,7 @@ export default {
         return;
       }
       if (
-        (!this.updateButton?.service_name&&!this.addButton?.service_name) ||
+        (!this.updateButton?.service_name && !this.addButton?.service_name) ||
         !Array.isArray(reqData) ||
         !reqData.length
       ) {
@@ -5018,12 +4872,15 @@ export default {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  &.child-list{
+
+  &.child-list {
     height: unset;
-    .ve-table-container{
-      height: auto!important;
+
+    .ve-table-container {
+      height: auto !important;
     }
   }
+
   .el-select,
   .el-autocomplete {
     .el-input__inner {
