@@ -3563,7 +3563,7 @@ export default {
             const oldValByFk =
               fieldModelObj?.oldModel?.[item?.redundant?.refedCol];
             console.log(oldValByFk, "oldValByFk");
-             if (oldValByFk && row[item?.redundant?.refedCol] !== oldValByFk) {
+             if (oldValByFk && row[item?.redundant?.refedCol] && row[item?.redundant?.refedCol] !== oldValByFk) {
               // 如果当前行的值跟fk字段的值不一致，则不处理
               console.log(
                 "handlerRedundant::unchange",
