@@ -3873,7 +3873,7 @@ export default {
         .then((res) => {
           if (res?.data?.state === "SUCCESS") {
             this.$message.success(res.data.resultMessage);
-            // this.updateTableColumn();
+            this.updateTableColumn();
             this.columnWidthMap = {};
             this.getV2Data(true).then(() => {
               this.loading = false;
