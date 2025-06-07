@@ -27,13 +27,25 @@
               :class="{ columns: singList.type === 'all' }"
             >
               <el-checkbox
-                :label="item.columns"
+                :label="item.label + '/' + item.columns"
                 :name="item.columns"
                 :value="item.columns"
+                class="flex items-center px-5px cursor-move"
               >
-                {{ item.label }}</el-checkbox
-              >
-              <!-- {{ item.label }} -->
+                <div class="flex items-center w-[150px]">
+                  <div class="flex justify-center flex-col px-2 flex-1">
+                    <div>
+                      {{ item.label }}
+                    </div>
+                    <div>{{ item.columns }}</div>
+                  </div>
+                  <!-- <i class="i-ri-align-justify handle cursor-move"></i> -->
+                  <i
+                    class="i-ri-file-copy-2-fill ml-2px cursor-pointer text-gray-500 hover:text-blue-500"
+                    @click.stop.prevent="copyColumn(item)"
+                  ></i>
+                </div>
+              </el-checkbox>
             </div>
             <div
               v-else
@@ -254,6 +266,44 @@ export default {
     };
   },
   methods: {
+    copyColumn(item) {
+      const textToCopy = item.columns;
+
+      // 使用 Clipboard API 如果可用
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard
+          .writeText(textToCopy)
+          .then(() => {
+            this.$message.success(`字段[${textToCopy} ]已复制`);
+          })
+          .catch((err) => {
+            this.$message.error("复制失败: ", err);
+          });
+      } else {
+        // 回退到 execCommand 方式
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        textArea.style.position = "fixed";
+        textArea.style.top = "-999999px";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          const successful = document.execCommand("copy");
+          if (successful) {
+            this.$message.success(`字段[${textToCopy} ]已复制`);
+          } else {
+            throw new Error("execCommand 复制失败");
+          }
+        } catch (err) {
+          this.$message.error("复制失败，请升级浏览器或切换为 HTTPS 环境");
+        }
+
+        document.body.removeChild(textArea);
+      }
+    },
     deleteAllData() {
       // 清除组装的数据
     },

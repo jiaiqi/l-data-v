@@ -1090,15 +1090,18 @@ export default {
             order: [],
           };
 
-          reqData.condition.map((cond) => {
-            this.allColum.list.map((column) => {
-              if (column.columns == cond.colName) {
-                column._condition = cond;
-                _condition.push(cond);
-                endData.condition.push(column);
-              }
+          if (Array.isArray(reqData.condition)) {
+            reqData.condition.map((cond) => {
+              this.allColum.list.map((column) => {
+                if (column.columns == cond.colName) {
+                  column._condition = cond;
+                  _condition.push(cond);
+                  endData.condition.push(column);
+                }
+              });
             });
-          });
+          }
+
           let group = reqData.group;
           if (group) {
             const groupTypes = [
@@ -1216,8 +1219,9 @@ export default {
 .hual {
   display: flex;
   flex-direction: column;
-  width: 70%;
   // min-width: 1300px;
+  max-width: 1200px;
+  min-width: 1000px;
   margin: 0 auto;
   .sing_hual {
     margin-left: 0.5rem;
@@ -1266,8 +1270,7 @@ export default {
     }
     .condition-box {
       min-height: 500px;
-      // flex: 1;
-      width: 83%;
+      flex: 1;
       display: flex;
       flex-wrap: wrap;
       align-content: space-between;
