@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="rich-editor" ref="rich-editor">
     <Toolbar
       style="border-bottom: 1px solid #ccc"
       :editor="editor"
@@ -11,13 +11,21 @@
       v-if="!editable"
       v-html="recoverFileAddress(innerHtml)"
       class="w-full overflow-auto select-text"
-      :style="{ height: dialogFullscreen ? 'calc(100vh - 155px)' : 'calc(100vh - 30vh - 200px)' }"
+      :style="{
+        height: dialogFullscreen
+          ? 'calc(100vh - 155px)'
+          : 'calc(100vh - 30vh - 200px)',
+      }"
     ></div>
     <Editor
       v-else
       v-model="innerHtml"
       :class="{ 'is-rich-text': true }"
-      :style="{ height: dialogFullscreen ? 'calc(100vh - 155px)' : 'calc(100vh - 30vh - 200px)' }"
+      :style="{
+        height: dialogFullscreen
+          ? 'calc(100vh - 155px)'
+          : 'calc(100vh - 30vh - 200px)',
+      }"
       style="overflow-y: hidden; border-bottom: 1px solid #ccc"
       :defaultConfig="editorConfig"
       :disabled="!editable"
@@ -27,6 +35,14 @@
       @customPaste="customPaste"
       :key="ticket + 2"
     />
+    <el-image
+      style="width: 0; height: 0; display: none; overflow: hidden"
+      :src="previewImage"
+      :preview-src-list="[previewImage]"
+      ref="imagePreview"
+      v-if="previewImage"
+    >
+    </el-image>
   </div>
 </template>
 
@@ -61,6 +77,7 @@ export default {
       toolbarConfig: {},
       editor: null,
       ticket: null,
+      previewImage: null,
     };
   },
   computed: {
@@ -133,11 +150,25 @@ export default {
     },
     innerHtml(newVal) {
       // 监听内部值变化
-      if(newVal==='<p><br></p>'&&!this.value) return
+      if (newVal === "<p><br></p>" && !this.value) return;
       this.$emit("input", newVal);
     },
   },
   methods: {
+    onDblClick(event) {
+      console.log(event, "onDblClick");
+      if (event.target.nodeName === "IMG") {
+        this.previewImage =
+          event.target.currentSrc || event.target.href || null;
+      } else {
+        this.previewImage = null;
+      }
+      if (this.previewImage) {
+        this.$nextTick(() => {
+          this.$refs["imagePreview"].showViewer = true;
+        });
+      }
+    },
     customPaste(editor, event) {
       // event 是 ClipboardEvent 类型，可以拿到粘贴的数据
       // 可参考 https://developer.mozilla.org/zh-CN/docs/Web/API/ClipboardEvent
@@ -164,14 +195,17 @@ export default {
     },
     onCreated(editor) {
       this.editor = Object.seal(editor); // 一定要用 Object.seal() ，否则会报错
-      this.$parent.$parent?.$parent?.$parent?.clearCellSelection()
+      this.$parent.$parent?.$parent?.$parent?.clearCellSelection();
+      this.$refs?.["rich-editor"]
+        ?.querySelector(".w-e-text-container")
+        ?.addEventListener("dblclick", this.onDblClick);
     },
   },
   created() {
     this.ticket = sessionStorage.getItem("bx_auth_ticket");
     // this.$nextTick(() => {
-      // this.$parent.$parent.$parent.$parent.clearCellSelection()
-      // this.$parent.$parent.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
+    // this.$parent.$parent.$parent.$parent.clearCellSelection()
+    // this.$parent.$parent.$parent.$refs.tableRef.clearCellSelectionCurrentCell()
     // });
   },
 };
