@@ -406,85 +406,171 @@ export default {
         } else if (["float", "int", "money", "number"].includes(dataType)) {
           dataType = "number";
         }
-        let operator = [];
-        switch (dataType) {
-          case "date": // 时间类型
-            operator = [
-              {
-                label: "等于",
-                value: "eq",
-              },
-              {
-                label: "不等于",
-                value: "ne",
-              },
-              {
-                label: "近似于",
-                value: "like",
-              },
-              {
-                label: "包含",
-                value: "in",
-              },
-              {
-                label: "起止时间",
-                value: "between",
-              },
-            ];
-            break;
-          case "number": // 数字类型
-            operator = [
-              {
-                label: "等于",
-                value: "eq",
-              },
-              {
-                label: "小于等于",
-                value: "le",
-              },
-              {
-                label: "大于等于",
-                value: "ge",
-              },
-              {
-                label: "大于",
-                value: "gt",
-              },
-              {
-                label: "小于",
-                value: "lt",
-              },
-              {
-                label: "不等于",
-                value: "ne",
-              },
-              {
-                label: "包含",
-                value: "in",
-              },
-            ];
-            break;
-          default:
-            operator = [
-              {
-                label: "等于",
-                value: "eq",
-              },
-              {
-                label: "不等于",
-                value: "ne",
-              },
-              {
-                label: "近似于",
-                value: "like",
-              },
-              {
-                label: "包含",
-                value: "in",
-              },
-            ];
-            break;
-        }
+        // enum('等于','不等于','大于','小于','近似于','开始于','结束于','包含','不包含','为空','不为空','在集合中','在两者之间')
+        let operator = [
+          {
+            label: "等于",
+            value: "eq",
+          },
+          {
+            label: "不等于",
+            value: "ne",
+          },
+          {
+            label: "大于",
+            value: "gt",
+          },
+          {
+            label: "小于",
+            value: "lt",
+          },
+          {
+            label: "近似于",
+            value: "like",
+          },
+          {
+            label: "开始于",
+            value: "like]",
+          },
+          {
+            label: "结束于",
+            value: "[like",
+          },
+          {
+            label: "包含",
+            value: "in",
+          },
+          {
+            label: "不包含",
+            value: "notin",
+          },
+          {
+            label: "为空",
+            value: "isnull",
+          },
+          {
+            label: "不为空",
+            value: "notnull",
+          },
+          {
+            label: "在集合中",
+            value: "inset",
+          },
+          {
+            label: "在两者之间",
+            value: "between",
+          },
+        ];
+        // switch (dataType) {
+        //   case "date": // 时间类型
+        //     operator = [
+        //       {
+        //         label: "等于",
+        //         value: "eq",
+        //       },
+        //       {
+        //         label: "不等于",
+        //         value: "ne",
+        //       },
+        //       {
+        //         label: "大于",
+        //         value: "gt",
+        //       },
+        //       {
+        //         label: "小于",
+        //         value: "lt",
+        //       },
+        //       {
+        //         label: "近似于",
+        //         value: "like",
+        //       },
+        //       {
+        //         label: "开始于",
+        //         value: "like]",
+        //       },
+        //       {
+        //         label: "结束于",
+        //         value: "[like",
+        //       },
+        //       {
+        //         label: "包含",
+        //         value: "in",
+        //       },
+        //       {
+        //         label: "不包含",
+        //         value: "notin",
+        //       },
+        //       {
+        //         label: "为空",
+        //         value: "isnull",
+        //       },
+        //       {
+        //         label: "不为空",
+        //         value: "notnull",
+        //       },
+        //       {
+        //         label: "在集合中",
+        //         value: "inset",
+        //       },
+        //       {
+        //         label: "在两者之间",
+        //         value: "between",
+        //       },
+        //     ];
+        //     break;
+        //   case "number": // 数字类型
+        //     operator = [
+        //       {
+        //         label: "等于",
+        //         value: "eq",
+        //       },
+        //       {
+        //         label: "小于等于",
+        //         value: "le",
+        //       },
+        //       {
+        //         label: "大于等于",
+        //         value: "ge",
+        //       },
+        //       {
+        //         label: "大于",
+        //         value: "gt",
+        //       },
+        //       {
+        //         label: "小于",
+        //         value: "lt",
+        //       },
+        //       {
+        //         label: "不等于",
+        //         value: "ne",
+        //       },
+        //       {
+        //         label: "包含",
+        //         value: "in",
+        //       },
+        //     ];
+        //     break;
+        //   default:
+        //     operator = [
+        //       {
+        //         label: "等于",
+        //         value: "eq",
+        //       },
+        //       {
+        //         label: "不等于",
+        //         value: "ne",
+        //       },
+        //       {
+        //         label: "近似于",
+        //         value: "like",
+        //       },
+        //       {
+        //         label: "包含",
+        //         value: "in",
+        //       },
+        //     ];
+        //     break;
+        // }
         this.selectList = operator;
       } else {
         sign.forEach((item) => {

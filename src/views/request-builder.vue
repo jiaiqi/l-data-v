@@ -568,14 +568,14 @@ export default {
       let all = res.data.data;
       this.columnsOption = [];
       all.forEach((item) => {
-        if (
-          item.in_list === 1 ||
-          item.in_cond === 1 ||
-          item.in_detail === 1 ||
-          item.in_add === null ||
-          item.in_detail === null ||
-          item.in_list === null
-        ) {
+        // if (
+        //   item.in_list === 1 ||
+        //   item.in_cond === 1 ||
+        //   item.in_detail === 1 ||
+        //   item.in_add === null ||
+        //   item.in_detail === null ||
+        //   item.in_list === null
+        // ) {
           item["_condition"] = {
             colName: item.columns,
             ruleType: "",
@@ -595,7 +595,7 @@ export default {
           };
           item["aliasName"] = "";
           this.columnsOption.push(item);
-        }
+        // }
       });
       this.deleteListData();
       this.allColum.list = this.columnsOption;
