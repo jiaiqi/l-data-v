@@ -33,11 +33,13 @@
                 class="flex items-center px-5px cursor-move"
               >
                 <div class="flex items-center w-[150px]">
-                  <div class="flex justify-center flex-col px-2 flex-1">
-                    <div>
+                  <div
+                    class="flex justify-center flex-col px-2 flex-1 truncate"
+                  >
+                    <div class="truncate">
                       {{ item.label }}
                     </div>
-                    <div>{{ item.columns }}</div>
+                    <div class="truncate">{{ item.columns }}</div>
                   </div>
                   <!-- <i class="i-ri-align-justify handle cursor-move"></i> -->
                   <i
