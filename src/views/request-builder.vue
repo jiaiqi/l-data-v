@@ -1,132 +1,174 @@
 <template>
   <div class="hual">
-    <el-form
-      ref="ruleForm"
-      label-width="120px"
-      class="select-box"
-      :model="ruleForm"
-    >
-      <el-form-item
-        label="接口名称："
-        prop="srv_req_name"
-        :rules="[
-          { required: true, message: '请输入接口调用名称：', trigger: 'blur' },
-        ]"
+    <el-card class="select-box" shadow="hover">
+      <el-form
+        ref="ruleForm"
+        label-width="120px"
+        :model="ruleForm"
+        size="small"
       >
-        <el-input v-model="ruleForm.srv_req_name"></el-input>
-      </el-form-item>
-      <el-form-item
-        label="应用名称："
-        prop="app_name"
-        :rules="[
-          { required: true, message: '请输入应用名称', trigger: 'blur' },
-        ]"
-      >
-        <el-select
-          v-model="ruleForm.mapp"
-          placeholder="请选择应用名称"
-          @change="getServiceName()"
-          clearable
-          filterable
-        >
-          <el-option
-            v-for="item in allApp"
-            :key="item.value"
-            :label="item.app_name"
-            :value="item.app_no"
-          ></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item
-        label="接口类型："
-        prop="srv_type"
-        :rules="[
-          { required: true, message: '请输入图表名称', trigger: 'blur' },
-        ]"
-      >
-        <el-select
-          v-model="ruleForm.srv_type"
-          placeholder="接口类型："
-          clearable
-          filterable
-        >
-          <el-option
-            v-for="item in srvTypeList"
-            :disabled="item !== 'select'"
-            :key="item"
-            :label="item"
-            :value="item"
-          ></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item
-        label="服务名称："
-        prop="service_name"
-        :rules="[
-          { required: true, message: '请选择服务名称', trigger: 'blur' },
-        ]"
-      >
-        <el-select
-          v-model="ruleForm.service_name"
-          placeholder="请选择服务名称"
-          clearable
-          filterable
-          @change="getColumns()"
-        >
-          <el-option
-            v-for="item in allService"
-            :key="item.value"
-            :label="item.service_view_name"
-            :value="item.service_name"
-          ></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item label="请求参数：" prop="request_params">
-        <el-checkbox-group
-          v-model="checkedReqOptions"
-          @change="changeReqOption"
-        >
-          <el-checkbox
-            v-for="option in ReqOptions"
-            :label="option"
-            :key="option"
-            name="type"
-          ></el-checkbox>
-        </el-checkbox-group>
-      </el-form-item>
-    </el-form>
-    <div class="content-box">
-      <div class="column-box">
-        <column-box
-          :singList="allColum"
-          :allow-check="true"
-          :checkedColumns.sync="checkedColumns"
-        ></column-box>
-      </div>
-      <div class="condition-box">
-        <div
-          class="sing_hual"
-          v-for="(item, index) in listData"
-          :key="index"
-          v-show="item.show"
-        >
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item
+              label="接口名称："
+              prop="srv_req_name"
+              :rules="[
+                {
+                  required: true,
+                  message: '请输入接口调用名称',
+                  trigger: 'blur',
+                },
+              ]"
+            >
+              <el-input
+                v-model="ruleForm.srv_req_name"
+                placeholder="请输入接口名称"
+                clearable
+              ></el-input>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item
+              label="应用名称："
+              prop="app_name"
+              :rules="[
+                { required: true, message: '请输入应用名称', trigger: 'blur' },
+              ]"
+            >
+              <el-select
+                v-model="ruleForm.mapp"
+                placeholder="请选择应用名称"
+                @change="getServiceName()"
+                clearable
+                filterable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in allApp"
+                  :key="item.value"
+                  :label="item.app_name"
+                  :value="item.app_no"
+                ></el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item
+              label="接口类型："
+              prop="srv_type"
+              :rules="[
+                { required: true, message: '请选择接口类型', trigger: 'blur' },
+              ]"
+            >
+              <el-select
+                v-model="ruleForm.srv_type"
+                placeholder="请选择接口类型"
+                clearable
+                filterable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in srvTypeList"
+                  :disabled="item !== 'select'"
+                  :key="item"
+                  :label="item"
+                  :value="item"
+                ></el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item
+              label="服务名称："
+              prop="service_name"
+              :rules="[
+                { required: true, message: '请选择服务名称', trigger: 'blur' },
+              ]"
+            >
+              <el-select
+                v-model="ruleForm.service_name"
+                placeholder="请选择服务名称"
+                clearable
+                filterable
+                @change="getColumns()"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in allService"
+                  :key="item.value"
+                  :label="item.service_view_name"
+                  :value="item.service_name"
+                ></el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="16">
+            <el-form-item label="请求参数：" prop="request_params">
+              <el-checkbox-group
+                v-model="checkedReqOptions"
+                @change="changeReqOption"
+                size="small"
+              >
+                <el-checkbox
+                  v-for="option in ReqOptions"
+                  :label="option"
+                  :key="option"
+                  name="type"
+                ></el-checkbox>
+              </el-checkbox-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </el-card>
+
+    <el-card class="columns-box">
+      <div class="content-box">
+        <div class="column-box">
           <column-box
-            ref="child"
-            @save="requestData"
-            :singList="item"
-            :endData="endData"
+            :singList="allColum"
+            :allow-check="true"
+            :checkedColumns.sync="checkedColumns"
           ></column-box>
         </div>
+        <div class="condition-box">
+          <div
+            class="sing_hual"
+            v-for="(item, index) in listData"
+            :key="index"
+            v-show="item.show"
+          >
+            <column-box
+              ref="child"
+              @save="requestData"
+              :singList="item"
+              :endData="endData"
+            ></column-box>
+          </div>
+        </div>
       </div>
-    </div>
+    </el-card>
+
     <div class="btn-box">
-      <el-button @click="previewData" type="success">预览</el-button>
-      <el-button @click="saveConfig" type="primary">保存</el-button>
+      <el-button @click="previewData" type="success" icon="el-icon-view"
+        >预览</el-button
+      >
+      <el-button @click="saveConfig" type="primary" icon="el-icon-upload"
+        >保存</el-button
+      >
     </div>
-    <div class="preview-box">
-      <div class="preview-title">
+
+    <el-card class="preview-box" shadow="hover">
+      <div slot="header" class="preview-title">
         <div class="title">数据预览</div>
-        <el-button @click="exportExcel" type="primary" class="export-button"
+        <el-button
+          @click="exportExcel"
+          type="primary"
+          size="small"
+          icon="el-icon-download"
+          class="export-button"
           >导出为Excel</el-button
         >
       </div>
@@ -135,18 +177,24 @@
           :data="tableData"
           style="width: 100%"
           stripe
-          fixed
           border
-          v-if="tableData && tableTitle"
+          highlight-current-row
+          v-if="tableData && tableTitle && tableData.length > 0"
           id="out-table"
+          size="small"
         >
           <template v-for="(only, i) in tableTitle">
             <el-table-column
               :prop="only.columns"
               :label="only.aliasName || only.label"
+              show-overflow-tooltip
             ></el-table-column>
           </template>
         </el-table>
+        <div class="empty-data" v-if="!tableData || !tableData.length">
+          <i class="el-icon-data-analysis"></i>
+          <p>暂无数据，请点击预览按钮获取数据或检查请求参数是否正确</p>
+        </div>
       </div>
       <div class="pagination">
         <el-pagination
@@ -157,10 +205,11 @@
           :page-size="previewInfo.rowNum"
           layout="total, sizes, prev, pager, next, jumper"
           :total="previewInfo.totalPage"
+          background
           v-if="tableData.length > 0"
         ></el-pagination>
       </div>
-    </div>
+    </el-card>
   </div>
 </template>
 
@@ -576,25 +625,25 @@ export default {
         //   item.in_detail === null ||
         //   item.in_list === null
         // ) {
-          item["_condition"] = {
-            colName: item.columns,
-            ruleType: "",
-            value: "",
-          };
-          item["_group"] = {
-            colName: item.columns,
-            type: "by",
-          };
-          item["_order"] = {
-            colName: item.columns,
-            orderType: "",
-          };
-          item["_aggregation"] = {
-            colName: item.columns,
-            type: "",
-          };
-          item["aliasName"] = "";
-          this.columnsOption.push(item);
+        item["_condition"] = {
+          colName: item.columns,
+          ruleType: "",
+          value: "",
+        };
+        item["_group"] = {
+          colName: item.columns,
+          type: "by",
+        };
+        item["_order"] = {
+          colName: item.columns,
+          orderType: "",
+        };
+        item["_aggregation"] = {
+          colName: item.columns,
+          type: "",
+        };
+        item["aliasName"] = "";
+        this.columnsOption.push(item);
         // }
       });
       this.deleteListData();
@@ -1218,6 +1267,9 @@ export default {
     // } else { // 编辑
     //   this.getApp();
     // }
+    this.$nextTick(() => {
+      document.title = '请求配置'
+    })
   },
 };
 </script>
@@ -1226,111 +1278,280 @@ export default {
 .hual {
   display: flex;
   flex-direction: column;
-  // min-width: 1300px;
-  max-width: 1200px;
-  min-width: 1000px;
+  max-width: 1600px;
+  min-width: 1200px;
   margin: 0 auto;
+  padding: 20px;
+  border-radius: 8px;
+
   .sing_hual {
     margin-left: 0.5rem;
     height: 50%;
     width: 30%;
   }
+
   .menu {
     height: 70vh;
     min-height: 500px;
     width: 15%;
   }
+  .columns-box {
+    border-radius: 8px;
+  }
   .select-box {
     width: 100%;
-    // height: 80px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     flex-wrap: wrap;
-    .el-form-item {
-      // display: flex;
-      line-height: 40px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      min-width: 30%;
-      .el-input {
-        max-width: 220px;
+    padding: 16px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    ::v-deep .el-card__body {
+      width: 100%;
+    }
+    &:hover {
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .el-form {
+      .el-form-item__label {
+        font-weight: 500;
+        color: #606266;
       }
+
+      .el-input__inner,
+      .el-select__tags {
+        border-radius: 4px;
+        border-color: #dcdfe6;
+        transition: all 0.3s;
+
+        &:focus,
+        &:hover {
+          border-color: #409eff;
+          box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+        }
+      }
+
+      .el-checkbox {
+        margin-right: 15px;
+
+        &.is-bordered {
+          padding: 8px 15px;
+          border-radius: 4px;
+          transition: all 0.3s;
+
+          &:hover {
+            border-color: #409eff;
+            color: #409eff;
+          }
+        }
+      }
+    }
+
+    .el-form-item {
+      line-height: 40px;
+      font-size: 14px;
+      font-weight: 500;
+      min-width: 30%;
+      margin-bottom: 16px;
+
+      .el-input {
+        // max-width: 220px;
+      }
+
       .label {
         color: #333;
         min-width: 65px;
       }
     }
   }
+
   .content-box {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 20px;
+    // box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+
     .column-box {
-      max-width: 15%;
-      min-width: 13%;
-      margin-right: 1.5rem;
+      width: 18%;
       height: 500px;
-      max-width: 500px;
-      font-size: 0.8rem;
-      font-weight: 100;
+      font-size: 14px;
+      font-weight: 400;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+      }
     }
+
     .condition-box {
       min-height: 500px;
       flex: 1;
-      display: flex;
-      flex-wrap: wrap;
-      align-content: space-between;
-      justify-content: space-between;
+      // display: flex;
+      // flex-wrap: wrap;
+      // align-content: flex-start;
+      // justify-content: space-between;
+      gap: 16px;
+      display: grid;
+      justify-content: center;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 600px));
+
       .sing_hual {
-        width: calc(50% - 10px);
-        margin-bottom: 10px;
-        // height: 100%;
-        // flex: 1;
-        // min-width: max(40%,400px);
-        // max-width: min(400px,45%);
-        // min-width: 350px;
-        // max-width: 400px;
-        max-height: 49%;
+        // width: calc(50% - 10px);
+        // max-height: 49%;
+        height: 100%;
+        min-height: 200px;
+        max-height: 500px;
+        width: 100%;
         display: flex;
         box-sizing: border-box;
-        // &:nth-child(2n + 1) {
-        //   flex: 1;
-        //   min-width: 49%;
-        // }
-        // &:nth-child(2n) {
-        //   flex: 0.6;
-        // }
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
       }
     }
   }
+
   .btn-box {
-    height: 100px;
+    height: 70px;
     display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+
+    .el-button {
+      padding: 10px 24px;
+      font-weight: 500;
+      border-radius: 4px;
+      transition: all 0.3s;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      &.el-button--success {
+        background: linear-gradient(135deg, #50b11f, #85ce61);
+        border-color: #85ce61;
+      }
+
+      &.el-button--primary {
+        background: linear-gradient(135deg, #1989fa, #096dd9);
+        border-color: #409eff;
+      }
+    }
   }
+
   .preview-box {
     margin-bottom: 50px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+    }
+
     .preview-title {
-      line-height: 3rem;
+      padding: 0 16px;
+      height: 60px;
       display: flex;
+      align-items: center;
       justify-content: space-between;
+      border-bottom: 1px solid #f0f0f0;
+      margin-bottom: 16px;
+
       .title {
-        font-size: 1.5rem;
+        font-size: 18px;
         font-weight: 600;
         color: #333;
       }
+
+      .export-button {
+        transition: all 0.3s;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        &.el-button--primary {
+          background: linear-gradient(135deg, #1989fa, #096dd9);
+          border-color: #409eff;
+        }
+      }
     }
+
     .preview-content {
       width: 100%;
-      // min-height: 250px;
-      // border: 1px solid #ebebeb;
       border-radius: 5px;
+      overflow: hidden;
+
+      .el-table {
+        border-radius: 4px;
+        overflow: hidden;
+
+        th {
+          background-color: #f5f7fa !important;
+          color: #606266;
+          font-weight: 500;
+          padding: 10px 0;
+        }
+
+        td {
+          padding: 8px 0;
+        }
+
+        .el-table__row:hover > td {
+          background-color: #f0f7ff !important;
+        }
+      }
+
+      .empty-data {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 0;
+        color: #909399;
+        background-color: #fafafa;
+        border-radius: 4px;
+        i {
+          font-size: 48px;
+          margin-bottom: 10px;
+          color: #c0c4cc;
+        }
+        p {
+          font-size: 14px;
+        }
+      }
     }
+
     .export-button {
-      margin: 20px 0;
+      margin: 0;
     }
   }
+
   .pagination {
     width: 100%;
     text-align: center;
@@ -1338,7 +1559,18 @@ export default {
     align-items: center;
     justify-content: center;
     height: 5rem;
+    padding-top: 16px;
+
+    .el-pagination.is-background .el-pager li:not(.disabled).active {
+      background-color: #409eff;
+      color: #fff;
+    }
+
+    .el-pagination.is-background .el-pager li:not(.disabled):hover {
+      color: #409eff;
+    }
   }
+
   .detail-dialog ::v-deep .el-dialog__body .el-table {
     overflow-y: scroll;
     height: 600px;

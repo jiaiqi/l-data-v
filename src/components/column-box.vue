@@ -574,7 +574,8 @@ export default {
         this.selectList = operator;
       } else {
         sign.forEach((item) => {
-          let dataType = item.col_type; // 暂定有时间、数字、其它三种
+          let dataType = item.col_type || "string"; // 暂定有时间、数字、其它三种
+
           dataType = dataType.toLowerCase();
           if (dataType == "Date" || dataType == "DateTime") {
             dataType = "date";
@@ -746,7 +747,8 @@ export default {
       } else {
         sign.forEach((item) => {
           // 切换group的操作符
-          let dataType = item.col_type; // 暂定有时间、数字、其它三种
+          let dataType = item.col_type || "string"; // 暂定有时间、数字、其它三种
+
           if (dataType == "Date" || dataType == "DateTime") {
             dataType = "date";
           } else {
@@ -891,7 +893,7 @@ export default {
       } else {
         sign.forEach((item) => {
           // 切换聚合条件
-          let dataType = item.col_type?.toLowerCase();
+          let dataType = item.col_type?.toLowerCase() || "string";
           if (["date", "datetime"].includes(dataType)) {
             dataType = "date";
           } else if (["string"].includes(dataType)) {
@@ -1024,136 +1026,223 @@ export default {
 
 <style scoped lang="scss">
 .parentMenu {
-  min-width: 100px;
+  min-width: 120px;
   background: white;
   position: absolute;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border: 1px solid #ccc;
+  border: 1px solid #eaeaea;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  z-index: 10;
+  
   span {
-    font-size: 12px;
-    padding-left: 15px;
-    margin: 2px 0;
-    border-bottom: 1px solid #ffffff;
-    cursor: default;
+    font-size: 13px;
+    padding: 8px 15px;
+    margin: 0;
+    border-bottom: 1px solid #f5f5f5;
+    cursor: pointer;
+    transition: all 0.2s;
+    
     &:hover {
-      background: #cccccc;
+      background: #f0f7ff;
+      color: #409EFF;
+    }
+    
+    &:last-child {
+      border-bottom: none;
     }
   }
 }
+
 .menu {
   height: 70vh;
 }
+
 .wrap {
   display: flex;
 }
+
 .dndList-list1 {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-weight: 600;
-  border: 1px solid #ebebeb;
-  border-top: none;
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
+  font-weight: 500;
+  background-color: #fff;
+  border-radius: 8px;
+  
   .title {
-    display: inline-block;
+    display: flex;
+    align-items: center;
     color: #fff;
-    font-weight: 600;
-    font-size: 0.8rem;
-    width: calc(100% + 1px);
-    text-indent: 1.5rem;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-    line-height: 2rem;
-    background: #198edc;
+    font-weight: 500;
+    font-size: 14px;
+    width: 100%;
+    padding: 0 16px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    height: 48px;
+    background: linear-gradient(135deg, #1989fa, #096dd9);
   }
+  
   .content {
-    height: 87%;
-    overflow-y: scroll;
+    height: calc(100% - 48px);
+    overflow-y: auto;
+    padding: 8px;
+    
     &::-webkit-scrollbar {
-      width: 0px;
-      height: 0;
+      width: 6px;
+      height: 6px;
     }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #e0e0e0;
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f5f5f5;
+      border-radius: 3px;
+    }
+    
     .dragArea {
-      height: calc(100% - 0.1rem);
+      height: 100%;
+      
       &.el-input__inner {
-        border-radius: 0;
+        border-radius: 4px;
       }
     }
+    
     .content_list {
       display: flex;
       justify-content: space-between;
-      margin-top: 0.1rem;
+      align-items: center;
+      margin-bottom: 8px;
       cursor: move;
-      // line-height: 1.5rem;
-      color: #fff;
+      color: #606266;
+      background-color: #fff;
+      border-radius: 4px;
+      transition: all 0.2s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      
+      &:hover {
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      }
+      
       &:nth-child(2n) .value {
         color: #606266;
         background-color: #fafafa;
       }
+      
       .value {
         min-width: 35%;
         font-size: 14px;
         background-color: #fff;
         color: #606266;
         border: 1px solid #ebeef5;
-        border-radius: 4px;
+        border-radius: 4px 0 0 4px;
         line-height: 38px;
-        border-radius: 0;
         text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
+      
       .order_value {
         flex: 1;
       }
+      
       .columns {
-        // text-indent: 0.5rem;
         line-height: 1.5rem;
         width: 100%;
         text-align: left;
-        border-radius: 0;
+        border-radius: 4px;
+        padding: 8px 12px;
       }
+      
       .el-select {
         border-radius: 0;
         max-width: 18%;
       }
+      
       .date-picker {
         width: 100%;
         border-radius: 0;
         max-width: 25%;
-        // flex: 1;
       }
+      
       .input-value {
-        // max-width: 25%;
         border: none;
         flex: 1;
         border-radius: 0;
       }
-      .input-value ::v-deep.el-input__inner {
+      
+      .input-value ::v-deep .el-input__inner {
         border-radius: 0;
-        // border-left: 0;
         border-top-right-radius: 0px;
         border-bottom-right-radius: 0px;
+        transition: all 0.2s;
+        
+        &:focus {
+          border-color: #409EFF;
+        }
       }
+      
       .date-picker ::v-deep .el-input__inner {
         border-radius: 0;
         border-top-right-radius: 4px;
         border-bottom-right-radius: 4px;
       }
-      .el-select ::v-deep.el-input__inner {
+      
+      .el-select ::v-deep .el-input__inner {
         border-radius: 0;
         border-right: 0;
       }
-    }
-    .content_list ::v-deep .el-button--danger {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-      border-radius: 0;
+      
+      .el-button--danger {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-radius: 0 4px 4px 0;
+        margin-left: 0;
+        transition: all 0.2s;
+        
+        &:hover {
+          background-color: #f56c6c;
+          border-color: #f56c6c;
+          color: #fff;
+        }
+      }
     }
   }
 }
+
 .el-checkbox-group {
   height: 100%;
+}
+
+// 优化复制图标样式
+.i-ri-file-copy-2-fill {
+  font-size: 16px;
+  transition: all 0.2s;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+// 优化checkbox样式
+.el-checkbox {
+  margin-right: 0;
+  width: 100%;
+  
+  ::v-deep .el-checkbox__input {
+    vertical-align: middle;
+  }
+  
+  ::v-deep .el-checkbox__label {
+    padding-left: 8px;
+  }
 }
 </style>
