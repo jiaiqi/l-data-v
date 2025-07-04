@@ -2688,11 +2688,11 @@ export default {
         columns = columns.concat(
           this.allFields.map((item, index) => {
             let width = minWidth;
-            const length = item.label.replace(
+            const length = item?.label?.replace(
               /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
               ""
             )?.length;
-            if (length > 6) {
+            if (length && length > 6) {
               // 去掉符号的字符数长度大于6
               // console.log(`${item.label}:${length}`);
               width = length * 30;

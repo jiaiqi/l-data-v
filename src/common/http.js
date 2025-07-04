@@ -7,11 +7,12 @@ export const webBaseUrl = `http://192.168.0.54:8080`
 // let baseURL = window.backendIpAddr || `https://xxld.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.151:180`;
 // let baseURL = window.backendIpAddr || `https://api.100xsys.cn`;
-let baseURL = window.backendIpAddr || `http://192.168.0.28:8104`;
+// let baseURL = window.backendIpAddr || `http://192.168.0.28:8104`;
+let baseURL = window.backendIpAddr || `http://113.201.21.178:880/bxapi`;// 延安现网
 // let baseURL = window.backendIpAddr || `http://192.168.0.54:8104`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.241:8080`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
-const devTicket = 'xabxdzkj-b879535f-e086-4229-9d3b-8e9dff23411d'
+const devTicket = 'xabxdzkj-9cd0ae64-88f0-4724-860c-866d823cd2bc'
 // if (top?.pathConfig?.gateway) {
 //   baseURL = top?.pathConfig?.gateway;
 // }
