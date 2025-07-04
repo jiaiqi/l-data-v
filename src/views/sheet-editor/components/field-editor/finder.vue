@@ -27,59 +27,63 @@
     @select="handleSelect"
     v-else-if="['autocomplete', 'fk'].includes(editorType)"
   >
+    <template slot-scope="{ item }">
+      <el-tooltip placement="right">
+        <div>{{ item.label }}</div>
+        <div slot="content">{{ item.label }}</div>
+      </el-tooltip>
+    </template>
   </el-autocomplete>
-
-
 </template>
 
 <script>
-import { cloneDeep } from 'lodash-es';
+import { cloneDeep } from "lodash-es";
 import { isFk, isFkAutoComplete, getFieldType } from "@/utils/sheetUtils.js";
-import { FieldInfo } from '@/common/model/FieldInfo.js'
-import { Field } from '@/common/model/Field.js'
-import TablePicker from './table-picker.vue'
+import { FieldInfo } from "@/common/model/FieldInfo.js";
+import { Field } from "@/common/model/Field.js";
+import TablePicker from "./table-picker.vue";
 export default {
   name: "Finder",
   components: {
-    TablePicker
+    TablePicker,
   },
   props: {
     app: {
       type: String,
-      default: ""
+      default: "",
     },
     column: {
       type: Object,
       default: () => {
         return {};
-      }
+      },
     },
     operateType: {
       type: String,
-      default: "add"
+      default: "add",
     },
     value: {
       type: String,
-      default: ""
+      default: "",
     },
     row: {
       type: Object,
       default: () => {
         return {};
-      }
+      },
     },
     defaultValues: {
       type: Object,
       default: () => {
         return {};
-      }
+      },
     },
     mainformDatas: {
       type: Object,
       default: () => {
         return {};
-      }
-    }
+      },
+    },
   },
   watch: {
     value: {
@@ -90,20 +94,20 @@ export default {
         } else if (newValue !== this.inputVal) {
           this.inputVal = newValue;
         }
-      }
+      },
     },
     column: {
       immediate: true,
       deep: true,
       handler(newValue, oldValue) {
         if (newValue !== oldValue) {
-          this.initField()
-          if (['fks', 'fkjson', 'fkjsons'].includes(this.editorType)) {
+          this.initField();
+          if (["fks", "fkjson", "fkjsons"].includes(this.editorType)) {
             // this.onFocus()
           }
         }
-      }
-    }
+      },
+    },
   },
   data() {
     return {
@@ -114,27 +118,26 @@ export default {
       options: [],
       loading: false,
       selected: "",
-      multiSelected: []
-    }
+      multiSelected: [],
+    };
   },
-  created() {
-  },
+  created() {},
   beforeDestroy() {
     this.options = [];
-    this.inputVal = ''
+    this.inputVal = "";
   },
   computed: {
     placeholder() {
-      return this.column?.placeholder || `请输入关键词`
+      return this.column?.placeholder || `请输入关键词`;
     },
     colType() {
-      return this.column?.col_type
+      return this.column?.col_type;
     },
     editorType() {
       if (isFkAutoComplete(this.column)) {
-        return 'autocomplete';
+        return "autocomplete";
       } else if (isFk(this.column)) {
-        return 'fk';
+        return "fk";
       }
       return getFieldType(this.column);
     },
@@ -147,12 +150,12 @@ export default {
     },
     optionListV3() {
       if (isFk(this.column)) {
-        return this.column?.option_list_v3
-      } else if (this.editorType === 'autocomplete')
-        return this.column?.[`_${this.operateType}_option_list`]
+        return this.column?.option_list_v3;
+      } else if (this.editorType === "autocomplete")
+        return this.column?.[`_${this.operateType}_option_list`];
     },
     optionListFinal() {
-      let result = null
+      let result = null;
       if (Array.isArray(this.optionListV3) && this.optionListV3.length) {
         const option_list_v3 = this.optionListV3;
         const data = this.row || {};
@@ -189,27 +192,25 @@ export default {
             {
               colName: optionsV2.key_disp_col,
               ruleType: "[like]",
-              value: this.inputVal || '',
+              value: this.inputVal || "",
             },
             {
               colName: refedCol,
               ruleType: "[like]",
-              value: this.inputVal || '',
+              value: this.inputVal || "",
             },
-          ]
-        }
+          ],
+        };
       } else {
-        req.condition.push(
-          {
-            colName: refedCol,
-            ruleType: "[like]",
-            value: this.inputVal,
-          },
-        )
+        req.condition.push({
+          colName: refedCol,
+          ruleType: "[like]",
+          value: this.inputVal,
+        });
       }
 
       if (optionsV2?.conditions?.length) {
-        const formModel = this.row
+        const formModel = this.row;
         optionsV2.conditions.forEach((item) => {
           const obj = {
             colName: item.colName,
@@ -217,11 +218,15 @@ export default {
           };
           if (item.value?.indexOf("data.") === 0) {
             obj.value = formModel[item.value.replace("data.", "")];
-          } else if (item.value && item.value.startsWith("'") && item.value.endsWith("'")) {
+          } else if (
+            item.value &&
+            item.value.startsWith("'") &&
+            item.value.endsWith("'")
+          ) {
             obj.value = item.value.replace(/'/g, "");
           } else {
             obj.ruleType = "like";
-            obj.value = item.value
+            obj.value = item.value;
           }
           if (obj.value) {
             req.condition.push(obj);
@@ -236,32 +241,32 @@ export default {
     onPickerSelected(selected) {
       this.field.model = selected;
       this.selected = selected;
-      this.$emit('change', selected)
+      this.$emit("change", selected);
     },
     initField() {
-      let filter = (srvCol) => srvCol[`in_${this.operateType}`] != 0
-      let srvCol = this.column
+      let filter = (srvCol) => srvCol[`in_${this.operateType}`] != 0;
+      let srvCol = this.column;
       let fi = new FieldInfo(srvCol, this.formType);
       let f = new Field(fi, this);
-      f.vif = !(filter && !filter(srvCol))
-      if (fi.editor == 'multiselect') {
+      f.vif = !(filter && !filter(srvCol));
+      if (fi.editor == "multiselect") {
         f.model = [];
       }
-      this.field = f
+      this.field = f;
     },
     triggerAutocomplete(val) {
       this.querySearch(val).then((res) => {
-        this.$parent.$parent.clearCellSelection()
+        this.$parent.$parent.clearCellSelection();
         if (res?.length > 1) {
           // 模糊匹配结果数量大于1 显示下拉框
           // this.$nextTick(() => {
           //   this.$refs.inputRef.activated = true
           //   this.$refs?.inputRef?.focus();
           // })
-          let key = isFk(this.column) ? 'value' : 'label'
-          let option = res.find(item => item[key] && item[key] === val)
+          let key = isFk(this.column) ? "value" : "label";
+          let option = res.find((item) => item[key] && item[key] === val);
           if (option) {
-            this.inputVal = val
+            this.inputVal = val;
             this.$emit("change", cloneDeep(res[0]));
           }
         } else if (res?.length) {
@@ -274,10 +279,10 @@ export default {
       });
     },
     onFocus() {
-      this.$emit('focus')
-      this.$parent.$parent.$parent.clearCellSelection()
+      this.$emit("focus");
+      this.$parent.$parent.$parent.clearCellSelection();
       if (this.isFk) {
-        this.querySearch('')
+        this.querySearch("");
       }
     },
     handleSelect(val) {
@@ -287,7 +292,7 @@ export default {
       //   });
       //   this.$emit("change", option);
       // } else {
-        this.$emit("change", val);
+      this.$emit("change", val);
       // }
     },
     querySearch(queryString = "", cb) {
@@ -302,7 +307,7 @@ export default {
       const labelCol = this.optionListFinal.key_disp_col;
       let results = [];
       const url = `/${this.app}/select/${req.serviceName}`;
-      return this.$http.post(url, req).then(((response) => {
+      return this.$http.post(url, req).then((response) => {
         if (response && response.data && response.data.data) {
           let options = response.data.data;
           results = options.map((item) => {
@@ -317,11 +322,11 @@ export default {
         this.options = results;
         // 调用 callback 返回建议列表的数据
         cb?.(results);
-        return results
-      }))
+        return results;
+      });
     },
   },
-}
+};
 </script>
 
 <style lang="scss" scoped>
