@@ -121,7 +121,6 @@ export default {
       multiSelected: [],
     };
   },
-  created() {},
   beforeDestroy() {
     this.options = [];
     this.inputVal = "";
@@ -208,10 +207,10 @@ export default {
           value: this.inputVal,
         });
       }
-
-      if (optionsV2?.conditions?.length) {
+      const conditions = optionsV2?.conditions || optionsV2?.condition || []
+      if (conditions?.length) {
         const formModel = this.row;
-        optionsV2.conditions.forEach((item) => {
+        conditions.forEach((item) => {
           const obj = {
             colName: item.colName,
             ruleType: item.ruleType,
