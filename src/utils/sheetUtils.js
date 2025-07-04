@@ -58,14 +58,14 @@ const buildSrvCols = (
     } else if (childListType) {
       // 新增页面子表 使用add服务的column
       let type = 'add'
-      if(childListType.includes('list')){
+      if (childListType.includes('list')) {
         type = childListType.split('list')[0]
       }
-      if(type==='detail'){
+      if (type === 'detail') {
         allColsMap.detailColsMap = allColsMap.listColsMap
       }
-      cols = cols.map(item=>{
-        if(allColsMap[`${type}ColsMap`][item.columns]){
+      cols = cols.map(item => {
+        if (allColsMap[`${type}ColsMap`][item.columns]) {
           item = { ...allColsMap[`${type}ColsMap`][item.columns] };
           item.in_list = allColsMap[`${type}ColsMap`][item.columns][`in_${type}`];
         }
@@ -141,7 +141,8 @@ const buildSrvCols = (
       if (col?.col_type === "String" && col?.redundant?.dependField) {
         // 只让冗余的disp col 字段具备fk字段的效果
         const key_disp_col = fkCols[col.redundant.dependField]?.key_disp_col;
-        if (key_disp_col && col.columns === key_disp_col) {
+        // if (key_disp_col && col.columns && (col.columns === key_disp_col || col.redundant?.refedCol === key_disp_col)) {
+        if (key_disp_col && col.columns && col.redundant?.refedCol === key_disp_col) {
           col.redundant_options = {
             ...fkCols[dependField],
             autocompleteInput: true,
@@ -261,7 +262,7 @@ const buildSrvCols = (
     if (allColsMap?.childListType) {
       // 如果是作为子表使用 则只显示子表类型对应的in的字段，比如add表单中的子表就只显示in_add的，update表单中子表只显示in_update
       let type = 'add'
-      if(childListType.includes('list')){
+      if (childListType.includes('list')) {
         type = childListType.split('list')[0]
       }
       cols = cols.filter(
@@ -543,14 +544,14 @@ const sheet2json = (data, oldData) => {
     return res;
   }
 };
-function isRichText(column){
+function isRichText(column) {
   return column?.col_type && ["Note", "RichText", "snote"].includes(column.col_type)
 }
 function isFkAutoComplete(column) {
   return column?.col_type === 'String' && column?.redundant_options?._target_column && true
 }
 function isFk(column) {
-  if(['fks','fkjson','fkjsons'].includes(column?.col_type)){
+  if (['fks', 'fkjson', 'fkjsons'].includes(column?.col_type)) {
     return false
   }
   if (column?.col_type && column?.bx_col_type) {
@@ -564,20 +565,20 @@ function isFk(column) {
 }
 
 
-export function getFieldType (column){
+export function getFieldType(column) {
   let result = 'Text'
-  if(["fks", "fkjson", "fkjsons"].includes(column?.col_type)){
+  if (["fks", "fkjson", "fkjsons"].includes(column?.col_type)) {
     result = column.col_type
-  }else if(isFk(column)){
+  } else if (isFk(column)) {
     result = 'fk'
-  }else if(isFkAutoComplete(column)){
+  } else if (isFkAutoComplete(column)) {
     result = 'autocomplete'
-  }else if(isRichText(column)){
+  } else if (isRichText(column)) {
     result = 'RichText'
-  }else if(column?.col_type){
+  } else if (column?.col_type) {
     result = column.col_type
   }
   return result
 }
 
-export { json2sheet, sheet2json, buildSrvCols, buildDataVerification,isRichText, isFkAutoComplete, isFk };
+export { json2sheet, sheet2json, buildSrvCols, buildDataVerification, isRichText, isFkAutoComplete, isFk };
