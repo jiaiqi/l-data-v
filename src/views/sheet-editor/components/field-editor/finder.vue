@@ -12,6 +12,31 @@
     @on-selected="onPickerSelected"
     v-if="field && ['fks', 'fkjson', 'fkjsons'].includes(colType)"
   ></table-picker>
+  <fk-autocomplete
+    :app="app"
+    :field="field"
+    :row="row"
+    :column="column"
+    :value="row[column.columns]"
+    :defaultConditionsMap="{}"
+    :detailButton="detailButton"
+    @select="onPickerSelected"
+    @input="onInput"
+    v-else-if="isFkAutoComplete"
+  >
+  </fk-autocomplete>
+  <fk-selector
+    :app="app"
+    :field="field"
+    :row="row"
+    :column="column"
+    :srvInfo="column._update_option_list_v2 || column._add_option_list_v2"
+    v-model="row[column.columns]"
+    @select="onPickerSelected"
+    @multi-tab-option-select-change="onMultiTabOptionSelectChange"
+    v-else-if="isFk"
+  >
+  </fk-selector>
   <el-autocomplete
     class="inline-input"
     ref="inputRef"
@@ -42,10 +67,14 @@ import { isFk, isFkAutoComplete, getFieldType } from "@/utils/sheetUtils.js";
 import { FieldInfo } from "@/common/model/FieldInfo.js";
 import { Field } from "@/common/model/Field.js";
 import TablePicker from "./table-picker.vue";
+import fkAutocomplete from "../fk-autocomplete.vue";
+import fkSelector from "../fk-selector.vue";
 export default {
   name: "Finder",
   components: {
     TablePicker,
+    fkAutocomplete,
+    fkSelector,
   },
   props: {
     app: {
@@ -83,6 +112,9 @@ export default {
       default: () => {
         return {};
       },
+    },
+    detailButton: {
+      type: Object,
     },
   },
   watch: {
@@ -126,6 +158,12 @@ export default {
     this.inputVal = "";
   },
   computed: {
+    isFk() {
+      return isFk(this.column);
+    },
+    isFkAutoComplete() {
+      return isFkAutoComplete(this.column);
+    },
     placeholder() {
       return this.column?.placeholder || `请输入关键词`;
     },
@@ -207,7 +245,7 @@ export default {
           value: this.inputVal,
         });
       }
-      const conditions = optionsV2?.conditions || optionsV2?.condition || []
+      const conditions = optionsV2?.conditions || optionsV2?.condition || [];
       if (conditions?.length) {
         const formModel = this.row;
         conditions.forEach((item) => {
@@ -237,7 +275,15 @@ export default {
   },
 
   methods: {
+    onMultiTabOptionSelectChange(item, cfg) {
+      this.$emit("multi-tab-option-select-change", item, cfg);
+    },
+    onInput(val) {
+      this.inputVal = val;
+      this.$emit("input", val);
+    },
     onPickerSelected(selected) {
+      debugger
       this.field.model = selected;
       this.selected = selected;
       this.$emit("change", selected);

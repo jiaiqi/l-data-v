@@ -26,6 +26,7 @@
       :app="app"
       :operate-type="operateType"
       :field-info="fieldInfo"
+      :detailButton="detailButton"
       v-model="modelValue"
       @change="onFinderChange"
       @focus="onfocus = true"
@@ -310,6 +311,7 @@ export default {
       this.$refs.finder?.triggerAutocomplete?.(val)
     },
     onFinderChange(item) {
+      debugger
       if (isFk(this.fieldInfo)) {
         this.modelValue = item.value;
         this.$emit('fk-change', item, this.row, this.column)
@@ -319,6 +321,7 @@ export default {
         this.modelValue = item.label;
       }
       if (isFkAutoComplete(this.fieldInfo)) {
+        this.modelValue = item[this.keyDispCol];
         this.$emit('fk-autocomplete-change', item, this.row, this.column);
       }
       const colType = this.fieldInfo.col_type
@@ -420,7 +423,7 @@ export default {
 <style lang="scss" scoped>
 .editor-wrap {
   position: absolute;
-  overflow: hidden;
+  // overflow: hidden;
   background: #fff;
   display: flex;
   align-items: center;

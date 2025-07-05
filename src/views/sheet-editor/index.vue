@@ -1,13 +1,40 @@
 <template>
-  <div class="spreadsheet flex flex-col" :class="{ 'child-list': childListType }" ref="spreadsheet">
-    <loading-view v-if="loading" mask type="surround" :maskOpacity="0.2" showText textColor="#fff"></loading-view>
-    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 w-full" v-if="disabled !== true">
-      <div class="flex flex-1 items-center text-sm p-x-2" v-if="addButton && addButton.service_name">
+  <div
+    class="spreadsheet flex flex-col"
+    :class="{ 'child-list': childListType }"
+    ref="spreadsheet"
+  >
+    <loading-view
+      v-if="loading"
+      mask
+      type="surround"
+      :maskOpacity="0.2"
+      showText
+      textColor="#fff"
+    ></loading-view>
+    <div
+      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 w-full"
+      v-if="disabled !== true"
+    >
+      <div
+        class="flex flex-1 items-center text-sm p-x-2"
+        v-if="addButton && addButton.service_name"
+      >
         <div class="m-r-2">添加</div>
-        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
+        <el-input-number
+          size="mini"
+          v-model="insertRowNumber"
+          style="width: 100px"
+        />
         <div class="m-x-2">行</div>
-        <el-button class="icon-button" title="添加(ctrl + 加号键)" size="mini" type="primary" @click="batchInsertRows"
-          :disabled="insertRowNumber === 0">
+        <el-button
+          class="icon-button"
+          title="添加(ctrl + 加号键)"
+          size="mini"
+          type="primary"
+          @click="batchInsertRows"
+          :disabled="insertRowNumber === 0"
+        >
           <!-- 添加 -->
           <i class="i-ic-baseline-add"></i>
         </el-button>
@@ -16,14 +43,22 @@
         <!-- 没有添加权限 -->
       </div>
       <div class="p-x-2 flex-1 flex justify-center">
-        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
+        <el-radio-group
+          v-model="listType"
+          @input="listTypeChange"
+          size="mini"
+          v-if="isTree"
+        >
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
       </div>
 
       <div class="flex flex-items-center flex-1 justify-end p-x-2">
-        <div class="color-map flex flex-items-center m-r-20" v-if="!['add', 'addchildlist'].includes(childListType)">
+        <div
+          class="color-map flex flex-items-center m-r-20"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
+        >
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
             <div class="color bg-[#2EA269] w-4 h-4 m-r-2 rounded"></div>
@@ -36,38 +71,77 @@
         </div>
         <div class="relative" v-if="gridButton && gridButton.length">
           <div class="grid-button-box" :class="{ show: showGridButton }">
-            <el-button size="mini" type="primary" :title="item.button_name" v-for="item in gridButton" class="button"
-              @click="onGridButton(item)">
+            <el-button
+              size="mini"
+              type="primary"
+              :title="item.button_name"
+              v-for="item in gridButton"
+              class="button"
+              @click="onGridButton(item)"
+            >
               {{ item.button_name }}
             </el-button>
           </div>
-          <el-button class="icon-button mr-1" size="mini" type="primary" @click="showGridButton = !showGridButton">
-            <i class="i-ic-sharp-keyboard-double-arrow-right icon" :class="{ show: showGridButton }"
-              :title="showGridButton ? '收起操作按钮' : '展开操作按钮'"></i>
+          <el-button
+            class="icon-button mr-1"
+            size="mini"
+            type="primary"
+            @click="showGridButton = !showGridButton"
+          >
+            <i
+              class="i-ic-sharp-keyboard-double-arrow-right icon"
+              :class="{ show: showGridButton }"
+              :title="showGridButton ? '收起操作按钮' : '展开操作按钮'"
+            ></i>
           </el-button>
         </div>
 
-        <el-button class="icon-button" size="mini" type="primary" @click="refreshData"
-          v-if="!['add', 'addchildlist'].includes(childListType)" title="刷新（F5）">
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="primary"
+          @click="refreshData"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
+          title="刷新（F5）"
+        >
           <!-- 刷新 -->
 
           <i class="i-ic-baseline-refresh"></i>
         </el-button>
-        <el-button class="icon-button" size="mini" type="primary" @click="saveData"
-          :disabled="!calcReqData || calcReqData.length == 0" v-if="!['add', 'addchildlist'].includes(childListType)"
-          v-loading="onHandler" title="保存（Ctrl+S）">
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="primary"
+          @click="saveData"
+          :disabled="!calcReqData || calcReqData.length == 0"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
+          v-loading="onHandler"
+          title="保存（Ctrl+S）"
+        >
           <!-- 保存 -->
           <i class="i-ic-baseline-save"></i>
-          <span v-if="autoSaveTimeout && autoSaveTimeout > 0" class="text-xs" title="自动保存倒计时">
+          <span
+            v-if="autoSaveTimeout && autoSaveTimeout > 0"
+            class="text-xs"
+            title="自动保存倒计时"
+          >
             {{ autoSaveTimeout }}
           </span>
         </el-button>
-        <el-button class="icon-button" size="mini" type="primary" @click="saveColumnWidth" v-loading="onHandler"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0" v-if="
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="primary"
+          @click="saveColumnWidth"
+          v-loading="onHandler"
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
+          v-if="
             !childListType &&
             calcColumnWidthReq &&
             calcColumnWidthReq.length > 0
-          " title="保存列宽">
+          "
+          title="保存列宽"
+        >
           <!-- 保存列宽 -->
           <i class="i-ic-baseline-view-column"></i>
         </el-button>
@@ -75,48 +149,110 @@
     </div>
     <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
     <div class="flex-1 list-container" v-if="isFetched || childListType">
-      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
-        style="word-break: break-word; width: 100vw; height: 100%" max-height="calc(100vh - 40px)" fixed-header />
+      <ve-table
+        :columns="columns"
+        border-x
+        border-y
+        :table-data="tableData"
+        v-if="disabled"
+        ref="tableRef"
+        style="word-break: break-word; width: 100vw; height: 100%"
+        max-height="calc(100vh - 40px)"
+        fixed-header
+      />
       <div class="custom-style" v-else>
-        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)"
-          fixed-header :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+        <ve-table
+          ref="tableRef"
+          style="word-break: break-word; width: 100vw"
+          max-height="calc(100vh - 80px)"
+          fixed-header
+          :scroll-width="0"
+          border-y
+          :columns="columns"
+          :table-data="tableData"
+          row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption"
+          :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption"
+          :edit-option="editOption"
+          :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption"
+          :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption"
+          :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption"
+          :columnHiddenOption="columnHiddenOption"
+        />
       </div>
     </div>
-    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">
+    <div
+      class="empty-data"
+      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
+    >
       暂无数据
     </div>
     <!--    列表为新增子表时不显示分页-->
-    <div class="text-center flex justify-between" v-if="!['add', 'addchildlist'].includes(childListType)">
+    <div
+      class="text-center flex justify-between"
+      v-if="!['add', 'addchildlist'].includes(childListType)"
+    >
       <div class="position-relative">
         <choose-tenant />
       </div>
-      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
-        :total="page.total">
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]"
+        :page-size="page.rownumber"
+        layout="total, sizes, pager,  jumper"
+        :total="page.total"
+      >
       </el-pagination>
-      <div class="flex items-center">
-      </div>
+      <div class="flex items-center"></div>
     </div>
 
-    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-      " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
+    <select-parent-node
+      ref="changeParentRef"
+      :topTreeData="topTreeData"
+      :srvApp="srvApp"
+      :options="
+        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+      "
+      :option-info="parentColOption"
+      @confirm="updateParentNo"
+    ></select-parent-node>
 
     <login-dialog ref="loginRef"></login-dialog>
-    <drop-menu v-if="showDropMenu" v-model="showDropMenu" :row="currentRowData" :items="rowButton"
-      :position="{ top: dTop, left: dLeft }" @select="onRowButton" />
+    <drop-menu
+      v-if="showDropMenu"
+      v-model="showDropMenu"
+      :row="currentRowData"
+      :items="rowButton"
+      :position="{ top: dTop, left: dLeft }"
+      @select="onRowButton"
+    />
     <out-form-dialog ref="outFormDialog"></out-form-dialog>
 
-    <Teleport to=".ve-table-content-wrapper">
-      <field-editor ref="fieldEditor" :disabled="disabled" :detailButton="detailButton" :serviceName="serviceName"
-        :app="srvApp" :listType="listType" :keyDispCol="(v2data && v2data.key_disp_col) || ''" :value="currentCellValue"
-        :show.sync="showFieldEditor" v-bind="fieldEditorParams" v-if="showFieldEditor" @change="dialogChange"
-        @fk-autocomplete-change="fkAutocompleteChange" @fk-change="fkChange" @fks-change="fksChange"
-        @save="dialogChange" @close="dialogClose"></field-editor>
+    <Teleport to=".ve-table-content-wrapper" v-if="showFieldEditor">
+      <field-editor
+        ref="fieldEditor"
+        :disabled="disabled"
+        :detailButton="detailButton"
+        :serviceName="serviceName"
+        :app="srvApp"
+        :listType="listType"
+        :keyDispCol="(v2data && v2data.key_disp_col) || ''"
+        :value="currentCellValue"
+        :show.sync="showFieldEditor"
+        v-bind="fieldEditorParams"
+        @change="dialogChange"
+        @fk-autocomplete-change="fkAutocompleteChange"
+        @fk-change="fkChange"
+        @fks-change="fksChange"
+        @save="dialogChange"
+        @close="dialogClose"
+      ></field-editor>
     </Teleport>
   </div>
 </template>
@@ -132,7 +268,12 @@ import {
 import dayjs from "dayjs";
 import { mapState } from "pinia";
 import { useUserStore } from "@/stores/user.js";
-import { buildSrvCols, isFkAutoComplete, isFk, getFieldType } from "../../utils/sheetUtils";
+import {
+  buildSrvCols,
+  isFkAutoComplete,
+  isFk,
+  getFieldType,
+} from "../../utils/sheetUtils";
 import { COLUMN_KEYS } from "../../utils/constant";
 import { uniqueId, cloneDeep } from "lodash-es";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
@@ -151,7 +292,7 @@ import IconFold from "../../components/icons/icon-fold.vue";
 import IconUnfold from "../../components/icons/icon-unfold.vue";
 import LoadingView from "./components/loading/index.vue";
 import ChooseTenant from "./components/choose-tenant/index.vue";
-import Teleport from 'vue2-teleport';
+import Teleport from "vue2-teleport";
 
 import {
   extractAndFormatDatesOrTimestamps,
@@ -175,7 +316,7 @@ const ignoreKeys = [
   "__unfold",
   "__indent",
   "__update_col",
-  "listType"
+  "listType",
 ];
 
 function getElementFullInfo(element) {
@@ -209,13 +350,13 @@ export default {
       this.listType = this.$route.query?.listType;
     }
     if (this.$route.query.isTree) {
-      this.listType = 'treelist'
+      this.listType = "treelist";
     }
     if (this.$route.query?.disabled) {
       this.disabled = true;
     }
     if (this.$route.params?.mainService) {
-      this.mainService = this.$route.params?.mainService
+      this.mainService = this.$route.params?.mainService;
     }
     if (this.$route.params?.childListType) {
       // 子表类型 add|update|detail
@@ -253,7 +394,7 @@ export default {
     DropMenu,
     OutFormDialog,
     FieldEditor,
-    Teleport
+    Teleport,
   },
   data() {
     return {
@@ -333,24 +474,34 @@ export default {
                 if (!colType) {
                   return;
                 }
-                const currentCellSelection = this.$refs.tableRef.cellSelectionData.currentCell
-                console.log('cell click::', colType);
+                const currentCellSelection =
+                  this.$refs.tableRef.cellSelectionData.currentCell;
+                console.log("cell click::", colType);
 
-                if (currentCellSelection && currentCellSelection?.colKey === column.key && currentCellSelection?.rowKey === row.rowKey) {
-                  if (["Date", "DateTime"].includes(colType) || ["fks", "fkjson", "fkjsons"].includes(colType) || isFkAutoComplete(column?.__field_info) || isFk(column?.__field_info)) {
+                if (
+                  currentCellSelection &&
+                  currentCellSelection?.colKey === column.key &&
+                  currentCellSelection?.rowKey === row.rowKey
+                ) {
+                  if (
+                    ["Date", "DateTime"].includes(colType) ||
+                    ["fks", "fkjson", "fkjsons"].includes(colType) ||
+                    isFkAutoComplete(column?.__field_info) ||
+                    isFk(column?.__field_info)
+                  ) {
                     this.$nextTick(() => {
                       this.clearFieldEditorParams();
+                      this.showFieldEditor = false;
                       setTimeout(() => {
                         this.$nextTick(() => {
                           event.stopPropagation();
                           this.buildFieldEditorParams(row, column);
                           this.showFieldEditor = true;
-                        })
+                        });
                       }, 200);
-                    })
+                    });
                   }
                 }
-
               }
             },
             dblclick: (event) => {
@@ -372,7 +523,7 @@ export default {
                   // event.stopPropagation()
                   this.$nextTick(() => {
                     // this.$refs["tableRef"].stopEditingCell();
-                    debugger
+                    debugger;
                     this.clearCellSelection();
                   });
                   return false;
@@ -399,7 +550,7 @@ export default {
                     event.stopPropagation();
                     this.$nextTick(() => {
                       this.$refs["tableRef"].stopEditingCell();
-                    })
+                    });
                   }
                 }
               }
@@ -924,7 +1075,6 @@ export default {
               return false;
             }
           }
-
         },
         afterCellValueChange: ({ row, column, changeValue, rowIndex }) => {
           const colType = column?.__field_info?.col_type;
@@ -1074,7 +1224,6 @@ export default {
     };
   },
   watch: {
-
     tableData: {
       deep: true,
       handler(newValue, oldValue) {
@@ -1093,7 +1242,7 @@ export default {
         this.stopAutoSave();
         // this.removeDocumentEventListener();
       } else {
-        this.setCellSelection()
+        this.setCellSelection();
         // if (oldVal === true) {
         //   this.initDocumentEventListener();
         // }
@@ -1109,33 +1258,36 @@ export default {
     ...mapState(useUserStore, ["userInfo", "tenants"]),
     currentCellValue() {
       if (this.fieldEditorParams?.row && this.fieldEditorParams?.column) {
-        const { row, column } = this.fieldEditorParams
-        return row[column.field]
+        const { row, column } = this.fieldEditorParams;
+        return row[column.field];
       }
     },
     currentRowData() {
-      if (typeof this.currentRowIndex === 'number' && this.currentRowIndex > -1) {
-        return this.tableData[this.currentRowIndex]
+      if (
+        typeof this.currentRowIndex === "number" &&
+        this.currentRowIndex > -1
+      ) {
+        return this.tableData[this.currentRowIndex];
       }
     },
     gridButton() {
-      return this.v2data?.gridButton?.filter(item => {
-        if (['select', 'refresh'].includes(item.button_type)) {
-          return false
+      return this.v2data?.gridButton?.filter((item) => {
+        if (["select", "refresh"].includes(item.button_type)) {
+          return false;
         }
-        if (['增加弹出']?.includes(item.operate_type)) {
-          return false
+        if (["增加弹出"]?.includes(item.operate_type)) {
+          return false;
         }
         if (!item.permission) {
-          return false
+          return false;
         }
-        return true
-      })
+        return true;
+      });
     },
     rowButton() {
       return this.v2data?.rowButton
         ?.filter((item, index) => {
-          item._index = index
+          item._index = index;
           return !["edit"].includes(item.button_type) && item.permission;
         })
         ?.map((item) => {
@@ -1447,16 +1599,19 @@ export default {
             });
 
             // 删除选中行数据
-            let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-              }至第${selectionRangeIndexes.endRowIndex + 1
-              }行数据，是否继续操作？`;
+            let text = `此操作将永久删除该第${
+              selectionRangeIndexes.startRowIndex + 1
+            }至第${
+              selectionRangeIndexes.endRowIndex + 1
+            }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
-              selectionRangeIndexes.startRowIndex ==
+                selectionRangeIndexes.startRowIndex ==
               0
             ) {
-              text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-                }行数据，是否继续操作？`;
+              text = `此操作将永久删除该第${
+                selectionRangeIndexes.startRowIndex + 1
+              }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -1748,22 +1903,22 @@ export default {
   },
   methods: {
     setCellSelection(rowKey, colKey) {
-      rowKey = rowKey || this.fieldEditorParams?.row?.__id
-      colKey = colKey || this.fieldEditorParams?.column?.key
+      rowKey = rowKey || this.fieldEditorParams?.row?.__id;
+      colKey = colKey || this.fieldEditorParams?.column?.key;
       if (rowKey && colKey) {
         this.$nextTick(() => {
           this.$refs["tableRef"].setCellSelection({ rowKey, colKey });
-        })
+        });
       }
     },
     clearCellSelection() {
-      this.$refs?.tableRef?.clearCellSelectionCurrentCell?.()
+      this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
     },
     fksChange(item, row, column) {
-      this.setCellSelection()
-      let val = item
-      if (typeof item === 'object') {
-        val = JSON.stringify(item)
+      this.setCellSelection();
+      let val = item;
+      if (typeof item === "object") {
+        val = JSON.stringify(item);
       }
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
@@ -1774,15 +1929,10 @@ export default {
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
       );
-      this.handlerRedundant(
-        item.option,
-        column.key,
-        row.rowKey,
-        rowIndex
-      );
+      this.handlerRedundant(item.option, column.key, row.rowKey, rowIndex);
     },
     fkChange(item, row, column) {
-      this.setCellSelection()
+      this.setCellSelection();
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
@@ -1792,25 +1942,20 @@ export default {
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
       );
-      this.handlerRedundant(
-        item.option,
-        column.key,
-        row.rowKey,
-        rowIndex
-      );
+      this.handlerRedundant(item.option, column.key, row.rowKey, rowIndex);
     },
     fkAutocompleteChange(item, row, column) {
-      this.setCellSelection()
+      debugger
+      this.setCellSelection();
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
-        defaultValue: item?.label || null,
+        defaultValue: item?.label || item[column?.__field_info?.redundant?.refedCol] || null,
       });
       this.$refs["tableRef"].stopEditingCell();
       // 对应的fk字段
-      const rawData = item.option
-      const fkColumn =
-        column?.__field_info?.redundant?.dependField;
+      const rawData = item.option || item;
+      const fkColumn = column?.__field_info?.redundant?.dependField;
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
       );
@@ -1823,9 +1968,7 @@ export default {
           row[fkColumn] = item.value;
           row[`_${fkColumn}_data`] = rawData;
           this.$set(this.tableData, rowIndex, row);
-          if (
-            this.allFields.find((e) => e.columns === fkColumn)
-          ) {
+          if (this.allFields.find((e) => e.columns === fkColumn)) {
             this.$refs["tableRef"].startEditingCell({
               rowKey: row.rowKey,
               colKey: fkColumn,
@@ -1834,12 +1977,7 @@ export default {
             this.$refs["tableRef"].stopEditingCell();
             this.clearCellSelection();
           }
-          this.handlerRedundant(
-            data,
-            fkColumn,
-            row.rowKey,
-            rowIndex
-          );
+          this.handlerRedundant(data, fkColumn, row.rowKey, rowIndex);
         }
       }
     },
@@ -1864,17 +2002,17 @@ export default {
       // this.showFieldEditor = false;
     },
     dialogClose() {
-      this.$parent?.setCellSelection?.()
+      this.$parent?.setCellSelection?.();
       this.fieldEditorParams = null;
     },
     clearFieldEditorParams() {
       this.fieldEditorParams = null;
-      this.showFieldEditor = false
+      this.showFieldEditor = false;
     },
     buildFieldEditorParams(row, column, params) {
       if (!row || !column) {
         this.fieldEditorParams = null;
-        this.showFieldEditor = false
+        this.showFieldEditor = false;
         return;
       }
       let editable = true;
@@ -1895,7 +2033,9 @@ export default {
       const oldRowData = this.oldTableData?.find(
         (item) => item.__id && item.__id === row.__id
       );
-      const position = this.$refs?.tableRef?.$refs?.cellSelectionRef?.cellSelectionRect?.currentCellRect;
+      const position =
+        this.$refs?.tableRef?.$refs?.cellSelectionRef?.cellSelectionRect
+          ?.currentCellRect;
       this.fieldEditorParams = {
         oldValue: oldRowData?.[column.field],
         editable,
@@ -1913,9 +2053,9 @@ export default {
     },
     autoSave() {
       this.stopAutoSave();
-      if (['add', 'addchildlist'].includes(this.childListType)) {
+      if (["add", "addchildlist"].includes(this.childListType)) {
         // add子表不自动保存
-        return
+        return;
       }
       const reqData = this.buildReqParams();
       if (!reqData?.length) {
@@ -1962,7 +2102,7 @@ export default {
       const keyCode = e.keyCode || e.which;
       keyCode === 116 && e.preventDefault(); // 禁止F5刷新
       if (keyCode === 27 && this.showFieldEditor) {
-        this.showFieldEditor = false
+        this.showFieldEditor = false;
       }
       if (this.showFieldEditor) {
         // 弹出表单字段编辑器时 不触发快捷键
@@ -2109,13 +2249,13 @@ export default {
       }
       if (
         button.action_validate &&
-        this.evalActionValidator(button.action_validate, this.tableData) !== true
+        this.evalActionValidator(button.action_validate, this.tableData) !==
+          true
       ) {
         return;
       }
 
       if ("select" == type) {
-
       } else if ("extjs" === type) {
         button.handlerFunc && button.handlerFunc();
       } else if ("shrink" == type) {
@@ -2186,9 +2326,8 @@ export default {
         // } else {
         //   console.error(button);
         // }
-
-
-      } else if ("batchupdate" == type) { //批量添加
+      } else if ("batchupdate" == type) {
+        //批量添加
         console.log("batchupdate", button);
         // if (this.header_view_model != "normal") {
         //   this.header_view_model = "normal";
@@ -2197,7 +2336,7 @@ export default {
         // this.onBatchUpdateClick();
         // this.onInplaceEditClicked();
       } else if ("saveall" == type) {
-        this.saveData()
+        this.saveData();
         // this.onSaveAllClicked();
       } else if ("apply" == type) {
         // var urlParams = `/${exeservice}?time=${(new Date()).getTime()}`;
@@ -2248,11 +2387,15 @@ export default {
           // this.customize_add(button, this.multipleSelection);
         } else {
           button.listservice = this.service;
-          customizeOperate(button, this.multipleSelection, (e) => {
-            // dialog操作完成之后的回调 刷新列表
-            // this.loadTableData();
-
-          }, { vm: this });
+          customizeOperate(
+            button,
+            this.multipleSelection,
+            (e) => {
+              // dialog操作完成之后的回调 刷新列表
+              // this.loadTableData();
+            },
+            { vm: this }
+          );
         }
         // }
       } else if ("batch_approve" == type) {
@@ -2286,7 +2429,7 @@ export default {
               } else {
                 this.loadTree(true, row, currentRowIndex).then((data) => {
                   this.insert2Rows(currentRowIndex + data.length + 1, res.row);
-                })
+                });
               }
             }
           } else if (!res) {
@@ -2353,7 +2496,7 @@ export default {
         if (typeof data === "string") {
           data = JSON.parse(data);
         }
-      } catch (e) { }
+      } catch (e) {}
       console.log("child-listener", data);
       if (data?.childListCfg) {
         console.log("childListCfg", data.childListCfg);
@@ -2675,7 +2818,6 @@ export default {
             return startRowIndex + rowIndex + 1;
           },
         },
-
       ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
         let minWidth = (window.innerWidth + 50) / this.allFields.length;
@@ -2962,9 +3104,7 @@ export default {
                       },
                     },
                   });
-                } else if (
-                  isFk(item) && false
-                ) {
+                } else if (isFk(item) && false) {
                   const fieldInfo =
                     this.tableData[rowIndex]?.__flag == "add"
                       ? this.addColsMap[column.field]
@@ -3138,8 +3278,8 @@ export default {
                   if (this.disabled) {
                     return row[column.field]
                       ? item.option_list_v2.find(
-                        (e) => e.value === row[column.field]
-                      )?.label || ""
+                          (e) => e.value === row[column.field]
+                        )?.label || ""
                       : "";
                   }
                   return h(
@@ -3346,15 +3486,15 @@ export default {
                         if (event === "showRichEditor") {
                           this.buildFieldEditorParams(row, column);
                           this.showFieldEditor = true;
-                          this.clearCellSelection()
+                          this.clearCellSelection();
                         }
                       },
                       change: (event) => {
                         // 将html中的文件地址前缀替换为$bxFileAddress$
                         if (isFkAutoComplete(column.__field_info)) {
-                          return this.fkAutocompleteChange(event, row, column)
+                          return this.fkAutocompleteChange(event, row, column);
                         } else if (isFk(column.__field_info)) {
-                          return this.fkChange(event, row, column)
+                          return this.fkChange(event, row, column);
                         }
                         event = this.replaceFileAddressSuffix(event);
                         this.$set(row, column.field, event);
@@ -3366,7 +3506,6 @@ export default {
                         });
                         this.$refs["tableRef"].stopEditingCell();
                         this.clearCellSelection();
-
                       },
                     },
                   });
@@ -3563,14 +3702,18 @@ export default {
             const oldValByFk =
               fieldModelObj?.oldModel?.[item?.redundant?.refedCol];
             console.log(oldValByFk, "oldValByFk");
-             if (oldValByFk && row[item?.redundant?.refedCol] && row[item?.redundant?.refedCol] !== oldValByFk) {
+            if (
+              oldValByFk &&
+              row[item?.redundant?.refedCol] &&
+              row[item?.redundant?.refedCol] !== oldValByFk
+            ) {
               // 如果当前行的值跟fk字段的值不一致，则不处理
               console.log(
                 "handlerRedundant::unchange",
                 item.columns,
                 row[item.columns]
               );
-             return;
+              return;
             }
           }
           if (!item?.redundant?.refedCol) return;
@@ -3991,12 +4134,12 @@ export default {
         this.srvApp,
         true
       );
-      if (res?.state === 'SUCCESS') {
-        this.v2data = v2Res.data
+      if (res?.state === "SUCCESS") {
+        this.v2data = v2Res.data;
       } else {
-        this.$message.error('登录信息更新，请重新加载页面')
+        this.$message.error("登录信息更新，请重新加载页面");
       }
-      return v2Res?.data
+      return v2Res?.data;
     },
     async saveData(params = {}) {
       // const reqData = this.buildReqParams;
@@ -4007,7 +4150,7 @@ export default {
         // if (confirm('登录信息更新，即将刷新页面')) {
         //   await this.initPage(false);
         // }
-        await this.refreshV2()
+        await this.refreshV2();
       }
       this.stopAutoSave();
 
@@ -4328,9 +4471,7 @@ export default {
         // }
       }
     },
-    initFkOption() {
-
-    },
+    initFkOption() {},
     batchInsertRows() {
       console.log(this.$refs.tableRef.getRangeCellSelection());
       if (this.insertRowNumber > 0) {
@@ -4366,8 +4507,8 @@ export default {
             this.isTree && this.listType === "treelist"
               ? "treelist"
               : this.listType
-                ? this.listType
-                : "list",
+              ? this.listType
+              : "list",
         }
       );
       loadingInstance.close();
@@ -4440,7 +4581,7 @@ export default {
                 ? "treelist"
                 : this.listType || "list",
           }
-        )
+        );
         console.timeEnd("请求时长：");
         if (res?.state === "SUCCESS") {
           let tableData = cloneDeep(this.tableData);
@@ -4467,7 +4608,7 @@ export default {
             };
             return dataItem;
           });
-          tableData[rowIndex].__children = cloneDeep(resData)
+          tableData[rowIndex].__children = cloneDeep(resData);
           // this.$set(row, "__children", cloneDeep(resData));
           tableData.splice(rowIndex + 1, 0, ...cloneDeep(resData));
           this.tableData = cloneDeep(tableData);
@@ -4485,7 +4626,7 @@ export default {
             console.timeEnd("渲染时长：");
             callback?.(true);
           });
-          return resData
+          return resData;
         } else {
           // this.$set(this.tableData[rowIndex], "__unfold", load);
           loadingInstance.close();
@@ -4534,7 +4675,7 @@ export default {
         sessionStorage.getItem("bx_auth_ticket") &&
         this.bx_auth_ticket !== sessionStorage.getItem("bx_auth_ticket")
       ) {
-        await this.refreshV2()
+        await this.refreshV2();
       }
       if (!unfoldIds && this.listType === "treelist" && this.treeInfo.idCol) {
         unfoldIds = this.tableData
@@ -4633,8 +4774,8 @@ export default {
         const use_type = this.colSrv?.includes("_add")
           ? "add"
           : this.colSrv?.includes("_update")
-            ? "update"
-            : "list";
+          ? "update"
+          : "list";
         const res = await getServiceV2(
           this.colSrv,
           use_type,
@@ -4652,9 +4793,9 @@ export default {
       }
     },
     async getV2Data(force = false) {
-      let useType = this.listType
-      if (useType !== 'treelist' && this.childListType?.includes('list')) {
-        useType = this.childListType
+      let useType = this.listType;
+      if (useType !== "treelist" && this.childListType?.includes("list")) {
+        useType = this.childListType;
       }
       const res = await getServiceV2(
         this.serviceName,
@@ -4725,7 +4866,7 @@ export default {
                       moreConfig.query_init_value;
                   }
                 }
-              } catch (error) { }
+              } catch (error) {}
             }
             return item;
           });
@@ -4761,7 +4902,7 @@ export default {
 </script>
 <style lang="scss">
 .el-button {
-  &+& {
+  & + & {
     margin-left: 5px;
   }
 
@@ -4770,13 +4911,12 @@ export default {
 
     .icon {
       transform: rotate(180deg);
-      transition: all .3s ease-in-out;
+      transition: all 0.3s ease-in-out;
 
       &.show {
         transform: rotate(0);
       }
     }
-
   }
 
   [class*="i-ic-"] {
@@ -4908,7 +5048,7 @@ export default {
 
 .grid-button-box {
   overflow: hidden;
-  transition: all .3s ease;
+  transition: all 0.3s ease;
   position: absolute;
   right: 40px;
   transform: translateX(100%);
@@ -4933,6 +5073,7 @@ export default {
   //   margin-left: unset;
   // }
 
-  .button {}
+  .button {
+  }
 }
 </style>

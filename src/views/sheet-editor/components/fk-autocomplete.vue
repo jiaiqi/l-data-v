@@ -43,7 +43,7 @@
           @focus="onFocus"
           @input="onFilterInput"
           @clear="onFilterClear"
-          style="max-width: 300px; margin-bottom: 5px"
+          style="max-width: 300px; margin-bottom: 5px; height: 30px"
         >
         </el-input>
         <el-cascader-panel
@@ -53,27 +53,34 @@
           @change="onSelectChange"
           :emitPath="false"
           checkStrictly
-        ></el-cascader-panel>
+        >
+          <template
+            slot-scope="{ node, data }"
+            v-if="props.checkStrictly !== false"
+          >
+            <span @click.stop="clickNode(node, data)">{{ node.label }}</span>
+          </template>
+        </el-cascader-panel>
       </el-popover>
     </div>
     <div
       v-else-if="!setDisabled"
       class="flex items-center justify-between w-full"
     >
-      <span>{{ modelValue }}</span>
+      <!-- <span class="text-[14px]" @click="showFinder">{{ modelValue }}</span> -->
       <el-autocomplete
         append-to-body
         clearable
         ref="inputRef"
         @focus="onFocus"
         class="inline-input"
-        v-model="modelValue"
+        :value="modelValue"
         :value-key="redundant.refedCol"
         :fetch-suggestions="querySearch"
         @clear="onFilterClear"
         placeholder="请输入"
         @select="handleSelect"
-        style="width: 0px; padding: 0; overflow: hidden"
+        style="padding: 0; overflow: hidden"
       >
       </el-autocomplete>
       <i
@@ -311,6 +318,37 @@ export default {
     };
   },
   methods: {
+    showFinder() {
+      this.$refs.inputRef?.focus();
+    },
+    clickNode(node, data) {
+      if (this.props.checkStrictly === false) {
+        if (data.is_leaf !== "是") {
+          // 非叶子节点 只能选择叶子节点
+          return;
+        }
+      }
+      console.log(node, data, "clickNode");
+      let val = node.value;
+      let currentValue = this.allOptions.find(
+        (item) => item[this.srvInfo.refed_col] === val
+      );
+      if (currentValue) {
+        this.$emit("select", currentValue);
+        this.modelValue = currentValue.label;
+      }
+      this.$emit("input", this.modelValue);
+      // this.field.model = data;
+      // if (this.dispLoaderV2?.lazyLoad === false) {
+      //   this.selected = [data[this.props.value]];
+      // } else {
+      // this.selected = node.path;
+      // }
+      // this.$emit("field-value-changed", this.field.info.name, this.field);
+      this.$nextTick(() => {
+        this.$refs.treePopover?.doClose?.();
+      });
+    },
     toDetail() {
       if (this.linkToDetail) {
         let address = `/vpages/#/detail/${this.srvInfo.serviceName}/${this.row.id}?srvApp=${this.app}`;
@@ -463,7 +501,6 @@ export default {
         (item) => item[this.srvInfo.refed_col] === val
       );
       if (currentValue) {
-        debugger;
         this.$emit("select", currentValue);
         this.modelValue = currentValue.label;
       }
@@ -532,8 +569,6 @@ export default {
       this.getTableData();
     },
     onDBClick(row, column, cell, event) {
-      debugger;
-
       this.$emit("select", cloneDeep(row));
       // this.modelValue = row[this.srvInfo.refed_col];
       // this.$emit("input", this.modelValue);
@@ -616,8 +651,6 @@ export default {
       }
     },
     handleSelect(item) {
-      debugger;
-
       this.$emit("select", cloneDeep(item));
     },
     querySearch(queryString, callback) {
@@ -746,6 +779,7 @@ export default {
 .el-popover {
   // position: fixed;
 }
+
 .el-autocomplete-suggestion.el-popper {
   min-width: 200px !important;
 }

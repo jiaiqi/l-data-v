@@ -554,6 +554,9 @@ function isFk(column) {
   if (['fks', 'fkjson', 'fkjsons'].includes(column?.col_type)) {
     return false
   }
+  // if(column?.redundant_options?._target_column){
+  //   return true
+  // }
   if (column?.col_type && column?.bx_col_type) {
     const fkTypes = ["User", "Dept", "bxsys_user", "bxsys_dept", "fk"];
     return fkTypes.includes(column.col_type) ||
