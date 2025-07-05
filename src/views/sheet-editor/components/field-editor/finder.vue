@@ -283,7 +283,6 @@ export default {
       this.$emit("input", val);
     },
     onPickerSelected(selected) {
-      debugger
       this.field.model = selected;
       this.selected = selected;
       this.$emit("change", selected);

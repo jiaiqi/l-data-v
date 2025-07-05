@@ -27,7 +27,10 @@
           v-if="modelValue && !setDisabled"
           class="cursor-pointer"
         >
-          {{ modelLabel || modelValue || "" }}
+          <span>
+            {{ modelLabel || modelValue || "" }}
+          </span>
+          <!-- <el-input  v-model="modelValue"></el-input> -->
         </div>
         <div
           slot="reference"
@@ -265,15 +268,11 @@ export default {
                     (item) => item.value === this.value
                   );
                   if (matchedVal) {
-                    debugger;
-
                     this.$emit("select", cloneDeep(matchedVal));
                   }
                   this.$refs?.inputRef?.focus();
                 } else if (res?.length) {
                   // 模糊匹配结果数量为1
-                  debugger;
-
                   this.$emit("select", cloneDeep(res[0]));
                   if (this.$refs?.inputRef?.activated) {
                     this.$nextTick(() => {
@@ -735,7 +734,11 @@ export default {
       const url = `/${appName}/select/${srvInfo?.serviceName}`;
       const res = await $http.post(url, req);
       if (res.data.state === "SUCCESS") {
-        this.options = res.data.data;
+        this.options = res.data.data.map(item=>{
+          item.label = item[this.srvInfo.key_disp_col];
+          item.value = item[this.srvInfo.refed_col];
+          return item;
+        });
         if (initValue && this.options?.length) {
           this.$emit("select", cloneDeep(this.options[0]));
         } else if (queryString && this.options?.length) {
@@ -776,6 +779,9 @@ export default {
 </script>
 
 <style lang="scss">
+.cursor-pointer {
+  font-size: 14px;
+}
 .el-popover {
   // position: fixed;
 }

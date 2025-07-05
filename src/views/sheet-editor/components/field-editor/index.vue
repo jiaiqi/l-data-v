@@ -1,10 +1,12 @@
 <template>
   <div
     class="editor-wrap"
-    :class="{ 'focus': onfocus === true }"
+    :class="{ focus: onfocus === true }"
     :style="setPosition"
     @click.stop=""
-    v-if="setPosition && !['RichText', 'MultilineText'].includes(editorType) && show"
+    v-if="
+      setPosition && !['RichText', 'MultilineText'].includes(editorType) && show
+    "
   >
     <el-date-picker
       v-model="modelValue"
@@ -31,7 +33,9 @@
       @change="onFinderChange"
       @focus="onfocus = true"
       @blur="onfocus = false"
-      v-else-if="['autocomplete', 'fk', 'fks', 'fkjsons', 'fkjson'].includes(editorType)"
+      v-else-if="
+        ['autocomplete', 'fk', 'fks', 'fkjsons', 'fkjson'].includes(editorType)
+      "
     >
     </finder>
   </div>
@@ -42,24 +46,16 @@
     :before-close="handleClose"
     :close-on-click-modal="false"
     width="90vw"
-    v-else-if="editorVisible && ['MultilineText', 'RichText'].includes(editorType)"
+    v-else-if="
+      editorVisible && ['MultilineText', 'RichText'].includes(editorType)
+    "
   >
-    <div
-      class="remark"
-      v-if="fieldInfo && fieldInfo.remark"
-    >
-      <el-popover
-        placement="right bottom"
-        width="800"
-        v-model="visible"
-      >
+    <div class="remark" v-if="fieldInfo && fieldInfo.remark">
+      <el-popover placement="right bottom" width="800" v-model="visible">
         <div class="p-2 m-2 b-gray b-1px b-dashed rounded-sm">
           <div v-html="recoverFileAddress(fieldInfo.remark)"></div>
         </div>
-        <div
-          slot="reference"
-          class="text-orange cursor-pointer inline-block"
-        >
+        <div slot="reference" class="text-orange cursor-pointer inline-block">
           <i class="el-icon-warning"></i> 提示
         </div>
       </el-popover>
@@ -76,30 +72,19 @@
         type="textarea"
         :rows="10"
         :disabled="!editable"
-        :placeholder="(column && column.__field_info && column.__field_info.placeholder) ||
+        :placeholder="
+          (column && column.__field_info && column.__field_info.placeholder) ||
           '请输入内容'
-          "
+        "
         v-model="modelValue"
         v-else-if="editorType === 'MultilineText'"
       >
       </el-input>
-      <div
-        class="text-orange text-center"
-        v-if="!disabled && !editable"
-      >
+      <div class="text-orange text-center" v-if="!disabled && !editable">
         <span class="mr-20px"> 当前字段不可编辑 </span>
-        <el-button
-          type="text"
-          @click="dialogFullscreen = !dialogFullscreen"
-        >
-          <i
-            class="el-icon-full-screen"
-            v-if="!dialogFullscreen"
-          ></i>
-          <i
-            class="el-icon-switch-button"
-            v-else
-          ></i>
+        <el-button type="text" @click="dialogFullscreen = !dialogFullscreen">
+          <i class="el-icon-full-screen" v-if="!dialogFullscreen"></i>
+          <i class="el-icon-switch-button" v-else></i>
           <span v-if="!dialogFullscreen">全屏</span>
           <span v-else>退出全屏</span>
         </el-button>
@@ -115,15 +100,16 @@
             plain
             @click="
               $emit('change', modelValue, row, column);
-            editorVisible = false;
+              editorVisible = false;
             "
-          >确认</el-button>
+            >确认</el-button
+          >
           <el-button
             type="primary"
             :disabled="!hasChange"
             @click="
               $emit('save', modelValue, row, column, 'save');
-            stopAutoSave();
+              stopAutoSave();
             "
           >
             仅保存
@@ -152,7 +138,12 @@
 </template>
 
 <script>
-import { isRichText, isFk, isFkAutoComplete, getFieldType } from '@/utils/sheetUtils.js'
+import {
+  isRichText,
+  isFk,
+  isFkAutoComplete,
+  getFieldType,
+} from "@/utils/sheetUtils.js";
 import Finder from "./finder.vue";
 import RichTextEditor from "./rich-text.vue";
 export default {
@@ -165,7 +156,7 @@ export default {
     value: {
       // v-model绑定 控制显示隐藏
       type: [String, Number],
-      default: '',
+      default: "",
     },
     show: {
       type: Boolean,
@@ -206,12 +197,12 @@ export default {
     editorType() {
       if (this.show) {
         if (isRichText(this.fieldInfo)) {
-          return "RichText"
+          return "RichText";
         }
         if (isFkAutoComplete(this.fieldInfo)) {
-          return 'autocomplete';
+          return "autocomplete";
         } else if (isFk(this.fieldInfo)) {
-          return 'fk';
+          return "fk";
         }
         return getFieldType(this.fieldInfo);
       }
@@ -220,23 +211,27 @@ export default {
       return this.column?.__field_info;
     },
     operateType() {
-      return this.row?.__flag || 'update'
+      return this.row?.__flag || "update";
     },
     setPosition() {
       if (this.position && this.position.width && this.show) {
-        let left = this.onfocus ? this.position.left : this.position.left + 3
-        let top = this.onfocus ? this.position.top : this.position.top + 3
-        let width = this.onfocus ? this.position.width : this.position.width - 8
-        let height = this.onfocus ? this.position.height : this.position.height - 8
+        let left = this.onfocus ? this.position.left : this.position.left + 3;
+        let top = this.onfocus ? this.position.top : this.position.top + 3;
+        let width = this.onfocus
+          ? this.position.width
+          : this.position.width - 8;
+        let height = this.onfocus
+          ? this.position.height
+          : this.position.height - 8;
         const pos = {
           left: left + "px",
           top: top + "px",
           width: width + "px",
           height: height + "px",
-        }
-        return `left:${left}px;top:${top}px;width:${width}px;height:${height}px;`
+        };
+        return `left:${left}px;top:${top}px;width:${width}px;height:${height}px;`;
       } else {
-        return ""
+        return "";
       }
     },
     hasChange() {
@@ -249,7 +244,6 @@ export default {
       }
       return str;
     },
-
 
     dateFormat() {
       if (this.editorType === "Date") {
@@ -276,10 +270,10 @@ export default {
           this.editorVisible = newVal;
           this.stopAutoSave();
         }
-      }
+      },
     },
     editorVisible(newVal) {
-      console.log('editorVisible:', newVal);
+      console.log("editorVisible:", newVal);
       if (newVal !== this.show) {
         this.$emit("update:show", newVal);
       }
@@ -290,7 +284,7 @@ export default {
         this.srcList = [];
         this.url = "";
         this.initialIndex = 0;
-        this.modelValue = ''
+        this.modelValue = "";
       }
     },
     modelValue(newVal) {
@@ -308,25 +302,24 @@ export default {
   },
   methods: {
     triggerAutocomplete(val) {
-      this.$refs.finder?.triggerAutocomplete?.(val)
+      this.$refs.finder?.triggerAutocomplete?.(val);
     },
-    onFinderChange(item) {
-      debugger
+    onFinderChange(item = null) {
       if (isFk(this.fieldInfo)) {
-        this.modelValue = item.value;
-        this.$emit('fk-change', item, this.row, this.column)
-        return
+        this.modelValue = item?.value || null;
+        this.$emit("fk-change", item, this.row, this.column);
+        return;
       }
       if (item && item?.option) {
-        this.modelValue = item.label;
+        this.modelValue = item?.label || null;
       }
       if (isFkAutoComplete(this.fieldInfo)) {
-        this.modelValue = item[this.keyDispCol];
-        this.$emit('fk-autocomplete-change', item, this.row, this.column);
+        this.modelValue = item?.value || null;
+        this.$emit("fk-autocomplete-change", item, this.row, this.column);
       }
-      const colType = this.fieldInfo.col_type
-      if (['fks', 'fkjson', 'fkjsons'].includes(colType)) {
-        this.$emit('fks-change', item, this.row, this.column);
+      const colType = this.fieldInfo.col_type;
+      if (["fks", "fkjson", "fkjsons"].includes(colType)) {
+        this.$emit("fks-change", item, this.row, this.column);
       }
     },
     onKeyDown(e) {
@@ -365,7 +358,7 @@ export default {
         }
       }, 1000);
     },
-    handleOpen(params = {}) { },
+    handleOpen(params = {}) {},
     handleClose() {
       // 对话框关闭处理
       this.editorVisible = false;
@@ -375,7 +368,7 @@ export default {
       console.log(eve);
       if (
         eve.target?.offsetParent?.className.indexOf("w-e-image-container") >
-        -1 &&
+          -1 &&
         eve.target.currentSrc
       ) {
         this.url = eve.target.currentSrc;
@@ -410,12 +403,11 @@ export default {
     // if (!['Date', 'DateTime', 'autocomplete', "fk", 'fks', 'fkjson', 'fkjsons'].includes(this.editorType)) {
     //   this.$parent.clearCellSelection()
     // }
-
   },
   beforeDestroy() {
     document.removeEventListener("keydown", this.onKeyDown);
     this.stopAutoSave();
-    this.modelValue = ''
+    this.modelValue = "";
   },
 };
 </script>
@@ -446,7 +438,6 @@ export default {
       display: flex;
       align-items: center;
       left: 0;
-
     }
 
     .el-input__suffix {
@@ -456,9 +447,8 @@ export default {
     }
   }
 
-
   &.focus {
-    border: 2px solid #4B89FF;
+    border: 2px solid #4b89ff;
   }
 
   .finder {

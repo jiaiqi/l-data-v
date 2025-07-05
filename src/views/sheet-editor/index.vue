@@ -523,7 +523,6 @@ export default {
                   // event.stopPropagation()
                   this.$nextTick(() => {
                     // this.$refs["tableRef"].stopEditingCell();
-                    debugger;
                     this.clearCellSelection();
                   });
                   return false;
@@ -1944,17 +1943,26 @@ export default {
       );
       this.handlerRedundant(item.option, column.key, row.rowKey, rowIndex);
     },
-    fkAutocompleteChange(item, row, column) {
-      debugger
+    async fkAutocompleteChange(item, row, column) {
+      if (!item) {
+        item = null;
+      }
       this.setCellSelection();
-      this.$refs["tableRef"].startEditingCell({
+      const defaultValue =
+        item?.label ||
+        item?.[column?.__field_info?.redundant?.refedCol] ||
+        null;
+      const obj = {
         rowKey: row.rowKey,
         colKey: column.field,
-        defaultValue: item?.label || item[column?.__field_info?.redundant?.refedCol] || null,
-      });
+        defaultValue: defaultValue,
+      };
+      this.$refs["tableRef"].startEditingCell(obj);
       this.$refs["tableRef"].stopEditingCell();
+      this.$set(row, column.field, defaultValue);
+
       // 对应的fk字段
-      const rawData = item.option || item;
+      const rawData = item?.option || item || null;
       const fkColumn = column?.__field_info?.redundant?.dependField;
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
@@ -1965,8 +1973,11 @@ export default {
         );
         if (fkColumnInfo) {
           let data = rawData || {};
-          row[fkColumn] = item.value;
+          row[fkColumn] = item?.value;
+          // row[fkColumn] = item.value || item[fkColumnInfo.columns];
           row[`_${fkColumn}_data`] = rawData;
+          this.$set(row, fkColumnInfo.columns, row[fkColumn]);
+
           this.$set(this.tableData, rowIndex, row);
           if (this.allFields.find((e) => e.columns === fkColumn)) {
             this.$refs["tableRef"].startEditingCell({
@@ -4321,7 +4332,6 @@ export default {
         })
         .catch((err) => {
           console.log("err:", err);
-          // debugger
           this.oldTableData = _oldTableData;
           this.tableData = _tableData;
           this.recordManager = _recordManager;

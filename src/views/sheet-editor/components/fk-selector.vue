@@ -896,4 +896,7 @@ export default {
 ::v-deep .el-cascader-node {
   max-width: 300px;
 }
+.cursor-pointer{
+  font-size: 14px;
+}
 </style>
