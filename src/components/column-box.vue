@@ -12,38 +12,45 @@
           :list="singList.list"
           :options="deploy"
           class="dragArea"
-          @start="start(singList)"
-          @end="onMove($event, singList)"
-          @add="add($event, singList)"
+          handle=".handle"
+          @start="onStart($event, singList)"
+          @end="onEnd($event, singList)"
+          @add="onAdd($event, singList)"
         >
           <div
             class="content_list"
             v-for="(item, index) in singList.list"
             :key="index"
+            :data-column="item.columns"
           >
             <div
               v-if="singList.type === 'all'"
-              class="value"
+              class=""
               :class="{ columns: singList.type === 'all' }"
             >
               <el-checkbox
                 :label="item.label + '/' + item.columns"
                 :name="item.columns"
                 :value="item.columns"
-                class="flex items-center px-5px cursor-move"
+                class="flex items-center flex-1"
               >
-                <div class="flex items-center w-[150px]">
-                  <div
-                    class="flex justify-center flex-col px-2 flex-1 truncate"
-                  >
+                <div class="flex items-center w-full all-column-item flex-1">
+                  <div class="flex justify-center flex-col flex-1 truncate">
                     <div class="truncate">
                       {{ item.label }}
                     </div>
                     <div class="truncate">{{ item.columns }}</div>
                   </div>
-                  <!-- <i class="i-ri-align-justify handle cursor-move"></i> -->
                   <i
-                    class="i-ri-file-copy-2-fill ml-2px cursor-pointer text-gray-500 hover:text-blue-500"
+                    class="i-ri-drag-drop-fill handle cursor-move hover-show"
+                    title="拖动"
+                  ></i>
+                  <!-- <i
+                    class="i-ri:drag-move-2-fill hover-show handle ml-2px cursor-move text-gray-500 hover:text-blue-500"
+                  ></i> -->
+                  <i
+                    class="i-ri-file-copy-2-fill hover-show ml-2px cursor-pointer "
+                    title="复制"
                     @click.stop.prevent="copyColumn(item)"
                   ></i>
                 </div>
@@ -51,7 +58,7 @@
             </div>
             <div
               v-else
-              class="value"
+              class="value handle"
               :class="{ order_value: singList.type === 'order' }"
             >
               {{ item.label }}
@@ -137,6 +144,7 @@
               "
               placeholder="请输入内容"
               class="input-value"
+              @click.stop
             ></el-input>
             <el-input
               v-model="item._aggregation.aliasName"
@@ -160,7 +168,7 @@
               align="right"
               unlink-panels
               range-separator="至"
-              start-placeholder="开始日期"
+              onSt-placeholder="开始日期"
               end-placeholder="结束日期"
               :picker-options="pickerOptions"
             ></el-date-picker>
@@ -178,6 +186,7 @@
 </template>
 
 <script>
+import { debounce } from "lodash-es";
 import draggable from "vuedraggable";
 
 export default {
@@ -218,7 +227,7 @@ export default {
       selectList: [],
       modelType: "",
       singListBak: {},
-      falgs: "article",
+      flags: "article",
       endData: {
         condition: [],
         group: [],
@@ -309,13 +318,7 @@ export default {
     deleteAllData() {
       // 清除组装的数据
     },
-    start(list) {
-      if (list.type === "group" || list.type === "aggregation") {
-        this.deploy.group.name = "order";
-      } else if (list.type === "condition") {
-        this.deploy.group = "a";
-      }
-    },
+
     setEndData(list) {
       let endData = null;
       if (list.type === "condition") {
@@ -344,7 +347,40 @@ export default {
         this.endData.order = this.order;
       }
     },
-    add(ev, list) {
+    onAdd(ev, list) {
+      // 如果是order类型，需要验证字段是否在aggregation或group中存在
+      let canAdd = true;
+      if (list.type === "order") {
+        const draggedItem = list.list[ev.newIndex];
+        const endData = this.$attrs.endData;
+        if (draggedItem && endData) {
+          const { aggregation = [], group = [] } = endData;
+          // 如果分组跟聚合中没有拖入任何字段，则允许直接从所有字段拖入
+          if (aggregation.length > 0 || group.length > 0) {
+            const draggedColumn = draggedItem.columns;
+            // 检查字段是否在aggregation或group中存在
+            const existsInAggregation = aggregation.some(
+              (item) => item.colName === draggedColumn
+            );
+            const existsInGroup = group.some(
+              (item) => item.colName === draggedColumn
+            );
+            // 如果字段不在aggregation和group中，则不允许拖入
+            if (!existsInAggregation && !existsInGroup) {
+              // 显示提示信息
+              this.$message.warning(
+                `字段 "${draggedItem.label}" 必须先添加到聚合或分组中才能进行排序`
+              );
+              canAdd = false;
+            }
+          }
+        }
+      }
+      if (canAdd === false) {
+        // 移除拖入的项
+        list.list.splice(ev.newIndex, 1);
+        return;
+      }
       let num = 0;
       for (let i = 0; i < list.list.length; i++) {
         if (list.list[i].id === list.list[ev.newIndex].id) {
@@ -385,12 +421,19 @@ export default {
       }
       this.$emit("save", list, this.endData);
     },
-    onMove(e, list) {
-      if (list.type === "group" || list.type === "aggregation") {
-        this.deploy.group.name = "article";
-      } else if (list.type === "condition") {
-        this.deploy.group = "article";
-      }
+    onStart(event, list) {
+      // if (list.type === "group" || list.type === "aggregation") {
+      //   this.deploy.group.name = "order";
+      // } else if (list.type === "condition") {
+      //   this.deploy.group = "a";
+      // }
+    },
+    onEnd(event, list) {
+      // if (list.type === "group" || list.type === "aggregation") {
+      //   this.deploy.group.name = "article";
+      // } else if (list.type === "condition") {
+      //   this.deploy.group = "article";
+      // }
     },
     selectConditionOperator(sign, isClick) {
       // 切换condition的操作符
@@ -966,12 +1009,13 @@ export default {
     let deploy = {};
     if (val.type === "all") {
       deploy = {
-        group: { name: this.falgs, pull: "clone" },
+        group: { name: this.flags, pull: "clone" },
         sort: false,
       };
     } else if (val.type === "order") {
       deploy = {
-        group: "order",
+        // group: "order",
+        group: { name: this.flags, pull: "clone" },
         disabled: false,
       };
     } else if (val.type === "group" || val.type === "aggregation") {
@@ -1037,7 +1081,7 @@ export default {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   overflow: hidden;
   z-index: 10;
-  
+
   span {
     font-size: 13px;
     padding: 8px 15px;
@@ -1045,12 +1089,12 @@ export default {
     border-bottom: 1px solid #f5f5f5;
     cursor: pointer;
     transition: all 0.2s;
-    
+
     &:hover {
       background: #f0f7ff;
-      color: #409EFF;
+      color: #409eff;
     }
-    
+
     &:last-child {
       border-bottom: none;
     }
@@ -1072,7 +1116,7 @@ export default {
   font-weight: 500;
   background-color: #fff;
   border-radius: 8px;
-  
+
   .title {
     display: flex;
     align-items: center;
@@ -1086,35 +1130,35 @@ export default {
     height: 48px;
     background: linear-gradient(135deg, #1989fa, #096dd9);
   }
-  
+
   .content {
     height: calc(100% - 48px);
     overflow-y: auto;
     padding: 8px;
-    
+    border: 1px solid #f0f0f0;
     &::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
-    
+
     &::-webkit-scrollbar-thumb {
       background: #e0e0e0;
       border-radius: 3px;
     }
-    
+
     &::-webkit-scrollbar-track {
       background: #f5f5f5;
       border-radius: 3px;
     }
-    
+
     .dragArea {
       height: 100%;
-      
+
       &.el-input__inner {
         border-radius: 4px;
       }
     }
-    
+
     .content_list {
       display: flex;
       justify-content: space-between;
@@ -1126,16 +1170,28 @@ export default {
       border-radius: 4px;
       transition: all 0.2s;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      
+      .hover-show {
+        display: none;
+        color: #606266;
+        margin-left: 8px;
+      }
+      .all-column-item {
+        &:hover {
+          .hover-show {
+            color: #409eff;
+            display: inline-block;
+          }
+        }
+      }
       &:hover {
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       }
-      
+
       &:nth-child(2n) .value {
         color: #606266;
         background-color: #fafafa;
       }
-      
+
       .value {
         min-width: 35%;
         font-size: 14px;
@@ -1149,65 +1205,66 @@ export default {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      
+
       .order_value {
         flex: 1;
       }
-      
+
       .columns {
         line-height: 1.5rem;
         width: 100%;
         text-align: left;
         border-radius: 4px;
-        padding: 8px 12px;
+        padding: 8px;
+        border: 1px solid #ebeef5;
       }
-      
+
       .el-select {
         border-radius: 0;
         max-width: 18%;
       }
-      
+
       .date-picker {
         width: 100%;
         border-radius: 0;
         max-width: 25%;
       }
-      
+
       .input-value {
         border: none;
         flex: 1;
         border-radius: 0;
       }
-      
+
       .input-value ::v-deep .el-input__inner {
         border-radius: 0;
         border-top-right-radius: 0px;
         border-bottom-right-radius: 0px;
         transition: all 0.2s;
-        
+
         &:focus {
-          border-color: #409EFF;
+          border-color: #409eff;
         }
       }
-      
+
       .date-picker ::v-deep .el-input__inner {
         border-radius: 0;
         border-top-right-radius: 4px;
         border-bottom-right-radius: 4px;
       }
-      
+
       .el-select ::v-deep .el-input__inner {
         border-radius: 0;
         border-right: 0;
       }
-      
+
       .el-button--danger {
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
         border-radius: 0 4px 4px 0;
         margin-left: 0;
         transition: all 0.2s;
-        
+
         &:hover {
           background-color: #f56c6c;
           border-color: #f56c6c;
@@ -1223,11 +1280,14 @@ export default {
 }
 
 // 优化复制图标样式
-.i-ri-file-copy-2-fill {
+.i-ri-file-copy-2-fill,
+.i-ri-drag-drop-fill,
+ic:baseline-drag-handle {
   font-size: 16px;
   transition: all 0.2s;
-  
+
   &:hover {
+    color: #409eff;
     transform: scale(1.1);
   }
 }
@@ -1236,13 +1296,14 @@ export default {
 .el-checkbox {
   margin-right: 0;
   width: 100%;
-  
+
   ::v-deep .el-checkbox__input {
     vertical-align: middle;
   }
-  
+
   ::v-deep .el-checkbox__label {
     padding-left: 8px;
+    width: 100%;
   }
 }
 </style>

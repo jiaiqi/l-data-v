@@ -124,13 +124,14 @@
       </el-form>
     </el-card>
 
-    <el-card class="columns-box">
+    <div class="columns-box">
       <div class="content-box">
         <div class="column-box">
           <column-box
             :singList="allColum"
             :allow-check="true"
             :checkedColumns.sync="checkedColumns"
+            :endData="endData"
           ></column-box>
         </div>
         <div class="condition-box">
@@ -149,7 +150,7 @@
           </div>
         </div>
       </div>
-    </el-card>
+    </div>
 
     <div class="btn-box">
       <el-button @click="previewData" type="success" icon="el-icon-view"
@@ -1268,8 +1269,8 @@ export default {
     //   this.getApp();
     // }
     this.$nextTick(() => {
-      document.title = '请求配置'
-    })
+      document.title = "请求配置";
+    });
   },
 };
 </script>
@@ -1285,7 +1286,7 @@ export default {
   border-radius: 8px;
 
   .sing_hual {
-    margin-left: 0.5rem;
+    // margin-left: 0.5rem;
     height: 50%;
     width: 30%;
   }
@@ -1374,12 +1375,11 @@ export default {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    margin-bottom: 20px;
     gap: 20px;
     // box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 
     .column-box {
-      width: 18%;
+      min-width: 20%;
       height: 500px;
       font-size: 14px;
       font-weight: 400;
@@ -1405,7 +1405,7 @@ export default {
       gap: 16px;
       display: grid;
       justify-content: center;
-      grid-template-columns: repeat(auto-fit, minmax(500px, 600px));
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
 
       .sing_hual {
         // width: calc(50% - 10px);
@@ -1421,7 +1421,6 @@ export default {
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
         overflow: hidden;
         transition: all 0.3s ease;
-
         &:hover {
           transform: translateY(-3px);
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
@@ -1436,7 +1435,6 @@ export default {
     align-items: center;
     justify-content: center;
     gap: 15px;
-    margin-bottom: 20px;
 
     .el-button {
       padding: 10px 24px;
@@ -1475,12 +1473,10 @@ export default {
 
     .preview-title {
       padding: 0 16px;
-      height: 60px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid #f0f0f0;
-      margin-bottom: 16px;
+      // border-bottom: 1px solid #f0f0f0;
 
       .title {
         font-size: 18px;
