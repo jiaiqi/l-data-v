@@ -657,9 +657,12 @@ export default {
       cellAutofillOption: {
         directionX: false,
         directionY: true,
-        afterAutofill: ({ targetSelectionRangeIndexes }) => {
+        afterAutofill: ({
+          targetSelectionRangeIndexes,
+          sourceSelectionData,
+        }) => {
           //targetSelectionRangeIndexes 自动填充目标的行和列索引
-          this.triggerEditCell(targetSelectionRangeIndexes);
+          // this.triggerEditCell(targetSelectionRangeIndexes,sourceSelectionData);
         },
         beforeAutofill: ({
           direction,
@@ -762,6 +765,21 @@ export default {
                 });
                 this.triggerEditCell(targetSelectionRangeIndexes);
                 return false;
+              }
+            } else if (sourceSelectionData?.length > 0) {
+              const rowKey = sourceSelectionData[0]?.rowKey;
+              if (rowKey) {
+                const sourceData = this.tableData.find(
+                  (item) => item.rowKey === rowKey
+                );
+                if (sourceData) {
+                  this.$nextTick(() => {
+                    this.triggerEditCell(
+                      targetSelectionRangeIndexes,
+                      sourceData
+                    );
+                  });
+                }
               }
             }
           }
@@ -2767,12 +2785,10 @@ export default {
       this.page.pageNo = 1;
       this.getList();
     },
-    triggerEditCell({
-      startRowIndex,
-      endRowIndex,
-      startColIndex,
-      endColIndex,
-    }) {
+    triggerEditCell(
+      { startRowIndex, endRowIndex, startColIndex, endColIndex },
+      sourceData
+    ) {
       // 触发编辑事件
       const columns = this.columns.filter(
         (item) =>
@@ -2780,6 +2796,7 @@ export default {
             item.field
           )
       );
+      const changedCols = [];
       for (let i = startRowIndex; i <= endRowIndex; i++) {
         const row = this.tableData[i];
         for (let j = startColIndex; j <= endColIndex; j++) {
@@ -2794,8 +2811,35 @@ export default {
             defaultValue: row[col.field],
           });
           this.$refs["tableRef"]?.stopEditingCell?.();
+          changedCols.push({
+            rowKey: row.rowKey,
+            row: row,
+            colKey: col.field,
+            fieldInfo: col.__field_info,
+            defaultValue: row[col.field],
+          });
           // this.clearCellSelection();
         }
+      }
+      if (changedCols?.length) {
+        changedCols.forEach((item) => {
+          const { rowKey } = item;
+          const targetCol = item?.fieldInfo?.redundant_options?._target_column;
+          if (targetCol && sourceData) {
+            // autocomplete字段 由别的行自动填充赋值之后，将对应的fk字段也赋值
+            let targetColInfo = this.columns.find((e) => e.field === targetCol);
+            if (targetColInfo && sourceData[targetColInfo.field]) {
+              const row = this.tableData.find((e) => e.rowKey === rowKey);
+              this.$set(row, targetColInfo.field, sourceData[targetColInfo.field])
+              this.$refs["tableRef"]?.startEditingCell?.({
+                rowKey: rowKey,
+                colKey: targetColInfo.field,
+                defaultValue: sourceData[targetColInfo.field],
+              });
+              this.$refs["tableRef"]?.stopEditingCell?.();
+            }
+          }
+        });
       }
     },
     undo() {
@@ -4145,7 +4189,7 @@ export default {
         this.srvApp,
         true
       );
-      if (res?.state === "SUCCESS") {
+      if (v2Res?.state === "SUCCESS") {
         this.v2data = v2Res.data;
       } else {
         this.$message.error("登录信息更新，请重新加载页面");
