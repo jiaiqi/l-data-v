@@ -1946,7 +1946,12 @@ export default {
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
       );
-      this.handlerRedundant(item.option, column.key, row.rowKey, rowIndex);
+      this.handlerRedundant(
+        item.option || item.rawData,
+        column.key,
+        row.rowKey,
+        rowIndex
+      );
     },
     fkChange(item, row, column) {
       this.setCellSelection();
@@ -1959,7 +1964,12 @@ export default {
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
       );
-      this.handlerRedundant(item.option, column.key, row.rowKey, rowIndex);
+      this.handlerRedundant(
+        item.option || item.rawData,
+        column.key,
+        row.rowKey,
+        rowIndex
+      );
     },
     async fkAutocompleteChange(item, row, column) {
       if (!item) {
@@ -2830,7 +2840,11 @@ export default {
             let targetColInfo = this.columns.find((e) => e.field === targetCol);
             if (targetColInfo && sourceData[targetColInfo.field]) {
               const row = this.tableData.find((e) => e.rowKey === rowKey);
-              this.$set(row, targetColInfo.field, sourceData[targetColInfo.field])
+              this.$set(
+                row,
+                targetColInfo.field,
+                sourceData[targetColInfo.field]
+              );
               this.$refs["tableRef"]?.startEditingCell?.({
                 rowKey: rowKey,
                 colKey: targetColInfo.field,

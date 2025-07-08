@@ -4,10 +4,10 @@
     class="flex justify-between items-center"
     style="max-width: 500px"
   >
-    <div style="width: 100%" v-if="isTree && setDisabled" @click="remoteMethod">
-      {{ modelValue }}
+    <div class="fk-text" style="width: 100%" v-if="isTree && setDisabled" @click="remoteMethod">
+      {{ modelValue||'' }}
     </div>
-    <div v-else-if="setDisabled">{{ modelLabel || modelValue || "" }}</div>
+    <div class="fk-text disabled" v-else-if="setDisabled">{{ modelLabel || modelValue || "" }}</div>
     <multi-tab-option-select
       v-else-if="useMultiTabOptionSelect === true"
       :placeholder="fieldInfo.placeholder"
@@ -27,9 +27,9 @@
       >
         <span
           slot="reference"
-          v-if="modelValue && !setDisabled"
+          v-if="!setDisabled"
           class="cursor-pointer"
-          >{{ modelLabel || modelValue || "" }}</span
+          >{{ modelLabel || modelValue || "下拉选择" }}</span
         >
         <span
           slot="reference"
@@ -61,7 +61,7 @@
       v-else-if="srvInfo && srvInfo.refed_col"
       class="flex items-center justify-between w-full"
     >
-      <div>{{ modelLabel || modelValue }}</div>
+      <!-- <div>{{ modelLabel || modelValue }}</div> -->
       <el-select
         ref="inputRef"
         v-model="modelValue"
@@ -79,7 +79,7 @@
         @focus="onFocus"
         :clearable="false"
         :disabled="setDisabled"
-        style="width: 0px; padding: 0; overflow: hidden"
+        style="overflow: hidden"
       >
         <el-option
           v-for="(item, index) in options"
@@ -96,7 +96,7 @@
         v-if="!isTree && !setDisabled"
       ></i>
     </div>
-    <div v-else>{{ modelValue }}</div>
+    <div v-else>{{ modelValue||'下拉选择' }}</div>
 
     <!-- <i
       class="el-icon-arrow-right cursor-pointer m-l-[-5px] text-#C0C4CC"

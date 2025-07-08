@@ -30,6 +30,7 @@
     :field="field"
     :row="row"
     :column="column"
+    :fieldInfo="column"
     :srvInfo="column._update_option_list_v2 || column._add_option_list_v2"
     v-model="row[column.columns]"
     @select="onPickerSelected"
@@ -281,6 +282,11 @@ export default {
     onInput(val) {
       this.inputVal = val;
       this.$emit("input", val);
+    },
+    onFkSelect(selected) {
+      this.field.model = selected.value;
+      this.selected = selected;
+      this.$emit("change", selected);
     },
     onPickerSelected(selected) {
       this.field.model = selected;
