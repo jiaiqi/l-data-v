@@ -2840,17 +2840,17 @@ export default {
             let targetColInfo = this.columns.find((e) => e.field === targetCol);
             if (targetColInfo && sourceData[targetColInfo.field]) {
               const row = this.tableData.find((e) => e.rowKey === rowKey);
-              this.$set(
-                row,
-                targetColInfo.field,
-                sourceData[targetColInfo.field]
-              );
               this.$refs["tableRef"]?.startEditingCell?.({
                 rowKey: rowKey,
                 colKey: targetColInfo.field,
                 defaultValue: sourceData[targetColInfo.field],
               });
               this.$refs["tableRef"]?.stopEditingCell?.();
+              this.$set(
+                row,
+                targetColInfo.field,
+                sourceData[targetColInfo.field]
+              );
             }
           }
         });
@@ -3566,7 +3566,6 @@ export default {
                           return this.fkChange(event, row, column);
                         }
                         event = this.replaceFileAddressSuffix(event);
-                        this.$set(row, column.field, event);
                         // console.log("data-change:", row, column.field, event);
                         this.$refs["tableRef"].startEditingCell({
                           rowKey: row.rowKey,
@@ -3574,6 +3573,7 @@ export default {
                           defaultValue: event || null,
                         });
                         this.$refs["tableRef"].stopEditingCell();
+                        this.$set(row, column.field, event);
                         this.clearCellSelection();
                       },
                     },

@@ -4,10 +4,17 @@
     class="flex justify-between items-center"
     style="max-width: 500px"
   >
-    <div class="fk-text" style="width: 100%" v-if="isTree && setDisabled" @click="remoteMethod">
-      {{ modelValue||'' }}
+    <div
+      class="fk-text"
+      style="width: 100%"
+      v-if="isTree && setDisabled"
+      @click="remoteMethod"
+    >
+      {{ modelValue || "" }}
     </div>
-    <div class="fk-text disabled" v-else-if="setDisabled">{{ modelLabel || modelValue || "" }}</div>
+    <div class="fk-text disabled" v-else-if="setDisabled">
+      {{ modelLabel || modelValue || "" }}
+    </div>
     <multi-tab-option-select
       v-else-if="useMultiTabOptionSelect === true"
       :placeholder="fieldInfo.placeholder"
@@ -25,12 +32,9 @@
         trigger="click"
         @show="onPopoverShow"
       >
-        <span
-          slot="reference"
-          v-if="!setDisabled"
-          class="cursor-pointer"
-          >{{ modelLabel || modelValue || "下拉选择" }}</span
-        >
+        <span slot="reference" v-if="!setDisabled" class="cursor-pointer">{{
+          modelLabel || modelValue || "下拉选择"
+        }}</span>
         <span
           slot="reference"
           class="text-gray cursor-pointer"
@@ -44,7 +48,7 @@
           @focus="onFocus"
           @input="onFilterInput"
           @clear="onFilterClear"
-          style="max-width: 300px; margin-bottom: 5px"
+          style="max-width: 300px;height: 40px; margin-bottom: 5px"
         >
         </el-input>
         <el-cascader-panel
@@ -54,7 +58,14 @@
           @change="onSelectChange"
           :emitPath="false"
           checkStrictly
-        ></el-cascader-panel>
+          style="max-width: 1200px; overflow-x: auto"
+        >
+          <template slot-scope="{ node, data }">
+            <span :title="node.label" @click.stop="clickNode(node, data)">{{
+              node.label||'---'
+            }}</span>
+          </template>
+        </el-cascader-panel>
       </el-popover>
     </div>
     <div
@@ -96,7 +107,7 @@
         v-if="!isTree && !setDisabled"
       ></i>
     </div>
-    <div v-else>{{ modelValue||'下拉选择' }}</div>
+    <div v-else>{{ modelValue || "下拉选择" }}</div>
 
     <!-- <i
       class="el-icon-arrow-right cursor-pointer m-l-[-5px] text-#C0C4CC"
@@ -382,7 +393,10 @@ export default {
       this.filterText = this.value;
       this.remoteMethod(this.filterText).then((res) => {
         if (res?.length === 1 && this.srvInfo?.refed_col) {
-          this.onSelectChange(res.map((item) => item[this.srvInfo.refed_col]));
+          this.onSelectChange(
+            res.map((item) => item[this.srvInfo.refed_col]),
+            false
+          );
         }
       });
     },
@@ -489,13 +503,47 @@ export default {
       this.pageNo = val;
       this.getTableData();
     },
-    onSelectChange(val) {
+    clickNode(node, data) {
+      if (this.props.checkStrictly === false) {
+        if (data.is_leaf !== "是") {
+          // 非叶子节点 只能选择叶子节点
+          return;
+        }
+      }
+      console.log(node, data, "clickNode");
+      let val = node.value;
+      let currentValue = this.allOptions.find(
+        (item) => item[this.srvInfo.refed_col] === val
+      );
+      if (currentValue) {
+        this.modelValue = currentValue.value;
+        this.$emit("select", {
+          value: this.modelValue,
+          rawData: currentValue,
+        });
+      }
+      this.$emit("input", this.modelValue);
+      // this.field.model = data;
+      // if (this.dispLoaderV2?.lazyLoad === false) {
+      //   this.selected = [data[this.props.value]];
+      // } else {
+      // this.selected = node.path;
+      // }
+      // this.$emit("field-value-changed", this.field.info.name, this.field);
+      this.$nextTick(() => {
+        this.$refs.treePopover?.doClose?.();
+      });
+    },
+    onSelectChange(val, hidePopover = true) {
       console.log("onSelectChange", val);
 
       if (Array.isArray(val) && val?.length) {
         val = val[0];
       }
-      this.$refs?.treePopover?.doClose();
+
+      if (hidePopover !== false) {
+        this.$refs?.treePopover?.doClose();
+      }
 
       let currentValue = this.allOptions.find(
         (item) => val && item[this.srvInfo?.refed_col] === val
@@ -896,7 +944,7 @@ export default {
 ::v-deep .el-cascader-node {
   max-width: 300px;
 }
-.cursor-pointer{
+.cursor-pointer {
   font-size: 14px;
 }
 </style>

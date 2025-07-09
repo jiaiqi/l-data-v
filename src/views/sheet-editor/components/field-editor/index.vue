@@ -420,7 +420,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9;
+  z-index: 999;
 
   ::v-deep .el-input {
     display: flex;

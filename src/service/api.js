@@ -287,7 +287,8 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber, params =
     });
   }
   req.condition = conditions;
-  if (option_list_v2?.autocompleteInput !== true && option_list_v2?.is_tree === true) {
+  // if (option_list_v2?.autocompleteInput !== true && option_list_v2?.is_tree === true) {
+  if (option_list_v2?.is_tree === true) {
     req.rdt = "ttd";
     delete req.page;
   }

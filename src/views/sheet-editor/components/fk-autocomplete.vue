@@ -56,12 +56,13 @@
           @change="onSelectChange"
           :emitPath="false"
           checkStrictly
+          style="max-width: 1200px;overflow-x: auto;"
         >
           <template
             slot-scope="{ node, data }"
             v-if="props.checkStrictly !== false"
           >
-            <span @click.stop="clickNode(node, data)">{{ node.label }}</span>
+            <span :title="node.label" @click.stop="clickNode(node, data)">{{ node.label }}</span>
           </template>
         </el-cascader-panel>
       </el-popover>

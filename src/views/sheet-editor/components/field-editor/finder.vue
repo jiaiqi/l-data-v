@@ -33,7 +33,7 @@
     :fieldInfo="column"
     :srvInfo="column._update_option_list_v2 || column._add_option_list_v2"
     v-model="row[column.columns]"
-    @select="onPickerSelected"
+    @select="onFkSelect"
     @multi-tab-option-select-change="onMultiTabOptionSelectChange"
     v-else-if="isFk"
   >
