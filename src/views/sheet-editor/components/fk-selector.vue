@@ -31,13 +31,17 @@
         ref="treePopover"
         trigger="click"
         @show="onPopoverShow"
+        style="width: 100%; display: inline-block"
       >
-        <span slot="reference" v-if="!setDisabled" class="cursor-pointer">{{
-          modelLabel || modelValue || "下拉选择"
-        }}</span>
         <span
           slot="reference"
-          class="text-gray cursor-pointer"
+          v-if="!setDisabled"
+          class="cursor-pointer selected-text w-full inline-block"
+          >{{ modelLabel || modelValue || "" }}</span
+        >
+        <span
+          slot="reference"
+          class="text-gray cursor-pointer w-full inline-block selected-text"
           v-else-if="!setDisabled"
           >点击进行选择</span
         >
@@ -48,7 +52,7 @@
           @focus="onFocus"
           @input="onFilterInput"
           @clear="onFilterClear"
-          style="max-width: 300px;height: 40px; margin-bottom: 5px"
+          style="max-width: 300px; height: 40px; margin-bottom: 5px"
         >
         </el-input>
         <el-cascader-panel
@@ -62,7 +66,7 @@
         >
           <template slot-scope="{ node, data }">
             <span :title="node.label" @click.stop="clickNode(node, data)">{{
-              node.label||'---'
+              node.label || "---"
             }}</span>
           </template>
         </el-cascader-panel>
@@ -943,6 +947,26 @@ export default {
 <style lang="scss" scoped>
 ::v-deep .el-cascader-node {
   max-width: 300px;
+}
+.selected-text {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    // bottom: 0;
+    width: 0;
+    height: 0;
+    border: 6px solid transparent;
+    border-top-color: #333;
+    // border-bottom-width: 0px;
+    right: 0;
+    // transform: translateX(calc(100% + 10px)) translateY(calc(50% - 2px));
+    transform: translateX(calc(100% + 10px)) translateY(calc(-50% + 2px));
+    background: #fff;
+    box-shadow: 0 -2px 0 3px #fff, 0 -2px 0 4px rgba(0, 0, 0, 0.9);
+  }
 }
 .cursor-pointer {
   font-size: 14px;
