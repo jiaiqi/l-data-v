@@ -1,6 +1,6 @@
 <template>
   <div class="hual">
-    <el-card class="select-box" shadow="hover">
+    <!-- <el-card class="select-box" shadow="hover">
       <el-form
         ref="ruleForm"
         label-width="120px"
@@ -122,7 +122,17 @@
           </el-col>
         </el-row>
       </el-form>
-    </el-card>
+    </el-card> -->
+    <request-form
+      :value="ruleForm"
+      :allService="allService"
+      :allApp="allApp"
+      :checkedReqOptions="checkedReqOptions"
+      @req-option-change="reqOptionChange"
+      @service-change="serviceChange"
+      @app-change="appChange"
+      @req-type-change="reqTypeChange"
+    ></request-form>
 
     <div class="columns-box">
       <div class="content-box">
@@ -160,7 +170,7 @@
         >保存</el-button
       >
     </div>
-
+    <!-- 
     <el-card class="preview-box" shadow="hover">
       <div slot="header" class="preview-title">
         <div class="title">数据预览</div>
@@ -210,12 +220,25 @@
           v-if="tableData.length > 0"
         ></el-pagination>
       </div>
-    </el-card>
+    </el-card> -->
+
+    <DataPreview
+      ref="dataPreviewRef"
+      :app-name="ruleForm.mapp"
+      :service-name="ruleForm.service_name"
+      :title="ruleForm.srv_req_name"
+      :columns-option="columnsOption"
+    ></DataPreview>
+
+    <login-dialog ref="loginRef"></login-dialog>
   </div>
 </template>
 
 <script>
 import { Loading } from "element-ui";
+import loginDialog from "@/components/login-dialog/index.vue";
+import RequestForm from "@/components/request-builder/RequestForm.vue";
+import DataPreview from "@/components/request-builder/DataPreview.vue";
 import columnBox from "@/components/column-box.vue";
 import dayjs from "dayjs";
 import FileSaver from "file-saver";
@@ -224,6 +247,9 @@ export default {
   name: "RequestBuilder",
   components: {
     columnBox,
+    loginDialog,
+    RequestForm,
+    DataPreview,
   },
   data() {
     return {
@@ -736,7 +762,8 @@ export default {
       reqData["colNames"] = ["*"];
       this.reqData = reqData;
       this.requestBody = reqData;
-      this.getPreviewTableData(reqData);
+      this.$refs.dataPreviewRef.handleGetData(reqData);
+      // this.getPreviewTableData(reqData);
     },
     saveConfig() {
       // 保存配置到服务器
@@ -807,7 +834,23 @@ export default {
       const url = `/config/select/${req.serviceName}`;
       this.$http.post(url, req).then((res) => {
         this.allApp = res.data.data;
+        if (res.data.resultCode === "0011") {
+          this.$refs?.loginRef?.open(() => {});
+        }
       });
+    },
+    serviceChange(val) {
+      this.ruleForm.service_name = val;
+    },
+    appChange(val) {
+      this.ruleForm.mapp = val;
+    },
+    reqTypeChange(val) {
+      this.ruleForm.srv_type = val;
+    },
+    reqOptionChange(val) {
+      this.checkedReqOptions = val;
+      this.changeReqOption();
     },
     changeReqOption() {
       // 选择显示那四个框中的哪个

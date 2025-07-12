@@ -34,8 +34,33 @@ const router = new VueRouter({
     {
       path: "/request",
       name: "requestBuilder",
-      component: () => import("@/views/request-builder.vue"),
+      component: () => import("@/views/request/index.vue"),
     },
+    {
+      path: "/select-builder",
+      name: "selectBuilder",
+      component: () => import("@/views/request/select-builder.vue"),
+    },
+    {
+      path: "/report",
+      name: "report",
+      component: () => import("@/views/request/preview.vue"),
+    },
+    {
+      path: "/report/:app/:service/:title",
+      name: "report2",
+      component: () => import("@/views/request/preview.vue"),
+    },
+    {
+      path: "/report/:reportNo",
+      name: "report3",
+      component: () => import("@/views/request/preview.vue"),
+    },
+    // {
+    //   path: "/request",
+    //   name: "requestBuilder",
+    //   component: () => import("@/views/request/builder.vue"),
+    // },
     {
       path: "/request-preview",
       name: "requestpreview",
@@ -63,7 +88,7 @@ const router = new VueRouter({
     },
     {
       path: "/child-list/:broadCastName/:childListType/:mainService/:app/:service",
-      name: "childList",
+      name: "childList1",
       component: () => import("@/views/sheet-editor/index.vue"),
     },
     {

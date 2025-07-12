@@ -33,5 +33,5 @@ dev-dist/sw.js
 dataview
 dataview.zip
 dataview*.zip
-
+/dataview*
 bxhome
