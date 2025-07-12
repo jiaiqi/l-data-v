@@ -3,14 +3,13 @@
     <div slot="header" class="preview-title">
       <div class="title">{{ title }}</div>
       <div>
-        <router-link
+        <span
           class="new-page-btn"
-          :to="getNewPageRoute"
-          target="_blank"
+          @click="openNewPage"
           v-if="showOpenNewPage"
         >
           新页面打开
-        </router-link>
+        </span>
         <el-button
           @click="handleRefresh"
           type="primary"
@@ -26,7 +25,7 @@
           size="small"
           icon="el-icon-download"
           class="export-button"
-          v-if="loaded&&!isEmpty"
+          v-if="loaded && !isEmpty"
           >导出为Excel</el-button
         >
       </div>
@@ -170,7 +169,7 @@ async function getTableData(req = {}) {
       tableData.value = [];
       isEmpty.value = true;
       proxy.$message.warning("暂无数据");
-    }else{
+    } else {
       isEmpty.value = false;
     }
   } else {
@@ -272,7 +271,11 @@ const showOpenNewPage = computed(() => {
   return route && route.name?.includes("report") !== true;
 });
 
-const getNewPageRoute = computed(() => {
+const openNewPage = () => {
+  window.open(getNewPageUrl.value, "_blank");
+}
+const getNewPageUrl = computed(() => {
+  return `/dataview/#/report/${props.reqNo}`;
   return {
     name: "report3",
     params: {
