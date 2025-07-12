@@ -42,6 +42,11 @@ const router = new VueRouter({
       component: () => import("@/views/request/select-builder.vue"),
     },
     {
+      path: "/select-builder/:no",
+      name: "selectBuilder2",
+      component: () => import("@/views/request/select-builder.vue"),
+    },
+    {
       path: "/report",
       name: "report",
       component: () => import("@/views/request/preview.vue"),

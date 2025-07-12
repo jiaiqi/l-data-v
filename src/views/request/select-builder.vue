@@ -666,7 +666,7 @@ export default {
     },
     serviceChange(val) {
       this.ruleForm.service_name = val;
-      this.getColumns()
+      this.getColumns();
     },
     appChange(val) {
       this.ruleForm.mapp = val;
@@ -927,6 +927,11 @@ export default {
           if (this.$route.query?.srvApp && !this.ruleForm.mapp) {
             this.ruleForm.mapp = this.$route.query?.srvApp;
           }
+          if (this.ruleForm.srv_req_name) {
+            this.$nextTick(() => {
+              document.title = this.ruleForm.srv_req_name;
+            });
+          }
           await this.getServiceName();
           initData = new Array(4);
           if (reqConfig?.order_json) {
@@ -1120,24 +1125,13 @@ export default {
   },
   async created() {
     await this.getApp();
-    if (this.$route.query?.no) {
-      this.srv_call_no = this.$route.query?.no;
-      // this.fetchChildDatas().then((res) => {
-      // this.fetchRequestConfig(res);
+    if (this.$route.query?.no || this.$route.params.no) {
+      this.srv_call_no = this.$route.query?.no || this.$route.params.no;
       this.fetchRequestConfig();
-      // });
     }
 
     this.changeReqOption();
 
-    // let operate = this.$route.params.modelId
-    // if (operate == 'add') {
-    //   this.app = appName
-    //   this.serveice = serviceName
-    //   this.getApp();
-    // } else { // 编辑
-    //   this.getApp();
-    // }
     this.$nextTick(() => {
       document.title = "请求配置";
     });
