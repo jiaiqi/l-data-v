@@ -26,6 +26,7 @@
           size="small"
           icon="el-icon-download"
           class="export-button"
+          v-if="loaded&&!isEmpty"
           >导出为Excel</el-button
         >
       </div>
@@ -49,11 +50,13 @@
           ></el-table-column>
         </template>
       </el-table>
-      <div class="empty-data" v-if="!tableData || !tableData.length">
+      <div class="empty-data" v-if="loaded && isEmpty">
         <i class="el-icon-data-analysis"></i>
-        <p v-if="isEmpty">
-          暂无数据，请点击预览按钮获取数据或检查请求参数是否正确
-        </p>
+        <p>暂无数据，请点击预览按钮获取数据或检查请求参数是否正确</p>
+      </div>
+      <div class="empty-data" v-else-if="loaded === false">
+        <i class="el-icon-data-analysis" @click="handleRefresh"></i>
+        <p>请点击预览按钮获取数据</p>
       </div>
     </div>
     <div class="pagination">
@@ -129,14 +132,18 @@ const pageInfo = reactive({
 });
 
 const tableTitle = ref([]);
-
+const initReq = ref(null);
 const isEmpty = ref(false);
+const loaded = ref(false);
 const tableData = ref([]);
 
-async function getTableData(initReq = {}) {
-  const req = {
+async function getTableData(req = {}) {
+  if (req) {
+    initReq.value = req;
+  }
+  req = {
     colNames: ["*"],
-    ...initReq,
+    ...req,
     serviceName: props.serviceName,
     page: {
       pageNo: pageInfo.pageNo,
@@ -154,6 +161,7 @@ async function getTableData(initReq = {}) {
   // 获取预览数据
   tableTitle.value = [];
   const res = await $http.post(requestUrl.value, req);
+  loaded.value = true;
   if (res.data.resultCode === "0011") {
     return emit("open-login");
   }
@@ -162,7 +170,14 @@ async function getTableData(initReq = {}) {
       tableData.value = [];
       isEmpty.value = true;
       proxy.$message.warning("暂无数据");
+    }else{
+      isEmpty.value = false;
     }
+  } else {
+    if (res.data.resultMessage) {
+      proxy.$message.warning(res.data.resultMessage);
+    }
+    return false;
   }
   let pageData = res.data.page; //获取分页信息
   pageInfo.pageNo = pageData.pageNo;
@@ -206,7 +221,7 @@ async function handleRefresh() {
   pageInfo.rownumber = 10;
   tableTitle.value = [];
   tableData.value = [];
-  await getTableData();
+  await getTableData(initReq.value);
 }
 // 导出Excel方法
 const exportExcel = () => {
