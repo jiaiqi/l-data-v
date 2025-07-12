@@ -666,9 +666,11 @@ export default {
     },
     serviceChange(val) {
       this.ruleForm.service_name = val;
+      this.getColumns()
     },
     appChange(val) {
       this.ruleForm.mapp = val;
+      this.getServiceName();
     },
     reqTypeChange(val) {
       this.ruleForm.srv_type = val;

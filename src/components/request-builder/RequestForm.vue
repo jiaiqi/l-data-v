@@ -114,49 +114,6 @@
           </el-form-item>
         </el-col>
       </el-row>
-      <!-- <el-row :gutter="20">
-        <el-col :span="8">
-          <el-form-item
-            label="服务名称："
-            prop="service_name"
-            :rules="[
-              { required: true, message: '请选择服务名称', trigger: 'blur' },
-            ]"
-          >
-            <el-select
-              v-model="ruleForm.service_name"
-              placeholder="请选择服务名称"
-              clearable
-              filterable
-              @change="handleServiceChange"
-              style="width: 100%"
-            >
-              <el-option
-                v-for="item in allService"
-                :key="item.value"
-                :label="item.service_view_name"
-                :value="item.service_name"
-              ></el-option>
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :span="16">
-          <el-form-item label="请求参数：" prop="request_params">
-            <el-checkbox-group
-              v-model="localCheckedReqOptions"
-              @change="handleReqOptionChange"
-              size="small"
-            >
-              <el-checkbox
-                v-for="option in ReqOptions"
-                :label="option"
-                :key="option"
-                name="type"
-              ></el-checkbox>
-            </el-checkbox-group>
-          </el-form-item>
-        </el-col>
-      </el-row> -->
     </el-form>
   </el-card>
 </template>
@@ -223,11 +180,12 @@ export default {
     },
   },
   methods: {
-    handleAppChange() {
-      this.$emit("app-change");
+    handleAppChange(val) {
+      this.$emit("app-change", val);
+      this.$emit("service-change", "");
     },
-    handleServiceChange() {
-      this.$emit("service-change");
+    handleServiceChange(val) {
+      this.$emit("service-change", val);
     },
     handleReqTypeChange() {
       this.$emit("req-type-change");
