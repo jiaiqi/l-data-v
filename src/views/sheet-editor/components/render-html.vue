@@ -1,7 +1,11 @@
 <template>
   <div
     class="render-html"
-    :class="{ 'is-rich-text': useEditor, 'link-to-detail': linkToDetail }"
+    :class="{
+      'is-rich-text': useEditor,
+      'link-to-detail': linkToDetail,
+      'allow-wrap': allowWrap,
+    }"
     :style="setStyle"
     v-loading="loadingFold"
     @dblclick="showRichEditor"
@@ -12,14 +16,8 @@
         v-if="showUnfold && column.isFirstCol"
         @click="changeFold"
       >
-        <div
-          class="fold-icon el-icon-minus"
-          v-if="unfold === true"
-        ></div>
-        <div
-          class="unfold-icon el-icon-plus"
-          v-else
-        ></div>
+        <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
+        <div class="unfold-icon el-icon-plus" v-else></div>
       </div>
       <div
         class="prefix-icon cursor-initial"
@@ -32,7 +30,7 @@
           :type="['', 'success', 'warning', 'danger'][tIndex % 4]"
           v-for="(tag, tIndex) in getFkJson"
           :key="tIndex"
-        >{{ tag || "" }}
+          >{{ tag || "" }}
         </el-tag>
       </div>
       <div
@@ -46,7 +44,8 @@
         v-else-if="keyDispCol && column.columns === keyDispCol"
         :title="linkToDetail ? '点击查看详情' : ''"
         @click="toDetail"
-      >{{ html }}</a>
+        >{{ html }}</a
+      >
       <span
         class="text"
         style=""
@@ -68,14 +67,16 @@
       circle
       @click.stop="showRichEditor"
       v-if="useEditor && !disabled"
-    ><i class="el-icon-edit"></i></el-button>
+      ><i class="el-icon-edit"></i
+    ></el-button>
     <el-button
       size="mini"
       class="edit-btn"
       circle
       @click.stop="showTextarea"
       v-if="'MultilineText' === column.col_type && !disabled"
-    ><i class="el-icon-edit"></i></el-button>
+      ><i class="el-icon-edit"></i
+    ></el-button>
 
     <el-dialog
       :fullscreen="dialogFullscreen"
@@ -126,38 +127,24 @@
         v-else
       >
       </el-input>
-      <div
-        class="text-orange text-center"
-        v-if="!disabled && !editable"
-      >
+      <div class="text-orange text-center" v-if="!disabled && !editable">
         <span class="mr-20px"> 当前字段不可编辑 </span>
-        <el-button
-          type="text"
-          @click="dialogFullscreen = !dialogFullscreen"
-        >
-          <i
-            class="el-icon-full-screen"
-            v-if="!dialogFullscreen"
-          ></i>
-          <i
-            class="el-icon-switch-button"
-            v-else
-          ></i>
+        <el-button type="text" @click="dialogFullscreen = !dialogFullscreen">
+          <i class="el-icon-full-screen" v-if="!dialogFullscreen"></i>
+          <i class="el-icon-switch-button" v-else></i>
           <span v-if="!dialogFullscreen">全屏</span>
           <span v-else>退出全屏</span>
         </el-button>
       </div>
-      <div
-        class="text-center m-t-5"
-        v-if="!disabled && editable"
-      >
+      <div class="text-center m-t-5" v-if="!disabled && editable">
         <el-button
           type="primary"
           @click="
             $emit('change', innerHtml);
-          dialogTableVisible = false;
+            dialogTableVisible = false;
           "
-        >确认</el-button>
+          >确认</el-button
+        >
       </div>
     </el-dialog>
     <el-image
@@ -190,6 +177,7 @@ export default {
     serviceName: String,
     detailButton: Object,
     keyDispCol: String,
+    allowWrap: Boolean,
   },
   watch: {
     dialogTableVisible(newVal) {
@@ -214,10 +202,10 @@ export default {
     html: {
       immediate: true,
       handler() {
-        if (['fks', 'fkjson', 'fkjsons'].includes(this.colType)) {
-          this.initSelected()
+        if (["fks", "fkjson", "fkjsons"].includes(this.colType)) {
+          this.initSelected();
         }
-      }
+      },
     },
   },
   created() {
@@ -228,11 +216,14 @@ export default {
       const refedCol = redundant?.refedCol;
       if (dependField && refedCol) {
         if (this.row[`_${dependField}_init_val`]) {
-          this.getFkOptions(this.column.redundant_options, this.row[`_${dependField}_init_val`])
+          this.getFkOptions(
+            this.column.redundant_options,
+            this.row[`_${dependField}_init_val`]
+          );
         }
       }
     }
-    this.$emit('created',this)
+    this.$emit("created", this);
   },
   computed: {
     getFkJson() {
@@ -261,7 +252,7 @@ export default {
         case "fkjsons":
           try {
             result = val ? JSON.parse(val) : [];
-          } catch (error) { }
+          } catch (error) {}
           if (Array.isArray(result) && result.length > 0) {
             result = result.map((item) => item[dispCol] || item[valueCol]);
           }
@@ -270,7 +261,7 @@ export default {
       return result;
     },
     isFks() {
-      return ['fks', 'fkjson', 'fkjsons'].includes(this.colType)
+      return ["fks", "fkjson", "fkjsons"].includes(this.colType);
     },
     linkToDetail() {
       return (
@@ -374,11 +365,10 @@ export default {
       unfold: false, //默认收起
       loadingFold: false,
       dialogFullscreen: false,
-      selected: null
+      selected: null,
     };
   },
   methods: {
-
     initSelected() {
       let obj = {};
       if (["fkjson", "fkjsons"].includes(this.colType) && this.html) {
@@ -421,7 +411,7 @@ export default {
         condition: [
           {
             colName: refedCol,
-            ruleType: 'eq',
+            ruleType: "eq",
             value: val,
           },
         ],
@@ -471,8 +461,8 @@ export default {
                 option: options[0],
                 value: options[0][valColumn],
                 label: options[0][labelCol],
-              }
-              this.$emit('change', data)
+              };
+              this.$emit("change", data);
             }
           }
           // 调用 callback 返回建议列表的数据
@@ -512,7 +502,7 @@ export default {
       console.log(eve);
       if (
         eve.target?.offsetParent?.className.indexOf("w-e-image-container") >
-        -1 &&
+          -1 &&
         eve.target.currentSrc
       ) {
         this.url = eve.target.currentSrc;
@@ -615,14 +605,20 @@ export default {
 
 .render-html {
   margin-left: var(--row_indent);
-  height: 100%;
   min-height: 20px;
   text-align: left;
   --w-e-textarea-bg-color: transparent;
   max-height: 80px;
   position: relative;
   display: flex;
-
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: 20px;
+  &.allow-wrap {
+    height: 100%;
+    white-space: normal;
+  }
   .text {
     width: 100%;
 
