@@ -1,6 +1,6 @@
 <template>
   <div
-    class="enum-selector"
+    class="option-select"
     ref="selectorRef"
     v-clickoutside="handleClickOutside"
   >
@@ -137,7 +137,7 @@ const handleClickOutside = () => {
 </script>
 
 <style lang="scss" scoped>
-.enum-selector {
+.option-select {
   position: relative;
   width: 100%;
   ::v-deep .el-select {

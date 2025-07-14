@@ -38,7 +38,7 @@
       "
     >
     </finder>
-    <enum-selector
+    <option-select
       v-if="['Enum', 'Dict', 'Set'].includes(editorType)"
       v-model="modelValue"
       :options="fieldInfo.option_list_v2"
@@ -48,7 +48,7 @@
       @focus="$emit('focus')"
       @blur="$emit('blur')"
     >
-    </enum-selector>
+    </option-select>
   </div>
 
   <el-dialog
@@ -157,13 +157,13 @@ import {
 } from "@/utils/sheetUtils.js";
 import Finder from "./finder.vue";
 import RichTextEditor from "./rich-text.vue";
-import EnumSelector from "./enum-selector.vue";
+import OptionSelect from "./option-select.vue";
 export default {
   name: "FieldEditor",
   components: {
     RichTextEditor,
     Finder,
-    EnumSelector,
+    OptionSelect,
   },
   props: {
     value: {
