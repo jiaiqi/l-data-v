@@ -486,6 +486,7 @@ export default {
                   if (
                     ["Date", "DateTime"].includes(colType) ||
                     ["fks", "fkjson", "fkjsons"].includes(colType) ||
+                    ["Enum", "Dict"].includes(colType) ||
                     isFkAutoComplete(column?.__field_info) ||
                     isFk(column?.__field_info)
                   ) {
@@ -671,6 +672,7 @@ export default {
           sourceSelectionData,
           targetSelectionData,
         }) => {
+          debugger;
           if (
             sourceSelectionRangeIndexes.startRowIndex !==
             targetSelectionRangeIndexes.endRowIndex
@@ -767,6 +769,7 @@ export default {
                 return false;
               }
             } else if (sourceSelectionData?.length > 0) {
+              // 只是复制 不经过别的计算
               const rowKey = sourceSelectionData[0]?.rowKey;
               if (rowKey) {
                 const sourceData = this.tableData.find(
@@ -1964,12 +1967,9 @@ export default {
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
       );
-      this.handlerRedundant(
-        item.option || item.rawData,
-        column.key,
-        row.rowKey,
-        rowIndex
-      );
+      row["_rawData"] = item?.option || item.rawData;
+      this.$set(this.tableData, rowIndex, row);
+      this.handlerRedundant(row["_rawData"], column.key, row.rowKey, rowIndex);
     },
     async fkAutocompleteChange(item, row, column) {
       if (!item) {
@@ -2006,7 +2006,7 @@ export default {
           row[`_${fkColumn}_data`] = rawData;
           this.$set(row, fkColumnInfo.columns, row[fkColumn]);
 
-          this.$set(this.tableData, rowIndex, row);
+          // this.$set(this.tableData, rowIndex, row);
           if (this.allFields.find((e) => e.columns === fkColumn)) {
             this.$refs["tableRef"].startEditingCell({
               rowKey: row.rowKey,
@@ -2016,6 +2016,8 @@ export default {
             this.$refs["tableRef"].stopEditingCell();
             this.clearCellSelection();
           }
+          row["_rawData"] = rawData;
+          this.$set(this.tableData, rowIndex, row);
           this.handlerRedundant(data, fkColumn, row.rowKey, rowIndex);
         }
       }
@@ -2192,6 +2194,7 @@ export default {
     },
     handleRedundantCalc(fieldInfo, row) {
       let func = fieldInfo.redundant.func;
+      debugger;
       const field = {
         setSrvVal: (val) => {
           row[fieldInfo.columns] = val;
@@ -3340,7 +3343,7 @@ export default {
                       },
                     },
                   });
-                } else if (["Enum", "Dict"].includes(item.col_type)) {
+                } else if (["Enum", "Dict"].includes(item.col_type) && false) {
                   if (!item.option_list_v2) {
                     item.option_list_v2 = [];
                   }

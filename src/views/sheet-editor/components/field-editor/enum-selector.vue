@@ -1,0 +1,122 @@
+<template>
+  <div class="enum-selector" ref="selectorRef">
+    <el-select
+      ref="selectRef"
+      :value="value"
+      placeholder="请选择"
+      :disabled="disabled"
+      @change="handleChange"
+    >
+      <el-option
+        v-for="item in options"
+        :key="item[props.valueColumn]"
+        :label="item[props.labelColumn]"
+        :value="item[props.valueColumn]"
+      >
+      </el-option>
+    </el-select>
+    <!-- 自定义下拉箭头 -->
+    <div class="custom-arrow" v-if="!disabled" @click="handleArrowClick">
+      <div class="arrow-triangle"></div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from "vue";
+
+const props = defineProps({
+  value: {
+    type: [String, Number],
+    default: "",
+  },
+  options: {
+    type: Array,
+    default: () => [],
+  },
+  labelColumn: {
+    type: String,
+    default: "label",
+  },
+  valueColumn: {
+    type: String,
+    default: "value",
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  placeholder: {
+    type: String,
+    default: "请选择",
+  },
+});
+
+const emit = defineEmits(["update:value", "change"]);
+const handleChange = (val) => {
+  emit("update:value", val);
+  emit("change", val);
+};
+
+const selectorRef = ref(null);
+const selectRef = ref(null);
+
+// 处理箭头点击事件
+const handleArrowClick = () => {
+  if (selectRef.value && !props.disabled) {
+    // 触发 el-select 的下拉显示/隐藏
+    selectRef.value.toggleMenu();
+  }
+};
+</script>
+
+<style lang="scss" scoped>
+.enum-selector {
+  position: relative;
+  width: 100%;
+  ::v-deep .el-select {
+    width: 100%;
+    .el-input {
+      width: 100%;
+      .el-input__suffix {
+        display: none;
+      }
+      .el-input__inner {
+        width: 100%;
+        padding: 0;
+        text-indent: 5px;
+      }
+    }
+  }
+
+  .custom-arrow {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateX(calc(100% + 5px)) translateY(-50%);
+    z-index: 9;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba($color: #fff, $alpha: 0.6);
+    border: 1px solid #333;
+    cursor: pointer;
+    
+    &:hover {
+      background: rgba($color: #f0f0f0, $alpha: 0.8);
+    }
+    
+    .arrow-triangle {
+      width: 0;
+      height: 0;
+      border: 6px solid transparent;
+      border-top-color: #333;
+      background: #fff;
+      transform: translateY(2px);
+      pointer-events: none;
+    }
+  }
+}
+</style>

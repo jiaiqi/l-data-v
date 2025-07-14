@@ -38,6 +38,14 @@
       "
     >
     </finder>
+    <enum-selector
+      v-if="['Enum', 'Dict'].includes(editorType)"
+      v-model="modelValue"
+      :options="fieldInfo.optionsList"
+      :disabled="setDisabled"
+      @change="handleEnumChange"
+    >
+    </enum-selector>
   </div>
 
   <el-dialog
@@ -146,11 +154,13 @@ import {
 } from "@/utils/sheetUtils.js";
 import Finder from "./finder.vue";
 import RichTextEditor from "./rich-text.vue";
+import EnumSelector from "./enum-selector.vue";
 export default {
   name: "FieldEditor",
   components: {
     RichTextEditor,
     Finder,
+    EnumSelector,
   },
   props: {
     value: {
@@ -194,6 +204,9 @@ export default {
     };
   },
   computed: {
+    setDisabled() {
+      return this.disabled || this.editable === false;
+    },
     editorType() {
       if (this.show) {
         if (isRichText(this.fieldInfo)) {
@@ -301,6 +314,10 @@ export default {
     // }
   },
   methods: {
+    handleEnumChange(val) {
+      this.modelValue = val;
+      this.$emit("change", val, this.row, this.column);
+    },
     triggerAutocomplete(val) {
       this.$refs.finder?.triggerAutocomplete?.(val);
     },
