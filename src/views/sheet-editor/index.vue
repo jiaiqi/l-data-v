@@ -3799,9 +3799,11 @@ export default {
             // 值都为空
             return;
           }
-          if (rawData?.[item.redundant.refedCol] === undefined) {
-            return;
-          }
+          // if (
+          //   rawData && rawData?.[item.redundant.refedCol] === undefined
+          // ) {
+          //   return;
+          // }
           row[item.columns] = rawData?.[item.redundant.refedCol] || null;
           this.$set(this.tableData, rowIndex, row);
           console.log("handlerRedundant::", item.columns, row[item.columns]);

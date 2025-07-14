@@ -92,7 +92,7 @@
         @dblclick.native="openDialog"
         @change="onSelectChange"
         @focus="onFocus"
-        :clearable="false"
+        :clearable="true"
         :disabled="setDisabled"
         style="overflow: hidden"
       >

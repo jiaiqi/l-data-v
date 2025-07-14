@@ -283,9 +283,9 @@ export default {
       this.inputVal = val;
       this.$emit("input", val);
     },
-    onFkSelect(selected) {
-      this.field.model = selected.value;
-      this.selected = selected;
+    onFkSelect(selected = null) {
+      this.field.model = selected?.value || null;
+      this.selected = selected || null;
       this.$emit("change", selected);
     },
     onPickerSelected(selected) {
