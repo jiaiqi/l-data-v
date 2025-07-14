@@ -4,7 +4,7 @@
     :class="{
       'is-rich-text': useEditor,
       'link-to-detail': linkToDetail,
-      'allow-wrap': allowWrap,
+      'disabled-wrap': allowWrap !== true,
     }"
     :style="setStyle"
     v-loading="loadingFold"
@@ -611,13 +611,19 @@ export default {
   max-height: 80px;
   position: relative;
   display: flex;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  height: 20px;
-  &.allow-wrap {
-    height: 100%;
-    white-space: normal;
+  height: 100%;
+  white-space: normal;
+  &.disabled-wrap {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    height: 24px;
+    .flex.w-full,.text,p {
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
   .text {
     width: 100%;
