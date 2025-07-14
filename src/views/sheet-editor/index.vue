@@ -252,6 +252,8 @@
         @fks-change="fksChange"
         @save="dialogChange"
         @close="dialogClose"
+        @focus="onFieldEditorFocus"
+        @blur="onFieldEditorBlur"
       ></field-editor>
     </Teleport>
   </div>
@@ -1922,6 +1924,19 @@ export default {
     },
   },
   methods: {
+    onFieldEditorBlur() {
+      console.log('onFieldEditorBlur');
+      
+      this.clearCellSelection();
+      this.buildFieldEditorParams()
+    },
+    onFieldEditorFocus(row, column) {
+      row = row || this.fieldEditorParams.row;
+      column = column || this.fieldEditorParams.column;
+      if (row.rowKey && column.key) {
+        this.setCellSelection(row.rowKey, column.key);
+      }
+    },
     setCellSelection(rowKey, colKey) {
       rowKey = rowKey || this.fieldEditorParams?.row?.__id;
       colKey = colKey || this.fieldEditorParams?.column?.key;
@@ -5068,7 +5083,7 @@ export default {
   //   border: 1px solid #2087cc !important;
   // }
   .ve-table-body-td {
-    padding: 2px 5px !important;
+    padding: 2px!important;
   }
 
   .ve-table-body-tr {

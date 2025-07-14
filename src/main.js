@@ -26,6 +26,10 @@ Vue.prototype.$axios = $axios;
 import VueUtil from '@/common/vue_util'
 VueUtil()
 
+// 注册 clickoutside 指令
+import clickoutside from '@/common/directives/clickoutside.js'
+Vue.directive('clickoutside', clickoutside)
+
 // import VueInit from "@/common/vue_init.js";
 // VueInit();
 

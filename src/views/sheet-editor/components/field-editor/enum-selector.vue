@@ -1,11 +1,17 @@
 <template>
-  <div class="enum-selector" ref="selectorRef">
+  <div
+    class="enum-selector"
+    ref="selectorRef"
+    v-clickoutside="handleClickOutside"
+  >
     <el-select
       ref="selectRef"
       :value="value"
       placeholder="请选择"
       :disabled="disabled"
       @change="handleChange"
+      @focus="handleFocus"
+      @blur="handleSelectBlur"
     >
       <el-option
         v-for="item in options"
@@ -16,7 +22,7 @@
       </el-option>
     </el-select>
     <!-- 自定义下拉箭头 -->
-    <div class="custom-arrow" v-if="!disabled" @click="handleArrowClick">
+    <div class="custom-arrow" v-if="!disabled" @click.stop="handleArrowClick">
       <div class="arrow-triangle"></div>
     </div>
   </div>
@@ -52,20 +58,51 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:value", "change"]);
+const emit = defineEmits(["update:value", "change", "focus", "blur"]);
+
+const selectorRef = ref(null);
+const selectRef = ref(null);
+const isFocused = ref(false);
+
+// 处理值变化
 const handleChange = (val) => {
   emit("update:value", val);
   emit("change", val);
 };
 
-const selectorRef = ref(null);
-const selectRef = ref(null);
+// 处理获得焦点
+const handleFocus = () => {
+  isFocused.value = true;
+  emit("focus", selectorRef.value);
+};
+
+// 处理 select 失去焦点
+const handleSelectBlur = () => {
+  // 延迟处理，避免与点击箭头冲突
+  setTimeout(() => {
+    if (!isFocused.value) {
+      emit("blur", null);
+    }
+  }, 100);
+};
 
 // 处理箭头点击事件
 const handleArrowClick = () => {
   if (selectRef.value && !props.disabled) {
     // 触发 el-select 的下拉显示/隐藏
+    isFocused.value = true;
     selectRef.value.toggleMenu();
+    emit("focus", selectorRef.value);
+  }
+};
+
+// 处理外部点击事件
+const handleClickOutside = () => {
+  isFocused.value = false;
+  emit("blur", null);
+  // 关闭下拉菜单
+  if (selectRef.value) {
+    selectRef.value.blur();
   }
 };
 </script>
@@ -103,11 +140,11 @@ const handleArrowClick = () => {
     background: rgba($color: #fff, $alpha: 0.6);
     border: 1px solid #333;
     cursor: pointer;
-    
+
     &:hover {
       background: rgba($color: #f0f0f0, $alpha: 0.8);
     }
-    
+
     .arrow-triangle {
       width: 0;
       height: 0;

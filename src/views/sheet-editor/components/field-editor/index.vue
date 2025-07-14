@@ -44,6 +44,8 @@
       :options="fieldInfo.optionsList"
       :disabled="setDisabled"
       @change="handleEnumChange"
+      @focus="$emit('focus')"
+      @blur="$emit('blur')"
     >
     </enum-selector>
   </div>
