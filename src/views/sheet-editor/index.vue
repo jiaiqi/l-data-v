@@ -488,7 +488,7 @@ export default {
                   if (
                     ["Date", "DateTime"].includes(colType) ||
                     ["fks", "fkjson", "fkjsons"].includes(colType) ||
-                    ["Enum", "Dict"].includes(colType) ||
+                    ["Enum", "Dict", "Set"].includes(colType) ||
                     isFkAutoComplete(column?.__field_info) ||
                     isFk(column?.__field_info)
                   ) {
@@ -1925,10 +1925,10 @@ export default {
   },
   methods: {
     onFieldEditorBlur() {
-      console.log('onFieldEditorBlur');
-      
+      console.log("onFieldEditorBlur");
+
       this.clearCellSelection();
-      this.buildFieldEditorParams()
+      this.buildFieldEditorParams();
     },
     onFieldEditorFocus(row, column) {
       row = row || this.fieldEditorParams.row;
@@ -3358,7 +3358,10 @@ export default {
                       },
                     },
                   });
-                } else if (["Enum", "Dict"].includes(item.col_type) && false) {
+                } else if (
+                  ["Enum", "Dict", "Set"].includes(item.col_type) &&
+                  false
+                ) {
                   if (!item.option_list_v2) {
                     item.option_list_v2 = [];
                   }
@@ -3405,7 +3408,7 @@ export default {
                       });
                     })
                   );
-                } else if (["Set"].includes(item.col_type)) {
+                } else if (["Set"].includes(item.col_type) && false) {
                   let value = [];
                   if (row[column.field]) {
                     value = row[column.field].split(",");
@@ -5083,7 +5086,7 @@ export default {
   //   border: 1px solid #2087cc !important;
   // }
   .ve-table-body-td {
-    padding: 2px!important;
+    padding: 2px !important;
   }
 
   .ve-table-body-tr {

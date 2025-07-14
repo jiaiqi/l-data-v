@@ -6,9 +6,11 @@
   >
     <el-select
       ref="selectRef"
-      :value="value"
+      :value="setValue"
       placeholder="请选择"
       :disabled="disabled"
+      :multiple="multiple"
+      :collapse-tags="true"
       @change="handleChange"
       @focus="handleFocus"
       @blur="handleSelectBlur"
@@ -29,7 +31,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 const props = defineProps({
   value: {
@@ -56,6 +58,10 @@ const props = defineProps({
     type: String,
     default: "请选择",
   },
+  multiple: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["update:value", "change", "focus", "blur"]);
@@ -63,11 +69,34 @@ const emit = defineEmits(["update:value", "change", "focus", "blur"]);
 const selectorRef = ref(null);
 const selectRef = ref(null);
 const isFocused = ref(false);
-
+const setValue = ref(null);
+watch(
+  () => props.value,
+  (val) => {
+    if (val) {
+      if (props.multiple && typeof val === "string") {
+        setValue.value = val.split(",");
+      } else {
+        setValue.value = val;
+      }
+    } else {
+      setValue.value = null;
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 // 处理值变化
 const handleChange = (val) => {
-  emit("update:value", val);
-  emit("change", val);
+  if (props.multiple && val) {
+    let newVal = val.join(",");
+    emit("update:value", newVal);
+    emit("change", newVal);
+  } else {
+    emit("update:value", val);
+    emit("change", val);
+  }
 };
 
 // 处理获得焦点

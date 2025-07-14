@@ -39,10 +39,11 @@
     >
     </finder>
     <enum-selector
-      v-if="['Enum', 'Dict'].includes(editorType)"
+      v-if="['Enum', 'Dict', 'Set'].includes(editorType)"
       v-model="modelValue"
-      :options="fieldInfo.optionsList"
+      :options="fieldInfo.option_list_v2"
       :disabled="setDisabled"
+      :multiple="['Set'].includes(editorType)"
       @change="handleEnumChange"
       @focus="$emit('focus')"
       @blur="$emit('blur')"
