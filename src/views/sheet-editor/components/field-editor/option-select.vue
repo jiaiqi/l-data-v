@@ -200,7 +200,7 @@ const handleClickOutside = () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba($color: #fff, $alpha: 0.6);
+    background: #FFF;
     border: 1px solid #333;
     cursor: pointer;
 

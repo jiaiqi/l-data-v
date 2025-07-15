@@ -5140,7 +5140,7 @@ export default {
   //   border: 1px solid #2087cc !important;
   // }
   .ve-table-body-td {
-    padding: 2px !important;
+    padding: 3px 8px !important;
   }
 
   .ve-table-body-tr {

@@ -7,6 +7,7 @@
       'disabled-wrap': allowWrap !== true,
     }"
     :style="setStyle"
+    :title="html"
     v-loading="loadingFold"
     @dblclick="showRichEditor"
   >
@@ -415,12 +416,12 @@ export default {
       return result;
     },
     getOptionReq(inputVal) {
-      if(!isFk(this.column)){
-        return
+      if (!isFk(this.column)) {
+        return;
       }
       let optionsV2 = this.getOptionListFinal();
-      if(!optionsV2?.refed_col){
-        return
+      if (!optionsV2?.refed_col) {
+        return;
       }
       let refedCol = optionsV2?.refed_col || optionsV2?.key_disp_col;
       let req = {
@@ -514,8 +515,8 @@ export default {
     onFkSelect(selected = null) {
       this.selected = selected || null;
       this.$emit("change", {
-        rawData:selected,
-        value:selected?.value
+        rawData: selected,
+        value: selected?.value,
       });
     },
     initSelected() {
@@ -689,25 +690,12 @@ export default {
       });
     },
     showTextarea() {
-      // this.ticket = sessionStorage.getItem("bx_auth_ticket");
-      // this.dialogTableVisible = true;
-      // this.innerHtml = this.recoverFileAddress(this.html);
-      // this.$emit("onfocus");
       this.$emit("event", "showRichEditor");
     },
     showRichEditor(event) {
       if (this.useEditor) {
         this.$emit("event", "showRichEditor");
-
-        //   this.ticket = sessionStorage.getItem("bx_auth_ticket");
-        //   this.dialogTableVisible = true;
-        //   this.innerHtml = this.recoverFileAddress(this.html);
-        //   this.$nextTick(() => {
-        //     this.editor?.setHtml(this.html);
-        //   });
-        //   this.editor?.focus();
-        //   this.$emit("onfocus");
-        //   // 阻止冒泡 拦截表格组件的双击事件
+        // 阻止冒泡 拦截表格组件的双击事件
         event.stopPropagation();
       }
     },
@@ -769,7 +757,7 @@ export default {
     height: 24px;
     .flex.w-full,
     .text,
-    p {
+    ::v-deep p {
       width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -790,12 +778,13 @@ export default {
   }
 
   // overflow-y: auto;
-  .is-rich-text {
+  &.is-rich-text {
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 10;
     -webkit-box-orient: vertical;
+    cursor: zoom-in;
   }
 
   .detail-btn {
@@ -822,9 +811,11 @@ export default {
 .edit-btn {
   position: absolute;
   top: 0;
-  right: 20px;
+  right: 0;
   display: none;
   z-index: 9999;
+  font-size: 12px;
+  padding: 4px;
 }
 
 .editor-dialog {

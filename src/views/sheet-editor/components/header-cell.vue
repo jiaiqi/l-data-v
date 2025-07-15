@@ -1,12 +1,12 @@
 <template>
   <div class="header-cell">
-    <div class="flex items-center justify-between w-full flex-row-reverse truncate" v-if="!childListType">
-      <div class="flex items-center">
-        <div class="filter-icon cursor-pointer">
+    <div class="flex items-center justify-between w-full flex-row-reverse truncate " v-if="!childListType">
+      <div class="flex items-center header-util-box">
+        <div class="icon filter-icon cursor-pointer">
           <header-filter :column="column" :condition="condition" :app="app" :list="list" :service="service"
             @filter-change="filterChange"></header-filter>
         </div>
-        <div class="sort-icon" @click="onSrotChange" v-if="!['MultilineText', 'File', 'Image', 'RichText','snote'].includes(
+        <div class="icon sort-icon" @click="onSrotChange" v-if="!['MultilineText', 'File', 'Image', 'RichText','snote'].includes(
           column.col_type
         )
           ">
@@ -120,7 +120,14 @@ export default {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-
+  .header-util-box .icon{
+    display: none;
+  }
+  &:hover{
+    .header-util-box .icon{
+      display: flex;
+    }
+  }
   // color: #fff;
   .label {
     // max-width: 150px;
