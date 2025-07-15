@@ -306,6 +306,7 @@ import DropMenu from "./components/drop-menu/drop-menu.vue";
 import OutFormDialog from "./components/out-comp/dialog.vue";
 import FieldEditor from "./components/field-editor/index.vue";
 import debounce from "lodash/debounce";
+import { FkUtil } from "./util/fkUtil.js";
 let broadcastChannel = null; //跨iframe通信的实例
 const ignoreKeys = [
   "__id",
@@ -674,7 +675,6 @@ export default {
           sourceSelectionData,
           targetSelectionData,
         }) => {
-          debugger;
           if (
             sourceSelectionRangeIndexes.startRowIndex !==
             targetSelectionRangeIndexes.endRowIndex
@@ -857,12 +857,25 @@ export default {
             }
             if (isValid) {
               if (selectionRangeIndexes && data?.length) {
-                const {
-                  startRowIndex,
-                  endRowIndex,
-                  startColIndex,
-                  endColIndex,
-                } = selectionRangeIndexes;
+                const { selectionRangeIndexes: selectionRangeIndexes2 } =
+                  this.$refs?.tableRef?.getRangeCellSelection();
+                let { startRowIndex, endRowIndex, startColIndex, endColIndex } =
+                  selectionRangeIndexes;
+                if (
+                  startRowIndex === endRowIndex &&
+                  startColIndex === endColIndex
+                ) {
+                  startRowIndex = selectionRangeIndexes2.startRowIndex;
+                  endRowIndex = selectionRangeIndexes2.endRowIndex;
+                  startColIndex = selectionRangeIndexes2.startColIndex;
+                  endColIndex = selectionRangeIndexes2.endColIndex;
+                }
+                // const {
+                //   startRowIndex,
+                //   endRowIndex,
+                //   startColIndex,
+                //   endColIndex,
+                // } = selectionRangeIndexes2;
                 // 选中区域大于一行或者一列
                 if (
                   endRowIndex - startRowIndex >= 0 ||
@@ -874,10 +887,19 @@ export default {
                         item.field
                       )
                   );
+                  const colsMap = columns.reduce((pre, cur) => {
+                    if (cur?.__field_info && cur.key) {
+                      pre[cur.key] = cur.__field_info;
+                    }
+                    return pre;
+                  }, {});
                   for (let i = startRowIndex; i <= endRowIndex; i++) {
                     const row = this.tableData[i];
                     // for (let j = 0; j < data.length; j++) {
-                    const obj = data[i - startRowIndex];
+                    let obj = data[i - startRowIndex];
+                    if (data?.length === 1) {
+                      obj = data[0];
+                    }
                     if (typeof obj === "object") {
                       for (const key in obj) {
                         if (Object.hasOwnProperty.call(obj, key)) {
@@ -1116,11 +1138,7 @@ export default {
             }
             return;
           }
-          // console.log(
-          //   "afterCellValueChange::",
-          //   changeValue,
-          //   currentRow?.[column.field]
-          // );
+
           // 数字类型 如果改变的值对应字段是数字类型 但是值是字符串 将其转为数字
           if (
             ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
@@ -1174,6 +1192,8 @@ export default {
           //     // this.handlerRedundant({}, col, row.rowKey, rowIndex);
           //   }
           // }
+
+          // 表内计算
           let calcDependedCols = null;
           if (row.__flag === "add") {
             calcDependedCols = column.__field_info?.__add_calc_depended_cols;
@@ -1200,6 +1220,21 @@ export default {
                 this.handleRedundantCalc(calcCol, row);
               }
             });
+          }
+          // fk值改变后进行冗余
+          if (isFk(column?.__field_info)) {
+            if (changeValue) {
+              let fkUtil = new FkUtil(column?.__field_info, this.srvApp);
+              fkUtil.getMatchedValue(changeValue, "eq").then((matchedValue) => {
+                if (matchedValue) {
+                  const item = {
+                    value: changeValue,
+                    rawData: matchedValue,
+                  };
+                  this.fkChange(item, row, column);
+                }
+              });
+            }
           }
           // const calcDependedCols = column?.__field_info?.calcDependedCols;
           // if (calcDependedCols?.length) {
@@ -2851,7 +2886,7 @@ export default {
       }
       if (changedCols?.length) {
         changedCols.forEach((item) => {
-          const { rowKey } = item;
+          const { rowKey, row, colKey, fieldInfo } = item;
           const targetCol = item?.fieldInfo?.redundant_options?._target_column;
           if (targetCol && sourceData) {
             // autocomplete字段 由别的行自动填充赋值之后，将对应的fk字段也赋值
@@ -2870,6 +2905,25 @@ export default {
                 sourceData[targetColInfo.field]
               );
             }
+          } else if (isFk(fieldInfo) && sourceData) {
+            console.log("fkUtil2");
+            // fk字段 由别的行自动填充赋值之后，将对应的冗余字段也赋值
+            const fkUtil = new FkUtil(fieldInfo, this.srvApp);
+            const element = sourceData[colKey];
+            fkUtil.getMatchedValue(element, "eq").then((matchedValue) => {
+              if (matchedValue) {
+                const event = {
+                  value: element,
+                  rawData: matchedValue,
+                };
+                const column = {
+                  field: colKey,
+                  key: colKey,
+                  __field_info: fieldInfo,
+                };
+                this.fkChange(event, row, column);
+              }
+            });
           }
         });
       }

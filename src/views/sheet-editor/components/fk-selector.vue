@@ -77,7 +77,26 @@
       class="flex items-center justify-between w-full"
     >
       <!-- <div>{{ modelLabel || modelValue }}</div> -->
-      <el-select
+      <option-select
+        ref="inputRef"
+        v-model="modelValue"
+        remote
+        :filterable="true"
+        reserve-keyword
+        placeholder="请输入关键词"
+        :remote-method="remoteMethod"
+        :loading="loading"
+        :label-column="srvInfo.key_disp_col"
+        :value-column="srvInfo.refed_col"
+        :options="options"
+        :clearable="true"
+        :disabled="setDisabled"
+        @change="onSelectChange"
+        @focus="onFocus"
+        @dblclick.native="openDialog"
+      >
+      </option-select>
+      <!-- <el-select
         ref="inputRef"
         v-model="modelValue"
         remote
@@ -103,13 +122,13 @@
           :value="item.value"
         >
         </el-option>
-      </el-select>
-      <i
+      </el-select> -->
+      <!-- <i
         class="el-icon-arrow-right cursor-pointer m-l-[-5px] text-#C0C4CC"
         :class="{ 'cursor-not-allowed': setDisabled }"
         @click.stop="openDialog"
         v-if="!isTree && !setDisabled"
-      ></i>
+      ></i> -->
     </div>
     <div v-else>{{ modelValue || "下拉选择" }}</div>
 
@@ -179,10 +198,11 @@
 import { clone, cloneDeep } from "lodash-es";
 import { getFkOptions, onSelect } from "../../../service/api";
 import multiTabOptionSelect from "./fk-select/multi-tab-option-select.vue";
-
+import optionSelect from "../components/field-editor/option-select.vue";
 export default {
   components: {
     multiTabOptionSelect,
+    optionSelect,
   },
   props: {
     app: {

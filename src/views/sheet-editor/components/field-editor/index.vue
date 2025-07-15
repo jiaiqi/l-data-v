@@ -20,6 +20,17 @@
       v-if="['Date', 'DateTime'].includes(editorType)"
     >
     </el-date-picker>
+    <option-select
+      v-else-if="['Enum', 'Dict', 'Set'].includes(editorType)"
+      v-model="modelValue"
+      :options="fieldInfo.option_list_v2"
+      :disabled="setDisabled"
+      :multiple="['Set'].includes(editorType)"
+      @change="handleEnumChange"
+      @focus="$emit('focus')"
+      @blur="$emit('blur')"
+    >
+    </option-select>
     <finder
       class="finder"
       ref="finder"
@@ -38,17 +49,6 @@
       "
     >
     </finder>
-    <option-select
-      v-if="['Enum', 'Dict', 'Set'].includes(editorType)"
-      v-model="modelValue"
-      :options="fieldInfo.option_list_v2"
-      :disabled="setDisabled"
-      :multiple="['Set'].includes(editorType)"
-      @change="handleEnumChange"
-      @focus="$emit('focus')"
-      @blur="$emit('blur')"
-    >
-    </option-select>
   </div>
 
   <el-dialog

@@ -127,6 +127,15 @@ export default {
         } else if (newValue !== this.inputVal) {
           this.inputVal = newValue;
         }
+        // if (!oldValue && newValue) {
+        //   if (this.isFk) {
+        //     this.getMatchedValue(newValue).then((data) => {
+        //       if (data?.value) {
+        //         this.onFkSelect(data);
+        //       }
+        //     });
+        //   }
+        // }
       },
     },
     column: {
@@ -276,6 +285,36 @@ export default {
   },
 
   methods: {
+    async getMatchedValue(queryString) {
+      if (this.optionListFinal?.serviceName) {
+        const valueCol = this.optionListFinal.refed_col;
+        const labelCol = this.optionListFinal.key_disp_col;
+        let req = cloneDeep(this.setOptionsReq);
+        req["relation_condition"] = {
+          relation: "OR",
+          data: [
+            {
+              colName: labelCol,
+              ruleType: "eq",
+              value: queryString,
+            },
+            {
+              colName: valueCol,
+              ruleType: "eq",
+              value: queryString,
+            },
+          ],
+        };
+        const url = `/${this.app}/select/${req.serviceName}`;
+        const response = await this.$http.post(url, req);
+        if (response && response.data && response.data.data?.length) {
+          const data = response.data.data[0];
+          data.label = data[labelCol];
+          data.value = data[valueCol];
+          return data;
+        }
+      }
+    },
     onMultiTabOptionSelectChange(item, cfg) {
       this.$emit("multi-tab-option-select-change", item, cfg);
     },

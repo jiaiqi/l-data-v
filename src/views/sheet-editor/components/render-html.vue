@@ -159,9 +159,10 @@
 </template>
 
 <script>
+import { isFk, isFkAutoComplete, getFieldType } from "@/utils/sheetUtils";
 import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
 import "@wangeditor/editor/dist/css/style.css";
-
+import cloneDeep from "lodash/cloneDeep";
 // 展示富文本 Note RichText类型
 export default {
   components: { Editor, Toolbar },
@@ -201,7 +202,17 @@ export default {
     },
     html: {
       immediate: true,
-      handler() {
+      handler(newVal, oldVal) {
+        if (newVal !== oldVal) {
+          // // 处理fk冗余
+          // if (isFk(this.column)&&newVal) {
+          //   this.getMatchedValue(newVal).then(res=>{
+          //     if(res?.value){
+          //       this.onFkSelect(res);
+          //     }
+          //   });
+          // }
+        }
         if (["fks", "fkjson", "fkjsons"].includes(this.colType)) {
           this.initSelected();
         }
@@ -369,6 +380,144 @@ export default {
     };
   },
   methods: {
+    getEditorType() {
+      if (isFkAutoComplete(this.column)) {
+        return "autocomplete";
+      } else if (isFk(this.column)) {
+        return "fk";
+      }
+      return getFieldType(this.column);
+    },
+    getOptionListV3() {
+      const operateType = this.row?.__flag || "update";
+      const editorType = this.getEditorType();
+      if (isFk(this.column)) {
+        return this.column?.option_list_v3;
+      } else if (editorType === "autocomplete") {
+        return this.column?.[`_${operateType}_option_list`];
+      }
+    },
+    getOptionListFinal() {
+      let result = null;
+      const option_list_v3 = this.getOptionListV3();
+      if (Array.isArray(option_list_v3) && option_list_v3.length) {
+        const data = this.row || {};
+        result = option_list_v3.find(
+          (item) =>
+            !item.conds?.length ||
+            item.conds?.every(
+              (cond) =>
+                data?.[cond.case_col] &&
+                cond.case_val?.includes?.(data?.[cond.case_col])
+            )
+        );
+      }
+      return result;
+    },
+    getOptionReq(inputVal) {
+      if(!isFk(this.column)){
+        return
+      }
+      let optionsV2 = this.getOptionListFinal();
+      if(!optionsV2?.refed_col){
+        return
+      }
+      let refedCol = optionsV2?.refed_col || optionsV2?.key_disp_col;
+      let req = {
+        serviceName: optionsV2.serviceName,
+        srvApp: optionsV2.srv_app || null,
+        colNames: ["*"],
+        condition: [],
+        page: {
+          pageNo: 1,
+          rownumber: 50,
+        },
+        relation_condition: {},
+      };
+      if (optionsV2?.key_disp_col) {
+        req.relation_condition = {
+          relation: "OR",
+          data: [
+            {
+              colName: optionsV2.key_disp_col,
+              ruleType: "[like]",
+              value: inputVal || "",
+            },
+            {
+              colName: refedCol,
+              ruleType: "[like]",
+              value: inputVal || "",
+            },
+          ],
+        };
+      } else {
+        req.condition.push({
+          colName: refedCol,
+          ruleType: "[like]",
+          value: inputVal,
+        });
+      }
+      const conditions = optionsV2?.conditions || optionsV2?.condition || [];
+      if (conditions?.length) {
+        const formModel = this.row;
+        conditions.forEach((item) => {
+          const obj = {
+            colName: item.colName,
+            ruleType: item.ruleType,
+          };
+          if (item.value?.indexOf("data.") === 0) {
+            obj.value = formModel[item.value.replace("data.", "")];
+          } else if (
+            item.value &&
+            item.value.startsWith("'") &&
+            item.value.endsWith("'")
+          ) {
+            obj.value = item.value.replace(/'/g, "");
+          } else {
+            obj.ruleType = "like";
+            obj.value = item.value;
+          }
+          if (obj.value) {
+            req.condition.push(obj);
+          }
+        });
+      }
+      return req;
+    },
+    async getMatchedValue(queryString) {
+      const optionListFinal = this.getOptionListFinal();
+      let req = cloneDeep(this.getOptionReq());
+      if (optionListFinal?.serviceName && req) {
+        if (req["relation_condition"]) {
+          req.relation_condition.data[0].value = queryString;
+          req.relation_condition.data[1].value = queryString;
+          req.relation_condition.data[0].ruleType = "eq";
+          req.relation_condition.data[1].ruleType = "eq";
+        } else if (req["condition"]) {
+          req["condition"][0].ruleType = "eq";
+          req["condition"][0].value = queryString;
+        }
+        const url = `/${this.app}/select/${req.serviceName}`;
+        debugger;
+        const response = await this.$http.post(url, req);
+        debugger;
+        if (response && response.data && response.data.data?.length) {
+          const data = response.data.data[0];
+          const valueCol = optionListFinal.refed_col;
+          const labelCol = optionListFinal.key_disp_col;
+          data.label = data[labelCol];
+          data.value = data[valueCol];
+          return data;
+        }
+      }
+    },
+    onFkSelect(selected = null) {
+      this.selected = selected || null;
+      this.$emit("change", {
+        rawData:selected,
+        value:selected?.value
+      });
+    },
     initSelected() {
       let obj = {};
       if (["fkjson", "fkjsons"].includes(this.colType) && this.html) {
@@ -618,7 +767,9 @@ export default {
     text-overflow: ellipsis;
     white-space: nowrap;
     height: 24px;
-    .flex.w-full,.text,p {
+    .flex.w-full,
+    .text,
+    p {
       width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;

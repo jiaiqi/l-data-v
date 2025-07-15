@@ -11,6 +11,11 @@
       :disabled="disabled"
       :multiple="multiple"
       :collapse-tags="true"
+      :loading="loading"
+      :remote="remote"
+      :filterable="filterable"
+      :clearable="clearable"
+      :remote-method="remoteMethod"
       @change="handleChange"
       @focus="handleFocus"
       @blur="handleSelectBlur"
@@ -62,6 +67,26 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  remote: {
+    type: Boolean,
+    default: false,
+  },
+  remoteMethod: {
+    type: Function,
+    default: null,
+  },
+  filterable: {
+    type: Boolean,
+    default: false,
+  },
+  clearable: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["update:value", "change", "focus", "blur"]);
@@ -102,6 +127,9 @@ const handleChange = (val) => {
 // 处理获得焦点
 const handleFocus = () => {
   isFocused.value = true;
+  if(props.remoteMethod && typeof props.remoteMethod === "function") {
+    props.remoteMethod()
+  }
   emit("focus", selectorRef.value);
 };
 
@@ -145,7 +173,13 @@ const handleClickOutside = () => {
     .el-input {
       width: 100%;
       .el-input__suffix {
-        display: none;
+        // display: none;
+        .el-input__icon {
+          display: none;
+          &.el-icon-circle-close{
+            display: inline-block;
+          }
+        }
       }
       .el-input__inner {
         width: 100%;
