@@ -17,7 +17,7 @@
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "pinia": "^2.0.16",
-    "vue": "^2.7.7",
+    "vue": "^2.7.16",
     "vue-easytable": "^2.27.1",
     "vue-router": "^3.5.4",
     "vue2-teleport": "^1.1.4",
@@ -34,6 +34,7 @@
     "sass-loader": "^13.2.1",
     "terser": "^5.14.2",
     "unocss": "^0.54.1",
+    "unplugin-vue-define-options": "3.0.0-beta.16",
     "vite": "^3.2.5"
   },
   "volta": {

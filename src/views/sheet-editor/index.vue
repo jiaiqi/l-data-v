@@ -13,150 +13,26 @@
       showText
       textColor="#fff"
     ></loading-view>
-    <div
-      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 w-full"
-      v-if="disabled !== true"
-    >
-      <div
-        class="flex flex-1 items-center text-sm p-x-2"
-        v-if="addButton && addButton.service_name"
-      >
-        <div class="m-r-2">添加</div>
-        <el-input-number
-          size="mini"
-          v-model="insertRowNumber"
-          style="width: 100px"
-        />
-        <div class="m-x-2">行</div>
-        <el-button
-          class="icon-button"
-          title="添加(ctrl + 加号键)"
-          size="mini"
-          type="primary"
-          @click="batchInsertRows"
-          :disabled="insertRowNumber === 0"
-        >
-          <!-- 添加 -->
-          <i class="i-ic-baseline-add"></i>
-        </el-button>
-      </div>
-      <div
-        class="text-sm text-gray cursor-not-allowed"
-        v-else
-      >
-        <!-- 没有添加权限 -->
-      </div>
-      <div class="p-x-2 flex-1 flex justify-center">
-        <el-radio-group
-          v-model="listType"
-          @input="listTypeChange"
-          size="mini"
-          v-if="isTree"
-        >
-          <el-radio-button label="list">普通列表</el-radio-button>
-          <el-radio-button label="treelist">树型列表</el-radio-button>
-        </el-radio-group>
-      </div>
-
-      <div class="flex flex-items-center flex-1 justify-end p-x-2">
-        <div
-          class="color-map flex flex-items-center m-r-20"
-          v-if="!['add', 'addchildlist'].includes(childListType)"
-        >
-          <div class="color-map-item flex flex-items-center">
-            <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
-            <div class="color bg-[#2EA269] w-4 h-4 m-r-2 rounded"></div>
-            <div class="text">新增</div>
-          </div>
-          <div class="color-map-item flex flex-items-center m-l-5">
-            <div class="color bg-[#E83D4B] w-4 h-4 m-r-2 rounded"></div>
-            <div class="text">更新</div>
-          </div>
-        </div>
-        <div
-          class="relative"
-          v-if="gridButton && gridButton.length"
-        >
-          <div
-            class="grid-button-box"
-            :class="{ show: showGridButton }"
-          >
-            <el-button
-              size="mini"
-              type="primary"
-              :title="item.button_name"
-              v-for="item in gridButton"
-              class="button"
-              @click="onGridButton(item)"
-            >
-              {{ item.button_name }}
-            </el-button>
-          </div>
-          <el-button
-            class="icon-button mr-1"
-            size="mini"
-            type="primary"
-            @click="showGridButton = !showGridButton"
-          >
-            <i
-              class="i-ic-sharp-keyboard-double-arrow-right icon"
-              :class="{ show: showGridButton }"
-              :title="showGridButton ? '收起操作按钮' : '展开操作按钮'"
-            ></i>
-          </el-button>
-        </div>
-
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="refreshData"
-          v-if="!['add', 'addchildlist'].includes(childListType)"
-          title="刷新（F5）"
-        >
-          <!-- 刷新 -->
-
-          <i class="i-ic-baseline-refresh"></i>
-        </el-button>
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="saveData"
-          :disabled="!calcReqData || calcReqData.length == 0"
-          v-if="!['add', 'addchildlist'].includes(childListType)"
-          v-loading="onHandler"
-          title="保存（Ctrl+S）"
-        >
-          <!-- 保存 -->
-          <i class="i-ic-baseline-save"></i>
-          <span
-            v-if="autoSaveTimeout && autoSaveTimeout > 0"
-            class="text-xs"
-            title="自动保存倒计时"
-          >
-            {{ autoSaveTimeout }}
-          </span>
-        </el-button>
-        <el-button
-          class="icon-button"
-          size="mini"
-          type="primary"
-          @click="saveColumnWidth"
-          v-loading="onHandler"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
-          v-if="
-            !childListType &&
-            calcColumnWidthReq &&
-            calcColumnWidthReq.length > 0
-          "
-          title="保存列宽"
-        >
-          <!-- 保存列宽 -->
-          <i class="i-ic-baseline-view-column"></i>
-        </el-button>
-      </div>
-    </div>
+    <!-- 工具栏组件 -->
+    <sheet-toolbar
+      :disabled="disabled"
+      :add-button="addButton"
+      :insert-row-number.sync="insertRowNumber"
+      :list-type="listType"
+      :is-tree="isTree"
+      :child-list-type="childListType"
+      :grid-button="gridButton"
+      :calc-req-data="calcReqData"
+      :calc-column-width-req="calcColumnWidthReq"
+      :auto-save-timeout="autoSaveTimeout"
+      :on-handler="onHandler"
+      @batch-insert-rows="batchInsertRows"
+      @list-type-change="listTypeChange"
+      @grid-button-click="onGridButton"
+      @refresh-data="refreshData"
+      @save-data="saveData"
+      @save-column-width="saveColumnWidth"
+    />
     <div
       class="flex-1 list-container"
       v-if="isFetched || childListType"
@@ -277,7 +153,6 @@
 <script>
 // 导入外部工具库、js
 import dayjs from "dayjs";
-import { mapState } from "pinia";
 import { uniqueId, cloneDeep, debounce } from "lodash-es";
 
 // 导入外部组件
@@ -312,6 +187,7 @@ import loginDialog from "../../components/login-dialog/index.vue";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
 // import OutFormDialog from "./components/out-comp/dialog.vue";
 import FieldEditor from "./components/field-editor/index.vue";
+import SheetToolbar from "./components/sheet-toolbar/index.vue";
 
 
 let broadcastChannel = null; //跨iframe通信的实例
@@ -376,11 +252,11 @@ export default {
     ChooseTenant,
     DropMenu,
     FieldEditor,
+    SheetToolbar,
     Teleport,
   },
   data() {
     return {
-      showGridButton: false,
       bx_auth_ticket: null,
       fieldEditorParams: null,
       fieldEditorPosition: {},
@@ -1281,7 +1157,12 @@ export default {
     },
   },
   computed: {
-    ...mapState(useUserStore, ["userInfo", "tenants"]),
+    userInfo() {
+      return useUserStore().userInfo;
+    },
+    tenants() {
+      return useUserStore().tenants;
+    },
     currentCellValue() {
       if (this.fieldEditorParams?.row && this.fieldEditorParams?.column) {
         const { row, column } = this.fieldEditorParams;
@@ -2820,6 +2701,7 @@ export default {
     },
     listTypeChange(val) {
       console.log(val);
+      this.listType = val
       this.initPage();
     },
     handleCurrentChange(val) {
@@ -5017,19 +4899,6 @@ export default {
     margin-left: 5px;
   }
 
-  &.icon-button {
-    padding: 4px;
-
-    .icon {
-      transform: rotate(180deg);
-      transition: all 0.3s ease-in-out;
-
-      &.show {
-        transform: rotate(0);
-      }
-    }
-  }
-
   [class*="i-ic-"] {
     font-size: 16px;
   }
@@ -5155,35 +5024,5 @@ export default {
       color: #ccc;
     }
   }
-}
-
-.grid-button-box {
-  overflow: hidden;
-  transition: all 0.3s ease;
-  position: absolute;
-  right: 40px;
-  transform: translateX(100%);
-  background-color: #fff;
-  opacity: 0;
-  width: 0;
-  padding: 0 5px;
-
-  &.show {
-    display: flex;
-    transform: translateX(0);
-    opacity: 1;
-    width: unset;
-    z-index: 9;
-  }
-
-  // display: grid;
-  // grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  // gap: 10px;
-
-  // .el-button+.el-button {
-  //   margin-left: unset;
-  // }
-
-  .button {}
 }
 </style>
