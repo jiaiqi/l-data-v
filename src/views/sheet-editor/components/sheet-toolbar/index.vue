@@ -11,9 +11,9 @@
       <div class="m-r-2">添加</div>
       <el-input-number
         size="mini"
-        v-model="insertRowNumber"
+        :value="insertRowNumber"
         style="width: 100px"
-        @input="$emit('update:insertRowNumber', $event)"
+        @input="emit('update:insertRowNumber', $event)"
       />
       <div class="m-x-2">行</div>
       <el-button
@@ -21,7 +21,7 @@
         title="添加(ctrl + 加号键)"
         size="mini"
         type="primary"
-        @click="$emit('batch-insert-rows')"
+        @click="emit('batch-insert-rows')"
         :disabled="insertRowNumber === 0"
       >
         <i class="i-ic-baseline-add"></i>
@@ -38,7 +38,7 @@
     <div class="p-x-2 flex-1 flex justify-center">
       <el-radio-group
         :value="listType"
-        @input="$emit('list-type-change', $event)"
+        @input="emit('list-type-change', $event)"
         size="mini"
         v-if="isTree"
       >
@@ -78,9 +78,8 @@
             type="primary"
             :title="item.button_name"
             v-for="item in gridButton"
-            :key="item.button_type"
             class="button"
-            @click="$emit('grid-button-click', item)"
+            @click="emit('grid-button-click', item)"
           >
             {{ item.button_name }}
           </el-button>
@@ -104,7 +103,7 @@
         class="icon-button"
         size="mini"
         type="primary"
-        @click="$emit('refresh-data')"
+        @click="emit('refresh-data')"
         v-if="!['add', 'addchildlist'].includes(childListType)"
         title="刷新（F5）"
       >
@@ -116,7 +115,7 @@
         class="icon-button"
         size="mini"
         type="primary"
-        @click="$emit('save-data')"
+        @click="emit('save-data')"
         :disabled="!calcReqData || calcReqData.length == 0"
         v-if="!['add', 'addchildlist'].includes(childListType)"
         v-loading="onHandler"
@@ -137,7 +136,7 @@
         class="icon-button"
         size="mini"
         type="primary"
-        @click="$emit('save-column-width')"
+        @click="emit('save-column-width')"
         v-loading="onHandler"
         :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
         v-if="
@@ -153,70 +152,84 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'SheetToolbar',
-  props: {
-    // 基础配置
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    // 添加按钮配置
-    addButton: {
-      type: Object,
-      default: null
-    },
-    insertRowNumber: {
-      type: Number,
-      default: 1
-    },
-    // 列表类型配置
-    listType: {
-      type: String,
-      default: 'list'
-    },
-    isTree: {
-      type: Boolean,
-      default: false
-    },
-    childListType: {
-      type: String,
-      default: ''
-    },
-    // 网格按钮配置
-    gridButton: {
-      type: Array,
-      default: () => []
-    },
-    // 状态数据
-    calcReqData: {
-      type: Array,
-      default: () => []
-    },
-    calcColumnWidthReq: {
-      type: Array,
-      default: () => []
-    },
-    autoSaveTimeout: {
-      type: Number,
-      default: 0
-    },
-    onHandler: {
-      type: Boolean,
-      default: false
-    }
+<script setup>
+import { ref } from 'vue'
+
+// // 定义组件名称
+// defineOptions({
+//   name: 'SheetToolbar'
+// })
+
+// 定义 props
+const props = defineProps({
+  // 基础配置
+  disabled: {
+    type: Boolean,
+    default: false
   },
-  data() {
-    return {
-      showGridButton: false
-    }
+  // 添加按钮配置
+  addButton: {
+    type: Object,
+    default: null
   },
-  methods: {
-    toggleGridButton() {
-      this.showGridButton = !this.showGridButton
-    }
+  insertRowNumber: {
+    type: Number,
+    default: 1
+  },
+  // 列表类型配置
+  listType: {
+    type: String,
+    default: 'list'
+  },
+  isTree: {
+    type: Boolean,
+    default: false
+  },
+  childListType: {
+    type: String,
+    default: ''
+  },
+  // 网格按钮配置
+  gridButton: {
+    type: Array,
+    default: () => []
+  },
+  // 状态数据
+  calcReqData: {
+    type: Array,
+    default: () => []
+  },
+  calcColumnWidthReq: {
+    type: Array,
+    default: () => []
+  },
+  autoSaveTimeout: {
+    type: Number,
+    default: 0
+  },
+  onHandler: {
+    type: Boolean,
+    default: false
   }
+})
+
+// 定义 emits
+const emit = defineEmits([
+  'update:insertRowNumber',
+  'batch-insert-rows',
+  'list-type-change',
+  'grid-button-click',
+  'refresh-data',
+  'save-data',
+  'save-column-width'
+])
+
+// 响应式数据
+const showGridButton = ref(false)
+
+// 方法
+const toggleGridButton = () => {
+  showGridButton.value = !showGridButton.value
 }
 </script>
 

@@ -2697,6 +2697,7 @@ export default {
     },
     listTypeChange(val) {
       console.log(val);
+      this.listType = val
       this.initPage();
     },
     handleCurrentChange(val) {
