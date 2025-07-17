@@ -383,6 +383,7 @@ export default {
       // 对话框关闭处理
       this.editorVisible = false;
       this.$emit("close");
+      console.log("关闭");
     },
     dblListener(eve) {
       console.log(eve);
@@ -441,7 +442,6 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 999;
-
   ::v-deep .el-input {
     display: flex;
     align-items: center;
@@ -479,13 +479,17 @@ export default {
     height: 100%;
     line-height: 100%;
     background: transparent;
-
+    .el-input__prefix {
+      .el-icon-date {
+        display: none;
+      }
+    }
     .el-input__inner {
       height: 100%;
       line-height: 100%;
       background: transparent;
       padding-right: 0;
-      padding-left: 20px;
+      padding-left: 6px;
       border: none;
     }
   }

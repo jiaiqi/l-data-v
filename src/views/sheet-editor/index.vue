@@ -3,6 +3,7 @@
     class="spreadsheet flex flex-col"
     :class="{ 'child-list': childListType }"
     ref="spreadsheet"
+    @click="clickPage"
   >
     <loading-view
       v-if="loading"
@@ -404,6 +405,7 @@ export default {
       showGridButton: false,
       bx_auth_ticket: null,
       currentSelection: null,
+      currentCell: null,
       fieldEditorParams: null,
       fieldEditorPosition: {},
       showFieldEditor: false,
@@ -1959,9 +1961,17 @@ export default {
     },
   },
   methods: {
+    clickPage() {
+      const currentCellSelectionType =
+        this.$refs?.tableRef?.currentCellSelectionType;
+      if (!currentCellSelectionType) {
+        this.onFieldEditorBlur();
+      } else if (currentCellSelectionType !== "single") {
+        this.buildFieldEditorParams();
+      }
+    },
     onFieldEditorBlur() {
       console.log("onFieldEditorBlur");
-
       this.clearCellSelection();
       this.buildFieldEditorParams();
     },
@@ -2093,8 +2103,10 @@ export default {
       // this.showFieldEditor = false;
     },
     dialogClose() {
-      this.$parent?.setCellSelection?.();
-      this.fieldEditorParams = null;
+      // this.$parent?.setCellSelection?.();
+      // this.fieldEditorParams = null;
+      this.clearCellSelection();
+      this.buildFieldEditorParams();
     },
     clearFieldEditorParams() {
       this.fieldEditorParams = null;
@@ -2127,6 +2139,7 @@ export default {
       const position =
         this.$refs?.tableRef?.$refs?.cellSelectionRef?.cellSelectionRect
           ?.currentCellRect;
+      this.currentCell = this.$refs?.tableRef?.cellSelectionData?.currentCell;
       this.fieldEditorParams = {
         oldValue: oldRowData?.[column.field],
         editable,
@@ -5140,7 +5153,7 @@ export default {
   //   border: 1px solid #2087cc !important;
   // }
   .ve-table-body-td {
-    padding: 3px 8px !important;
+    padding: 2px 8px !important;
   }
 
   .ve-table-body-tr {
@@ -5148,7 +5161,7 @@ export default {
   }
 
   .ve-table-header-th {
-    padding: 2px 0 !important;
+    padding: 4px 0 !important;
     background-color: #f0f3f9 !important;
   }
 }
