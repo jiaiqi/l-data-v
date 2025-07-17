@@ -153,7 +153,6 @@
 <script>
 // 导入外部工具库、js
 import dayjs from "dayjs";
-import { mapState } from "pinia";
 import { uniqueId, cloneDeep, debounce } from "lodash-es";
 
 // 导入外部组件
@@ -1158,7 +1157,12 @@ export default {
     },
   },
   computed: {
-    ...mapState(useUserStore, ["userInfo", "tenants"]),
+    userInfo() {
+      return useUserStore().userInfo;
+    },
+    tenants() {
+      return useUserStore().tenants;
+    },
     currentCellValue() {
       if (this.fieldEditorParams?.row && this.fieldEditorParams?.column) {
         const { row, column } = this.fieldEditorParams;

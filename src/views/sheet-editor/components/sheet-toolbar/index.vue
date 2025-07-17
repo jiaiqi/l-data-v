@@ -155,10 +155,10 @@
 <script setup>
 import { ref } from 'vue'
 
-// // 定义组件名称
-// defineOptions({
-//   name: 'SheetToolbar'
-// })
+// 定义组件名称
+defineOptions({
+  name: 'SheetToolbar'
+})
 
 // 定义 props
 const props = defineProps({
