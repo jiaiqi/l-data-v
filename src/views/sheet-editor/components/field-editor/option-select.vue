@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, nextTick } from "vue";
 
 const props = defineProps({
   value: {
@@ -122,13 +122,16 @@ const handleChange = (val) => {
     emit("update:value", val);
     emit("change", val);
   }
+  nextTick(() => {
+    emit("blur");
+  });
 };
 
 // 处理获得焦点
 const handleFocus = () => {
   isFocused.value = true;
-  if(props.remoteMethod && typeof props.remoteMethod === "function") {
-    props.remoteMethod()
+  if (props.remoteMethod && typeof props.remoteMethod === "function") {
+    props.remoteMethod();
   }
   emit("focus", selectorRef.value);
 };
@@ -138,6 +141,8 @@ const handleSelectBlur = () => {
   // 延迟处理，避免与点击箭头冲突
   setTimeout(() => {
     if (!isFocused.value) {
+      console.log("blur");
+
       emit("blur", null);
     }
   }, 100);
@@ -176,7 +181,7 @@ const handleClickOutside = () => {
         // display: none;
         .el-input__icon {
           display: none;
-          &.el-icon-circle-close{
+          &.el-icon-circle-close {
             display: inline-block;
           }
         }
@@ -200,7 +205,7 @@ const handleClickOutside = () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #FFF;
+    background: #fff;
     border: 1px solid #333;
     cursor: pointer;
 
