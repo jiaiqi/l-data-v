@@ -1,29 +1,68 @@
 <template>
-  <div class="spreadsheet flex flex-col" :class="{ 'child-list': childListType }" ref="spreadsheet" @click="clickPage">
-    <loading-view v-if="loading" mask type="surround" :maskOpacity="0.2" showText textColor="#fff"></loading-view>
-    <div class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 w-full" v-if="disabled !== true">
-      <div class="flex flex-1 items-center text-sm p-x-2" v-if="addButton && addButton.service_name">
+  <div
+    class="spreadsheet flex flex-col"
+    :class="{ 'child-list': childListType }"
+    ref="spreadsheet"
+    @click="clickPage"
+  >
+    <loading-view
+      v-if="loading"
+      mask
+      type="surround"
+      :maskOpacity="0.2"
+      showText
+      textColor="#fff"
+    ></loading-view>
+    <div
+      class="flex flex-items-center flex-justify-between m-l-a m-r-a p-y-2 w-full"
+      v-if="disabled !== true"
+    >
+      <div
+        class="flex flex-1 items-center text-sm p-x-2"
+        v-if="addButton && addButton.service_name"
+      >
         <div class="m-r-2">添加</div>
-        <el-input-number size="mini" v-model="insertRowNumber" style="width: 100px" />
+        <el-input-number
+          size="mini"
+          v-model="insertRowNumber"
+          style="width: 100px"
+        />
         <div class="m-x-2">行</div>
-        <el-button class="icon-button" title="添加(ctrl + 加号键)" size="mini" type="primary" @click="batchInsertRows"
-          :disabled="insertRowNumber === 0">
+        <el-button
+          class="icon-button"
+          title="添加(ctrl + 加号键)"
+          size="mini"
+          type="primary"
+          @click="batchInsertRows"
+          :disabled="insertRowNumber === 0"
+        >
           <!-- 添加 -->
           <i class="i-ic-baseline-add"></i>
         </el-button>
       </div>
-      <div class="text-sm text-gray cursor-not-allowed" v-else>
+      <div
+        class="text-sm text-gray cursor-not-allowed"
+        v-else
+      >
         <!-- 没有添加权限 -->
       </div>
       <div class="p-x-2 flex-1 flex justify-center">
-        <el-radio-group v-model="listType" @input="listTypeChange" size="mini" v-if="isTree">
+        <el-radio-group
+          v-model="listType"
+          @input="listTypeChange"
+          size="mini"
+          v-if="isTree"
+        >
           <el-radio-button label="list">普通列表</el-radio-button>
           <el-radio-button label="treelist">树型列表</el-radio-button>
         </el-radio-group>
       </div>
 
       <div class="flex flex-items-center flex-1 justify-end p-x-2">
-        <div class="color-map flex flex-items-center m-r-20" v-if="!['add', 'addchildlist'].includes(childListType)">
+        <div
+          class="color-map flex flex-items-center m-r-20"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
+        >
           <div class="color-map-item flex flex-items-center">
             <!-- <div class="color bg-[#a4da89] w-4 h-4 m-r-2 rounded"></div> -->
             <div class="color bg-[#2EA269] w-4 h-4 m-r-2 rounded"></div>
@@ -34,166 +73,248 @@
             <div class="text">更新</div>
           </div>
         </div>
-        <div class="relative" v-if="gridButton && gridButton.length">
-          <div class="grid-button-box" :class="{ show: showGridButton }">
-            <el-button size="mini" type="primary" :title="item.button_name" v-for="item in gridButton" class="button"
-              @click="onGridButton(item)">
+        <div
+          class="relative"
+          v-if="gridButton && gridButton.length"
+        >
+          <div
+            class="grid-button-box"
+            :class="{ show: showGridButton }"
+          >
+            <el-button
+              size="mini"
+              type="primary"
+              :title="item.button_name"
+              v-for="item in gridButton"
+              class="button"
+              @click="onGridButton(item)"
+            >
               {{ item.button_name }}
             </el-button>
           </div>
-          <el-button class="icon-button mr-1" size="mini" type="primary" @click="showGridButton = !showGridButton">
-            <i class="i-ic-sharp-keyboard-double-arrow-right icon" :class="{ show: showGridButton }"
-              :title="showGridButton ? '收起操作按钮' : '展开操作按钮'"></i>
+          <el-button
+            class="icon-button mr-1"
+            size="mini"
+            type="primary"
+            @click="showGridButton = !showGridButton"
+          >
+            <i
+              class="i-ic-sharp-keyboard-double-arrow-right icon"
+              :class="{ show: showGridButton }"
+              :title="showGridButton ? '收起操作按钮' : '展开操作按钮'"
+            ></i>
           </el-button>
         </div>
 
-        <el-button class="icon-button" size="mini" type="primary" @click="refreshData"
-          v-if="!['add', 'addchildlist'].includes(childListType)" title="刷新（F5）">
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="primary"
+          @click="refreshData"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
+          title="刷新（F5）"
+        >
           <!-- 刷新 -->
 
           <i class="i-ic-baseline-refresh"></i>
         </el-button>
-        <el-button class="icon-button" size="mini" type="primary" @click="saveData"
-          :disabled="!calcReqData || calcReqData.length == 0" v-if="!['add', 'addchildlist'].includes(childListType)"
-          v-loading="onHandler" title="保存（Ctrl+S）">
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="primary"
+          @click="saveData"
+          :disabled="!calcReqData || calcReqData.length == 0"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
+          v-loading="onHandler"
+          title="保存（Ctrl+S）"
+        >
           <!-- 保存 -->
           <i class="i-ic-baseline-save"></i>
-          <span v-if="autoSaveTimeout && autoSaveTimeout > 0" class="text-xs" title="自动保存倒计时">
+          <span
+            v-if="autoSaveTimeout && autoSaveTimeout > 0"
+            class="text-xs"
+            title="自动保存倒计时"
+          >
             {{ autoSaveTimeout }}
           </span>
         </el-button>
-        <el-button class="icon-button" size="mini" type="primary" @click="saveColumnWidth" v-loading="onHandler"
-          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0" v-if="
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="primary"
+          @click="saveColumnWidth"
+          v-loading="onHandler"
+          :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
+          v-if="
             !childListType &&
             calcColumnWidthReq &&
             calcColumnWidthReq.length > 0
-          " title="保存列宽">
+          "
+          title="保存列宽"
+        >
           <!-- 保存列宽 -->
           <i class="i-ic-baseline-view-column"></i>
         </el-button>
       </div>
     </div>
-    <!--    <div class="flex-1 list-container" v-if="isFetched || childListType" :style="{'max-height': listMaxHeight+'px'}">-->
-    <div class="flex-1 list-container" v-if="isFetched || childListType">
-      <ve-table :columns="columns" border-x border-y :table-data="tableData" v-if="disabled" ref="tableRef"
-        style="word-break: break-word; width: 100vw; height: 100%" max-height="calc(100vh - 40px)" fixed-header />
-      <div class="custom-style" v-else>
-        <ve-table ref="tableRef" style="word-break: break-word; width: 100vw" max-height="calc(100vh - 80px)"
-          fixed-header :scroll-width="0" border-y :columns="columns" :table-data="tableData" row-key-field-name="rowKey"
-          :virtual-scroll-option="virtualScrollOption" :cell-autofill-option="cellAutofillOption"
-          :cell-style-option="cellStyleOption" :edit-option="editOption" :clipboard-option="clipboardOption"
-          :contextmenu-body-option="contextmenuBodyOption" :contextmenu-header-option="contextmenuHeaderOption"
-          :row-style-option="rowStyleOption" :column-width-resize-option="columnWidthResizeOption"
-          :event-custom-option="eventCustomOption" :columnHiddenOption="columnHiddenOption" />
+    <div
+      class="flex-1 list-container"
+      v-if="isFetched || childListType"
+    >
+      <ve-table
+        :columns="columns"
+        border-x
+        border-y
+        :table-data="tableData"
+        v-if="disabled"
+        ref="tableRef"
+        style="word-break: break-word; width: 100vw; height: 100%"
+        max-height="calc(100vh - 40px)"
+        fixed-header
+      />
+      <div
+        class="custom-style"
+        v-else
+      >
+        <ve-table
+          ref="tableRef"
+          style="word-break: break-word; width: 100vw"
+          max-height="calc(100vh - 80px)"
+          fixed-header
+          :scroll-width="0"
+          border-y
+          :columns="columns"
+          :table-data="tableData"
+          row-key-field-name="rowKey"
+          :virtual-scroll-option="virtualScrollOption"
+          :cell-autofill-option="cellAutofillOption"
+          :cell-style-option="cellStyleOption"
+          :edit-option="editOption"
+          :clipboard-option="clipboardOption"
+          :contextmenu-body-option="contextmenuBodyOption"
+          :contextmenu-header-option="contextmenuHeaderOption"
+          :row-style-option="rowStyleOption"
+          :column-width-resize-option="columnWidthResizeOption"
+          :event-custom-option="eventCustomOption"
+          :columnHiddenOption="columnHiddenOption"
+        />
       </div>
     </div>
-    <div class="empty-data" v-if="!childListType && listMaxHeight && page.total === 0 && !loading">
+    <div
+      class="empty-data"
+      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
+    >
       暂无数据
     </div>
     <!--    列表为新增子表时不显示分页-->
-    <div class="text-center flex justify-between" v-if="!['add', 'addchildlist'].includes(childListType)">
+    <div
+      class="text-center flex justify-between"
+      v-if="!['add', 'addchildlist'].includes(childListType)"
+    >
       <div class="position-relative">
         <choose-tenant />
       </div>
-      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
-        :page-sizes="[10, 20, 50, 100, 200, 500]" :page-size="page.rownumber" layout="total, sizes, pager,  jumper"
-        :total="page.total">
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page="page.pageNo"
+        :page-sizes="[10, 20, 50, 100, 200, 500]"
+        :page-size="page.rownumber"
+        layout="total, sizes, pager,  jumper"
+        :total="page.total"
+      >
       </el-pagination>
       <div class="flex items-center"></div>
     </div>
 
-    <select-parent-node ref="changeParentRef" :topTreeData="topTreeData" :srvApp="srvApp" :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-      " :option-info="parentColOption" @confirm="updateParentNo"></select-parent-node>
+    <select-parent-node
+      ref="changeParentRef"
+      :topTreeData="topTreeData"
+      :srvApp="srvApp"
+      :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+        "
+      :option-info="parentColOption"
+      @confirm="updateParentNo"
+    ></select-parent-node>
 
     <login-dialog ref="loginRef"></login-dialog>
-    <drop-menu v-if="showDropMenu" v-model="showDropMenu" :row="currentRowData" :items="rowButton"
-      :position="{ top: dTop, left: dLeft }" @select="onRowButton" />
-    <out-form-dialog ref="outFormDialog"></out-form-dialog>
-
-    <Teleport to=".ve-table-content-wrapper" v-if="showFieldEditor">
-      <field-editor ref="fieldEditor" :disabled="disabled" :detailButton="detailButton" :serviceName="serviceName"
-        :app="srvApp" :listType="listType" :keyDispCol="(v2data && v2data.key_disp_col) || ''" :value="currentCellValue"
-        :show.sync="showFieldEditor" v-bind="fieldEditorParams" @change="dialogChange"
-        @fk-autocomplete-change="fkAutocompleteChange" @fk-change="fkChange" @fks-change="fksChange"
-        @save="dialogChange" @close="dialogClose" @focus="onFieldEditorFocus" @blur="onFieldEditorBlur"></field-editor>
+    <drop-menu
+      v-if="showDropMenu"
+      v-model="showDropMenu"
+      :row="currentRowData"
+      :items="rowButton"
+      :position="{ top: dTop, left: dLeft }"
+      @select="onRowButton"
+    />
+    <Teleport
+      to=".ve-table-content-wrapper"
+      v-if="showFieldEditor"
+    >
+      <field-editor
+        ref="fieldEditor"
+        :disabled="disabled"
+        :detailButton="detailButton"
+        :serviceName="serviceName"
+        :app="srvApp"
+        :listType="listType"
+        :keyDispCol="(v2data && v2data.key_disp_col) || ''"
+        :value="currentCellValue"
+        :show.sync="showFieldEditor"
+        v-bind="fieldEditorParams"
+        @change="dialogChange"
+        @fk-autocomplete-change="fkAutocompleteChange"
+        @fk-change="fkChange"
+        @fks-change="fksChange"
+        @save="dialogChange"
+        @close="dialogClose"
+        @focus="onFieldEditorFocus"
+        @blur="onFieldEditorBlur"
+      ></field-editor>
     </Teleport>
   </div>
 </template>
 
 <script>
-import {
-  getServiceV2,
-  onSelect,
-  onBatchOperate,
-  onDelete,
-} from "../../service/api";
-
+// 导入外部工具库、js
 import dayjs from "dayjs";
 import { mapState } from "pinia";
+import { uniqueId, cloneDeep, debounce } from "lodash-es";
+
+// 导入外部组件
+import { Message, Loading } from "element-ui"; // 引入elementUI的Message组件
+import Teleport from "vue2-teleport";
+
+// 导入js
 import { useUserStore } from "@/stores/user.js";
-import {
-  buildSrvCols,
-  isFkAutoComplete,
-  isFk,
-  getFieldType,
-} from "../../utils/sheetUtils";
-import { COLUMN_KEYS } from "../../utils/constant";
-import { uniqueId, cloneDeep } from "lodash-es";
-import { Message } from "element-ui"; // 引入elementUI的Message组件
+import { getServiceV2, onSelect, onBatchOperate, onDelete } from "../../service/api";
+import { $http } from "../../common/http";
+import { processStrings, appendNumber } from "../../common/common";
+import { buildSrvCols, isFkAutoComplete, isFk } from "../../utils/sheetUtils";
+import { extractAndFormatDatesOrTimestamps, extractConcatNumbersWithSingleDecimal } from "@/common/DataUtil.js";
+import { rowButtonClick, customizeOperate } from "./util/buttonHandler.js";
+import { copyTextToClipboard } from "@/common/common.js";
+import { FkUtil } from "./util/fkUtil.js";
+import { ignoreKeys } from "./util/constant";
+import { RecordManager } from "./util/recordManager.js";
+
+// 导入自定义组件
 import HeaderCell from "./components/header-cell.vue";
-import fkSelector from "./components/fk-selector.vue";
+// import fkSelector from "./components/fk-selector.vue";
 import RenderHtml from "./components/render-html.vue";
 import FileUpload from "./components/file-upload.vue";
 import selectParentNode from "./components/select-parent-node.vue";
-import fkAutocomplete from "./components/fk-autocomplete.vue";
-import { RecordManager } from "./util/recordManager.js";
-import { Loading } from "element-ui";
-import { $http } from "../../common/http";
-import loginDialog from "../../components/login-dialog/index.vue";
-import { processStrings, appendNumber } from "../../common/common";
-import IconFold from "../../components/icons/icon-fold.vue";
-import IconUnfold from "../../components/icons/icon-unfold.vue";
+// import fkAutocomplete from "./components/fk-autocomplete.vue";
+// import IconFold from "../../components/icons/icon-fold.vue";
+// import IconUnfold from "../../components/icons/icon-unfold.vue";
 import LoadingView from "./components/loading/index.vue";
 import ChooseTenant from "./components/choose-tenant/index.vue";
-import Teleport from "vue2-teleport";
-
-import {
-  extractAndFormatDatesOrTimestamps,
-  extractConcatNumbersWithSingleDecimal,
-} from "@/common/DataUtil.js";
-import { rowButtonClick, customizeOperate } from "./util/buttonHandler.js";
-import { copyTextToClipboard } from "@/common/common.js";
+import loginDialog from "../../components/login-dialog/index.vue";
 import DropMenu from "./components/drop-menu/drop-menu.vue";
-import OutFormDialog from "./components/out-comp/dialog.vue";
+// import OutFormDialog from "./components/out-comp/dialog.vue";
 import FieldEditor from "./components/field-editor/index.vue";
-import debounce from "lodash/debounce";
-import { FkUtil } from "./util/fkUtil.js";
-let broadcastChannel = null; //跨iframe通信的实例
-const ignoreKeys = [
-  "__id",
-  "__flag",
-  "__parent_row",
-  "rowKey",
-  "id",
-  "__button_auth",
-  "_buttons",
-  "__unfold",
-  "__indent",
-  "__update_col",
-  "listType",
-];
 
-function getElementFullInfo(element) {
-  const rect = element.getBoundingClientRect();
-  return {
-    left: rect.left,
-    top: rect.top,
-    // left: rect.left + window.scrollX,
-    // top: rect.top + window.scrollY,
-    width: rect.width,
-    height: rect.height,
-  };
-}
+
+let broadcastChannel = null; //跨iframe通信的实例
 export default {
   name: "SheetEditor",
   beforeDestroy() {
@@ -249,14 +370,11 @@ export default {
     });
   },
   components: {
-    IconFold,
-    IconUnfold,
     selectParentNode,
     loginDialog,
     LoadingView,
     ChooseTenant,
     DropMenu,
-    OutFormDialog,
     FieldEditor,
     Teleport,
   },
@@ -264,36 +382,30 @@ export default {
     return {
       showGridButton: false,
       bx_auth_ticket: null,
-      currentSelection: null,
-      currentCell: null,
       fieldEditorParams: null,
       fieldEditorPosition: {},
       showFieldEditor: false,
       autoSaveInterval: null, //用于储存定时保存的定时器
       autoSaveTimeout: 0, //自动保存倒计时
-      dialogName: "",
       showDropMenu: false,
       dLeft: 0,
       dTop: 0,
       currentRowIndex: -1,
-      currentCell: null,
       onHandler: false,
       disabled: false,
       initData: null,
       mainData: null,
       mainService: "",
+      //子表配置
       childListCfg: {
         foreign_key: null,
         data_source_cfg: null,
-      }, //子表配置
+      }, 
       listMaxHeight: 0,
       initExprCols: [],
       initCond: [],
-      // tableMaxHeight: 1000,
-      onPopup: false, //弹窗是否打开状态
       calcReqData: null,
       columnWidthMap: {}, //存储改变后的列宽
-      changeParentdialogVisible: false,
       pageNo: uniqueId("pageNo"),
       listType: "list",
       childListType: null, //子表类型 addchildlist/updatechildlist/detaillist
@@ -1158,12 +1270,8 @@ export default {
     showFieldEditor(newVal, oldVal) {
       if (newVal === true) {
         this.stopAutoSave();
-        // this.removeDocumentEventListener();
       } else {
         this.setCellSelection();
-        // if (oldVal === true) {
-        //   this.initDocumentEventListener();
-        // }
         const reqData = this.buildReqParams();
         // 弹窗关闭 继续倒计时保存
         if (reqData?.length) {
@@ -1818,8 +1926,6 @@ export default {
   },
   methods: {
     clickPage(event) {
-      console.log(event);
-
       // 如果点击的是fieldEditor，不进行后面逻辑判断
       if (this.$refs.fieldEditor && this.$refs.fieldEditor.$el) {
         const fieldEditorEl = this.$refs.fieldEditor.$el;
@@ -1839,7 +1945,7 @@ export default {
     onFieldEditorBlur() {
       console.log("onFieldEditorBlur");
       this.clearCellSelection();
-      this.clearFieldEditorParams()
+      this.clearFieldEditorParams();
     },
     onFieldEditorFocus(row, column) {
       row = row || this.fieldEditorParams.row;
@@ -1980,7 +2086,7 @@ export default {
     },
     buildFieldEditorParams(row, column, params) {
       if (!row || !column) {
-        this.clearFieldEditorParams()
+        this.clearFieldEditorParams();
         return;
       }
       let editable = true;
@@ -2004,7 +2110,6 @@ export default {
       const position =
         this.$refs?.tableRef?.$refs?.cellSelectionRef?.cellSelectionRect
           ?.currentCellRect;
-      this.currentCell = this.$refs?.tableRef?.cellSelectionData?.currentCell;
       this.fieldEditorParams = {
         oldValue: oldRowData?.[column.field],
         editable,
@@ -3498,9 +3603,6 @@ export default {
                       onfocus: () => {
                         this.clearCellSelection();
                       },
-                      onpopup: (val) => {
-                        this.onPopup = val;
-                      },
                       unfold: (event, callback) => {
                         this.loadTree(event, row, rowIndex, callback);
                       },
@@ -3641,20 +3743,6 @@ export default {
                 class: "hover:color-blue",
               },
               on: {
-                // mouseenter: (event) => {
-                //   event.stopPropagation();
-                //   self.showDropMenu = true;
-                //   console.log(row, rowIndex, event, "onHandler");
-                //   self.dLeft = event.clientX;
-                //   self.dTop = event.clientY;
-                //   self.currentRowIndex = rowIndex;
-                // },
-                // mouseleave: (event) => {
-                //   self.showDropMenu = false;
-                //   self.dLeft = -1000
-                //   self.dTop = -1000
-                //   self.currentRowIndex = -1;
-                // },
                 contextmenu: (event) => {
                   event.preventDefault();
                   event.stopPropagation();
