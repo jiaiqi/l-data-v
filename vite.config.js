@@ -6,6 +6,8 @@ import vue2 from "@vitejs/plugin-vue2";
 import UnoCSS from "unocss/vite";
 // import vueDevTools from 'vite-plugin-vue-devtools'
 
+import defineOptions from 'unplugin-vue-define-options/vite';
+
 // https://vitejs.dev/config/
 export default defineConfig({
   base: "/dataview/",
@@ -16,7 +18,7 @@ export default defineConfig({
     //   additionalLegacyPolyfills: ["regenerator-runtime/runtime"], // 面向IE11时需要此插件
     // }),
     UnoCSS(),
-
+    defineOptions(),
     //   workbox:{
     //     maximumFileSizeToCacheInBytes: 5000000,
     //   },
