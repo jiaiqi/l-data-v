@@ -322,8 +322,8 @@ export default {
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
             click: (event) => {
-              if(this.fieldEditorParams?.row?.rowKey&&this.fieldEditorParams?.column?.key){
-                if(row?.rowKey!==this.fieldEditorParams?.row?.rowKey || column?.key!==this.fieldEditorParams?.column?.key){
+              if (this.fieldEditorParams?.row?.rowKey && this.fieldEditorParams?.column?.key) {
+                if (row?.rowKey !== this.fieldEditorParams?.row?.rowKey || column?.key !== this.fieldEditorParams?.column?.key) {
                   this.clearFieldEditorParams();
                 }
               }
@@ -3673,7 +3673,6 @@ export default {
           newModel: cloneDeep(rawData),
         };
       }
-
       const row = this.tableData[rowIndex];
       let columns = this.setAllFields.filter((item) => {
         if (fkColumn) {
@@ -3705,18 +3704,19 @@ export default {
             const oldValByFk =
               fieldModelObj?.oldModel?.[item?.redundant?.refedCol];
             console.log(oldValByFk, "oldValByFk");
-            if (
-              oldValByFk &&
-              row[item?.redundant?.refedCol] &&
-              row[item?.redundant?.refedCol] !== oldValByFk
-            ) {
+            const nullVal = [null, undefined, ""]; // 定义空值
+            const oldColumnVal = row[item?.redundant?.refedCol]
+            if (oldValByFk && !nullVal.includes(oldColumnVal) && oldColumnVal !== oldValByFk) {
               // 如果当前行的值跟fk字段的值不一致，则不处理
               console.log(
-                "handlerRedundant::unchange",
+                "not handlerRedundant::unchange",
                 item.columns,
                 row[item.columns]
               );
               return;
+            } else if (row[item.columns]) {
+              // 原本有值 也不进行冗余
+              return
             }
           }
           if (!item?.redundant?.refedCol) return;
