@@ -322,6 +322,11 @@ export default {
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
             click: (event) => {
+              if(this.fieldEditorParams?.row?.rowKey&&this.fieldEditorParams?.column?.key){
+                if(row?.rowKey!==this.fieldEditorParams?.row?.rowKey || column?.key!==this.fieldEditorParams?.column?.key){
+                  this.clearFieldEditorParams();
+                }
+              }
               if (column.edit) {
                 const colType = column?.__field_info?.col_type;
                 if (!colType) {
@@ -330,7 +335,6 @@ export default {
                 const currentCellSelection =
                   this.$refs.tableRef.cellSelectionData.currentCell;
                 console.log("cell click::", colType);
-
                 if (
                   currentCellSelection &&
                   currentCellSelection?.colKey === column.key &&
@@ -910,14 +914,6 @@ export default {
               });
               return false;
             }
-            // if (isFkAutoComplete(column.__field_info) || isFk(column.__field_info) && this.showFieldEditor !== true) {
-            //   this.buildFieldEditorParams(row, column)
-            //   this.showFieldEditor = true;
-            //   this.$nextTick(() => {
-            //     this.$refs.fieldEditor?.triggerAutocomplete?.(changeValue)
-            //   })
-            //   this.clearCellSelection()
-            // }
           } else {
             // 编辑行 处理in_update
             if (!this.updateColsMap[column.field]?.in_update) {
@@ -1135,7 +1131,6 @@ export default {
       handler(newValue, oldValue) {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         this.calcReqData = this.buildReqParams();
-        // this.buildFieldEditorParams(this.fieldEditorParams?.row, this.fieldEditorParams?.column)
         const startRowIndex =
           currentSelection?.selectionRangeIndexes?.startRowIndex;
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {

@@ -501,9 +501,7 @@ export default {
           req["condition"][0].value = queryString;
         }
         const url = `/${this.app}/select/${req.serviceName}`;
-        debugger;
         const response = await this.$http.post(url, req);
-        debugger;
         if (response && response.data && response.data.data?.length) {
           const data = response.data.data[0];
           const valueCol = optionListFinal.refed_col;

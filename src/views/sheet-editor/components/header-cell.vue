@@ -120,14 +120,14 @@ export default {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  .header-util-box .icon{
-    display: none;
-  }
-  &:hover{
-    .header-util-box .icon{
-      display: flex;
-    }
-  }
+  // .header-util-box .icon{
+  //   display: none;
+  // }
+  // &:hover{
+  //   .header-util-box .icon{
+  //     display: flex;
+  //   }
+  // }
   // color: #fff;
   .label {
     // max-width: 150px;
