@@ -1836,8 +1836,8 @@ export default {
       }
     },
     setCellSelection(rowKey, colKey) {
-      rowKey = rowKey || this.fieldEditorParams?.row?.__id;
-      colKey = colKey || this.fieldEditorParams?.column?.key;
+      // rowKey = rowKey || this.fieldEditorParams?.row?.__id;
+      // colKey = colKey || this.fieldEditorParams?.column?.key;
       if (rowKey && colKey) {
         this.$nextTick(() => {
           this.$refs["tableRef"].setCellSelection({ rowKey, colKey });
@@ -1849,6 +1849,10 @@ export default {
     },
     fksChange(item, row, column) {
       this.setCellSelection();
+      // if (item?.value && item?.value === row[column.field]) {
+      //   // 值未发生改变
+      //   return
+      // }
       let val = item;
       if (typeof item === "object") {
         val = JSON.stringify(item);
@@ -1871,6 +1875,10 @@ export default {
     },
     fkChange(item, row, column) {
       this.setCellSelection();
+      // if (item?.value && item?.value === row[column.field]) {
+      //   // 值未发生改变
+      //   return
+      // }
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
@@ -1889,10 +1897,15 @@ export default {
         item = null;
       }
       this.setCellSelection();
+
       const defaultValue =
         item?.label ||
         item?.[column?.__field_info?.redundant?.refedCol] ||
         null;
+      // if (defaultValue && defaultValue === row[column.field]) {
+      //   // 值未发生改变
+      //   return
+      // }
       const obj = {
         rowKey: row.rowKey,
         colKey: column.field,
@@ -1937,6 +1950,10 @@ export default {
     },
     dialogChange(event, row, column, type) {
       // 将html中的文件地址前缀替换为$bxFileAddress$
+      // if (event && event === row[column.field]) {
+      //   // 值未发生改变
+      //   return
+      // }
       event = this.replaceFileAddressSuffix(event);
       this.$set(row, column.field, event);
       // console.log("data-change:", row, column.field, event);
@@ -2108,7 +2125,6 @@ export default {
     },
     handleRedundantCalc(fieldInfo, row) {
       let func = fieldInfo.redundant.func;
-      debugger;
       const field = {
         setSrvVal: (val) => {
           row[fieldInfo.columns] = val;

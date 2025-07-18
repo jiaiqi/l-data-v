@@ -6,7 +6,7 @@
   >
     <el-select
       ref="selectRef"
-      :value="setValue"
+      v-model="setValue"
       placeholder="请选择"
       :disabled="disabled"
       :multiple="multiple"

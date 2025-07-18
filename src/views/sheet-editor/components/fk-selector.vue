@@ -12,7 +12,10 @@
     >
       {{ modelValue || "" }}
     </div>
-    <div class="fk-text disabled" v-else-if="setDisabled">
+    <div
+      class="fk-text disabled"
+      v-else-if="setDisabled"
+    >
       {{ modelLabel || modelValue || "" }}
     </div>
     <multi-tab-option-select
@@ -25,7 +28,10 @@
       :app="app"
       @select="multiTabSelectChange"
     ></multi-tab-option-select>
-    <div v-else-if="isTree" style="width: 100%">
+    <div
+      v-else-if="isTree"
+      style="width: 100%"
+    >
       <el-popover
         placement="bottom-center"
         ref="treePopover"
@@ -37,14 +43,12 @@
           slot="reference"
           v-if="!setDisabled"
           class="cursor-pointer selected-text w-full inline-block"
-          >{{ modelLabel || modelValue || "" }}</span
-        >
+        >{{ modelLabel || modelValue || "" }}</span>
         <span
           slot="reference"
           class="text-gray cursor-pointer w-full inline-block selected-text"
           v-else-if="!setDisabled"
-          >点击进行选择</span
-        >
+        >点击进行选择</span>
         <el-input
           placeholder="输入关键字进行过滤"
           clearable
@@ -65,7 +69,10 @@
           style="max-width: 1200px; overflow-x: auto"
         >
           <template slot-scope="{ node, data }">
-            <span :title="node.label" @click.stop="clickNode(node, data)">{{
+            <span
+              :title="node.label"
+              @click.stop="clickNode(node, data)"
+            >{{
               node.label || "---"
             }}</span>
           </template>
@@ -675,7 +682,7 @@ export default {
       this.getFkColumns();
       // }
     },
-    filterMethod(node, query) {},
+    filterMethod(node, query) { },
     remoteMethod(query) {
       if (this.useMultiTabOptionSelect) {
         return;
@@ -744,19 +751,19 @@ export default {
               if (this.modelValue === "$firstRowData") {
                 if (res.data.length) {
                   this.modelValue = res.data[0][option.refed_col];
+                  let currentValue = this.options.find(
+                    (item) => item[option.refed_col] === this.modelValue
+                  );
+                  if (currentValue) {
+                    console.log("fkSelector:select", currentValue);
+                    this.$emit("select", {
+                      value: this.modelValue,
+                      rawData: currentValue,
+                    });
+                  }
                 }
               }
-              let currentValue = this.options.find(
-                (item) => item[option.refed_col] === this.modelValue
-              );
-              if (currentValue) {
-                console.log("fkSelector:select", currentValue);
 
-                this.$emit("select", {
-                  value: this.modelValue,
-                  rawData: currentValue,
-                });
-              }
             }
             resolve(this.options);
           } else {
@@ -964,12 +971,17 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style
+  lang="scss"
+  scoped
+>
 ::v-deep .el-cascader-node {
   max-width: 300px;
 }
+
 .selected-text {
   position: relative;
+
   &::after {
     content: "";
     position: absolute;
@@ -988,6 +1000,7 @@ export default {
     box-shadow: 0 -2px 0 3px #fff, 0 -2px 0 4px rgba(0, 0, 0, 0.9);
   }
 }
+
 .cursor-pointer {
   font-size: 14px;
 }
