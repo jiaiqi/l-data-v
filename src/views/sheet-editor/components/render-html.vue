@@ -7,7 +7,7 @@
       'disabled-wrap': allowWrap !== true,
     }"
     :style="setStyle"
-    :title="html"
+    :title="getTextFromHtml(html)"
     v-loading="loadingFold"
     @dblclick="showRichEditor"
   >
@@ -160,10 +160,11 @@
 </template>
 
 <script>
-import { isFk, isFkAutoComplete, getFieldType } from "@/utils/sheetUtils";
 import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
 import "@wangeditor/editor/dist/css/style.css";
 import cloneDeep from "lodash/cloneDeep";
+import { isFk, isFkAutoComplete, getFieldType } from "@/utils/sheetUtils";
+import { getTextFromHtml } from "../util/common";
 // 展示富文本 Note RichText类型
 export default {
   components: { Editor, Toolbar },
@@ -364,6 +365,7 @@ export default {
   },
   data() {
     return {
+      getTextFromHtml,
       url: "",
       srcList: [],
       initialIndex: 0,

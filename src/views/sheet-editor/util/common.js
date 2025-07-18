@@ -84,3 +84,70 @@ export function getDispExps(item, data, params={}) {
   }
   return result;
 }
+
+
+/**
+ * 从HTML字符串中提取纯文本内容
+ * @param {string} html - HTML字符串
+ * @returns {string} 提取的纯文本
+ */
+export function getTextFromHtml(html) {
+  // 参数验证
+  if (!html || typeof html !== 'string') {
+    return ''
+  }
+
+  // 检查是否支持DOMParser
+  if (typeof DOMParser !== 'undefined') {
+    try {
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, 'text/html')
+      
+      // 优先使用textContent，降级到innerText
+      const text = doc.body.textContent || doc.body.innerText || ''
+      return text.trim()
+    } catch (error) {
+      console.warn('DOMParser解析失败，降级到正则表达式方案:', error)
+      // 降级到正则表达式方案
+      return getTextFromHtmlByRegex(html)
+    }
+  }
+
+  // 不支持DOMParser时使用正则表达式方案
+  return getTextFromHtmlByRegex(html)
+}
+
+/**
+ * 使用正则表达式从HTML中提取文本（降级方案）
+ * @param {string} html - HTML字符串
+ * @returns {string} 提取的纯文本
+ */
+function getTextFromHtmlByRegex(html) {
+  if (!html || typeof html !== 'string') {
+    return ''
+  }
+
+  return html
+    // 移除script和style标签及其内容
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    // 移除HTML注释
+    .replace(/<!--[\s\S]*?-->/g, '')
+    // 将br标签转换为换行符
+    .replace(/<br\s*\/?>/gi, '\n')
+    // 将p、div等块级元素转换为换行符
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+    // 移除所有HTML标签
+    .replace(/<[^>]*>/g, '')
+    // 解码HTML实体
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    // 清理多余的空白字符
+    .replace(/\s+/g, ' ')
+    .trim()
+}

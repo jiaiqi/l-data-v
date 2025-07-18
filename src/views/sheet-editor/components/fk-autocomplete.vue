@@ -14,7 +14,10 @@
     >
       {{ modelValue }}
     </div>
-    <div v-else-if="isTree && !setDisabled" style="width: 100%">
+    <div
+      v-else-if="isTree && !setDisabled"
+      style="width: 100%"
+    >
       <el-popover
         placement="bottom-center"
         ref="treePopover"
@@ -62,7 +65,10 @@
             slot-scope="{ node, data }"
             v-if="props.checkStrictly !== false"
           >
-            <span :title="node.label" @click.stop="clickNode(node, data)">{{ node.label }}</span>
+            <span
+              :title="node.label"
+              @click.stop="clickNode(node, data)"
+            >{{ node.label }}</span>
           </template>
         </el-cascader-panel>
       </el-popover>
@@ -711,13 +717,27 @@ export default {
       if (queryString) {
         req.condition = [
           ...req.condition,
-          {
+          // {
+          //   colName: this.srvInfo.key_disp_col,
+          //   ruleType: "like",
+          //   value: queryString,
+          // },
+        ];
+        req.relation_condition = {
+          relation: "OR",
+          data: [{
             colName: this.srvInfo.key_disp_col,
             ruleType: "like",
             value: queryString,
           },
-        ];
+          {
+            colName: this.srvInfo.refed_col,
+            ruleType: "like",
+            value: queryString,
+          },]
+        }
       }
+
       if (initValue) {
         req.condition = [
           ...req.condition,
@@ -727,15 +747,15 @@ export default {
             value: initValue,
           },
         ];
+
       }
       if (srvInfo?.relation_condition) {
         req.relation_condition = srvInfo?.relation_condition;
       }
-
       const url = `/${appName}/select/${srvInfo?.serviceName}`;
       const res = await $http.post(url, req);
       if (res.data.state === "SUCCESS") {
-        this.options = res.data.data.map(item=>{
+        this.options = res.data.data.map(item => {
           item.label = item[this.srvInfo.key_disp_col];
           item.value = item[this.srvInfo.refed_col];
           return item;
@@ -783,6 +803,7 @@ export default {
 .cursor-pointer {
   font-size: 14px;
 }
+
 .el-popover {
   // position: fixed;
 }
@@ -796,8 +817,7 @@ export default {
 }
 
 .table-body-cell__add {
-  .autocomplete-box {
-  }
+  .autocomplete-box {}
 
   .text-gray {
     color: #fff;
