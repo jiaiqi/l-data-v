@@ -39,8 +39,8 @@ import { useUserStore } from "@/stores/user.js";
 
 const userStore = useUserStore();
 
-const tenants = computed(() => userStore.tenants);
-const currentTenant = computed(() => userStore.currentTenant);
+const tenants = computed(() => userStore.tenants.value);
+const currentTenant = computed(() => userStore.currentTenant.value);
 const setCurrentTenant = (item) => {
   MessageBox.confirm(
     `是否切换到【${item.tenant_name}】此操作成功后将刷新页面, 是否继续?`,
