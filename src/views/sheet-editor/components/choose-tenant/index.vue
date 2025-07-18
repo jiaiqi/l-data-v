@@ -33,9 +33,9 @@
 </template>
 
 <script setup>
-import { useUserStore } from "@/stores/user";
 import { computed } from "vue";
 import { MessageBox, Message } from "element-ui";
+import { useUserStore } from "@/stores/user.js";
 
 const userStore = useUserStore();
 
