@@ -61,12 +61,22 @@
       editorVisible && ['MultilineText', 'RichText'].includes(editorType)
     "
   >
-    <div class="remark" v-if="fieldInfo && fieldInfo.remark">
-      <el-popover placement="right bottom" width="800" v-model="visible">
+    <div
+      class="remark"
+      v-if="fieldInfo && fieldInfo.remark"
+    >
+      <el-popover
+        placement="right bottom"
+        width="800"
+        v-model="visible"
+      >
         <div class="p-2 m-2 b-gray b-1px b-dashed rounded-sm">
           <div v-html="recoverFileAddress(fieldInfo.remark)"></div>
         </div>
-        <div slot="reference" class="text-orange cursor-pointer inline-block">
+        <div
+          slot="reference"
+          class="text-orange cursor-pointer inline-block"
+        >
           <i class="el-icon-warning"></i> 提示
         </div>
       </el-popover>
@@ -83,19 +93,30 @@
         type="textarea"
         :rows="10"
         :disabled="!editable"
-        :placeholder="
-          (column && column.__field_info && column.__field_info.placeholder) ||
+        :placeholder="(column && column.__field_info && column.__field_info.placeholder) ||
           '请输入内容'
-        "
+          "
         v-model="modelValue"
         v-else-if="editorType === 'MultilineText'"
       >
       </el-input>
-      <div class="text-orange text-center" v-if="!disabled && !editable">
+      <div
+        class="text-orange text-center"
+        v-if="!disabled && !editable"
+      >
         <span class="mr-20px"> 当前字段不可编辑 </span>
-        <el-button type="text" @click="dialogFullscreen = !dialogFullscreen">
-          <i class="el-icon-full-screen" v-if="!dialogFullscreen"></i>
-          <i class="el-icon-switch-button" v-else></i>
+        <el-button
+          type="text"
+          @click="dialogFullscreen = !dialogFullscreen"
+        >
+          <i
+            class="el-icon-full-screen"
+            v-if="!dialogFullscreen"
+          ></i>
+          <i
+            class="el-icon-switch-button"
+            v-else
+          ></i>
           <span v-if="!dialogFullscreen">全屏</span>
           <span v-else>退出全屏</span>
         </el-button>
@@ -111,16 +132,15 @@
             plain
             @click="
               $emit('change', modelValue, row, column);
-              editorVisible = false;
+            editorVisible = false;
             "
-            >确认</el-button
-          >
+          >确认</el-button>
           <el-button
             type="primary"
             :disabled="!hasChange"
             @click="
               $emit('save', modelValue, row, column, 'save');
-              stopAutoSave();
+            stopAutoSave();
             "
           >
             仅保存
@@ -378,7 +398,7 @@ export default {
         }
       }, 1000);
     },
-    handleOpen(params = {}) {},
+    handleOpen(params = {}) { },
     handleClose() {
       // 对话框关闭处理
       this.editorVisible = false;
@@ -389,7 +409,7 @@ export default {
       console.log(eve);
       if (
         eve.target?.offsetParent?.className.indexOf("w-e-image-container") >
-          -1 &&
+        -1 &&
         eve.target.currentSrc
       ) {
         this.url = eve.target.currentSrc;
@@ -433,15 +453,20 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style
+  lang="scss"
+  scoped
+>
 .editor-wrap {
   position: absolute;
   // overflow: hidden;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
+
   ::v-deep .el-input {
     display: flex;
     align-items: center;
@@ -452,6 +477,7 @@ export default {
       display: flex;
       align-items: center;
       height: 100%;
+
     }
 
     .el-input__prefix {
@@ -479,11 +505,13 @@ export default {
     height: 100%;
     line-height: 100%;
     background: transparent;
+
     .el-input__prefix {
       .el-icon-date {
         display: none;
       }
     }
+
     .el-input__inner {
       height: 100%;
       line-height: 100%;

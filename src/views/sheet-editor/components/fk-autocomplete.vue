@@ -84,13 +84,13 @@
         ref="inputRef"
         @focus="onFocus"
         class="inline-input"
-        :value="modelValue"
+        v-model="modelValue"
         :value-key="redundant.refedCol"
         :fetch-suggestions="querySearch"
         @clear="onFilterClear"
         placeholder="请输入"
         @select="handleSelect"
-        style="padding: 0; overflow: hidden"
+        style="padding: 0; overflow: hidden;"
       >
       </el-autocomplete>
       <i
@@ -835,7 +835,6 @@ export default {
     }
 
     .el-input__inner::placeholder {
-      color: #fff !important;
       font-size: 12px;
     }
   }

@@ -786,7 +786,6 @@ export default {
     display: -webkit-box;
     -webkit-line-clamp: 10;
     -webkit-box-orient: vertical;
-    cursor: zoom-in;
   }
 
   .detail-btn {

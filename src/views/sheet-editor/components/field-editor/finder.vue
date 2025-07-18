@@ -22,6 +22,7 @@
     :detailButton="detailButton"
     @select="onPickerSelected"
     @input="onInput"
+    @onfocus="onFocus"
     v-else-if="isFkAutoComplete"
   >
   </fk-autocomplete>
@@ -67,6 +68,7 @@ import { cloneDeep } from "lodash-es";
 import { isFk, isFkAutoComplete, getFieldType } from "@/utils/sheetUtils.js";
 import { FieldInfo } from "@/common/model/FieldInfo.js";
 import { Field } from "@/common/model/Field.js";
+import { findTableRef } from "../../util/common";
 import TablePicker from "./table-picker.vue";
 import fkAutocomplete from "../fk-autocomplete.vue";
 import fkSelector from "../fk-selector.vue";
@@ -418,7 +420,10 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style
+  lang="scss"
+  scoped
+>
 .fk-autocomplete {
   width: 100%;
   height: 100%;

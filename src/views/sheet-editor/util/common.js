@@ -54,7 +54,7 @@ export const resolveDefaultSrvApp = function (vm = {}) {
   return app;
 };
 
-export function getDispExps(item, data, params={}) {
+export function getDispExps(item, data, params = {}) {
   var result = true;
   let mainData = params?.mainData;
   //催办按钮只在 我的申请页面显示
@@ -70,8 +70,8 @@ export function getDispExps(item, data, params={}) {
   } catch (err) { }
 
   // 使用后端返回的参数控制按钮显示隐藏
-  if(typeof item?._btn_index==='number'&&Array.isArray(data?._buttons)){
-    if(data._buttons[item._btn_index] === 1){
+  if (typeof item?._btn_index === 'number' && Array.isArray(data?._buttons)) {
+    if (data._buttons[item._btn_index] === 1) {
       result = true
     }
   }
@@ -102,7 +102,7 @@ export function getTextFromHtml(html) {
     try {
       const parser = new DOMParser()
       const doc = parser.parseFromString(html, 'text/html')
-      
+
       // 优先使用textContent，降级到innerText
       const text = doc.body.textContent || doc.body.innerText || ''
       return text.trim()
@@ -150,4 +150,12 @@ function getTextFromHtmlByRegex(html) {
     // 清理多余的空白字符
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+export function findTableRef(vm) {
+  if (vm?.$refs?.tableRef?.$refs?.tableRef) {
+    return vm.$refs.tableRef
+  } else if (vm.$parent?.$refs) {
+    return findTableRef(vm.$parent)
+  }
 }

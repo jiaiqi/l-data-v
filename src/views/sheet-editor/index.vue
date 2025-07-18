@@ -123,7 +123,7 @@
       @select="onRowButton"
     />
     <Teleport
-      to=".ve-table-content-wrapper"
+      to=".ve-table-content-wrapper .ve-table-content"
       v-if="showFieldEditor"
     >
       <field-editor
@@ -276,7 +276,7 @@ export default {
       childListCfg: {
         foreign_key: null,
         data_source_cfg: null,
-      }, 
+      },
       listMaxHeight: 0,
       initExprCols: [],
       initCond: [],
