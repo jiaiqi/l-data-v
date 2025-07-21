@@ -11,10 +11,12 @@ export class FkUtil {
    * 构造函数
    * @param {Object} column - 列配置对象
    * @param {string} app - 应用名称
+   * @param {Object} rawDataMap - 原始数据映射对象
    */
-  constructor(column,app) {
+  constructor(column,app,rawDataMap) {
     this.column = column;
     this.app = app;
+    this.rawDataMap = rawDataMap;
   }
 
   /**
@@ -154,6 +156,8 @@ export class FkUtil {
    * @returns {Promise<Object|undefined>} 返回匹配的数据对象，包含label和value属性，如果没有匹配则返回undefined
    */
   async getMatchedValue(queryString, ruleType = "[like]") {
+    debugger
+
     const optionListFinal = this.getOptionListFinal();
     let req = cloneDeep(this.getOptionReq(queryString, ruleType));
     if (optionListFinal?.serviceName && req) {

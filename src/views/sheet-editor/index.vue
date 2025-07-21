@@ -257,6 +257,7 @@ export default {
   },
   data() {
     return {
+      fkRawDataMap: {},
       bx_auth_ticket: null,
       fieldEditorParams: null,
       fieldEditorPosition: {},
@@ -1069,7 +1070,8 @@ export default {
           // fk值改变后进行冗余
           if (isFk(column?.__field_info)) {
             if (changeValue) {
-              let fkUtil = new FkUtil(column?.__field_info, this.srvApp);
+
+              let fkUtil = new FkUtil(column?.__field_info, this.srvApp, this.fkRawDataMap);
               fkUtil.getMatchedValue(changeValue, "eq").then((matchedValue) => {
                 if (matchedValue) {
                   const item = {
@@ -2766,20 +2768,11 @@ export default {
           const targetCol = item?.fieldInfo?.redundant_options?._target_column;
           if (targetCol && sourceData) {
             // autocomplete字段 由别的行自动填充赋值之后，将对应的fk字段也赋值
-            let targetColInfo = this.columns.find((e) => e.field === targetCol);
-            if (targetColInfo && sourceData[targetColInfo.field]) {
+            let targetColInfo = this.addColsMap?.[targetCol] || this.updateColsMap?.[targetCol];
+            if (targetColInfo && sourceData[targetCol]) {
+              // fk字段往往不在单元格中，所以不使用startEditingCell
               const row = this.tableData.find((e) => e.rowKey === rowKey);
-              this.$refs["tableRef"]?.startEditingCell?.({
-                rowKey: rowKey,
-                colKey: targetColInfo.field,
-                defaultValue: sourceData[targetColInfo.field],
-              });
-              this.$refs["tableRef"]?.stopEditingCell?.();
-              this.$set(
-                row,
-                targetColInfo.field,
-                sourceData[targetColInfo.field]
-              );
+              this.$set(row, targetCol, sourceData[targetCol]);
             }
           } else if (isFk(fieldInfo) && sourceData) {
             console.log("fkUtil2");
