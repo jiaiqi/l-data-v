@@ -206,14 +206,6 @@ export default {
       immediate: true,
       handler(newVal, oldVal) {
         if (newVal !== oldVal) {
-          // // 处理fk冗余
-          // if (isFk(this.column)&&newVal) {
-          //   this.getMatchedValue(newVal).then(res=>{
-          //     if(res?.value){
-          //       this.onFkSelect(res);
-          //     }
-          //   });
-          // }
         }
         if (["fks", "fkjson", "fkjsons"].includes(this.colType)) {
           this.initSelected();
@@ -486,31 +478,6 @@ export default {
         });
       }
       return req;
-    },
-    async getMatchedValue(queryString) {
-      const optionListFinal = this.getOptionListFinal();
-      let req = cloneDeep(this.getOptionReq());
-      if (optionListFinal?.serviceName && req) {
-        if (req["relation_condition"]) {
-          req.relation_condition.data[0].value = queryString;
-          req.relation_condition.data[1].value = queryString;
-          req.relation_condition.data[0].ruleType = "eq";
-          req.relation_condition.data[1].ruleType = "eq";
-        } else if (req["condition"]) {
-          req["condition"][0].ruleType = "eq";
-          req["condition"][0].value = queryString;
-        }
-        const url = `/${this.app}/select/${req.serviceName}`;
-        const response = await this.$http.post(url, req);
-        if (response && response.data && response.data.data?.length) {
-          const data = response.data.data[0];
-          const valueCol = optionListFinal.refed_col;
-          const labelCol = optionListFinal.key_disp_col;
-          data.label = data[labelCol];
-          data.value = data[valueCol];
-          return data;
-        }
-      }
     },
     onFkSelect(selected = null) {
       this.selected = selected || null;

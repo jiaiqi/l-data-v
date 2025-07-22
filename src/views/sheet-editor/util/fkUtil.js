@@ -156,17 +156,14 @@ export class FkUtil {
    * @returns {Promise<Object|undefined>} 返回匹配的数据对象，包含label和value属性，如果没有匹配则返回undefined
    */
   async getMatchedValue(queryString, ruleType = "[like]") {
-    debugger
-
     const optionListFinal = this.getOptionListFinal();
     let req = cloneDeep(this.getOptionReq(queryString, ruleType));
     if (optionListFinal?.serviceName && req) {
-      // if (req["relation_condition"]) {
-      //   req.relation_condition.data[0].value = queryString;
-      //   req.relation_condition.data[1].value = queryString;
-      // } else if (req["condition"]) {
-      //   req["condition"][0].value = queryString;
-      // }
+      // 从缓存中获取
+      if(this.rawDataMap?.[`${optionListFinal.serviceName}-${queryString}`]){
+        debugger
+        return this.rawDataMap[`${optionListFinal.serviceName}-${queryString}`];
+      }
       const url = `/${this.app}/select/${req.serviceName}`;
       const response = await $http.post(url, req);
       if (response && response.data && response.data.data?.length) {
@@ -175,6 +172,7 @@ export class FkUtil {
         const labelCol = optionListFinal.key_disp_col;
         data.label = data[labelCol];
         data.value = data[valueCol];
+        this.rawDataMap[`${optionListFinal.serviceName}-${data.value}`] = data;
         return data;
       }
     }
