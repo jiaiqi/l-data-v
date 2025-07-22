@@ -882,11 +882,10 @@ export default {
         }
         let operator = [];
         switch (dataType) {
-          case "number":
-          case "string":
+          default:
             operator = [
               {
-                label: "字段值之和",
+                label: "和",
                 value: "sum",
               },
               {
@@ -902,31 +901,15 @@ export default {
                 value: "avg",
               },
               {
-                label: "非空数据条数",
+                label: "非空条数",
                 value: "count",
               },
               {
-                label: "数据总条数",
+                label: "总条数",
                 value: "count_all",
               },
               {
-                label: "去重后的数据条数",
-                value: "distinct_count",
-              },
-            ];
-            break;
-          default:
-            operator = [
-              {
-                label: "非空数据条数",
-                value: "count",
-              },
-              {
-                label: "数据总条数",
-                value: "count_all",
-              },
-              {
-                label: "去重后的数据条数",
+                label: "去重后条数",
                 value: "distinct_count",
               },
             ];
@@ -949,8 +932,7 @@ export default {
           }
           let operator = [];
           switch (dataType) {
-            case "number":
-            case "string":
+            default:
               operator = [
                 {
                   label: "和",
@@ -978,22 +960,6 @@ export default {
                 },
                 {
                   label: "去重后条数",
-                  value: "distinct_count",
-                },
-              ];
-              break;
-            default:
-              operator = [
-                {
-                  label: "非空数据条数",
-                  value: "count",
-                },
-                {
-                  label: "数据总条数",
-                  value: "count_all",
-                },
-                {
-                  label: "去重后的数据条数",
                   value: "distinct_count",
                 },
               ];
