@@ -204,7 +204,7 @@ export default {
     props: {
       operator: {
         type: Array,
-        default: () => {},
+        default: () => { },
       },
     },
     allowCheck: {
@@ -883,6 +883,7 @@ export default {
         let operator = [];
         switch (dataType) {
           case "number":
+          case "string":
             operator = [
               {
                 label: "字段值之和",
@@ -949,6 +950,7 @@ export default {
           let operator = [];
           switch (dataType) {
             case "number":
+            case "string":
               operator = [
                 {
                   label: "和",
@@ -1002,7 +1004,7 @@ export default {
         });
       }
     },
-    selectData(initial) {},
+    selectData(initial) { },
   },
   created() {
     let val = this.singList;
@@ -1068,7 +1070,10 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style
+  scoped
+  lang="scss"
+>
 .parentMenu {
   min-width: 120px;
   background: white;
@@ -1136,6 +1141,7 @@ export default {
     overflow-y: auto;
     padding: 8px;
     border: 1px solid #f0f0f0;
+
     &::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -1170,11 +1176,13 @@ export default {
       border-radius: 4px;
       transition: all 0.2s;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
       .hover-show {
         display: none;
         color: #606266;
         margin-left: 8px;
       }
+
       .all-column-item {
         &:hover {
           .hover-show {
@@ -1183,6 +1191,7 @@ export default {
           }
         }
       }
+
       &:hover {
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       }
