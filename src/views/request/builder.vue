@@ -22,7 +22,10 @@
     />
 
     <!-- 操作按钮区域 -->
-    <ActionButtons @preview="previewData" @save="saveConfig" />
+    <ActionButtons
+      @preview="previewData"
+      @save="saveConfig"
+    />
 
     <!-- 数据预览区域 -->
     <DataPreview
@@ -201,7 +204,7 @@ export default {
               } else if (str) {
                 try {
                   rItem = JSON.parse(str);
-                } catch (error) {}
+                } catch (error) { }
               }
               return rItem;
             });
@@ -233,9 +236,19 @@ export default {
         column: "srvpage_cfg_srv_call_req_cols",
       };
       const ruleTypeMap = {
-        ne: "不等于",
         eq: "等于",
+        ne: "不等于",
+        gt: "大于",
+        lt: "小于",
+        like: "近似于",
+        "like]": "开始于",
+        "[like": "结束于",
         in: "包含",
+        notin: "不包含",
+        isnull: "为空",
+        notnull: "不为空",
+        inset: "在集合中",
+        between: "在两者之间",
       };
       const reqDatas = [];
       Object.keys(serviceNames).forEach((type) => {
@@ -525,10 +538,10 @@ export default {
           this.endData.aggregation && this.endData.group
             ? this.endData.group.concat(this.endData.aggregation)
             : this.endData.aggregation && !this.endData.group
-            ? this.endData.aggregation
-            : !this.endData.aggregation && this.endData.group
-            ? this.endData.group
-            : undefined,
+              ? this.endData.aggregation
+              : !this.endData.aggregation && this.endData.group
+                ? this.endData.group
+                : undefined,
         condition: this.endData.condition,
         order: this.endData.order,
       };
@@ -648,7 +661,7 @@ export default {
 
       if (res.data.resultCode === "0011") {
         debugger;
-        this.$refs?.loginRef?.open(() => {});
+        this.$refs?.loginRef?.open(() => { });
       }
     },
     changeReqOption() {
@@ -807,12 +820,12 @@ export default {
           if (res.data.resultCode === "SUCCESS") {
             this.$alert("添加成功", "SUCCESS", {
               confirmButtonText: "确定",
-              callback: (action) => {},
+              callback: (action) => { },
             });
           } else if (res.data.resultCode === "FAILURE") {
           }
         })
-        .catch((err) => {});
+        .catch((err) => { });
     },
     updateModel(saveData, child_data_list) {
       // 编辑模型
@@ -848,7 +861,7 @@ export default {
         if (res.data.resultCode === "SUCCESS") {
           this.$alert(this.srv_call_no ? "保存成功" : "添加成功", "SUCCESS", {
             confirmButtonText: "确定",
-            callback: (action) => {},
+            callback: (action) => { },
           });
           if (!this.srv_call_no) {
             this.srv_call_no =
@@ -857,7 +870,7 @@ export default {
         } else {
           this.$alert(`${res.data.resultMessage}`, "保存失败", {
             confirmButtonText: "确定",
-            callback: (action) => {},
+            callback: (action) => { },
           });
         }
       });
@@ -907,7 +920,7 @@ export default {
               if (Array.isArray(orders)) {
                 initData[0] = orders;
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (reqConfig?.condition_json) {
             try {
@@ -915,7 +928,7 @@ export default {
               if (Array.isArray(conditions)) {
                 initData[1] = conditions;
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (reqConfig?.group_json) {
             try {
@@ -930,13 +943,13 @@ export default {
                   return item;
                 });
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (reqConfig?.cols_cfg_json) {
             try {
               const cols = JSON.parse(reqConfig.cols_cfg_json);
               initData[3] = cols.map((item) => item.col_srv);
-            } catch (error) {}
+            } catch (error) { }
           }
 
           // this.childData.order = [...initData[0]];
@@ -1117,7 +1130,10 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style
+  scoped
+  lang="scss"
+>
 .hual {
   display: flex;
   flex-direction: column;

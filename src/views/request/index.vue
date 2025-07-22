@@ -163,12 +163,16 @@
     </div>
 
     <div class="btn-box">
-      <el-button @click="previewData" type="success" icon="el-icon-view"
-        >预览</el-button
-      >
-      <el-button @click="saveConfig" type="primary" icon="el-icon-upload"
-        >保存</el-button
-      >
+      <el-button
+        @click="previewData"
+        type="success"
+        icon="el-icon-view"
+      >预览</el-button>
+      <el-button
+        @click="saveConfig"
+        type="primary"
+        icon="el-icon-upload"
+      >保存</el-button>
     </div>
     <!-- 
     <el-card class="preview-box" shadow="hover">
@@ -201,26 +205,29 @@
               show-overflow-tooltip
             ></el-table-column>
           </template>
-        </el-table>
-        <div class="empty-data" v-if="!tableData || !tableData.length">
-          <i class="el-icon-data-analysis"></i>
-          <p>暂无数据，请点击预览按钮获取数据或检查请求参数是否正确</p>
-        </div>
-      </div>
-      <div class="pagination">
-        <el-pagination
-          @size-change="previewDataSizeChange"
-          @current-change="previewDataCurrentChange"
-          :current-page="previewInfo.currentPage"
-          :page-sizes="[10, 50, 100, 200]"
-          :page-size="previewInfo.rowNum"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="previewInfo.totalPage"
-          background
-          v-if="tableData.length > 0"
-        ></el-pagination>
-      </div>
-    </el-card> -->
+</el-table>
+<div
+  class="empty-data"
+  v-if="!tableData || !tableData.length"
+>
+  <i class="el-icon-data-analysis"></i>
+  <p>暂无数据，请点击预览按钮获取数据或检查请求参数是否正确</p>
+</div>
+</div>
+<div class="pagination">
+  <el-pagination
+    @size-change="previewDataSizeChange"
+    @current-change="previewDataCurrentChange"
+    :current-page="previewInfo.currentPage"
+    :page-sizes="[10, 50, 100, 200]"
+    :page-size="previewInfo.rowNum"
+    layout="total, sizes, prev, pager, next, jumper"
+    :total="previewInfo.totalPage"
+    background
+    v-if="tableData.length > 0"
+  ></el-pagination>
+</div>
+</el-card> -->
 
     <DataPreview
       ref="dataPreviewRef"
@@ -392,7 +399,7 @@ export default {
               } else if (str) {
                 try {
                   rItem = JSON.parse(str);
-                } catch (error) {}
+                } catch (error) { }
               }
               return rItem;
             });
@@ -424,9 +431,19 @@ export default {
         column: "srvpage_cfg_srv_call_req_cols",
       };
       const ruleTypeMap = {
-        ne: "不等于",
         eq: "等于",
+        ne: "不等于",
+        gt: "大于",
+        lt: "小于",
+        like: "近似于",
+        "like]": "开始于",
+        "[like": "结束于",
         in: "包含",
+        notin: "不包含",
+        isnull: "为空",
+        notnull: "不为空",
+        inset: "在集合中",
+        between: "在两者之间",
       };
       const reqDatas = [];
       Object.keys(serviceNames).forEach((type) => {
@@ -716,10 +733,10 @@ export default {
           this.endData.aggregation && this.endData.group
             ? this.endData.group.concat(this.endData.aggregation)
             : this.endData.aggregation && !this.endData.group
-            ? this.endData.aggregation
-            : !this.endData.aggregation && this.endData.group
-            ? this.endData.group
-            : undefined,
+              ? this.endData.aggregation
+              : !this.endData.aggregation && this.endData.group
+                ? this.endData.group
+                : undefined,
         condition: this.endData.condition,
         order: this.endData.order,
       };
@@ -835,7 +852,7 @@ export default {
       this.$http.post(url, req).then((res) => {
         this.allApp = res.data.data;
         if (res.data.resultCode === "0011") {
-          this.$refs?.loginRef?.open(() => {});
+          this.$refs?.loginRef?.open(() => { });
         }
       });
     },
@@ -1008,12 +1025,12 @@ export default {
           if (res.data.resultCode === "SUCCESS") {
             this.$alert("添加成功", "SUCCESS", {
               confirmButtonText: "确定",
-              callback: (action) => {},
+              callback: (action) => { },
             });
           } else if (res.data.resultCode === "FAILURE") {
           }
         })
-        .catch((err) => {});
+        .catch((err) => { });
     },
     updateModel(saveData, child_data_list) {
       // 编辑模型
@@ -1049,7 +1066,7 @@ export default {
         if (res.data.resultCode === "SUCCESS") {
           this.$alert(this.srv_call_no ? "保存成功" : "添加成功", "SUCCESS", {
             confirmButtonText: "确定",
-            callback: (action) => {},
+            callback: (action) => { },
           });
           if (!this.srv_call_no) {
             this.srv_call_no =
@@ -1058,7 +1075,7 @@ export default {
         } else {
           this.$alert(`${res.data.resultMessage}`, "保存失败", {
             confirmButtonText: "确定",
-            callback: (action) => {},
+            callback: (action) => { },
           });
         }
       });
@@ -1108,7 +1125,7 @@ export default {
               if (Array.isArray(orders)) {
                 initData[0] = orders;
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (reqConfig?.condition_json) {
             try {
@@ -1116,7 +1133,7 @@ export default {
               if (Array.isArray(conditions)) {
                 initData[1] = conditions;
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (reqConfig?.group_json) {
             try {
@@ -1131,13 +1148,13 @@ export default {
                   return item;
                 });
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (reqConfig?.cols_cfg_json) {
             try {
               const cols = JSON.parse(reqConfig.cols_cfg_json);
               initData[3] = cols.map((item) => item.col_srv);
-            } catch (error) {}
+            } catch (error) { }
           }
 
           // this.childData.order = [...initData[0]];
@@ -1318,7 +1335,10 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style
+  scoped
+  lang="scss"
+>
 .hual {
   display: flex;
   flex-direction: column;
@@ -1339,9 +1359,11 @@ export default {
     min-height: 500px;
     width: 15%;
   }
+
   .columns-box {
     border-radius: 8px;
   }
+
   .select-box {
     width: 100%;
     display: flex;
@@ -1354,9 +1376,11 @@ export default {
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
     transition: all 0.3s ease;
+
     ::v-deep .el-card__body {
       width: 100%;
     }
+
     &:hover {
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
     }
@@ -1464,6 +1488,7 @@ export default {
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
         overflow: hidden;
         transition: all 0.3s ease;
+
         &:hover {
           transform: translateY(-3px);
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
@@ -1534,6 +1559,7 @@ export default {
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
+
         &.el-button--primary {
           background: linear-gradient(135deg, #1989fa, #096dd9);
           border-color: #409eff;
@@ -1561,7 +1587,7 @@ export default {
           padding: 8px 0;
         }
 
-        .el-table__row:hover > td {
+        .el-table__row:hover>td {
           background-color: #f0f7ff !important;
         }
       }
@@ -1575,11 +1601,13 @@ export default {
         color: #909399;
         background-color: #fafafa;
         border-radius: 4px;
+
         i {
           font-size: 48px;
           margin-bottom: 10px;
           color: #c0c4cc;
         }
+
         p {
           font-size: 14px;
         }

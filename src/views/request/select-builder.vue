@@ -39,7 +39,10 @@
         </div>
       </div>
     </div>
-    <action-buttons @preview="previewData" @save="saveConfig"> </action-buttons>
+    <action-buttons
+      @preview="previewData"
+      @save="saveConfig"
+    > </action-buttons>
     <data-preview
       ref="dataPreviewRef"
       :req-no="srv_call_no"
@@ -214,7 +217,7 @@ export default {
               } else if (str) {
                 try {
                   rItem = JSON.parse(str);
-                } catch (error) {}
+                } catch (error) { }
               }
               return rItem;
             });
@@ -245,10 +248,21 @@ export default {
         group: "srvpage_cfg_srv_call_group_stats",
         column: "srvpage_cfg_srv_call_req_cols",
       };
+
       const ruleTypeMap = {
-        ne: "不等于",
         eq: "等于",
+        ne: "不等于",
+        gt: "大于",
+        lt: "小于",
+        like: "近似于",
+        "like]": "开始于",
+        "[like": "结束于",
         in: "包含",
+        notin: "不包含",
+        isnull: "为空",
+        notnull: "不为空",
+        inset: "在集合中",
+        between: "在两者之间",
       };
       const reqDatas = [];
       Object.keys(serviceNames).forEach((type) => {
@@ -309,7 +323,7 @@ export default {
                 case "condition":
                   res = {
                     col_name: item.colName,
-                    rule_type: ruleTypeMap[item.ruleType] || "like",
+                    rule_type: ruleTypeMap[item.ruleType] || "近似于",
                     val_type: "常量",
                     const: item.value,
                     srv_call_no: this.srv_call_no,
@@ -538,10 +552,10 @@ export default {
           this.endData.aggregation && this.endData.group
             ? this.endData.group.concat(this.endData.aggregation)
             : this.endData.aggregation && !this.endData.group
-            ? this.endData.aggregation
-            : !this.endData.aggregation && this.endData.group
-            ? this.endData.group
-            : undefined,
+              ? this.endData.aggregation
+              : !this.endData.aggregation && this.endData.group
+                ? this.endData.group
+                : undefined,
         condition: this.endData.condition,
         order: this.endData.order,
       };
@@ -660,7 +674,7 @@ export default {
       this.$http.post(url, req).then((res) => {
         this.allApp = res.data.data;
         if (res.data.resultCode === "0011") {
-          this.$refs?.loginRef?.open(() => {});
+          this.$refs?.loginRef?.open(() => { });
         }
       });
     },
@@ -835,12 +849,12 @@ export default {
           if (res.data.resultCode === "SUCCESS") {
             this.$alert("添加成功", "SUCCESS", {
               confirmButtonText: "确定",
-              callback: (action) => {},
+              callback: (action) => { },
             });
           } else if (res.data.resultCode === "FAILURE") {
           }
         })
-        .catch((err) => {});
+        .catch((err) => { });
     },
     updateModel(saveData, child_data_list) {
       // 编辑模型
@@ -876,7 +890,7 @@ export default {
         if (res.data.resultCode === "SUCCESS") {
           this.$alert(this.srv_call_no ? "保存成功" : "添加成功", "SUCCESS", {
             confirmButtonText: "确定",
-            callback: (action) => {},
+            callback: (action) => { },
           });
           if (!this.srv_call_no) {
             this.srv_call_no =
@@ -885,7 +899,7 @@ export default {
         } else {
           this.$alert(`${res.data.resultMessage}`, "保存失败", {
             confirmButtonText: "确定",
-            callback: (action) => {},
+            callback: (action) => { },
           });
         }
       });
@@ -940,7 +954,7 @@ export default {
               if (Array.isArray(orders)) {
                 initData[0] = orders;
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (reqConfig?.condition_json) {
             try {
@@ -948,7 +962,7 @@ export default {
               if (Array.isArray(conditions)) {
                 initData[1] = conditions;
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (reqConfig?.group_json) {
             try {
@@ -963,13 +977,13 @@ export default {
                   return item;
                 });
               }
-            } catch (error) {}
+            } catch (error) { }
           }
           if (reqConfig?.cols_cfg_json) {
             try {
               const cols = JSON.parse(reqConfig.cols_cfg_json);
               initData[3] = cols.map((item) => item.col_srv);
-            } catch (error) {}
+            } catch (error) { }
           }
 
           // this.childData.order = [...initData[0]];
@@ -1139,7 +1153,10 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style
+  scoped
+  lang="scss"
+>
 .hual {
   display: flex;
   flex-direction: column;
@@ -1160,6 +1177,7 @@ export default {
     min-height: 500px;
     width: 15%;
   }
+
   .columns-box {
     border-radius: 8px;
   }
@@ -1214,6 +1232,7 @@ export default {
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
         overflow: hidden;
         transition: all 0.3s ease;
+
         &:hover {
           transform: translateY(-3px);
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
