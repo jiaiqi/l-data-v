@@ -120,6 +120,7 @@ export default {
     uploadHeaders() {
       return {
         bx_auth_ticket: sessionStorage.getItem("bx_auth_ticket"),
+        'bx-auth-ticket': sessionStorage.getItem("bx_auth_ticket"),
       };
     },
     uploadData() {

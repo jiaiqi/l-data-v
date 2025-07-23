@@ -1,5 +1,8 @@
 <template>
-  <div class="rich-editor" ref="rich-editor">
+  <div
+    class="rich-editor"
+    ref="rich-editor"
+  >
     <Toolbar
       style="border-bottom: 1px solid #ccc"
       :editor="editor"
@@ -116,6 +119,7 @@ export default {
         // 自定义增加 http  header
         headers: {
           bx_auth_ticket: this.ticket,
+          'bx-auth-ticket': this.ticket,
         },
         // 跨域是否传递 cookie ，默认为 false
         withCredentials: true,
@@ -151,6 +155,7 @@ export default {
     innerHtml(newVal) {
       // 监听内部值变化
       if (newVal === "<p><br></p>" && !this.value) return;
+      this.ticket = sessionStorage.getItem("bx_auth_ticket");
       this.$emit("input", newVal);
     },
   },
@@ -211,7 +216,10 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style
+  lang="scss"
+  scoped
+>
 .is-rich-text {
   overflow: hidden;
   text-overflow: ellipsis;

@@ -330,6 +330,7 @@ export default {
         // 自定义增加 http  header
         headers: {
           bx_auth_ticket: this.ticket,
+          'bx-auth-ticket': this.ticket,
         },
         // 跨域是否传递 cookie ，默认为 false
         withCredentials: true,
