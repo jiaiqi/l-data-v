@@ -492,7 +492,7 @@ export default {
       // 是否开启列宽可变
       columnWidthResizeOption: {
         enable: true,
-        minWidth: 30,
+        minWidth: 50,
         sizeChange: ({ column, differWidth, columnWidth }) => {
           console.log({
             column,
@@ -2830,13 +2830,14 @@ export default {
         },
       ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
-        let minWidth = (window.innerWidth + 50) / this.allFields.length;
-        if (this.childListType === "add") {
-          minWidth -= 200;
-        }
-        if (minWidth < 200) {
-          minWidth = 200;
-        }
+        // let minWidth = (window.innerWidth + 50) / this.allFields.length;
+        // if (this.childListType === "add") {
+        //   minWidth -= 200;
+        // }
+        // if (minWidth < 200) {
+        //   minWidth = 200;
+        // }
+        let minWidth = 50
         columns = columns.concat(
           this.allFields.map((item, index) => {
             let width = minWidth;
@@ -2844,17 +2845,17 @@ export default {
               /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
               ""
             )?.length;
-            if (length && length > 6) {
-              // 去掉符号的字符数长度大于6
-              // console.log(`${item.label}:${length}`);
-              width = length * 30;
-            }
-            if (item.col_span) {
-              let cfgWidth = item.col_span * 600;
-              if (width < cfgWidth) {
-                width = cfgWidth;
-              }
-            }
+            // if (length && length > 6) {
+            //   // 去掉符号的字符数长度大于6
+            //   // console.log(`${item.label}:${length}`);
+            //   width = length * 30;
+            // }
+            // if (item.col_span) {
+            //   let cfgWidth = item.col_span * 600;
+            //   if (width < cfgWidth) {
+            //     width = cfgWidth;
+            //   }
+            // }
             if (item.list_min_width) {
               width = parseFloat(item.list_min_width);
             }
