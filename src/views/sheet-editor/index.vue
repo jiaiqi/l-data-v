@@ -508,7 +508,7 @@ export default {
       },
       // 虚拟滚动配置
       virtualScrollOption: {
-        enable: true,
+        enable: false,
         scrolling: this.scrolling,
       },
       // 单元格自动填充配置
