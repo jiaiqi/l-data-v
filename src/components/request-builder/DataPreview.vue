@@ -19,15 +19,24 @@
         >
           刷新
         </el-button>
-        <el-button
-          @click="handleExport"
-          type="primary"
-          size="small"
-          icon="el-icon-download"
-          class="export-button"
+        <el-dropdown 
+          @command="handleExportCommand"
           v-if="loaded && !isEmpty"
-          >导出为Excel</el-button
+          trigger="click"
         >
+          <el-button
+            type="primary"
+            size="small"
+            icon="el-icon-download"
+            class="export-button"
+          >
+            导出为Excel<i class="el-icon-arrow-down el-icon--right"></i>
+          </el-button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item command="current">导出当前页</el-dropdown-item>
+            <el-dropdown-item command="all">导出全部数据</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
       </div>
     </div>
     <div class="preview-content">
@@ -231,6 +240,8 @@ async function handleRefresh() {
   tableData.value = [];
   await getTableData(initReq.value);
 }
+const isExporting = ref(false);
+
 // 导出Excel方法
 const exportExcel = () => {
   if (!tableData.value || tableData.value.length === 0) {
@@ -249,10 +260,142 @@ const exportExcel = () => {
   }
 };
 
-// 处理导出
+// 导出当前页Excel方法
+const exportCurrentPageExcel = () => {
+  if (!tableData.value || tableData.value.length === 0) {
+    proxy.$message.warning("表格数据为空");
+    return;
+  }
+  try {
+    let time = dayjs().format("YYYYMMDDHHmmss");
+    let fileName = props.serviceName + "_当前页_" + time;
+    // 将预览表格中的数据导出为excel
+    let wb = XLSX.utils.table_to_book(document.querySelector("#out-table"));
+    XLSX.writeFile(wb, `${fileName}.xlsx`);
+    proxy.$message.success("当前页数据导出成功");
+  } catch (error) {
+    console.error("导出Excel失败:", error);
+    proxy.$message.error("导出Excel失败");
+  }
+};
+
+// 导出全部数据Excel方法
+const exportAllDataExcel = async () => {
+  if (isExporting.value) {
+    proxy.$message.warning("正在导出中，请稍候...");
+    return;
+  }
+  
+  isExporting.value = true;
+  proxy.$message.info("开始导出全部数据，请稍候...");
+  
+  try {
+    // 构建请求参数，获取全部数据
+    const req = {
+      colNames: ["*"],
+      ...initReq.value,
+      serviceName: props.serviceName,
+      page: {
+        pageNo: 1,
+        rownumber: pageInfo.total || 999999, // 设置一个很大的数字来获取全部数据
+      },
+    };
+    
+    if (!props?.columnsOption?.length) {
+      req.mdata = true;
+    }
+
+    // 请求全部数据
+    const res = await $http.post(requestUrl.value, req);
+    
+    if (res.data.resultCode === "0011") {
+      isExporting.value = false;
+      return emit("open-login");
+    }
+    
+    if (res.data.state !== "SUCCESS") {
+      isExporting.value = false;
+      if (res.data.resultMessage) {
+        proxy.$message.error(res.data.resultMessage);
+      }
+      return;
+    }
+
+    const allData = res.data.data;
+    if (!allData || allData.length === 0) {
+      isExporting.value = false;
+      proxy.$message.warning("没有数据可导出");
+      return;
+    }
+
+    // 获取列配置
+    const allColumns = res.data.mdata || props.columnsOption || [];
+    let finalColumns = allColumns;
+    if (Array.isArray(props.checkedColumns) && props.checkedColumns.length) {
+      finalColumns = allColumns.filter((item) => props.checkedColumns.includes(item.columns));
+    }
+
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
+    
+    // 准备表头
+    const headers = finalColumns.map(col => col.aliasName || col.label || col.columns);
+    
+    // 准备数据
+    const exportData = allData.map(row => {
+      const rowData = [];
+      finalColumns.forEach(col => {
+        rowData.push(row[col.columns] || '');
+      });
+      return rowData;
+    });
+    
+    // 将表头和数据合并
+    const wsData = [headers, ...exportData];
+    
+    // 创建工作表
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // 设置列宽
+    const colWidths = finalColumns.map(col => ({
+      wch: Math.max(col.width ? col.width / 10 : 15, (col.aliasName || col.label || col.columns).length + 2)
+    }));
+    ws['!cols'] = colWidths;
+    
+    // 添加工作表到工作簿
+    XLSX.utils.book_append_sheet(wb, ws, "全部数据");
+    
+    // 生成文件名
+    let time = dayjs().format("YYYYMMDDHHmmss");
+    let fileName = `${props.serviceName}_全部数据_${time}.xlsx`;
+    
+    // 导出文件
+    XLSX.writeFile(wb, fileName);
+    
+    proxy.$message.success(`全部数据导出成功，共 ${allData.length} 条记录`);
+    
+  } catch (error) {
+    console.error("导出全部数据失败:", error);
+    proxy.$message.error("导出全部数据失败: " + (error.message || "未知错误"));
+  } finally {
+    isExporting.value = false;
+  }
+};
+
+// 处理导出命令
+const handleExportCommand = (command) => {
+  emit("export");
+  if (command === "current") {
+    exportCurrentPageExcel();
+  } else if (command === "all") {
+    exportAllDataExcel();
+  }
+};
+
+// 处理导出（保持向后兼容）
 const handleExport = () => {
   emit("export");
-  exportExcel();
+  exportCurrentPageExcel();
 };
 
 // 处理页面大小变化
