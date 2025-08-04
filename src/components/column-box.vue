@@ -12,7 +12,6 @@
           :list="singList.list"
           :options="deploy"
           class="dragArea"
-          handle=".handle"
           @start="onStart($event, singList)"
           @end="onEnd($event, singList)"
           @add="onAdd($event, singList)"
@@ -29,7 +28,7 @@
               :class="{ columns: singList.type === 'all' }"
             >
               <el-checkbox
-                :label="item.label + '/' + item.columns"
+                :label="item.columns"
                 :name="item.columns"
                 :value="item.columns"
                 class="flex items-center flex-1"

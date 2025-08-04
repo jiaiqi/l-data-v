@@ -5,6 +5,7 @@
       :serviceName="ruleForm.service_name"
       :appName="ruleForm.mapp"
       :title="pageTitle"
+      :checkedColumns="checkedColumns"
       ref="dataPreviewRef"
       @open-login="handleOpenLogin"
     />
@@ -16,7 +17,7 @@
 import DataPreview from "@/components/request-builder/DataPreview.vue";
 import loginDialog from "@/components/login-dialog/index.vue";
 import { useRoute } from "@/common/vueApi";
-import { onMounted, reactive, ref, nextTick } from "vue";
+import { onMounted, reactive, ref, nextTick, computed } from "vue";
 
 import { $http } from "@/common/http";
 const ruleForm = reactive({
@@ -102,6 +103,10 @@ if (route.name === "report3") {
     dataPreviewRef.value.handleGetData();
   });
 }
+
+const checkedColumns = computed(() => {
+  return initReq.value?.colNames || [];
+});
 </script>
 
 <style lang="scss" scoped></style>

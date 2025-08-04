@@ -144,7 +144,24 @@
             :endData="endData"
           ></column-box>
         </div>
-        <div class="condition-box">
+        <div
+          class="flex-1 overflow-hidden"
+          v-if="hideconditionBox"
+        >
+          <DataPreview
+            ref="dataPreviewRef"
+            :app-name="ruleForm.mapp"
+            :service-name="ruleForm.service_name"
+            :title="ruleForm.srv_req_name"
+            :columns-option="columnsOption"
+            :checked-columns="checkedColumns"
+            :req-no="srv_call_no"
+          ></DataPreview>
+        </div>
+        <div
+          class="condition-box"
+          v-else
+        >
           <div
             class="sing_hual"
             v-for="(item, index) in listData"
@@ -206,26 +223,16 @@
             ></el-table-column>
           </template>
 </el-table>
-<div
-  class="empty-data"
-  v-if="!tableData || !tableData.length"
->
+<div class="empty-data" v-if="!tableData || !tableData.length">
   <i class="el-icon-data-analysis"></i>
   <p>暂无数据，请点击预览按钮获取数据或检查请求参数是否正确</p>
 </div>
 </div>
 <div class="pagination">
-  <el-pagination
-    @size-change="previewDataSizeChange"
-    @current-change="previewDataCurrentChange"
-    :current-page="previewInfo.currentPage"
-    :page-sizes="[10, 50, 100, 200]"
-    :page-size="previewInfo.rowNum"
-    layout="total, sizes, prev, pager, next, jumper"
-    :total="previewInfo.totalPage"
-    background
-    v-if="tableData.length > 0"
-  ></el-pagination>
+  <el-pagination @size-change="previewDataSizeChange" @current-change="previewDataCurrentChange"
+    :current-page="previewInfo.currentPage" :page-sizes="[10, 50, 100, 200]" :page-size="previewInfo.rowNum"
+    layout="total, sizes, prev, pager, next, jumper" :total="previewInfo.totalPage" background
+    v-if="tableData.length > 0"></el-pagination>
 </div>
 </el-card> -->
 
@@ -235,6 +242,9 @@
       :service-name="ruleForm.service_name"
       :title="ruleForm.srv_req_name"
       :columns-option="columnsOption"
+      :checked-columns="checkedColumns"
+      :req-no="srv_call_no"
+      v-if="!hideconditionBox"
     ></DataPreview>
 
     <login-dialog ref="loginRef"></login-dialog>
@@ -770,13 +780,12 @@ export default {
         this.ruleForm.mapp
       );
 
-      if (this.allColum.list.length === 0) {
+      if (this.checkedColumns.length === 0) {
         reqData["colNames"] = ["*"];
       } else {
-        reqData["colNames"] = this.columnsList;
+        reqData["colNames"] = this.checkedColumns;
       }
       reqData["serviceName"] = this.ruleForm.service_name;
-      reqData["colNames"] = ["*"];
       this.reqData = reqData;
       this.requestBody = reqData;
       this.$refs.dataPreviewRef.handleGetData(reqData);
@@ -1299,6 +1308,10 @@ export default {
     serviceName() {
       return this.ruleForm.serviceName;
     },
+
+    hideconditionBox() {
+      return this.listData.every(item => item.show === false)
+    }
   },
   watch: {
     columnsOption: {
@@ -1335,10 +1348,7 @@ export default {
 };
 </script>
 
-<style
-  scoped
-  lang="scss"
->
+<style scoped lang="scss">
 .hual {
   display: flex;
   flex-direction: column;
@@ -1524,117 +1534,6 @@ export default {
         background: linear-gradient(135deg, #1989fa, #096dd9);
         border-color: #409eff;
       }
-    }
-  }
-
-  .preview-box {
-    margin-bottom: 50px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    padding: 16px;
-    transition: all 0.3s ease;
-
-    &:hover {
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
-    }
-
-    .preview-title {
-      padding: 0 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      // border-bottom: 1px solid #f0f0f0;
-
-      .title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-      }
-
-      .export-button {
-        transition: all 0.3s;
-
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        &.el-button--primary {
-          background: linear-gradient(135deg, #1989fa, #096dd9);
-          border-color: #409eff;
-        }
-      }
-    }
-
-    .preview-content {
-      width: 100%;
-      border-radius: 5px;
-      overflow: hidden;
-
-      .el-table {
-        border-radius: 4px;
-        overflow: hidden;
-
-        th {
-          background-color: #f5f7fa !important;
-          color: #606266;
-          font-weight: 500;
-          padding: 10px 0;
-        }
-
-        td {
-          padding: 8px 0;
-        }
-
-        .el-table__row:hover>td {
-          background-color: #f0f7ff !important;
-        }
-      }
-
-      .empty-data {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 40px 0;
-        color: #909399;
-        background-color: #fafafa;
-        border-radius: 4px;
-
-        i {
-          font-size: 48px;
-          margin-bottom: 10px;
-          color: #c0c4cc;
-        }
-
-        p {
-          font-size: 14px;
-        }
-      }
-    }
-
-    .export-button {
-      margin: 0;
-    }
-  }
-
-  .pagination {
-    width: 100%;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 5rem;
-    padding-top: 16px;
-
-    .el-pagination.is-background .el-pager li:not(.disabled).active {
-      background-color: #409eff;
-      color: #fff;
-    }
-
-    .el-pagination.is-background .el-pager li:not(.disabled):hover {
-      color: #409eff;
     }
   }
 

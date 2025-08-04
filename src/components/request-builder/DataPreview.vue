@@ -108,6 +108,10 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  checkedColumns: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 // 定义emits
@@ -189,31 +193,36 @@ async function getTableData(req = {}) {
   //表头数组
   let tableAllTitleData = req?.group || [];
   const allColumns = res.data.mdata || props.columnsOption || [];
-  if (tableAllTitleData.length === 0) {
-    tableTitle.value = res.data.mdata || props.columnsOption;
-  } else if (allColumns.length) {
-    tableTitle.value = [];
-    tableAllTitleData.forEach((item) => {
-      if (item.type) {
-        allColumns.forEach((col) => {
-          //
-          if (item.colName === col.columns) {
-            tableTitle.value.push(col);
-          }
-        });
-      } else {
-        tableTitle.value = allColumns;
-      }
-    });
-    let obj = {};
-    let newArr = [];
-    newArr = tableTitle.value.reduce((item, next) => {
-      obj[next.columns] ? " " : (obj[next.columns] = true && item.push(next));
-      return item;
-    }, []);
-
-    tableTitle.value = newArr;
+  let finalColumns = allColumns;
+  if(Array.isArray(props.checkedColumns) && props.checkedColumns.length){
+    finalColumns = allColumns.filter((item) => props.checkedColumns.includes(item.columns));
   }
+   tableTitle.value = finalColumns;
+  // if (tableAllTitleData.length === 0) {
+  //   tableTitle.value = finalColumns;
+  // } else if (allColumns.length) {
+  //   tableTitle.value = [];
+  //   tableAllTitleData.forEach((item) => {
+  //     if (item.type) {
+  //       allColumns.forEach((col) => {
+  //         //
+  //         if (item.colName === col.columns) {
+  //           tableTitle.value.push(col);
+  //         }
+  //       });
+  //     } else {
+  //       tableTitle.value = allColumns;
+  //     }
+  //   });
+  //   let obj = {};
+  //   let newArr = [];
+  //   newArr = tableTitle.value.reduce((item, next) => {
+  //     obj[next.columns] ? " " : (obj[next.columns] = true && item.push(next));
+  //     return item;
+  //   }, []);
+
+  //   tableTitle.value = newArr;
+  // }
 }
 async function handleRefresh() {
   pageInfo.pageNo = 1;
@@ -287,13 +296,12 @@ const getNewPageUrl = computed(() => {
 
 <style scoped lang="scss">
 .preview-box {
-  margin-bottom: 50px;
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   padding: 16px;
   transition: all 0.3s ease;
-
+  width: 100%;
   &:hover {
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
   }
