@@ -1,6 +1,6 @@
 <template>
   <el-card class="preview-box" shadow="hover">
-    <!-- 标题栏优化 -->
+    <!-- 标题栏 -->
     <div slot="header" class="preview-title">
       <div class="title-section">
         <h3 class="title">{{ title }}</h3>
@@ -14,7 +14,7 @@
         </el-tag>
       </div>
       <div class="header-actions">
-        <!-- 字段设置按钮优化 -->
+        <!-- 字段设置按钮 -->
         <el-tooltip content="字段设置" placement="top">
           <el-button
             @click="showColumnSelector = true"
@@ -28,7 +28,7 @@
           </el-button>
         </el-tooltip>
         
-        <!-- 新页面打开按钮优化 -->
+        <!-- 新页面打开按钮 -->
         <el-tooltip content="在新页面中打开" placement="top">
           <el-button
             @click="openNewPage"
@@ -42,7 +42,7 @@
           </el-button>
         </el-tooltip>
         
-        <!-- 刷新按钮优化 -->
+        <!-- 刷新按钮 -->
         <el-button
           @click="handleRefresh"
           type="primary"
@@ -54,7 +54,7 @@
           {{ refreshing ? '刷新中' : '刷新' }}
         </el-button>
         
-        <!-- 导出按钮优化 -->
+        <!-- 导出按钮 -->
         <el-dropdown 
           @command="handleExportCommand"
           v-if="loaded && !isEmpty"
@@ -83,7 +83,7 @@
       </div>
     </div>
     
-    <!-- 字段选择器对话框优化 -->
+    <!-- 字段选择器对话框 -->
     <el-dialog
       title="字段设置"
       :visible.sync="showColumnSelector"
@@ -127,7 +127,7 @@
         
         <el-divider></el-divider>
         
-        <!-- 字段列表优化 -->
+        <!-- 字段列表 -->
         <div class="column-list-container">
           <el-checkbox-group v-model="localCheckedColumns" class="column-list">
             <div 
@@ -181,9 +181,9 @@
       </div>
     </el-dialog>
 
-    <!-- 内容区域优化 -->
+    <!-- 内容区域 -->
     <div class="preview-content">
-      <!-- 字段信息栏优化 -->
+      <!-- 字段信息栏 -->
       <div class="field-info-bar" v-if="allAvailableColumns.length > 0 && currentCheckedColumns.length > 0">
         <div class="field-info">
           <el-tag size="mini" type="success">
@@ -206,12 +206,12 @@
         </el-button>
       </div>
       
-      <!-- 加载状态优化 -->
+      <!-- 加载状态 -->
       <div v-if="loading" class="loading-container">
-        <el-skeleton :rows="5" animated />
+        <el-skeleton :rows="10" animated />
       </div>
       
-      <!-- 表格优化 -->
+      <!-- 表格 -->
       <el-table
         :data="tableData"
         stripe
@@ -249,7 +249,7 @@
         </template>
       </el-table>
       
-      <!-- 空状态优化 -->
+      <!-- 空状态 -->
       <div class="empty-state" v-else-if="loaded && isEmpty">
         <div class="empty-icon">
           <i class="el-icon-data-analysis"></i>
@@ -275,7 +275,7 @@
       </div>
     </div>
     
-    <!-- 分页优化 -->
+    <!-- 分页 -->
     <div class="pagination-container" v-if="tableData.length > 0">
       <div class="pagination-info">
         <span>共 {{ pageInfo.total }} 条记录</span>
@@ -766,12 +766,10 @@ const getNewPageUrl = computed(() => {
   }
 
   .preview-title {
-    padding: 0 4px 16px;
+    padding: 0 4px ;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 20px;
 
     .title-section {
       display: flex;
@@ -802,7 +800,8 @@ const getNewPageUrl = computed(() => {
     .new-page-btn {
       color: #6b7280;
       transition: all 0.2s;
-      
+      padding-left: 12px;
+      padding-right: 12px;
       &:hover {
         color: #3b82f6;
         background-color: #eff6ff;
@@ -972,7 +971,7 @@ const getNewPageUrl = computed(() => {
   }
 }
 
-// 字段选择器样式优化
+// 字段选择器样式
 .column-selector-dialog {
   ::v-deep .el-dialog {
     border-radius: 12px;
