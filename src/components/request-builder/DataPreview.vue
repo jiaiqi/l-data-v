@@ -1,13 +1,19 @@
 <template>
-  <el-card class="preview-box" shadow="hover">
+  <el-card
+    class="preview-box"
+    shadow="hover"
+  >
     <!-- 标题栏 -->
-    <div slot="header" class="preview-title">
+    <div
+      slot="header"
+      class="preview-title"
+    >
       <div class="title-section">
         <h3 class="title">{{ title }}</h3>
-        <el-tag 
-          v-if="loaded && !isEmpty" 
-          size="small" 
-          type="info" 
+        <el-tag
+          v-if="loaded && !isEmpty"
+          size="small"
+          type="info"
           class="data-count-tag"
         >
           共 {{ pageInfo.total }} 条数据
@@ -15,7 +21,10 @@
       </div>
       <div class="header-actions">
         <!-- 字段设置按钮 -->
-        <el-tooltip content="字段设置" placement="top">
+        <el-tooltip
+          content="字段设置"
+          placement="top"
+        >
           <el-button
             @click="showColumnSelector = true"
             type="text"
@@ -27,9 +36,12 @@
             字段设置
           </el-button>
         </el-tooltip>
-        
+
         <!-- 新页面打开按钮 -->
-        <el-tooltip content="在新页面中打开" placement="top">
+        <el-tooltip
+          content="在新页面中打开"
+          placement="top"
+        >
           <el-button
             @click="openNewPage"
             type="text"
@@ -41,7 +53,7 @@
             新页面打开
           </el-button>
         </el-tooltip>
-        
+
         <!-- 刷新按钮 -->
         <el-button
           @click="handleRefresh"
@@ -53,9 +65,9 @@
         >
           {{ refreshing ? '刷新中' : '刷新' }}
         </el-button>
-        
+
         <!-- 导出按钮 -->
-        <el-dropdown 
+        <el-dropdown
           @command="handleExportCommand"
           v-if="loaded && !isEmpty"
           trigger="click"
@@ -69,20 +81,29 @@
             :loading="isExporting"
           >
             {{ isExporting ? '导出中...' : '导出Excel' }}
-            <i class="el-icon-arrow-down el-icon--right" v-if="!isExporting"></i>
+            <i
+              class="el-icon-arrow-down el-icon--right"
+              v-if="!isExporting"
+            ></i>
           </el-button>
           <el-dropdown-menu slot="dropdown">
-            <el-dropdown-item command="current" icon="el-icon-document">
+            <el-dropdown-item
+              command="current"
+              icon="el-icon-document"
+            >
               导出当前页 ({{ tableData.length }} 条)
             </el-dropdown-item>
-            <el-dropdown-item command="all" icon="el-icon-folder">
+            <el-dropdown-item
+              command="all"
+              icon="el-icon-folder"
+            >
               导出全部数据 ({{ pageInfo.total }} 条)
             </el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
       </div>
     </div>
-    
+
     <!-- 字段选择器对话框 -->
     <el-dialog
       title="字段设置"
@@ -101,9 +122,9 @@
             >
               全选
             </el-checkbox>
-            <el-button 
-              type="text" 
-              size="mini" 
+            <el-button
+              type="text"
+              size="mini"
               @click="handleInvertSelection"
               class="invert-btn"
             >
@@ -111,10 +132,11 @@
             </el-button>
           </div>
           <div class="selected-count">
-            已选择 <span class="count-number">{{ localCheckedColumns.length }}</span> / {{ allAvailableColumns.length }} 个字段
+            已选择 <span class="count-number">{{ localCheckedColumns.length }}</span> / {{ allAvailableColumns.length }}
+            个字段
           </div>
         </div>
-        
+
         <!-- 搜索框 -->
         <el-input
           v-model="columnSearchText"
@@ -124,54 +146,78 @@
           clearable
           class="column-search"
         />
-        
+
         <el-divider></el-divider>
-        
+
         <!-- 字段列表 -->
         <div class="column-list-container">
-          <el-checkbox-group v-model="localCheckedColumns" class="column-list">
-            <div 
-              v-for="column in filteredColumns" 
+          <el-checkbox-group
+            v-model="localCheckedColumns"
+            class="column-list"
+          >
+            <div
+              v-for="column in filteredColumns"
               :key="column.columns"
               class="column-item"
               :class="{ 'column-item-checked': localCheckedColumns.includes(column.columns) }"
             >
-              <el-checkbox :label="column.columns" class="column-checkbox">
+              <el-checkbox
+                :label="column.columns"
+                class="column-checkbox"
+              >
                 <div class="column-info">
                   <span class="column-label">
                     {{ column.aliasName || column.label || column.columns }}
                   </span>
-                  <span class="column-name" v-if="column.aliasName || column.label">
+                  <span
+                    class="column-name"
+                    v-if="column.aliasName || column.label"
+                  >
                     {{ column.columns }}
                   </span>
-                  <span class="column-type" v-if="column.type">
+                  <span
+                    class="column-type"
+                    v-if="column.type"
+                  >
                     {{ column.type }}
                   </span>
                 </div>
               </el-checkbox>
             </div>
           </el-checkbox-group>
-          
+
           <!-- 空状态 -->
-          <div v-if="filteredColumns.length === 0" class="empty-search">
+          <div
+            v-if="filteredColumns.length === 0"
+            class="empty-search"
+          >
             <i class="el-icon-search"></i>
             <p>未找到匹配的字段</p>
           </div>
         </div>
       </div>
-      
-      <div slot="footer" class="dialog-footer">
+
+      <div
+        slot="footer"
+        class="dialog-footer"
+      >
         <div class="footer-left">
-          <el-button @click="handleResetColumns" size="small">
+          <el-button
+            @click="handleResetColumns"
+            size="small"
+          >
             <i class="el-icon-refresh-left"></i>
             重置
           </el-button>
         </div>
         <div class="footer-right">
-          <el-button @click="handleCancelColumnSelection" size="small">取消</el-button>
-          <el-button 
-            type="primary" 
-            @click="handleConfirmColumnSelection" 
+          <el-button
+            @click="handleCancelColumnSelection"
+            size="small"
+          >取消</el-button>
+          <el-button
+            type="primary"
+            @click="handleConfirmColumnSelection"
             size="small"
             :disabled="localCheckedColumns.length === 0"
           >
@@ -184,20 +230,30 @@
     <!-- 内容区域 -->
     <div class="preview-content">
       <!-- 字段信息栏 -->
-      <div class="field-info-bar" v-if="allAvailableColumns.length > 0 && currentCheckedColumns.length > 0">
+      <div
+        class="field-info-bar"
+        v-if="allAvailableColumns.length > 0 && currentCheckedColumns.length > 0"
+      >
         <div class="field-info">
-          <el-tag size="mini" type="success">
+          <el-tag
+            size="mini"
+            type="success"
+          >
             <i class="el-icon-view"></i>
             显示 {{ currentCheckedColumns.length }}/{{ allAvailableColumns.length }} 字段
           </el-tag>
-          <el-tag size="mini" type="info" v-if="loaded && !isEmpty">
+          <el-tag
+            size="mini"
+            type="info"
+            v-if="loaded && !isEmpty"
+          >
             <i class="el-icon-document"></i>
             当前页 {{ tableData.length }} 条
           </el-tag>
         </div>
-        <el-button 
-          type="text" 
-          size="mini" 
+        <el-button
+          type="text"
+          size="mini"
           @click="showColumnSelector = true"
           class="quick-setting-btn"
         >
@@ -205,12 +261,18 @@
           调整字段
         </el-button>
       </div>
-      
+
       <!-- 加载状态 -->
-      <div v-if="loading" class="loading-container">
-        <el-skeleton :rows="10" animated />
+      <div
+        v-if="loading"
+        class="loading-container"
+      >
+        <el-skeleton
+          :rows="10"
+          animated
+        />
       </div>
-      
+
       <!-- 表格 -->
       <el-table
         :data="tableData"
@@ -233,12 +295,15 @@
             :min-width="column.width || 150"
             :fixed="index < 2 ? 'left' : false"
           >
-            <template slot="header" slot-scope="scope">
+            <template
+              slot="header"
+              slot-scope="scope"
+            >
               <div class="table-header">
                 <span>{{ column.aliasName || column.label }}</span>
-                <el-tooltip 
-                  v-if="column.aliasName || column.label" 
-                  :content="column.columns" 
+                <el-tooltip
+                  v-if="column.aliasName || column.label"
+                  :content="column.columns"
                   placement="top"
                 >
                   <i class="el-icon-info table-header-info"></i>
@@ -248,35 +313,52 @@
           </el-table-column>
         </template>
       </el-table>
-      
+
       <!-- 空状态 -->
-      <div class="empty-state" v-else-if="loaded && isEmpty">
+      <div
+        class="empty-state"
+        v-else-if="loaded && isEmpty"
+      >
         <div class="empty-icon">
           <i class="el-icon-data-analysis"></i>
         </div>
         <h4>暂无数据</h4>
         <p>请点击刷新按钮获取数据或检查请求参数是否正确</p>
-        <el-button type="primary" @click="handleRefresh" class="retry-btn">
+        <el-button
+          type="primary"
+          @click="handleRefresh"
+          class="retry-btn"
+        >
           <i class="el-icon-refresh"></i>
           重新获取数据
         </el-button>
       </div>
-      
-      <div class="empty-state" v-else-if="loaded === false">
+
+      <div
+        class="empty-state"
+        v-else-if="loaded === false"
+      >
         <div class="empty-icon">
           <i class="el-icon-data-analysis"></i>
         </div>
         <h4>等待数据加载</h4>
         <p>请点击预览按钮获取数据</p>
-        <el-button type="primary" @click="handleRefresh" class="retry-btn">
+        <el-button
+          type="primary"
+          @click="handleRefresh"
+          class="retry-btn"
+        >
           <i class="el-icon-view"></i>
           开始预览
         </el-button>
       </div>
     </div>
-    
+
     <!-- 分页 -->
-    <div class="pagination-container" v-if="tableData.length > 0">
+    <div
+      class="pagination-container"
+      v-if="tableData.length > 0"
+    >
       <div class="pagination-info">
         <span>共 {{ pageInfo.total }} 条记录</span>
       </div>
@@ -434,16 +516,16 @@ const handleConfirmColumnSelection = () => {
     proxy.$message.warning("请至少选择一个字段");
     return;
   }
-  
+
   currentCheckedColumns.value = [...localCheckedColumns.value];
   showColumnSelector.value = false;
-  
+
   // 触发字段变化事件
   emit("columns-change", currentCheckedColumns.value);
-  
+
   // 重新获取数据以应用新的字段选择
   handleRefresh();
-  
+
   proxy.$message.success(`已选择 ${localCheckedColumns.value.length} 个字段`);
 };
 
@@ -469,9 +551,9 @@ async function getTableData(req = {}) {
   if (req) {
     initReq.value = req;
   }
-  
+
   loading.value = true;
-  
+
   req = {
     colNames: ["*"],
     ...req,
@@ -481,21 +563,21 @@ async function getTableData(req = {}) {
       rownumber: pageInfo.rownumber || 10,
     },
   };
-  
+
   if (!props?.columnsOption?.length) {
     req.mdata = true;
   }
-  
+
   try {
     // 获取预览数据
     tableTitle.value = [];
     const res = await $http.post(requestUrl.value, req);
     loaded.value = true;
-    
+
     if (res.data.resultCode === "0011") {
       return emit("open-login");
     }
-    
+
     if (res.data.state === "SUCCESS") {
       if (res.data.data?.length === 0) {
         tableData.value = [];
@@ -512,31 +594,31 @@ async function getTableData(req = {}) {
       }
       return false;
     }
-    
+
     let pageData = res.data.page; //获取分页信息
     pageInfo.pageNo = pageData.pageNo;
     pageInfo.rownumber = pageData.rownumber;
     pageInfo.total = pageData.total;
     tableData.value = res.data.data;
-    
+
     // 处理列配置
     const allColumns = res.data.mdata || props.columnsOption || [];
     allAvailableColumns.value = allColumns;
-    
+
     // 如果是第一次加载且没有预设的选中列，默认选中所有列
     if (currentCheckedColumns.value.length === 0 && allColumns.length > 0) {
       currentCheckedColumns.value = allColumns.map(col => col.columns);
       localCheckedColumns.value = [...currentCheckedColumns.value];
     }
-    
+
     // 根据选中的列过滤显示的列
     let finalColumns = allColumns;
     if (Array.isArray(currentCheckedColumns.value) && currentCheckedColumns.value.length > 0) {
       finalColumns = allColumns.filter((item) => currentCheckedColumns.value.includes(item.columns));
     }
-    
+
     tableTitle.value = finalColumns;
-    
+
   } catch (error) {
     console.error("获取数据失败:", error);
     proxy.$message.error("获取数据失败: " + (error.message || "未知错误"));
@@ -580,9 +662,9 @@ const exportAllDataExcel = async () => {
     proxy.$message.warning("正在导出中，请稍候...");
     return;
   }
-  
+
   isExporting.value = true;
-  
+
   // 使用通知而不是消息，避免被其他消息覆盖
   const notification = proxy.$notify({
     title: '导出进度',
@@ -590,7 +672,7 @@ const exportAllDataExcel = async () => {
     type: 'info',
     duration: 0
   });
-  
+
   try {
     // 构建请求参数，获取全部数据
     const req = {
@@ -602,20 +684,20 @@ const exportAllDataExcel = async () => {
         rownumber: pageInfo.total || 999999,
       },
     };
-    
+
     if (!props?.columnsOption?.length) {
       req.mdata = true;
     }
 
     // 请求全部数据
     const res = await $http.post(requestUrl.value, req);
-    
+
     if (res.data.resultCode === "0011") {
       notification.close();
       isExporting.value = false;
       return emit("open-login");
     }
-    
+
     if (res.data.state !== "SUCCESS") {
       notification.close();
       isExporting.value = false;
@@ -645,10 +727,10 @@ const exportAllDataExcel = async () => {
 
     // 创建工作簿
     const wb = XLSX.utils.book_new();
-    
+
     // 准备表头
     const headers = finalColumns.map(col => col.aliasName || col.label || col.columns);
-    
+
     // 准备数据
     const exportData = allData.map(row => {
       const rowData = [];
@@ -657,32 +739,32 @@ const exportAllDataExcel = async () => {
       });
       return rowData;
     });
-    
+
     // 将表头和数据合并
     const wsData = [headers, ...exportData];
-    
+
     // 创建工作表
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-    
+
     // 设置列宽
     const colWidths = finalColumns.map(col => ({
       wch: Math.max(col.width ? col.width / 10 : 15, (col.aliasName || col.label || col.columns).length + 2)
     }));
     ws['!cols'] = colWidths;
-    
+
     // 添加工作表到工作簿
     XLSX.utils.book_append_sheet(wb, ws, "全部数据");
-    
+
     // 生成文件名
     let time = dayjs().format("YYYYMMDDHHmmss");
     let fileName = `${props.title || props.serviceName}_全部数据_${time}.xlsx`;
-    
+
     // 更新进度
     notification.message = '正在生成文件...';
-    
+
     // 导出文件
     XLSX.writeFile(wb, fileName);
-    
+
     notification.close();
     proxy.$notify({
       title: '导出成功',
@@ -690,7 +772,7 @@ const exportAllDataExcel = async () => {
       type: 'success',
       duration: 3000
     });
-    
+
   } catch (error) {
     notification.close();
     console.error("导出全部数据失败:", error);
@@ -760,13 +842,13 @@ const getNewPageUrl = computed(() => {
   padding: 20px;
   transition: all 0.3s ease;
   width: 100%;
-  
+
   &:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
   }
 
   .preview-title {
-    padding: 0 4px ;
+    padding: 0 4px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -775,44 +857,45 @@ const getNewPageUrl = computed(() => {
       display: flex;
       align-items: center;
       gap: 12px;
-      
+
       .title {
         font-size: 18px;
         font-weight: 600;
         color: #1f2937;
         margin: 0;
       }
-      
+
       .data-count-tag {
         background-color: #f3f4f6;
         color: #6b7280;
         border: none;
       }
     }
-    
+
     .header-actions {
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    
+
     .column-setting-btn,
     .new-page-btn {
       color: #6b7280;
       transition: all 0.2s;
       padding-left: 12px;
       padding-right: 12px;
+
       &:hover {
         color: #3b82f6;
         background-color: #eff6ff;
       }
     }
-    
+
     .refresh-button,
     .export-button {
       transition: all 0.2s;
       border-radius: 6px;
-      
+
       &:hover {
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
@@ -835,24 +918,24 @@ const getNewPageUrl = computed(() => {
       border-radius: 8px;
       margin-bottom: 16px;
       border: 1px solid #e2e8f0;
-      
+
       .field-info {
         display: flex;
         align-items: center;
         gap: 8px;
       }
-      
+
       .quick-setting-btn {
         font-size: 12px;
         padding: 4px 8px;
         color: #6b7280;
-        
+
         &:hover {
           color: #3b82f6;
         }
       }
     }
-    
+
     .loading-container {
       padding: 20px;
     }
@@ -881,17 +964,17 @@ const getNewPageUrl = computed(() => {
 
       ::v-deep .el-table__row {
         transition: background-color 0.2s;
-        
-        &:hover > td {
+
+        &:hover>td {
           background-color: #f8fafc !important;
         }
       }
-      
+
       .table-header {
         display: flex;
         align-items: center;
         gap: 4px;
-        
+
         .table-header-info {
           font-size: 12px;
           color: #9ca3af;
@@ -913,7 +996,7 @@ const getNewPageUrl = computed(() => {
 
       .empty-icon {
         margin-bottom: 16px;
-        
+
         i {
           font-size: 64px;
           color: #d1d5db;
@@ -933,7 +1016,7 @@ const getNewPageUrl = computed(() => {
         color: #6b7280;
         line-height: 1.5;
       }
-      
+
       .retry-btn {
         border-radius: 8px;
         padding: 10px 20px;
@@ -949,12 +1032,12 @@ const getNewPageUrl = computed(() => {
   padding: 20px 0 0;
   border-top: 1px solid #f0f0f0;
   margin-top: 20px;
-  
+
   .pagination-info {
     font-size: 14px;
     color: #6b7280;
   }
-  
+
   .pagination {
     ::v-deep .el-pagination.is-background .el-pager li:not(.disabled).active {
       background-color: #3b82f6;
@@ -964,7 +1047,7 @@ const getNewPageUrl = computed(() => {
     ::v-deep .el-pagination.is-background .el-pager li:not(.disabled):hover {
       color: #3b82f6;
     }
-    
+
     ::v-deep .el-pagination__jump {
       margin-left: 16px;
     }
@@ -976,12 +1059,12 @@ const getNewPageUrl = computed(() => {
   ::v-deep .el-dialog {
     border-radius: 12px;
   }
-  
+
   ::v-deep .el-dialog__header {
     padding: 20px 20px 0;
     border-bottom: 1px solid #f0f0f0;
   }
-  
+
   ::v-deep .el-dialog__body {
     padding: 20px;
   }
@@ -993,45 +1076,45 @@ const getNewPageUrl = computed(() => {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 16px;
-    
+
     .header-left {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    
+
     .invert-btn {
       font-size: 12px;
       color: #6b7280;
       padding: 0;
-      
+
       &:hover {
         color: #3b82f6;
       }
     }
-    
+
     .selected-count {
       font-size: 13px;
       color: #6b7280;
-      
+
       .count-number {
         font-weight: 600;
         color: #3b82f6;
       }
     }
   }
-  
+
   .column-search {
     margin-bottom: 16px;
   }
-  
+
   .column-list-container {
     max-height: 400px;
     overflow-y: auto;
     border: 1px solid #f0f0f0;
     border-radius: 8px;
     padding: 8px;
-    
+
     .column-list {
       .column-item {
         display: block;
@@ -1039,42 +1122,42 @@ const getNewPageUrl = computed(() => {
         padding: 8px 12px;
         border-radius: 6px;
         transition: all 0.2s;
-        
+
         &:hover {
           background-color: #f8fafc;
         }
-        
+
         &.column-item-checked {
           background-color: #eff6ff;
           border: 1px solid #dbeafe;
         }
-        
+
         .column-checkbox {
           width: 100%;
-          
+
           ::v-deep .el-checkbox__label {
             width: calc(100% - 20px);
             padding-left: 8px;
           }
         }
-        
+
         .column-info {
           display: flex;
           gap: 20px;
         }
-        
+
         .column-label {
           font-weight: 500;
           color: #1f2937;
           font-size: 14px;
         }
-        
+
         .column-name {
           font-size: 12px;
           color: #6b7280;
           font-family: 'Monaco', 'Menlo', monospace;
         }
-        
+
         .column-type {
           font-size: 11px;
           color: #9ca3af;
@@ -1085,18 +1168,18 @@ const getNewPageUrl = computed(() => {
         }
       }
     }
-    
+
     .empty-search {
       text-align: center;
       padding: 40px 20px;
       color: #9ca3af;
-      
+
       i {
         font-size: 32px;
         margin-bottom: 8px;
         display: block;
       }
-      
+
       p {
         margin: 0;
         font-size: 14px;
@@ -1112,7 +1195,7 @@ const getNewPageUrl = computed(() => {
   padding: 16px 20px;
   border-top: 1px solid #f0f0f0;
   margin: 0 -20px -20px;
-  
+
   .footer-left,
   .footer-right {
     display: flex;
@@ -1125,28 +1208,28 @@ const getNewPageUrl = computed(() => {
 @media (max-width: 768px) {
   .preview-box {
     padding: 16px;
-    
+
     .preview-title {
       flex-direction: column;
       align-items: flex-start;
       gap: 12px;
-      
+
       .header-actions {
         width: 100%;
         justify-content: flex-end;
       }
     }
-    
+
     .pagination-container {
       flex-direction: column;
       gap: 12px;
-      
+
       .pagination-info {
         order: 2;
       }
     }
   }
-  
+
   .column-selector-dialog {
     ::v-deep .el-dialog {
       width: 95% !important;
