@@ -2,7 +2,17 @@
   <el-card class="preview-box" shadow="hover">
     <div slot="header" class="preview-title">
       <div class="title">{{ title }}</div>
-      <div>
+      <div class="header-actions">
+        <el-button
+          @click="showColumnSelector = true"
+          type="text"
+          size="small"
+          icon="el-icon-setting"
+          class="column-setting-btn"
+          v-if="allAvailableColumns.length > 0"
+        >
+          字段设置
+        </el-button>
         <span
           class="new-page-btn"
           @click="openNewPage"
@@ -39,7 +49,69 @@
         </el-dropdown>
       </div>
     </div>
+    
+    <!-- 字段选择器对话框 -->
+    <el-dialog
+      title="字段设置"
+      :visible.sync="showColumnSelector"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <div class="column-selector">
+        <div class="selector-header">
+          <el-checkbox
+            :indeterminate="isIndeterminate"
+            v-model="checkAll"
+            @change="handleCheckAllChange"
+          >
+            全选
+          </el-checkbox>
+          <span class="selected-count">
+            已选择 {{ localCheckedColumns.length }} / {{ allAvailableColumns.length }} 个字段
+          </span>
+        </div>
+        <el-divider></el-divider>
+        <el-checkbox-group v-model="localCheckedColumns" class="column-list">
+          <div 
+            v-for="column in allAvailableColumns" 
+            :key="column.columns"
+            class="column-item"
+          >
+            <el-checkbox :label="column.columns">
+              <span class="column-label">
+                {{ column.aliasName || column.label || column.columns }}
+              </span>
+              <span class="column-name" v-if="column.aliasName || column.label">
+                ({{ column.columns }})
+              </span>
+            </el-checkbox>
+          </div>
+        </el-checkbox-group>
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="handleCancelColumnSelection">取消</el-button>
+        <el-button @click="handleResetColumns">重置</el-button>
+        <el-button type="primary" @click="handleConfirmColumnSelection">确定</el-button>
+      </div>
+    </el-dialog>
+
     <div class="preview-content">
+      <!-- 显示当前选中的字段数量 -->
+      <div class="field-info" v-if="allAvailableColumns.length > 0 && currentCheckedColumns.length > 0">
+        <span class="field-count">
+          <i class="el-icon-view"></i>
+          当前显示 {{ currentCheckedColumns.length }} / {{ allAvailableColumns.length }} 个字段
+        </span>
+        <el-button 
+          type="text" 
+          size="mini" 
+          @click="showColumnSelector = true"
+          class="quick-setting-btn"
+        >
+          快速设置
+        </el-button>
+      </div>
+      
       <el-table
         :data="tableData"
         stripe
@@ -51,6 +123,7 @@
       >
         <template v-for="(only, i) in tableTitle">
           <el-table-column
+            :key="only.columns"
             :prop="only.columns"
             :label="only.aliasName || only.label"
             show-overflow-tooltip
@@ -84,16 +157,11 @@
 </template>
 
 <script setup>
-import { getCurrentInstance, reactive, computed, ref } from "vue";
+import { getCurrentInstance, reactive, computed, ref, watch } from "vue";
 import dayjs from "dayjs";
 import * as XLSX from "xlsx";
 import { $http } from "@/common/http";
 import { useRoute, useRouter } from "@/common/vueApi.js";
-
-// 定义组件名称
-// defineOptions({
-//   name: "DataPreview",
-// });
 
 // 定义props
 const props = defineProps({
@@ -129,6 +197,7 @@ const emit = defineEmits([
   "size-change",
   "current-change",
   "open-login",
+  "columns-change", // 新增：字段变化事件
 ]);
 
 // 获取当前实例以访问$message
@@ -137,6 +206,7 @@ const { proxy } = getCurrentInstance();
 const requestUrl = computed(() => {
   return `/${props.appName}/select/${props.serviceName}`;
 });
+
 const pageInfo = reactive({
   pageNo: 1,
   rownumber: 10,
@@ -148,6 +218,75 @@ const initReq = ref(null);
 const isEmpty = ref(false);
 const loaded = ref(false);
 const tableData = ref([]);
+const isExporting = ref(false);
+
+// 字段选择相关状态
+const showColumnSelector = ref(false);
+const allAvailableColumns = ref([]);
+const localCheckedColumns = ref([]);
+const currentCheckedColumns = ref([]);
+
+// 全选状态
+const checkAll = computed({
+  get() {
+    return localCheckedColumns.value.length === allAvailableColumns.value.length && allAvailableColumns.value.length > 0;
+  },
+  set(val) {
+    // 这里不需要实现，因为我们用 handleCheckAllChange 处理
+  }
+});
+
+// 半选状态
+const isIndeterminate = computed(() => {
+  const checkedCount = localCheckedColumns.value.length;
+  return checkedCount > 0 && checkedCount < allAvailableColumns.value.length;
+});
+
+// 监听props.checkedColumns变化
+watch(() => props.checkedColumns, (newVal) => {
+  if (Array.isArray(newVal)) {
+    currentCheckedColumns.value = [...newVal];
+  }
+}, { immediate: true });
+
+// 处理全选/取消全选
+const handleCheckAllChange = (val) => {
+  if (val) {
+    localCheckedColumns.value = allAvailableColumns.value.map(col => col.columns);
+  } else {
+    localCheckedColumns.value = [];
+  }
+};
+
+// 确认字段选择
+const handleConfirmColumnSelection = () => {
+  if (localCheckedColumns.value.length === 0) {
+    proxy.$message.warning("请至少选择一个字段");
+    return;
+  }
+  
+  currentCheckedColumns.value = [...localCheckedColumns.value];
+  showColumnSelector.value = false;
+  
+  // 触发字段变化事件
+  emit("columns-change", currentCheckedColumns.value);
+  
+  // 重新获取数据以应用新的字段选择
+  handleRefresh();
+  
+  proxy.$message.success(`已选择 ${localCheckedColumns.value.length} 个字段`);
+};
+
+// 取消字段选择
+const handleCancelColumnSelection = () => {
+  localCheckedColumns.value = [...currentCheckedColumns.value];
+  showColumnSelector.value = false;
+};
+
+// 重置字段选择
+const handleResetColumns = () => {
+  localCheckedColumns.value = allAvailableColumns.value.map(col => col.columns);
+};
 
 async function getTableData(req = {}) {
   if (req) {
@@ -165,11 +304,7 @@ async function getTableData(req = {}) {
   if (!props?.columnsOption?.length) {
     req.mdata = true;
   }
-  // if (props.columnsOption?.length) {
-  //   tableTitle.value = props.columnsOption;
-  // } else {
-  // req.mdata = true;
-  // }
+  
   // 获取预览数据
   tableTitle.value = [];
   const res = await $http.post(requestUrl.value, req);
@@ -191,48 +326,32 @@ async function getTableData(req = {}) {
     }
     return false;
   }
+  
   let pageData = res.data.page; //获取分页信息
   pageInfo.pageNo = pageData.pageNo;
   pageInfo.rownumber = pageData.rownumber;
   pageInfo.total = pageData.total;
   tableData.value = res.data.data;
-  // if (res.data.mdata) {
-  tableTitle.value = res.data.mdata;
-  // }
-  //表头数组
-  let tableAllTitleData = req?.group || [];
+  
+  // 处理列配置
   const allColumns = res.data.mdata || props.columnsOption || [];
-  let finalColumns = allColumns;
-  if(Array.isArray(props.checkedColumns) && props.checkedColumns.length){
-    finalColumns = allColumns.filter((item) => props.checkedColumns.includes(item.columns));
+  allAvailableColumns.value = allColumns;
+  
+  // 如果是第一次加载且没有预设的选中列，默认选中所有列
+  if (currentCheckedColumns.value.length === 0 && allColumns.length > 0) {
+    currentCheckedColumns.value = allColumns.map(col => col.columns);
+    localCheckedColumns.value = [...currentCheckedColumns.value];
   }
-   tableTitle.value = finalColumns;
-  // if (tableAllTitleData.length === 0) {
-  //   tableTitle.value = finalColumns;
-  // } else if (allColumns.length) {
-  //   tableTitle.value = [];
-  //   tableAllTitleData.forEach((item) => {
-  //     if (item.type) {
-  //       allColumns.forEach((col) => {
-  //         //
-  //         if (item.colName === col.columns) {
-  //           tableTitle.value.push(col);
-  //         }
-  //       });
-  //     } else {
-  //       tableTitle.value = allColumns;
-  //     }
-  //   });
-  //   let obj = {};
-  //   let newArr = [];
-  //   newArr = tableTitle.value.reduce((item, next) => {
-  //     obj[next.columns] ? " " : (obj[next.columns] = true && item.push(next));
-  //     return item;
-  //   }, []);
-
-  //   tableTitle.value = newArr;
-  // }
+  
+  // 根据选中的列过滤显示的列
+  let finalColumns = allColumns;
+  if (Array.isArray(currentCheckedColumns.value) && currentCheckedColumns.value.length > 0) {
+    finalColumns = allColumns.filter((item) => currentCheckedColumns.value.includes(item.columns));
+  }
+  
+  tableTitle.value = finalColumns;
 }
+
 async function handleRefresh() {
   pageInfo.pageNo = 1;
   pageInfo.rownumber = 10;
@@ -240,25 +359,6 @@ async function handleRefresh() {
   tableData.value = [];
   await getTableData(initReq.value);
 }
-const isExporting = ref(false);
-
-// 导出Excel方法
-const exportExcel = () => {
-  if (!tableData.value || tableData.value.length === 0) {
-    proxy.$message.warning("表格数据为空");
-    return;
-  }
-  try {
-    let time = dayjs().format("YYYYMMDDHHmmss");
-    let fileName = props.serviceName + time;
-    // 将预览表格中的数据导出为excel
-    let wb = XLSX.utils.table_to_book(document.querySelector("#out-table"));
-    XLSX.writeFile(wb, `${fileName}.xlsx`);
-  } catch (error) {
-    console.error("导出Excel失败:", error);
-    proxy.$message.error("导出Excel失败");
-  }
-};
 
 // 导出当前页Excel方法
 const exportCurrentPageExcel = () => {
@@ -328,11 +428,11 @@ const exportAllDataExcel = async () => {
       return;
     }
 
-    // 获取列配置
+    // 获取列配置 - 只导出当前选中的字段
     const allColumns = res.data.mdata || props.columnsOption || [];
     let finalColumns = allColumns;
-    if (Array.isArray(props.checkedColumns) && props.checkedColumns.length) {
-      finalColumns = allColumns.filter((item) => props.checkedColumns.includes(item.columns));
+    if (Array.isArray(currentCheckedColumns.value) && currentCheckedColumns.value.length > 0) {
+      finalColumns = allColumns.filter((item) => currentCheckedColumns.value.includes(item.columns));
     }
 
     // 创建工作簿
@@ -367,12 +467,12 @@ const exportAllDataExcel = async () => {
     
     // 生成文件名
     let time = dayjs().format("YYYYMMDDHHmmss");
-    let fileName = `${props.serviceName}_全部数据_${time}.xlsx`;
+    let fileName = `${props.title || props.serviceName}_全部数据_${time}.xlsx`;
     
     // 导出文件
     XLSX.writeFile(wb, fileName);
     
-    proxy.$message.success(`全部数据导出成功，共 ${allData.length} 条记录`);
+    proxy.$message.success(`全部数据导出成功，共 ${allData.length} 条记录，${finalColumns.length} 个字段`);
     
   } catch (error) {
     console.error("导出全部数据失败:", error);
@@ -415,9 +515,11 @@ const handleCurrentChange = async (val) => {
 const handleGetData = async (req) => {
   await getTableData(req);
 };
+
 defineExpose({
   handleGetData,
 });
+
 const route = useRoute();
 const showOpenNewPage = computed(() => {
   return route && route.name?.includes("report") !== true;
@@ -426,14 +528,9 @@ const showOpenNewPage = computed(() => {
 const openNewPage = () => {
   window.open(getNewPageUrl.value, "_blank");
 }
+
 const getNewPageUrl = computed(() => {
   return `/dataview/#/report/${props.reqNo}`;
-  return {
-    name: "report3",
-    params: {
-      reportNo: props.reqNo,
-    },
-  };
 });
 </script>
 
@@ -460,6 +557,20 @@ const getNewPageUrl = computed(() => {
       font-weight: 600;
       color: #333;
     }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .column-setting-btn {
+      color: #606266;
+      &:hover {
+        color: #409eff;
+      }
+    }
+    
     .new-page-btn {
       cursor: pointer;
       font-size: 13px;
@@ -469,10 +580,10 @@ const getNewPageUrl = computed(() => {
         transform: translateY(-2px);
       }
     }
+    
     .export-button,
     .refresh-button {
       transition: all 0.3s;
-      margin-left: 10px;
       &:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -489,6 +600,29 @@ const getNewPageUrl = computed(() => {
     width: 100%;
     border-radius: 5px;
     overflow: hidden;
+    
+    .field-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      
+      .field-count {
+        color: #606266;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .quick-setting-btn {
+        font-size: 12px;
+        padding: 0;
+      }
+    }
 
     .el-table {
       border-radius: 4px;
@@ -531,10 +665,6 @@ const getNewPageUrl = computed(() => {
       }
     }
   }
-
-  .export-button {
-    margin: 0;
-  }
 }
 
 .pagination {
@@ -553,6 +683,62 @@ const getNewPageUrl = computed(() => {
 
   ::v-deep .el-pagination.is-background .el-pager li:not(.disabled):hover {
     color: #409eff;
+  }
+}
+
+// 字段选择器样式
+.column-selector {
+  .selector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    
+    .selected-count {
+      font-size: 13px;
+      color: #606266;
+    }
+  }
+  
+  .column-list {
+    max-height: 300px;
+    overflow-y: auto;
+    
+    .column-item {
+      display: block;
+      margin-bottom: 8px;
+      padding: 4px 0;
+      
+      .el-checkbox {
+        width: 100%;
+        
+        .el-checkbox__label {
+          width: calc(100% - 20px);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+      }
+      
+      .column-label {
+        font-weight: 500;
+        color: #303133;
+      }
+      
+      .column-name {
+        font-size: 12px;
+        color: #909399;
+        margin-left: 8px;
+      }
+    }
+  }
+}
+
+.dialog-footer {
+  text-align: right;
+  
+  .el-button {
+    margin-left: 8px;
   }
 }
 </style>
