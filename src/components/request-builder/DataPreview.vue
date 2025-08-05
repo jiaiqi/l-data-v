@@ -283,7 +283,6 @@
         id="out-table"
         size="small"
         class="data-table"
-        :height="tableHeight"
         @sort-change="handleSortChange"
       >
         <template v-for="(column, index) in tableTitle">
@@ -944,7 +943,7 @@ const getNewPageUrl = computed(() => {
       border-radius: 8px;
       overflow: hidden;
       border: 1px solid #e5e7eb;
-
+      min-height: 400px;
       ::v-deep .el-table__header {
         th {
           background-color: #f9fafb !important;

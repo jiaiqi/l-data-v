@@ -617,7 +617,7 @@ export default {
         req_cols_json: "",
         srv_req_name: this.ruleForm.srv_req_name,
         srv_type: this.ruleForm.srv_type,
-        rownumber: 10,
+        // rownumber: 10,
         condition_json: "",
       };
       data.order_json = JSON.stringify(this.endData.order || [], null, 1);

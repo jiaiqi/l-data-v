@@ -27,7 +27,7 @@ const ruleForm = reactive({
 const dataPreviewRef = ref(null);
 const loginDialogRef = ref(null);
 function handleOpenLogin() {
-  loginDialogRef.value.open(() => {});
+  loginDialogRef.value.open(() => { });
 }
 
 const reqCfg = ref({});
@@ -105,6 +105,9 @@ if (route.name === "report3") {
 }
 
 const checkedColumns = computed(() => {
+  if (initReq.value?.colNames.includes('*')) {
+    return [];
+  }
   return initReq.value?.colNames || [];
 });
 </script>
