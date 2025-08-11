@@ -1,5 +1,8 @@
 <template>
-  <div class="header-filter" v-if="colType">
+  <div
+    class="header-filter"
+    v-if="colType"
+  >
     <el-popover
       placement="bottom"
       trigger="click"
@@ -41,7 +44,10 @@
           </div>
         </div>
         <!-- 外键 -->
-        <div class="input-box" v-else-if="colType === '外键'">
+        <div
+          class="input-box"
+          v-else-if="colType === '外键'"
+        >
           <div class="label">内容过滤：</div>
           <el-input
             v-model="filterText"
@@ -63,15 +69,15 @@
               class="check-button-item"
               :class="{
                 active:
-                  modelValue === item ||
-                  (multiple && multipleValMap[item] == true),
+                  modelValue === item.value ||
+                  (multiple && multipleValMap[item.value] == true),
               }"
               v-for="item in optionList"
-              :label="item"
-              :key="item"
-              @click="shortFilter(item)"
+              :label="item.label"
+              :key="item.value"
+              @click="shortFilter(item.value)"
             >
-              {{ item }}
+              {{ item.label || item.value || item }}
             </div>
             <!-- <div class="check-button-item"
               :class="{ active: modelValue === item || (multiple && multipleValMap[item] == true) }"
@@ -99,7 +105,10 @@
           v-else-if="['富文本', '字符串'].includes(colType)"
         >
           <div class="label">内容过滤：</div>
-          <el-input v-model="modelValue" clearable></el-input>
+          <el-input
+            v-model="modelValue"
+            clearable
+          ></el-input>
           <div class="text-bold p-y-2">
             快捷筛选：
             <el-switch
@@ -146,7 +155,10 @@
           </div>
         </div>
 
-        <div class="number-range" v-else-if="colType === '数字'">
+        <div
+          class="number-range"
+          v-else-if="colType === '数字'"
+        >
           <div class="label m-b-2">输入数值范围：</div>
           <div class="flex items-center">
             <el-input
@@ -163,7 +175,10 @@
           </div>
         </div>
 
-        <div class="date-range" v-else-if="['时间'].includes(colType)">
+        <div
+          class="date-range"
+          v-else-if="['时间'].includes(colType)"
+        >
           <div class="label">选择时间范围：</div>
           <el-time-select
             v-model="min"
@@ -209,50 +224,44 @@
             <div class="m-b-2">
               日：<el-button
                 size="mini"
-                :type="
-                  modelValue === item ||
-                  (multiple && multipleValMap[item] == true)
+                :type="modelValue === item ||
+                    (multiple && multipleValMap[item] == true)
                     ? 'primary'
                     : ''
-                "
+                  "
                 plain
                 v-for="item in dateShortcuts.day"
                 :key="item"
                 @click="shortFilter(item)"
-                >{{ item }}</el-button
-              >
+              >{{ item }}</el-button>
             </div>
             <div class="m-b-2">
               周：<el-button
                 size="mini"
-                :type="
-                  modelValue === item ||
-                  (multiple && multipleValMap[item] == true)
+                :type="modelValue === item ||
+                    (multiple && multipleValMap[item] == true)
                     ? 'primary'
                     : ''
-                "
+                  "
                 plain
                 v-for="item in dateShortcuts.week"
                 :key="item"
                 @click="shortFilter(item)"
-                >{{ item }}</el-button
-              >
+              >{{ item }}</el-button>
             </div>
             <div class="m-b-2">
               月：<el-button
                 size="mini"
-                :type="
-                  modelValue === item ||
-                  (multiple && multipleValMap[item] == true)
+                :type="modelValue === item ||
+                    (multiple && multipleValMap[item] == true)
                     ? 'primary'
                     : ''
-                "
+                  "
                 plain
                 v-for="item in dateShortcuts.month"
                 :key="item"
                 @click="shortFilter(item)"
-                >{{ item }}</el-button
-              >
+              >{{ item }}</el-button>
             </div>
           </div>
           <div class="flex flex-col">
@@ -263,8 +272,7 @@
                 v-for="item in datePickerShortcuts"
                 :key="item.text"
                 @click="item.onClick"
-                >{{ item.text }}</el-button
-              >
+              >{{ item.text }}</el-button>
             </div>
             <div class="flex items-center">
               <el-date-picker
@@ -290,12 +298,16 @@
             class="text-gray"
             size="mini"
             @click="filterVisible = false"
-            >取消</el-button
-          >
-          <el-button size="mini" @click="resetFilter">重置</el-button>
-          <el-button size="mini" @click="toFilter" type="primary"
-            >筛选</el-button
-          >
+          >取消</el-button>
+          <el-button
+            size="mini"
+            @click="resetFilter"
+          >重置</el-button>
+          <el-button
+            size="mini"
+            @click="toFilter"
+            type="primary"
+          >筛选</el-button>
         </div>
       </div>
 
@@ -858,6 +870,16 @@ export default {
               },
             ];
             this.onFilter = true;
+          } else if (this.filterText) {
+            val.condition = [
+              {
+                colName: this.column.columns,
+                ruleType: "like",
+                value: this.filterText,
+              },
+            ];
+            this.onFilter = true;
+
           } else {
             this.onFilter = false;
           }
@@ -994,6 +1016,7 @@ export default {
   }
 
   .input-box {
+
     // max-width: 300px;
     .check-button-group {
       margin-bottom: 10px;
@@ -1023,8 +1046,7 @@ export default {
   }
 }
 
-.number-range {
-}
+.number-range {}
 
 .el-checkbox {
   padding: 5px 10px;
