@@ -2740,6 +2740,11 @@ export default {
       const changedCols = [];
       for (let i = startRowIndex; i <= endRowIndex; i++) {
         const row = this.tableData[i];
+        const oldRow = this.oldTableData[i]
+        if(oldRow&&oldRow?.__unfold !== row['__unfold']){
+          // 改变折叠状态 不触发编辑
+          return
+        }
         for (let j = startColIndex; j <= endColIndex; j++) {
           const col = columns[j];
           if (["FileList"].includes(col?.__field_info?.col_type)) {
@@ -4554,6 +4559,7 @@ export default {
     async loadTree(load, row, rowIndex, callback) {
       // 将展开状态存储到行数据
       this.$set(this.tableData[rowIndex], "__unfold", load);
+
       if (load) {
         // 加载当前数据的子数据
         let loadingInstance = Loading.service({ fullscreen: true });
