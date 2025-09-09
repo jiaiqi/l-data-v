@@ -58,7 +58,9 @@ const buildSrvCols = (
     } else if (childListType) {
       // 新增页面子表 使用add服务的column
       let type = 'add'
-      if (childListType.includes('list')) {
+      if (childListType.includes('childlist')) {
+        type = childListType.split('childlist')[0]
+      } else if (childListType.includes('list')) {
         type = childListType.split('list')[0]
       }
       if (type === 'detail') {
@@ -263,7 +265,11 @@ const buildSrvCols = (
       // 如果是作为子表使用 则只显示子表类型对应的in的字段，比如add表单中的子表就只显示in_add的，update表单中子表只显示in_update
       let type = 'add'
       if (childListType.includes('list')) {
-        type = childListType.split('list')[0]
+        if (childListType.includes('childlist')) {
+          type = childListType.split('childlist')[0]
+        } else if (childListType.includes('list')) {
+          type = childListType.split('list')[0]
+        }
       }
       cols = cols.filter(
         (item) => item[`in_${type}`] === 1
