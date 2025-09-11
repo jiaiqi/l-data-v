@@ -2503,20 +2503,22 @@ export default {
     },
     emitListData() {
       let data = JSON.parse(JSON.stringify(this.tableData));
-      if (this.childListType === "add") {
+      if (this.childListType?.includes("add")) {
         data = data.filter((item) =>
           Object.keys(item).some(
             (key) => !ignoreKeys.includes(key) && item[key]
           )
         );
-        data.forEach((item) => {
+      }
+      data.forEach((item) => {
+        if (Object.keys(item).length) {
           Object.keys(item).forEach((key) => {
             if (ignoreKeys.includes(key) || key?.indexOf("_") === 0) {
               delete item[key];
             }
           });
-        });
-      }
+        }
+      });
       const reuslt = [
         {
           serviceName: this.addButton?.service_name,
@@ -2741,7 +2743,7 @@ export default {
       for (let i = startRowIndex; i <= endRowIndex; i++) {
         const row = this.tableData[i];
         const oldRow = this.oldTableData[i]
-        if(oldRow&&oldRow?.__unfold !== row['__unfold']){
+        if (oldRow && oldRow?.__unfold !== row['__unfold']) {
           // 改变折叠状态 不触发编辑
           return
         }
