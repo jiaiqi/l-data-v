@@ -13,7 +13,23 @@ import Vue from "vue";
 import _ from "lodash";
 import { $axios as $http } from "@/common/http";
 
+let baseURL = window.backendIpAddr;
+
+function initBaseURL() {
+  let pathConfig = sessionStorage.pathConfig;
+  if (pathConfig) {
+    try {
+      pathConfig = JSON.parse(pathConfig);
+      if (pathConfig?.gateway) {
+        baseURL = pathConfig?.gateway;
+      }
+    } catch (error) { }
+  }
+  window.backendIpAddr = baseURL
+}
+
 function init_util() {
+  initBaseURL()
   const eventBus = new Vue();
   const common_page_path = {
     detail: "/vpages/index.html#/detail",
