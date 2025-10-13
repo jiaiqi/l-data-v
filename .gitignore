@@ -37,3 +37,7 @@ dataview*.zip
 bxhome
 sheet-editor.zip
 sheet-editor-back/
+
+.trae
+.vercel
+.cursor
