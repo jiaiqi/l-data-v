@@ -1067,7 +1067,7 @@ export default {
             ];
             const aggregationTypes = [
               "sum",
-              "mix",
+              "min",
               "max",
               "avg",
               "count",

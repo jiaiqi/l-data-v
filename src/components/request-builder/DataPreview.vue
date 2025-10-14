@@ -554,8 +554,11 @@ const handleSortChange = (sortInfo) => {
 };
 
 async function getTableData(req = {}) {
-  if (req) {
+  // 保留上次的请求参数，分页切换时不丢失过滤条件
+  if (req && Object.keys(req).length > 0) {
     initReq.value = req;
+  } else if (!req || Object.keys(req).length === 0) {
+    req = initReq.value || {};
   }
 
   loading.value = true;
@@ -611,6 +614,24 @@ async function getTableData(req = {}) {
     const allColumns = res.data.mdata || props.columnsOption || [];
     allAvailableColumns.value = allColumns;
 
+    // 如果请求中带有分组/聚合配置，则仅显示这些字段
+    const groupItems = Array.isArray(req?.group) ? req.group.filter(item => item && item.type) : [];
+    const selectedNames = groupItems.map(item => item.colName || item.columns || item.col_name).filter(Boolean);
+
+    // 应用聚合别名到列（如果有）
+    if (groupItems.length > 0) {
+      groupItems.forEach(item => {
+        const alias = item.aliasName || item.alias_name;
+        const name = item.colName || item.columns || item.col_name;
+        if (alias && name) {
+          const col = allColumns.find(c => c.columns === name);
+          if (col) {
+            col.aliasName = alias;
+          }
+        }
+      });
+    }
+
     // 如果是第一次加载且没有预设的选中列，默认选中所有列
     if (currentCheckedColumns.value.length === 0 && allColumns.length > 0) {
       currentCheckedColumns.value = allColumns.map(col => col.columns);
@@ -619,7 +640,9 @@ async function getTableData(req = {}) {
 
     // 根据选中的列过滤显示的列
     let finalColumns = allColumns;
-    if (Array.isArray(currentCheckedColumns.value) && currentCheckedColumns.value.length > 0) {
+    if (selectedNames.length > 0) {
+      finalColumns = allColumns.filter(col => selectedNames.includes(col.columns));
+    } else if (Array.isArray(currentCheckedColumns.value) && currentCheckedColumns.value.length > 0) {
       finalColumns = allColumns.filter((item) => currentCheckedColumns.value.includes(item.columns));
     }
 
@@ -726,8 +749,27 @@ const exportAllDataExcel = async () => {
 
     // 获取列配置 - 只导出当前选中的字段
     const allColumns = res.data.mdata || props.columnsOption || [];
+    // 结合请求的分组/聚合配置来确定导出字段
+    const groupItems = Array.isArray(initReq.value?.group) ? initReq.value.group.filter(item => item && item.type) : [];
+    const selectedNames = groupItems.map(item => item.colName || item.columns || item.col_name).filter(Boolean);
+    // 应用别名到列
+    if (groupItems.length > 0) {
+      groupItems.forEach(item => {
+        const alias = item.aliasName || item.alias_name;
+        const name = item.colName || item.columns || item.col_name;
+        if (alias && name) {
+          const col = allColumns.find(c => c.columns === name);
+          if (col) {
+            col.aliasName = alias;
+          }
+        }
+      });
+    }
+
     let finalColumns = allColumns;
-    if (Array.isArray(currentCheckedColumns.value) && currentCheckedColumns.value.length > 0) {
+    if (selectedNames.length > 0) {
+      finalColumns = allColumns.filter(col => selectedNames.includes(col.columns));
+    } else if (Array.isArray(currentCheckedColumns.value) && currentCheckedColumns.value.length > 0) {
       finalColumns = allColumns.filter((item) => currentCheckedColumns.value.includes(item.columns));
     }
 
@@ -807,14 +849,14 @@ const handleExport = () => {
 // 处理页面大小变化
 const handleSizeChange = async (val) => {
   pageInfo.rownumber = val;
-  await getTableData();
+  await getTableData(initReq.value);
   emit("size-change", val);
 };
 
 // 处理当前页变化
 const handleCurrentChange = async (val) => {
   pageInfo.pageNo = val;
-  await getTableData();
+  await getTableData(initReq.value);
   emit("current-change", val);
 };
 
