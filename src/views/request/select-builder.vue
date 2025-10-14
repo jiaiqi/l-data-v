@@ -969,10 +969,10 @@ export default {
               const groupJson = JSON.parse(reqConfig.group_json);
               if (Array.isArray(groupJson)) {
                 initData[2] = groupJson.map((item) => {
-                  if (!item.alias_name) {
+                  if (!item.alias_name && !item.aliasName) {
                     item.aliasName = "";
                   } else {
-                    item.aliasName = item.alias_name;
+                    item.aliasName = item.alias_name || item.aliasName;
                   }
                   return item;
                 });
@@ -1079,10 +1079,10 @@ export default {
                 if (column.columns == groupItem.colName) {
                   if (aggregationTypes.includes(groupItem.type)) {
                     column._aggregation = groupItem;
-                    if (!groupItem.alias_name) {
-                      groupItem.aliasName = "";
+                    if (!groupItem.alias_name && !groupItem.aliasName) {
+                      column.aliasName = "";
                     } else {
-                      groupItem.aliasName = item.alias_name;
+                      column.aliasName = groupItem.alias_name || groupItem.aliasName;
                     }
                     _aggregation.push(groupItem);
                     endData.aggregation.push(column);

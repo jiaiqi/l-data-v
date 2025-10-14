@@ -299,7 +299,11 @@
               slot-scope="scope"
             >
               <div class="table-header">
-                <span>{{ column.aliasName || column.label }}</span>
+                <span>{{ column.label }}
+                  <template v-if="column.aliasName">
+                    ({{ column.aliasName }})
+                  </template>
+                </span>
                 <el-tooltip
                   v-if="column.aliasName || column.label"
                   :content="column.columns"
@@ -308,6 +312,9 @@
                   <i class="el-icon-info table-header-info"></i>
                 </el-tooltip>
               </div>
+            </template>
+            <template slot-scope="scope">
+              <span>{{ scope.row[column.aliasName] || scope.row[column.columns] || "" }}</span>
             </template>
           </el-table-column>
         </template>
@@ -944,6 +951,7 @@ const getNewPageUrl = computed(() => {
       overflow: hidden;
       border: 1px solid #e5e7eb;
       min-height: 400px;
+
       ::v-deep .el-table__header {
         th {
           background-color: #f9fafb !important;
