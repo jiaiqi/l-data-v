@@ -748,6 +748,7 @@ export default {
       //   saveData.child_data_list = child_data_list;
       //   this.updateModel(saveData);
       // } else {
+      console.log(saveData, child_data_list, 66666666);
       this.updateModel(saveData, child_data_list);
       // }
     },
@@ -1245,6 +1246,12 @@ export default {
       deep: true,
       handler(newValue, oldValue) {
         this.columnsOption = newValue;
+      },
+    },
+    checkedColumns: {
+      deep: true,
+      handler(newValue, oldValue) {
+        console.log(newValue, oldValue);
       },
     },
   },
