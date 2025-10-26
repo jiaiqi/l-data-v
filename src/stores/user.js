@@ -17,6 +17,34 @@ const API_ENDPOINTS = {
   TENANT_SWITCH_LOGIN: '/sso/operate/srvuser_app_tenant_swh_login'
 }
 
+// 在调用登录类接口前尝试清理当前域下的 Cookie
+function clearCookies() {
+  try {
+    const raw = document.cookie;
+    if (!raw) return;
+    const parts = raw.split(';');
+    const expires = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    const host = window.location.hostname || '';
+    const hostVariants = [];
+    if (host) {
+      hostVariants.push(host);
+      if (!host.startsWith('.')) hostVariants.push(`.${host}`);
+    }
+    for (const part of parts) {
+      const eqIdx = part.indexOf('=');
+      const name = (eqIdx > -1 ? part.substring(0, eqIdx) : part).trim();
+      if (!name) continue;
+      document.cookie = `${name}=; ${expires}; path=/`;
+      for (const d of hostVariants) {
+        document.cookie = `${name}=; ${expires}; path=/; domain=${d}`;
+      }
+      document.cookie = `${name}=; ${expires}`;
+    }
+  } catch (e) {
+    console.warn('清理 Cookie 时发生异常:', e);
+  }
+}
+
 // ==================== 工具函数 ====================
 /**
  * 安全的 JSON 解析函数
@@ -296,6 +324,8 @@ export const useUserStore = defineStore('user', () => {
     }
 
     try {
+      // 调用租户切换登录前清理 Cookie
+      clearCookies()
       const requestPayload = [
         {
           serviceName: "srvuser_app_tenant_swh_login",

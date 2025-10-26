@@ -34,17 +34,25 @@
         slot="footer"
         class="dialog-footer"
       >
-        <el-button
-          v-if="hasCachedTenant"
-          type="text"
-          @click="submitFormWithCachedTenant('loginForm')"
-        >
-          {{ cachedTenantLabel }}
-        </el-button>
-        <el-button
-          type="primary"
-          @click="submitForm('loginForm')"
-        >{{ hasCachedTenant ? '切换租户' : '登录' }}</el-button>
+        <!-- 交换按钮位置与样式：有缓存租户时突出租户登录按钮 -->
+        <!-- 当有缓存租户时，先放置“切换租户”为文本按钮，其次为“租户登录”为主按钮 -->
+        <template v-if="hasCachedTenant">
+          <el-button
+            type="text"
+            @click="submitForm('loginForm')"
+          >切换租户</el-button>
+          <el-button
+            type="primary"
+            @click="submitFormWithCachedTenant('loginForm')"
+          >{{ cachedTenantLabel }}</el-button>
+        </template>
+        <!-- 无缓存租户时仅显示登录主按钮 -->
+        <template v-else>
+          <el-button
+            type="primary"
+            @click="submitForm('loginForm')"
+          >登录</el-button>
+        </template>
       </span>
     </el-dialog>
 
@@ -175,25 +183,22 @@ export default {
         if (valid) {
           this.login(true).then((res) => {
             if (res) {
-              if (this.tenantList && this.tenantList.length > 1 && !this.tenantAutoApplied) {
-                this.showTenantSelector(this.tenantList)
-              } else {
-                this.dialogVisible = false;
-                // 登录成功后提示是否刷新页面
-                this.$confirm(
-                  '登录成功，是否刷新页面以应用最新租户环境？',
-                  '提示',
-                  { confirmButtonText: '刷新', cancelButtonText: '暂不', type: 'warning' }
-                )
-                  .then(() => {
-                    window.location.reload();
-                  })
-                  .catch(() => {
-                    if (this.cb && typeof this.cb === 'function') {
-                      this.cb();
-                    }
-                  })
-              }
+
+              this.dialogVisible = false;
+              // 登录成功后提示是否刷新页面
+              this.$confirm(
+                '登录成功，是否刷新页面以应用最新租户环境？',
+                '提示',
+                { confirmButtonText: '刷新', cancelButtonText: '暂不', type: 'warning' }
+              )
+                .then(() => {
+                  window.location.reload();
+                })
+                .catch(() => {
+                  if (this.cb && typeof this.cb === 'function') {
+                    this.cb();
+                  }
+                })
             }
           })
         } else {
