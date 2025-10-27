@@ -4741,7 +4741,9 @@ export default {
           });
           return;
         }
-        this.page.total = res.page.total;
+        if(res.page && total in res.page){
+          this.page.total = res.page.total;
+        }
 
         let tableData = [];
         for (let i = 0; i < res.data.length; i++) {
