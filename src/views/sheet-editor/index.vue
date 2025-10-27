@@ -4741,7 +4741,7 @@ export default {
           });
           return;
         }
-        if(res.page && total in res.page){
+        if(res.page && 'total' in res.page){
           this.page.total = res.page.total;
         }
 
