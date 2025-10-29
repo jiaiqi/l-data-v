@@ -33,10 +33,7 @@
       @save-data="saveData"
       @save-column-width="saveColumnWidth"
     />
-    <div
-      class="flex-1 list-container"
-      v-if="isFetched || childListType"
-    >
+    <div class="flex-1 list-container" v-if="isFetched || childListType">
       <ve-table
         :columns="columns"
         border-x
@@ -48,10 +45,7 @@
         max-height="calc(100vh - 40px)"
         fixed-header
       />
-      <div
-        class="custom-style"
-        v-else
-      >
+      <div class="custom-style" v-else>
         <ve-table
           ref="tableRef"
           style="word-break: break-word; width: 100vw"
@@ -107,8 +101,9 @@
       ref="changeParentRef"
       :topTreeData="topTreeData"
       :srvApp="srvApp"
-      :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-        "
+      :options="
+        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+      "
       :option-info="parentColOption"
       @confirm="updateParentNo"
     ></select-parent-node>
@@ -161,11 +156,19 @@ import Teleport from "vue2-teleport";
 
 // 导入js
 import { useUserStore } from "@/stores/user.js";
-import { getServiceV2, onSelect, onBatchOperate, onDelete } from "../../service/api";
+import {
+  getServiceV2,
+  onSelect,
+  onBatchOperate,
+  onDelete,
+} from "../../service/api";
 import { $http } from "../../common/http";
 import { processStrings, appendNumber } from "../../common/common";
 import { buildSrvCols, isFkAutoComplete, isFk } from "../../utils/sheetUtils";
-import { extractAndFormatDatesOrTimestamps, extractConcatNumbersWithSingleDecimal } from "@/common/DataUtil.js";
+import {
+  extractAndFormatDatesOrTimestamps,
+  extractConcatNumbersWithSingleDecimal,
+} from "@/common/DataUtil.js";
 import { rowButtonClick, customizeOperate } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import { FkUtil } from "./util/fkUtil.js";
@@ -188,7 +191,6 @@ import DropMenu from "./components/drop-menu/drop-menu.vue";
 // import OutFormDialog from "./components/out-comp/dialog.vue";
 import FieldEditor from "./components/field-editor/index.vue";
 import SheetToolbar from "./components/sheet-toolbar/index.vue";
-
 
 let broadcastChannel = null; //跨iframe通信的实例
 export default {
@@ -323,8 +325,14 @@ export default {
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
             click: (event) => {
-              if (this.fieldEditorParams?.row?.rowKey && this.fieldEditorParams?.column?.key) {
-                if (row?.rowKey !== this.fieldEditorParams?.row?.rowKey || column?.key !== this.fieldEditorParams?.column?.key) {
+              if (
+                this.fieldEditorParams?.row?.rowKey &&
+                this.fieldEditorParams?.column?.key
+              ) {
+                if (
+                  row?.rowKey !== this.fieldEditorParams?.row?.rowKey ||
+                  column?.key !== this.fieldEditorParams?.column?.key
+                ) {
                   this.clearFieldEditorParams();
                 }
               }
@@ -1070,8 +1078,11 @@ export default {
           // fk值改变后进行冗余
           if (isFk(column?.__field_info)) {
             if (changeValue) {
-
-              let fkUtil = new FkUtil(column?.__field_info, this.srvApp, this.fkRawDataMap);
+              let fkUtil = new FkUtil(
+                column?.__field_info,
+                this.srvApp,
+                this.fkRawDataMap
+              );
               fkUtil.getMatchedValue(changeValue, "eq").then((matchedValue) => {
                 if (matchedValue) {
                   const item = {
@@ -1503,16 +1514,19 @@ export default {
             });
 
             // 删除选中行数据
-            let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-              }至第${selectionRangeIndexes.endRowIndex + 1
-              }行数据，是否继续操作？`;
+            let text = `此操作将永久删除该第${
+              selectionRangeIndexes.startRowIndex + 1
+            }至第${
+              selectionRangeIndexes.endRowIndex + 1
+            }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
-              selectionRangeIndexes.startRowIndex ==
+                selectionRangeIndexes.startRowIndex ==
               0
             ) {
-              text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
-                }行数据，是否继续操作？`;
+              text = `此操作将永久删除该第${
+                selectionRangeIndexes.startRowIndex + 1
+              }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -2219,7 +2233,7 @@ export default {
       if (
         button.action_validate &&
         this.evalActionValidator(button.action_validate, this.tableData) !==
-        true
+          true
       ) {
         return;
       }
@@ -2465,7 +2479,7 @@ export default {
         if (typeof data === "string") {
           data = JSON.parse(data);
         }
-      } catch (e) { }
+      } catch (e) {}
       console.log("child-listener", data);
       if (data?.childListCfg) {
         console.log("childListCfg", data.childListCfg);
@@ -2716,7 +2730,7 @@ export default {
     },
     listTypeChange(val) {
       console.log(val);
-      this.listType = val
+      this.listType = val;
       this.initPage();
     },
     handleCurrentChange(val) {
@@ -2742,10 +2756,10 @@ export default {
       const changedCols = [];
       for (let i = startRowIndex; i <= endRowIndex; i++) {
         const row = this.tableData[i];
-        const oldRow = this.oldTableData[i]
-        if (oldRow && oldRow?.__unfold !== row['__unfold']) {
+        const oldRow = this.oldTableData[i];
+        if (oldRow && oldRow?.__unfold !== row["__unfold"]) {
           // 改变折叠状态 不触发编辑
-          return
+          return;
         }
         for (let j = startColIndex; j <= endColIndex; j++) {
           const col = columns[j];
@@ -2775,7 +2789,8 @@ export default {
           const targetCol = item?.fieldInfo?.redundant_options?._target_column;
           if (targetCol && sourceData) {
             // autocomplete字段 由别的行自动填充赋值之后，将对应的fk字段也赋值
-            let targetColInfo = this.addColsMap?.[targetCol] || this.updateColsMap?.[targetCol];
+            let targetColInfo =
+              this.addColsMap?.[targetCol] || this.updateColsMap?.[targetCol];
             if (targetColInfo && sourceData[targetCol]) {
               // fk字段往往不在单元格中，所以不使用startEditingCell
               const row = this.tableData.find((e) => e.rowKey === rowKey);
@@ -2844,7 +2859,7 @@ export default {
         // if (minWidth < 200) {
         //   minWidth = 200;
         // }
-        let minWidth = 50
+        let minWidth = 50;
         columns = columns.concat(
           this.allFields.map((item, index) => {
             let width = minWidth;
@@ -3299,8 +3314,8 @@ export default {
                   if (this.disabled) {
                     return row[column.field]
                       ? item.option_list_v2.find(
-                        (e) => e.value === row[column.field]
-                      )?.label || ""
+                          (e) => e.value === row[column.field]
+                        )?.label || ""
                       : "";
                   }
                   return h(
@@ -3706,8 +3721,12 @@ export default {
               fieldModelObj?.oldModel?.[item?.redundant?.refedCol];
             console.log(oldValByFk, "oldValByFk");
             const nullVal = [null, undefined, ""]; // 定义空值
-            const oldColumnVal = row[item?.redundant?.refedCol]
-            if (oldValByFk && !nullVal.includes(oldColumnVal) && oldColumnVal !== oldValByFk) {
+            const oldColumnVal = row[item?.redundant?.refedCol];
+            if (
+              oldValByFk &&
+              !nullVal.includes(oldColumnVal) &&
+              oldColumnVal !== oldValByFk
+            ) {
               // 如果当前行的值跟fk字段的值不一致，则不处理
               console.log(
                 "not handlerRedundant::unchange",
@@ -3717,7 +3736,7 @@ export default {
               return;
             } else if (row[item.columns]) {
               // 原本有值 也不进行冗余
-              return
+              return;
             }
           }
           if (!item?.redundant?.refedCol) return;
@@ -4476,7 +4495,7 @@ export default {
         // }
       }
     },
-    initFkOption() { },
+    initFkOption() {},
     batchInsertRows() {
       console.log(this.$refs.tableRef.getRangeCellSelection());
       if (this.insertRowNumber > 0) {
@@ -4512,8 +4531,8 @@ export default {
             this.isTree && this.listType === "treelist"
               ? "treelist"
               : this.listType
-                ? this.listType
-                : "list",
+              ? this.listType
+              : "list",
         }
       );
       loadingInstance.close();
@@ -4741,7 +4760,7 @@ export default {
           });
           return;
         }
-        if(res.page && 'total' in res.page){
+        if (res.page && "total" in res.page) {
           this.page.total = res.page.total;
         }
 
@@ -4770,7 +4789,6 @@ export default {
         this.oldTableData = JSON.parse(JSON.stringify(this.tableData));
 
         this.recordManager = new RecordManager();
-        // this.recordManager?.push(cloneDeep(this.oldTableData));
 
         if (this.tableData?.length === 0 && insertNewRows) {
           this.insert2Rows(0);
@@ -4782,8 +4800,8 @@ export default {
         const use_type = this.colSrv?.includes("_add")
           ? "add"
           : this.colSrv?.includes("_update")
-            ? "update"
-            : "list";
+          ? "update"
+          : "list";
         const res = await getServiceV2(
           this.colSrv,
           use_type,
@@ -4791,12 +4809,16 @@ export default {
           true
         );
         if (res?.state === "SUCCESS") {
-          return res?.data?.srv_cols?.map((item) => {
-            // 列表字段显示隐藏默认用的in_list控制 在使用自定义的服务来显示列时使用对应的use_type控制
-            item.in_list =
-              item[`in_${use_type}`] === 1 ? 1 : item[`in_${use_type}`];
-            return item;
-          });
+          if (use_type === "list") {
+            return res.data.srv_cols;
+          } else if (use_type) {
+            return res?.data?.srv_cols?.map((item) => {
+              // 列表字段显示隐藏默认用的in_list控制 在使用自定义的服务来显示列时使用对应的use_type控制
+              item.in_list =
+                item[`in_${use_type}`] === 1 ? 1 : item[`in_${use_type}`];
+              return item;
+            });
+          }
         }
       }
     },
@@ -4856,7 +4878,7 @@ export default {
             return pre;
           }, {});
         }
-        if (this.colSrv) {
+        if (this.colSrv && this.serviceName !== this.colSrv) {
           const srv_cols = await this.getColsV2();
           if (srv_cols?.length) {
             this.v2data.srv_cols = srv_cols;
@@ -4874,7 +4896,7 @@ export default {
                       moreConfig.query_init_value;
                   }
                 }
-              } catch (error) { }
+              } catch (error) {}
             }
             return item;
           });
@@ -4890,7 +4912,8 @@ export default {
           this.v2data.srv_cols,
           allColsMap,
           this.childListType,
-          this.colSrv
+          this.colSrv,
+          this.serviceName
         );
         this.allFields = this.v2data.allFields;
         this.listColsMap = this.allFields?.reduce((pre, cur) => {
@@ -4910,7 +4933,7 @@ export default {
 </script>
 <style lang="scss">
 .el-button {
-  &+& {
+  & + & {
     margin-left: 5px;
   }
 

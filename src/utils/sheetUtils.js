@@ -1,18 +1,30 @@
 import { getFkOptions } from "@/service/api";
 
+function resolveChildListType(childListType) {
+  if (!childListType || typeof childListType !== 'string') return null;
+  let type = 'add';
+  if (childListType.includes('childlist')) {
+    type = childListType.split('childlist')[0];
+  } else if (childListType.includes('list')) {
+    type = childListType.split('list')[0];
+  }
+  return type;
+}
+
+function attachRedundantOptionRefs(col, dependField, addColsMap = {}, updateColsMap = {}, fkCols = {}, extraOptions = {}) {
+  const cfg = fkCols?.[dependField];
+  if (!cfg) return;
+  col.redundant_options = { ...cfg, ...extraOptions };
+  col._add_option_list_v2 = addColsMap?.[dependField]?.option_list_v2;
+  col._update_option_list_v2 = updateColsMap?.[dependField]?.option_list_v2;
+  col._add_option_list = addColsMap?.[dependField]?.option_list_v3;
+  col._update_option_list = updateColsMap?.[dependField]?.option_list_v3;
+}
+
 // 组装srvCols数据
-const buildSrvCols = (
-  cols,
-  allColsMap = {},
-  //   updateColsMap = {},
-  //   addColsMap = {},
-  childListType,
-  colSrv
-) => {
+const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName) => {
   let { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
-  // updateColsMap = updateColsMap || {};
-  // addColsMap = addColsMap || {};
-  // listColsMap = listColsMap || {};
+
   if (Array.isArray(cols) && cols.length > 0) {
     // 冗余字段auto complete特性
     const fkCols = cols.reduce((res, cur) => {
@@ -45,7 +57,7 @@ const buildSrvCols = (
       }
       return res;
     }, {});
-    if (colSrv) {
+    if (colSrv && colSrv !== serviceName) {
       // 使用了自定义服务控制列表的列
       const srvType = colSrv.slice(colSrv.lastIndexOf("_") + 1);
       cols = cols.map((item) => {
@@ -57,12 +69,7 @@ const buildSrvCols = (
       });
     } else if (childListType) {
       // 新增页面子表 使用add服务的column
-      let type = 'add'
-      if (childListType.includes('childlist')) {
-        type = childListType.split('childlist')[0]
-      } else if (childListType.includes('list')) {
-        type = childListType.split('list')[0]
-      }
+      let type = resolveChildListType(childListType) || 'add'
       if (type === 'detail') {
         allColsMap.detailColsMap = allColsMap.listColsMap
       }
@@ -73,13 +80,6 @@ const buildSrvCols = (
         }
         return item
       })
-      // cols = cols.map((item) => {
-      //   if (addColsMap[item.columns]) {
-      //     item = { ...addColsMap[item.columns] };
-      //     item.in_list = addColsMap[item.columns].in_add;
-      //   }
-      //   return item;
-      // });
     } else {
       // 合并列表字段跟编辑字段
       let listUpdateMixCols = [...cols];
@@ -88,16 +88,15 @@ const buildSrvCols = (
           const index = cols.findIndex((col) => col.columns === key);
           if (index > -1) {
             // list跟update都有的字段 使用update字段的配置
-            if (
-              cols[index]?.in_list === 1 &&
-              updateColsMap[key]?.in_list !== 1
-            ) {
-              updateColsMap[key].in_list = 1;
+            const candidate = { ...updateColsMap[key] };
+            if (cols[index]?.in_list === 1 && candidate?.in_list !== 1) {
+              candidate.in_list = 1;
             }
-            listUpdateMixCols.splice(index, 1, updateColsMap[key]);
+            listUpdateMixCols.splice(index, 1, candidate);
           } else {
             // list没有update有 将update字段插入到字段数组中
-            listUpdateMixCols.splice(keyIndex, 0, updateColsMap[key]);
+            const candidate = { ...updateColsMap[key] };
+            listUpdateMixCols.splice(keyIndex, 0, candidate);
           }
         });
       }
@@ -109,6 +108,7 @@ const buildSrvCols = (
         updateColsMap?.[col.columns]?.updatable === 1 &&
         updateColsMap?.[col.columns]?.in_update === 1;
       col.canAdd = addColsMap?.[col.columns]?.in_add === 1;
+      col._display = listColsMap?.[col.columns]?.in_list === 1 || col.editable || col.canAdd; // 显示列是列表列、可编辑列、可新增列的并集
       col.isRequired =
         col.required === "是" ||
         updateColsMap?.[col.columns]?.required === "是" ||
@@ -132,27 +132,14 @@ const buildSrvCols = (
         fkCols[dependField]
       ) {
         // 冗余字段auto complete特性
-        col.redundant_options = {
-          ...fkCols[dependField],
-        };
-        col._add_option_list_v2 = addColsMap?.[dependField]?.option_list_v2
-        col._update_option_list_v2 = updateColsMap?.[dependField]?.option_list_v2
-        col._add_option_list = addColsMap?.[dependField]?.option_list_v3
-        col._update_option_list = updateColsMap?.[dependField]?.option_list_v3
+        attachRedundantOptionRefs(col, dependField, addColsMap, updateColsMap, fkCols);
       }
       if (col?.col_type === "String" && col?.redundant?.dependField) {
         // 只让冗余的disp col 字段具备fk字段的效果
         const key_disp_col = fkCols[col.redundant.dependField]?.key_disp_col;
         // if (key_disp_col && col.columns && (col.columns === key_disp_col || col.redundant?.refedCol === key_disp_col)) {
         if (key_disp_col && col.columns && col.redundant?.refedCol === key_disp_col) {
-          col.redundant_options = {
-            ...fkCols[dependField],
-            autocompleteInput: true,
-          };
-          col._add_option_list_v2 = addColsMap?.[dependField]?.option_list_v2
-          col._update_option_list_v2 = updateColsMap?.[dependField]?.option_list_v2
-          col._add_option_list = addColsMap?.[dependField]?.option_list_v3
-          col._update_option_list = updateColsMap?.[dependField]?.option_list_v3
+          attachRedundantOptionRefs(col, dependField, addColsMap, updateColsMap, fkCols, { autocompleteInput: true });
         }
       }
       switch (col.bx_col_type) {
@@ -320,236 +307,7 @@ const buildDataVerification = (data, cols) => {
   }
   return res;
 };
-// json格式的列表数据转换为luckysheet的数据格式
-const json2sheet = async (data, cols) => {
-  let showCols = cols.map((item) => item.columns);
-  const defaultData = {
-    name: "Cell", //工作表名称
-    color: "", //工作表颜色
-    index: 0, //工作表索引
-    status: 1, //激活状态
-    order: 0, //工作表的下标
-    hide: 0, //是否隐藏
-    row: 10, //行数
-    column: 10, //列数
-    defaultRowHeight: 19, //自定义行高
-    defaultColWidth: 73, //自定义列宽
-    pager: {
-      pageIndex: 1, //当前的页码
-      pageSize: 10, //每页显示多少行数据
-      total: data.length, //数据总行数
-    },
-    celldata: [], //初始化使用的单元格数据
-    config: {
-      merge: {}, //合并单元格
-      rowlen: {}, //表格行高
-      columnlen: {}, //表格列宽
-      rowhidden: {}, //隐藏行
-      colhidden: {}, //隐藏列
-      borderInfo: {}, //边框
-      authority: {}, //工作表保护
-    },
-    scrollLeft: 0, //左右滚动条位置
-    // "scrollTop": 315, //上下滚动条位置
-    luckysheet_select_save: [], //选中的区域
-    calcChain: [], //公式链
-    isPivotTable: false, //是否数据透视表
-    pivotTable: {}, //数据透视表设置
-    filter_select: {}, //筛选范围
-    filter: null, //筛选配置
-    luckysheet_alternateformat_save: [], //交替颜色
-    luckysheet_alternateformat_save_modelCustom: [], //自定义交替颜色
-    luckysheet_conditionformat_save: {}, //条件格式
-    frozen: {}, //冻结行列配置
-    chart: [], //图表配置
-    zoomRatio: 1, // 缩放比例
-    image: [], //图片
-    showGridLines: 1, //是否显示网格线
-    dataVerification: {}, //数据验证配置
-  };
 
-  if (Array.isArray(cols) && cols.length > 0) {
-    let arr = [];
-    defaultData.row = data.length || 2;
-    defaultData.column = 0;
-    for (let index = 0; index < cols.length; index++) {
-      const col = cols[index];
-      let obj = {
-        r: 0,
-        c: index,
-        v: {
-          ct: { fa: "@", t: "s" },
-          m: col["label"],
-          v: col["label"],
-          label: col.label,
-          columns: col.columns,
-          bg: "#999",
-          fc: "#fff",
-          isTitle: true, //是否是标题
-          // fs:12
-        },
-      };
-      arr.push(obj);
-    }
-    // cols.forEach(async (col, index) => {
-    //   debugger
-
-    // })
-    if (Array.isArray(data) && data.length > 0) {
-      data.forEach((item, rIndex) => {
-        let keys = showCols;
-        // let keys = Object.keys(item).filter(key => showCols.includes(key))
-        // let keys = Object.keys(item).filter(key => cols.includes(item => item.columns === key))
-        keys.forEach((key, cIndex) => {
-          let colItem = cols.find((col) => col.columns === key);
-          if (colItem) {
-            let obj = {
-              r: rIndex + 1,
-              c: cIndex,
-              v: {
-                ct: { fa: "@", t: "s" },
-                label: colItem.label,
-                columns: colItem.columns,
-                old_val: item[key],
-                m: item[key],
-                v: item[key],
-                id: item.id,
-                editType: colItem.editType,
-                optionsList: colItem.optionsList,
-                optionListV2: colItem.option_list_v2,
-              },
-            };
-            if (colItem.editType === "dropdownFk") {
-              if (
-                obj.value &&
-                Array.isArray(obj.optionsList) &&
-                obj.optionsList.length > 0
-              ) {
-                let val = obj.optionsList.find(
-                  (item) => item.value === obj.value
-                );
-                if (val.value) {
-                  obj.v = val.value;
-                }
-              }
-            }
-            if (colItem.col_type === "Date") {
-              obj.v.ct.fa = "yyyy-MM-dd";
-              obj.v.ct.t = "d";
-            }
-            if (colItem.col_type === "DateTime") {
-              obj.v.ct.fa = "yyyy-MM-dd hh:mm";
-              obj.v.ct.t = "d";
-            }
-            if (colItem.col_type === "Time") {
-              obj.v.ct.fa = "hh:mm:ss";
-              obj.v.ct.t = "d";
-            }
-
-            arr.push(obj);
-            if (rIndex === 0) {
-              defaultData.column = cIndex;
-            }
-          }
-        });
-      });
-    }
-    defaultData.celldata = arr;
-  }
-
-  defaultData.dataVerification = buildDataVerification(
-    defaultData.celldata,
-    cols
-  );
-  return defaultData;
-};
-
-// lucksheet的数据格式转换为json格式的列表数据
-const sheet2json = (data, oldData) => {
-  if (Array.isArray(data) && data.length > 0) {
-    let titleRow = data[0];
-    let cols = titleRow.map((item) => {
-      let obj = {
-        columns: item.columns,
-        label: item.label,
-      };
-      return obj;
-    });
-    data = data.slice(1);
-    data.forEach((row, index) => {
-      if (oldData && oldData.length > 0 && oldData[index]) {
-        row.id = oldData[index].id;
-        row.isNew = false;
-      } else {
-        row.isNew = true;
-      }
-    });
-    let arr = [];
-    let res = {
-      update: [],
-      add: [],
-      del: [],
-    };
-
-    // let cols = data.find(row => {
-    //   if (Array.isArray(row) && row.length > 0) {
-    //     return true
-    //   }
-    // }).map(item => {
-    //   let obj = {
-    //     columns: item.columns,
-    //     label: item.label,
-    //   }
-    //   return obj
-    // })
-
-    data.forEach((rowData) => {
-      let obj = {};
-
-      if (rowData.id) {
-        obj.id = rowData.id;
-      }
-
-      if (Array.isArray(rowData) && rowData.length > 0) {
-        rowData.forEach((row, rIndex) => {
-          let col = cols[rIndex];
-          if (!obj.id && col?.columns && row?.m) {
-            // 新增的行数据中的单元格
-            obj[col.columns] = row.m;
-          } else if (row?.old_val !== row?.m && col?.columns) {
-            // 修改的单元格
-            obj[col.columns] = row.m || null;
-          } else if (col && col.columns && row && row.m) {
-            // 没有改动的单元格
-            // obj[ col.columns ] = row.m
-          }
-        });
-      }
-      if (obj && typeof obj === "object") {
-        // let isDel = Object.keys(obj).filter(key => key!=='id').every(key => obj[ key ] === null)
-        // let isDel = obj.isDel
-        if (!obj?.id && Object.keys(obj).length > 0) {
-          // 新增的行数据
-          res.add.push(obj);
-        } else if (obj.id && Object.keys(obj).length > 1) {
-          // 修改的行数据
-          if (
-            Object.keys(obj)
-              .filter((key) => key !== "id")
-              .every((key) => obj[key] === null)
-          ) {
-            // 删除整行
-            res.del.push(obj.id);
-          } else {
-            res.update.push(obj);
-          }
-        }
-        arr.push(obj);
-      }
-    });
-    return res;
-  }
-};
 function isRichText(column) {
   return column?.col_type && ["Note", "RichText", "snote"].includes(column.col_type)
 }
@@ -568,7 +326,7 @@ function isFk(column) {
     return fkTypes.includes(column.col_type) ||
       column.bx_col_type === "fk" ||
       column.col_type === 'fk' ||
-      column.col_type?.includes("bx") === 0
+      (typeof column.col_type === 'string' && column.col_type.indexOf('bx') === 0)
   }
   return false
 }
@@ -590,4 +348,4 @@ export function getFieldType(column) {
   return result
 }
 
-export { json2sheet, sheet2json, buildSrvCols, buildDataVerification, isRichText, isFkAutoComplete, isFk };
+export {  buildSrvCols, isRichText, isFkAutoComplete, isFk };
