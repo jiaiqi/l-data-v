@@ -22,9 +22,15 @@ function attachRedundantOptionRefs(col, dependField, addColsMap = {}, updateCols
 }
 
 // 组装srvCols数据
-const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName) => {
+// preferType: 可选 'list' | 'add' | 'update'，在 colSrv 未指定或与 serviceName 相同时优先使用指定来源的列
+const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName, preferType = 'list') => {
   let { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
-
+  if (preferType !== 'list') {
+    let newCols = allColsMap?.[preferType + 'Cols'] || [];
+    if (Array.isArray(newCols) && newCols.length) {
+      cols = newCols
+    }
+  }
   if (Array.isArray(cols) && cols.length > 0) {
     // 冗余字段auto complete特性
     const fkCols = cols.reduce((res, cur) => {
@@ -82,6 +88,32 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName)
       })
     } else {
       // 合并列表字段跟编辑字段
+      // 当 preferType 指定为 'add' 或 'update' 时，优先使用对应来源的列定义，并以对应 in_* 控制显示
+      if (preferType && preferType !== 'list') {
+        const type = preferType;
+        const fromMap = allColsMap?.[`${type}ColsMap`] || {};
+        // 1) 用目标来源的列定义替换现有同名列
+        cols = cols.map(item => {
+          if (fromMap[item.columns]) {
+            const next = { ...fromMap[item.columns] };
+            next.in_list = fromMap[item.columns][`in_${type}`];
+            return next;
+          }
+          return item;
+        });
+        // 2) 将目标来源中存在但列表中不存在的列插入，保持与原有插入策略一致
+        const mixed = [...cols];
+        Object.keys(fromMap).forEach((key, keyIndex) => {
+          const exists = cols.findIndex((col) => col.columns === key) > -1;
+          if (!exists) {
+            const candidate = { ...fromMap[key] };
+            candidate.in_list = fromMap[key][`in_${type}`];
+            mixed.splice(keyIndex, 0, candidate);
+          }
+        });
+        cols = mixed;
+      }
+
       let listUpdateMixCols = [...cols];
       if (Object.keys(updateColsMap).length > 0) {
         Object.keys(updateColsMap).forEach((key, keyIndex) => {
@@ -348,4 +380,4 @@ export function getFieldType(column) {
   return result
 }
 
-export {  buildSrvCols, isRichText, isFkAutoComplete, isFk };
+export { buildSrvCols, isRichText, isFkAutoComplete, isFk };

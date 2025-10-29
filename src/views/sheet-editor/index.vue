@@ -26,8 +26,12 @@
       :calc-column-width-req="calcColumnWidthReq"
       :auto-save-timeout="autoSaveTimeout"
       :on-handler="onHandler"
+      :col-source-type="colSourceType"
+      :can-switch-add="Boolean(Object.keys(addColsMap||{}).length)"
+      :can-switch-update="Boolean(Object.keys(updateColsMap||{}).length)"
       @batch-insert-rows="batchInsertRows"
       @list-type-change="listTypeChange"
+      @column-source-change="onColumnSourceChange"
       @grid-button-click="onGridButton"
       @refresh-data="refreshData"
       @save-data="saveData"
@@ -259,6 +263,7 @@ export default {
   },
   data() {
     return {
+      colSourceType: 'list',
       fkRawDataMap: {},
       bx_auth_ticket: null,
       fieldEditorParams: null,
@@ -299,7 +304,9 @@ export default {
       filterState: {}, //筛选
       listColsMap: {}, //列表字段映射
       addColsMap: {}, //新增字段映射
+      addCols: [], //新增字段
       updateColsMap: {}, //编辑字段映射
+      updateCols: [], //编辑字段
       loading: false,
       isFetched: false, //数据加载完成
       recordManager: new RecordManager(), //编辑记录
@@ -1817,6 +1824,80 @@ export default {
     },
   },
   methods: {
+    hasUnsavedChanges() {
+      try {
+        return Array.isArray(this.tableData) && this.tableData.some(r => r?.__flag === 'add' || r?.__flag === 'update');
+      } catch (e) {
+        return false;
+      }
+    },
+    async onColumnSourceChange(type) {
+      if (type === this.colSourceType) return;
+      const proceed = async () => {
+        this.colSourceType = type;
+        // 如果启用了自定义列服务，根据选择的来源类型重新拉取对应 srv_cols
+        if (this.colSrv && this.serviceName !== this.colSrv) {
+          const ress = await getServiceV2(
+            this.colSrv,
+            type,
+            this.srvApp,
+            true,
+            this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
+          );
+          if (ress?.state === 'SUCCESS') {
+            const srv_cols = Array.isArray(ress?.data?.srv_cols) ? ress.data.srv_cols.map((item) => {
+              item.in_list = item[`in_${type}`] === 1 ? 1 : item[`in_${type}`];
+              return item;
+            }) : [];
+            if (srv_cols?.length) {
+              this.v2data.srv_cols = srv_cols;
+            }
+          }
+        }
+        // 重建列：使用当前 v2data.srv_cols 与 preferType
+        const listColsMap = (this.v2data?.srv_cols || []).reduce((pre, cur) => {
+          pre[cur.columns] = cur;
+          return pre;
+        }, {});
+        const allColsMap = {
+          updateCols: this.updateCols,
+          updateColsMap: this.updateColsMap,
+          listColsMap,
+          addCols: this.addCols,
+          addColsMap: this.addColsMap,
+          childListType: this.childListType,
+        };
+        this.v2data.allFields = buildSrvCols(
+          this.v2data.srv_cols,
+          allColsMap,
+          this.childListType,
+          this.colSrv,
+          this.serviceName,
+          this.colSourceType
+        );
+        this.allFields = this.v2data.allFields;
+        this.listColsMap = this.allFields?.reduce((pre, cur) => {
+          pre[cur.columns] = cur;
+          return pre;
+        }, {});
+        this.columns = this.buildColumns();
+      };
+
+      if (this.hasUnsavedChanges()) {
+        this.$confirm(
+          '切换列来源前需要保存当前修改，是否立即保存？',
+          '提示',
+          { type: 'warning', confirmButtonText: '保存并切换', cancelButtonText: '取消' }
+        ).then(async () => {
+          await this.saveData();
+          await proceed();
+        }).catch(() => {
+          this.$message({ type: 'info', message: '已取消切换' });
+        });
+      } else {
+        await proceed();
+      }
+    },
     clickPage(event) {
       // 如果点击的是fieldEditor，不进行后面逻辑判断
       if (this.$refs.fieldEditor && this.$refs.fieldEditor.$el) {
@@ -4857,6 +4938,7 @@ export default {
             false,
             this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
           );
+          this.updateCols = ress?.data?.srv_cols || [];
           this.updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
             return pre;
@@ -4873,6 +4955,7 @@ export default {
             false,
             this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
           );
+          this.addCols = ress?.data?.srv_cols || [];
           this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
             return pre;
@@ -4903,8 +4986,10 @@ export default {
         }
 
         const allColsMap = {
+          updateCols: this.updateCols,
           updateColsMap: this.updateColsMap,
           listColsMap: listColsMap,
+          addCols: this.addCols,
           addColsMap: this.addColsMap,
           childListType: this.childListType,
         };
@@ -4913,7 +4998,8 @@ export default {
           allColsMap,
           this.childListType,
           this.colSrv,
-          this.serviceName
+          this.serviceName,
+          this.colSourceType
         );
         this.allFields = this.v2data.allFields;
         this.listColsMap = this.allFields?.reduce((pre, cur) => {

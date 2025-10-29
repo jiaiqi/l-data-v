@@ -49,6 +49,20 @@
 
     <!-- 右侧：操作按钮区域 -->
     <div class="flex flex-items-center flex-1 justify-end p-x-2">
+      <!-- 列来源选择 -->
+      <div class="flex flex-items-center m-r-10">
+        <div class="m-r-2">列来源</div>
+        <el-select
+          size="mini"
+          style="width: 130px"
+          :value="colSourceType"
+          @change="emit('column-source-change', $event)"
+        >
+          <el-option label="列表字段" value="list"></el-option>
+          <el-option label="新增字段" value="add" :disabled="!canSwitchAdd"></el-option>
+          <el-option label="编辑字段" value="update" :disabled="!canSwitchUpdate"></el-option>
+        </el-select>
+      </div>
       <!-- 颜色图例 -->
       <div
         class="color-map flex flex-items-center m-r-20"
@@ -167,6 +181,19 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  // 列来源选择
+  colSourceType: {
+    type: String,
+    default: 'list'
+  },
+  canSwitchAdd: {
+    type: Boolean,
+    default: false
+  },
+  canSwitchUpdate: {
+    type: Boolean,
+    default: false
+  },
   // 添加按钮配置
   addButton: {
     type: Object,
@@ -218,6 +245,7 @@ const emit = defineEmits([
   'update:insertRowNumber',
   'batch-insert-rows',
   'list-type-change',
+  'column-source-change',
   'grid-button-click',
   'refresh-data',
   'save-data',
