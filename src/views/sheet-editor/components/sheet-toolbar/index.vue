@@ -51,21 +51,16 @@
     <div class="flex flex-items-center  justify-end p-x-2">
       <!-- 列来源选择 -->
       <div class="flex flex-items-center m-r-10">
-        <div class="m-r-2">列来源</div>
+        <div class="m-r-2">字段来源</div>
         <el-radio-group
           size="mini"
           :value="colSourceType"
           @input="emit('column-source-change', $event)"
         >
-          <el-radio-button label="list">列表字段</el-radio-button>
-          <el-radio-button
-            label="add"
-            :disabled="!canSwitchAdd"
-          >新增字段</el-radio-button>
-          <el-radio-button
-            label="update"
-            :disabled="!canSwitchUpdate"
-          >编辑字段</el-radio-button>
+          <el-radio-button label="list">列表</el-radio-button>
+          <el-radio-button label="add" :disabled="!canSwitchAdd">新增</el-radio-button>
+          <el-radio-button label="update" :disabled="!canSwitchUpdate">编辑</el-radio-button>
+          <el-radio-button label="custom" v-if="colSrv" :disabled="!colSrv">自定义</el-radio-button>
         </el-radio-group>
       </div>
       <!-- 颜色图例 -->
@@ -190,6 +185,10 @@ const props = defineProps({
   colSourceType: {
     type: String,
     default: 'list'
+  },
+  colSrv: {
+    type: String,
+    default: ''
   },
   canSwitchAdd: {
     type: Boolean,

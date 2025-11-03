@@ -27,8 +27,9 @@
       :auto-save-timeout="autoSaveTimeout"
       :on-handler="onHandler"
       :col-source-type="colSourceType"
-      :can-switch-add="Boolean(Object.keys(addColsMap||{}).length)"
-      :can-switch-update="Boolean(Object.keys(updateColsMap||{}).length)"
+      :col-srv="colSrv"
+      :can-switch-add="Boolean(Object.keys(addColsMap || {}).length)"
+      :can-switch-update="Boolean(Object.keys(updateColsMap || {}).length)"
       @batch-insert-rows="batchInsertRows"
       @list-type-change="listTypeChange"
       @column-source-change="onColumnSourceChange"
@@ -37,7 +38,10 @@
       @save-data="saveData"
       @save-column-width="saveColumnWidth"
     />
-    <div class="flex-1 list-container" v-if="isFetched || childListType">
+    <div
+      class="flex-1 list-container"
+      v-if="isFetched || childListType"
+    >
       <ve-table
         :columns="columns"
         border-x
@@ -49,7 +53,10 @@
         max-height="calc(100vh - 40px)"
         fixed-header
       />
-      <div class="custom-style" v-else>
+      <div
+        class="custom-style"
+        v-else
+      >
         <ve-table
           ref="tableRef"
           style="word-break: break-word; width: 100vw"
@@ -105,9 +112,8 @@
       ref="changeParentRef"
       :topTreeData="topTreeData"
       :srvApp="srvApp"
-      :options="
-        tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
-      "
+      :options="tableData.filter((item) => item.__flag !== 'add' && !item.__indent)
+        "
       :option-info="parentColOption"
       @confirm="updateParentNo"
     ></select-parent-node>
@@ -263,7 +269,7 @@ export default {
   },
   data() {
     return {
-      colSourceType: 'update',
+      colSourceType: 'list',
       fkRawDataMap: {},
       bx_auth_ticket: null,
       fieldEditorParams: null,
@@ -1521,19 +1527,16 @@ export default {
             });
 
             // 删除选中行数据
-            let text = `此操作将永久删除该第${
-              selectionRangeIndexes.startRowIndex + 1
-            }至第${
-              selectionRangeIndexes.endRowIndex + 1
-            }行数据，是否继续操作？`;
+            let text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
+              }至第${selectionRangeIndexes.endRowIndex + 1
+              }行数据，是否继续操作？`;
             if (
               selectionRangeIndexes.endRowIndex -
-                selectionRangeIndexes.startRowIndex ==
+              selectionRangeIndexes.startRowIndex ==
               0
             ) {
-              text = `此操作将永久删除该第${
-                selectionRangeIndexes.startRowIndex + 1
-              }行数据，是否继续操作？`;
+              text = `此操作将永久删除该第${selectionRangeIndexes.startRowIndex + 1
+                }行数据，是否继续操作？`;
             }
             this.$confirm(text, "提示", {
               distinguishCancelAndClose: true,
@@ -1835,18 +1838,24 @@ export default {
       if (type === this.colSourceType) return;
       const proceed = async () => {
         this.colSourceType = type;
-        // 如果启用了自定义列服务，根据选择的来源类型重新拉取对应 srv_cols
-        if (this.colSrv && this.serviceName !== this.colSrv) {
+        // 如果选择自定义类型，或者启用了自定义列服务，根据选择的来源类型重新拉取对应 srv_cols
+        if ((type === 'custom' && this.colSrv) || (this.colSrv && this.serviceName !== this.colSrv)) {
+          // 对于自定义类型，使用colSrv作为服务名，类型为list
+          const serviceType = type === 'custom' ? 'list' : type;
+          const serviceName = type === 'custom' ? this.colSrv : this.colSrv;
+
           const ress = await getServiceV2(
-            this.colSrv,
-            type,
+            serviceName,
+            serviceType,
             this.srvApp,
             true,
             this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
           );
           if (ress?.state === 'SUCCESS') {
             const srv_cols = Array.isArray(ress?.data?.srv_cols) ? ress.data.srv_cols.map((item) => {
-              item.in_list = item[`in_${type}`] === 1 ? 1 : item[`in_${type}`];
+              // 对于自定义类型，使用in_list字段
+              const inField = type === 'custom' ? 'in_list' : `in_${type}`;
+              item.in_list = item[inField] === 1 ? 1 : item[inField];
               return item;
             }) : [];
             if (srv_cols?.length) {
@@ -1875,7 +1884,7 @@ export default {
           this.serviceName,
           this.colSourceType
         );
-        this.allFields = this.v2data.allFields;
+
         this.listColsMap = this.allFields?.reduce((pre, cur) => {
           pre[cur.columns] = cur;
           return pre;
@@ -2314,7 +2323,7 @@ export default {
       if (
         button.action_validate &&
         this.evalActionValidator(button.action_validate, this.tableData) !==
-          true
+        true
       ) {
         return;
       }
@@ -2560,7 +2569,7 @@ export default {
         if (typeof data === "string") {
           data = JSON.parse(data);
         }
-      } catch (e) {}
+      } catch (e) { }
       console.log("child-listener", data);
       if (data?.childListCfg) {
         console.log("childListCfg", data.childListCfg);
@@ -3395,8 +3404,8 @@ export default {
                   if (this.disabled) {
                     return row[column.field]
                       ? item.option_list_v2.find(
-                          (e) => e.value === row[column.field]
-                        )?.label || ""
+                        (e) => e.value === row[column.field]
+                      )?.label || ""
                       : "";
                   }
                   return h(
@@ -4576,7 +4585,7 @@ export default {
         // }
       }
     },
-    initFkOption() {},
+    initFkOption() { },
     batchInsertRows() {
       console.log(this.$refs.tableRef.getRangeCellSelection());
       if (this.insertRowNumber > 0) {
@@ -4612,8 +4621,8 @@ export default {
             this.isTree && this.listType === "treelist"
               ? "treelist"
               : this.listType
-              ? this.listType
-              : "list",
+                ? this.listType
+                : "list",
         }
       );
       loadingInstance.close();
@@ -4881,8 +4890,8 @@ export default {
         const use_type = this.colSrv?.includes("_add")
           ? "add"
           : this.colSrv?.includes("_update")
-          ? "update"
-          : "list";
+            ? "update"
+            : "list";
         const res = await getServiceV2(
           this.colSrv,
           use_type,
@@ -4907,6 +4916,9 @@ export default {
       let useType = this.listType;
       if (useType !== "treelist" && this.childListType?.includes("list")) {
         useType = this.childListType;
+      }
+      if (this.colSrv && this.colSourceType !== 'custom') {
+        this.colSourceType = 'custom';
       }
       const res = await getServiceV2(
         this.serviceName,
@@ -4979,7 +4991,7 @@ export default {
                       moreConfig.query_init_value;
                   }
                 }
-              } catch (error) {}
+              } catch (error) { }
             }
             return item;
           });
@@ -5019,7 +5031,7 @@ export default {
 </script>
 <style lang="scss">
 .el-button {
-  & + & {
+  &+& {
     margin-left: 5px;
   }
 
