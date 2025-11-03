@@ -5,7 +5,7 @@
   >
     <!-- 左侧：添加行区域 -->
     <div
-      class="flex flex-1 items-center text-sm p-x-2"
+      class="flex items-center text-sm p-x-2"
       v-if="addButton && addButton.service_name"
     >
       <div class="m-r-2">添加</div>
@@ -48,20 +48,25 @@
     </div>
 
     <!-- 右侧：操作按钮区域 -->
-    <div class="flex flex-items-center flex-1 justify-end p-x-2">
+    <div class="flex flex-items-center  justify-end p-x-2">
       <!-- 列来源选择 -->
       <div class="flex flex-items-center m-r-10">
         <div class="m-r-2">列来源</div>
-        <el-select
+        <el-radio-group
           size="mini"
-          style="width: 130px"
           :value="colSourceType"
-          @change="emit('column-source-change', $event)"
+          @input="emit('column-source-change', $event)"
         >
-          <el-option label="列表字段" value="list"></el-option>
-          <el-option label="新增字段" value="add" :disabled="!canSwitchAdd"></el-option>
-          <el-option label="编辑字段" value="update" :disabled="!canSwitchUpdate"></el-option>
-        </el-select>
+          <el-radio-button label="list">列表字段</el-radio-button>
+          <el-radio-button
+            label="add"
+            :disabled="!canSwitchAdd"
+          >新增字段</el-radio-button>
+          <el-radio-button
+            label="update"
+            :disabled="!canSwitchUpdate"
+          >编辑字段</el-radio-button>
+        </el-radio-group>
       </div>
       <!-- 颜色图例 -->
       <div

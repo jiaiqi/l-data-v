@@ -263,7 +263,7 @@ export default {
   },
   data() {
     return {
-      colSourceType: 'list',
+      colSourceType: 'update',
       fkRawDataMap: {},
       bx_auth_ticket: null,
       fieldEditorParams: null,
