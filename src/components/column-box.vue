@@ -1,7 +1,16 @@
 <template>
   <div class="dndList-list1">
     <div class="title">
-      <span>{{ singList.name }}</span>
+      <span class="title-name">{{ singList.name }}</span>
+      <!-- 搜索框：移动到标题区域，仅在允许勾选时显示 -->
+      <el-input
+        v-if="allowCheck"
+        v-model="searchKeyword"
+        placeholder="搜索字段(名称/列名)"
+        clearable
+        size="small"
+        class="column-search-input"
+      ></el-input>
     </div>
     <div class="content">
       <el-checkbox-group
@@ -21,6 +30,7 @@
             v-for="(item, index) in singList.list"
             :key="index"
             :data-column="item.columns"
+            v-show="!allowCheck || matchesSearch(item)"
           >
             <div
               v-if="singList.type === 'all'"
@@ -36,9 +46,11 @@
                 <div class="flex items-center w-full all-column-item flex-1">
                   <div class="flex justify-center flex-col flex-1 truncate">
                     <div class="truncate">
-                      {{ item.label }}
+                      <span v-html="renderLabel(item)"></span>
                     </div>
-                    <div class="truncate">{{ item.columns }}</div>
+                    <div class="truncate">
+                      <span v-html="renderColumns(item)"></span>
+                    </div>
                   </div>
                   <i
                     class="i-ri-drag-drop-fill handle cursor-move hover-show"
@@ -59,8 +71,8 @@
               v-else
               class="value handle"
               :class="{ order_value: singList.type === 'order' }"
+              v-html="renderLabel(item)"
             >
-              {{ item.label }}
             </div>
             <el-select
               v-model="item._condition.ruleType"
@@ -185,7 +197,6 @@
 </template>
 
 <script>
-import { debounce } from "lodash-es";
 import draggable from "vuedraggable";
 
 export default {
@@ -224,6 +235,8 @@ export default {
       checkList: [],
       deploy: {},
       selectList: [],
+      // 搜索关键字（仅在 allowCheck=true 时使用）
+      searchKeyword: "",
       modelType: "",
       singListBak: {},
       flags: "article",
@@ -276,6 +289,38 @@ export default {
     };
   },
   methods: {
+    // 匹配搜索条件：按 label 或 columns 模糊匹配
+    matchesSearch(item) {
+      const q = (this.searchKeyword || "").trim().toLowerCase();
+      if (!q) return true;
+      const label = (item.label || "").toLowerCase();
+      const col = String(item.columns || "").toLowerCase();
+      return label.includes(q) || col.includes(q);
+    },
+    // HTML 转义，避免 v-html 注入风险
+    escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    },
+    // 高亮匹配文本（大小写不敏感）
+    highlightText(text) {
+      const q = (this.searchKeyword || "").trim();
+      if (!q) return this.escapeHtml(text);
+      const safeText = this.escapeHtml(text);
+      const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp(escapedQ, "gi");
+      return safeText.replace(re, (m) => `<mark class="hl">${m}</mark>`);
+    },
+    renderLabel(item) {
+      return this.highlightText(item.label || "");
+    },
+    renderColumns(item) {
+      return this.highlightText(String(item.columns || ""));
+    },
     copyColumn(item) {
       const textToCopy = item.columns;
 
@@ -1035,10 +1080,55 @@ export default {
 };
 </script>
 
-<style
-  scoped
-  lang="scss"
->
+
+<style scoped lang="scss">
+.title {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 8px;
+  background: #2f8cff;
+  color: #fff;
+
+  .column-search-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    // max-width: 180px;
+  }
+
+  ::v-deep .el-input__inner {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 0;
+    outline: none;
+    height: 100%;
+    color: #fff;
+    font-size: 14px;
+
+    &::placeholder {
+      color: #eee;
+    }
+  }
+}
+
+.title-name {
+  font-weight: 600;
+  white-space: nowrap;
+  padding-right: 10px;
+}
+
+mark.hl {
+  background-color: #fff1b8;
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
 .parentMenu {
   min-width: 120px;
   background: white;
@@ -1094,7 +1184,7 @@ export default {
     font-weight: 500;
     font-size: 14px;
     width: 100%;
-    padding: 0 16px;
+    padding-left: 16px;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     height: 48px;
