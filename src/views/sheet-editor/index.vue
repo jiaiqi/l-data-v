@@ -30,6 +30,7 @@
       :col-srv="colSrv"
       :can-switch-add="Boolean(Object.keys(addColsMap || {}).length)"
       :can-switch-update="Boolean(Object.keys(updateColsMap || {}).length)"
+      :service-name="serviceName"
       @batch-insert-rows="batchInsertRows"
       @list-type-change="listTypeChange"
       @column-source-change="onColumnSourceChange"
@@ -4917,7 +4918,7 @@ export default {
       if (useType !== "treelist" && this.childListType?.includes("list")) {
         useType = this.childListType;
       }
-      if (this.colSrv && this.colSourceType !== 'custom') {
+      if (this.colSrv && this.colSourceType !== 'custom' && this.serviceName !== this.colSrv) {
         this.colSourceType = 'custom';
       }
       const res = await getServiceV2(
