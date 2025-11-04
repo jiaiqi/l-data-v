@@ -88,7 +88,7 @@ const router = new VueRouter({
     },
     {
       path: "/childList/:childListType/:broadCastName/:app/:service",
-      name: "childList",
+      name: "childList0",
       component: () => import("@/views/sheet-editor/index.vue"),
     },
     {
