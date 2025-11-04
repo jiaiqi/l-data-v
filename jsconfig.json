@@ -10,6 +10,19 @@
       // 解决.jsx文件无法快速跳转的问题
       "jsx": "preserve"
   },
-  //提高 IDE 性能
-  "exclude": ["node_modules", "dist", "build","dataview","dataview*"]
+  // 仅让 TS/JS 语言服务处理 src 下的源码
+  "include": ["src/**/*"],
+  // 提高 IDE 性能，排除无需处理的大型文件夹
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "public",
+    "coverage",
+    "out",
+    "dataview",
+    "dataview*",
+    "src/assets/**",
+    "**/*.min.js"
+  ]
 }
