@@ -2225,11 +2225,18 @@ export default {
         }
       }
     },
+    // 处理表内计算
     handleRedundantCalc(fieldInfo, row) {
       let func = fieldInfo.redundant.func;
       const field = {
         setSrvVal: (val) => {
-          row[fieldInfo.columns] = val;
+          if (func && func.includes('requtil.$http.post') && row[fieldInfo.columns] && row[fieldInfo.columns] !== val) {
+            // 当字段值已存在且与计算值不同时不再更新，避免数据被意外覆盖
+            // 处理原因：避免复制粘贴的字段名被计算改变
+            console.warn(`字段值已存在 且 与计算出来的值不同 不更新，字段: ${fieldInfo.columns}，当前值：${row[fieldInfo.columns]}，计算结果: ${val}`);
+          } else {
+            row[fieldInfo.columns] = val;
+          }
         },
         getSrvVal: () => {
           return row[fieldInfo.columns];
@@ -2248,9 +2255,9 @@ export default {
         ) {
           update = true;
         }
+
         if (update) {
           const moment = dayjs;
-
           // const ret = eval("var zz=" + func + "(row, self, field); zz");
           let ret = undefined;
           try {
