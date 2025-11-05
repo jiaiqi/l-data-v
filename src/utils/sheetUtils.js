@@ -25,11 +25,22 @@ function attachRedundantOptionRefs(col, dependField, addColsMap = {}, updateCols
 // preferType: 可选 'list' | 'add' | 'update'，在 colSrv 未指定或与 serviceName 相同时优先使用指定来源的列
 const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName, preferType = 'list') => {
   let { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
-  if (preferType !== 'list') {
-    let newCols = allColsMap?.[preferType + 'Cols'] || [];
-    if (Array.isArray(newCols) && newCols.length) {
-      cols = newCols
-    }
+  let newCols = allColsMap?.[preferType + 'Cols'] || [];
+  if (Array.isArray(newCols) && newCols.length) {
+    console.log(`newCols：${preferType}`, newCols.map(item => {
+      return {
+        label: item.label,
+        columns: item.columns,
+        [`in_${preferType}`]: item[`in_${preferType}`],
+      }
+    }));
+    console.log('cols', cols.map(item => {
+      return {
+        label: item.label,
+        columns: item.columns,
+      }
+    }));
+    cols = newCols
   }
   if (Array.isArray(cols) && cols.length > 0) {
     // 冗余字段auto complete特性

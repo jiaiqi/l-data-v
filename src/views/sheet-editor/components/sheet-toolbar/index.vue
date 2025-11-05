@@ -57,7 +57,7 @@
           :value="colSourceType"
           @input="emit('column-source-change', $event)"
         >
-          <el-radio-button label="custom" v-if="colSrv && colSrv !== serviceName">自定义</el-radio-button>
+          <el-radio-button label="custom" v-if="colSrv && !normalService.includes(colSrv)">自定义</el-radio-button>
           <el-radio-button label="list">列表</el-radio-button>
           <el-radio-button label="add" :disabled="!canSwitchAdd">新增</el-radio-button>
           <el-radio-button label="update" :disabled="!canSwitchUpdate">编辑</el-radio-button>
@@ -189,6 +189,10 @@ const props = defineProps({
   serviceName: {
     type: String,
     default: ''
+  },
+  normalService: {
+    type: Array,
+    default: () => []
   },
   colSrv: {
     type: String,

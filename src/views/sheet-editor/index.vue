@@ -31,6 +31,7 @@
       :can-switch-add="Boolean(Object.keys(addColsMap || {}).length)"
       :can-switch-update="Boolean(Object.keys(updateColsMap || {}).length)"
       :service-name="serviceName"
+      :normal-service="normalService"
       @batch-insert-rows="batchInsertRows"
       @list-type-change="listTypeChange"
       @column-source-change="onColumnSourceChange"
@@ -309,11 +310,14 @@ export default {
       },
       sortState: [], // 表头排序
       filterState: {}, //筛选
+      normalService: [], //普通服务，select、add、update
       listColsMap: {}, //列表字段映射
+      listCols: [], //列表字段
       addColsMap: {}, //新增字段映射
       addCols: [], //新增字段
       updateColsMap: {}, //编辑字段映射
       updateCols: [], //编辑字段
+      customCols: [], //自定义服务查回来的字段
       loading: false,
       isFetched: false, //数据加载完成
       recordManager: new RecordManager(), //编辑记录
@@ -1840,11 +1844,10 @@ export default {
       const proceed = async () => {
         this.colSourceType = type;
         // 如果选择自定义类型，或者启用了自定义列服务，根据选择的来源类型重新拉取对应 srv_cols
-        if ((type === 'custom' && this.colSrv) || (this.colSrv && this.serviceName !== this.colSrv)) {
+        if ((type === 'custom' && this.colSrv) || (this.colSrv && !this.normalService.includes(this.colSrv))) {
           // 对于自定义类型，使用colSrv作为服务名，类型为list
           const serviceType = type === 'custom' ? 'list' : type;
           const serviceName = type === 'custom' ? this.colSrv : this.colSrv;
-
           const ress = await getServiceV2(
             serviceName,
             serviceType,
@@ -1873,9 +1876,11 @@ export default {
           updateCols: this.updateCols,
           updateColsMap: this.updateColsMap,
           listColsMap,
+          listCols: this.listCols,
           addCols: this.addCols,
           addColsMap: this.addColsMap,
           childListType: this.childListType,
+          customCols: this.customCols,
         };
         this.v2data.allFields = buildSrvCols(
           this.v2data.srv_cols,
@@ -2804,6 +2809,9 @@ export default {
         }
         if (this.childListType === "add") return (this.loading = false); //新增时不查子表数据
         this.buildInitCond();
+        if (this.colSrv && this.colSourceType !== 'custom' && !this.normalService.includes(this.colSrv)) {
+          this.colSourceType = 'custom';
+        }
         this.loading = false;
         // if (refresh) {
         //   setTimeout(() => {
@@ -4925,9 +4933,6 @@ export default {
       if (useType !== "treelist" && this.childListType?.includes("list")) {
         useType = this.childListType;
       }
-      if (this.colSrv && this.colSourceType !== 'custom' && this.serviceName !== this.colSrv) {
-        this.colSourceType = 'custom';
-      }
       const res = await getServiceV2(
         this.serviceName,
         useType,
@@ -4939,6 +4944,7 @@ export default {
           pre[cur.columns] = cur;
           return pre;
         }, {});
+        this.listCols = res.data.srv_cols.filter(item => item.in_list === 1 || item.in_list === 2);
         this.v2data = res.data;
         this.initExprCols = res.data.srv_cols.reduce((pre, cur) => {
           if (cur.init_expr) {
@@ -4958,7 +4964,7 @@ export default {
             false,
             this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
           );
-          this.updateCols = ress?.data?.srv_cols || [];
+          this.updateCols = ress?.data?.srv_cols?.filter(item => item.in_update === 1 || item.in_update === 2) || [];
           this.updateColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
             return pre;
@@ -4975,14 +4981,17 @@ export default {
             false,
             this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
           );
-          this.addCols = ress?.data?.srv_cols || [];
+          this.addCols = ress?.data?.srv_cols?.filter(item => item.in_add === 1 || item.in_add === 2) || [];
           this.addColsMap = ress?.data?.srv_cols?.reduce((pre, cur) => {
             pre[cur.columns] = cur;
             return pre;
           }, {});
         }
-        if (this.colSrv && this.serviceName !== this.colSrv) {
+        const normalService = [this.serviceName, addBtn?.service_name, editBtn?.service_name]
+        this.normalService = normalService
+        if (this.colSrv && !normalService.includes(this.colSrv)) {
           const srv_cols = await this.getColsV2();
+          this.customCols = srv_cols || [];
           if (srv_cols?.length) {
             this.v2data.srv_cols = srv_cols;
           }
@@ -5009,9 +5018,11 @@ export default {
           updateCols: this.updateCols,
           updateColsMap: this.updateColsMap,
           listColsMap: listColsMap,
+          listCols: this.listCols,
           addCols: this.addCols,
           addColsMap: this.addColsMap,
           childListType: this.childListType,
+          customCols: this.customCols,
         };
         this.v2data.allFields = buildSrvCols(
           this.v2data.srv_cols,
