@@ -27,7 +27,7 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
   let { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
   let newCols = allColsMap?.[preferType + 'Cols'] || [];
   if (Array.isArray(newCols) && newCols.length) {
-    console.log(`newCols：${preferType}`, newCols.map(item => {
+    console.log(`newCols：${preferType}`, newCols.filter(item => item[`in_${preferType}`] === 1).map(item => {
       return {
         label: item.label,
         columns: item.columns,
@@ -251,43 +251,6 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
       }
     }
 
-    // let calcCols = []
-    // for (let index = 0; index < cols.length; index++) {
-    //   const item = cols[index];
-    //   if(updateColsMap[item.columns]?.calc_trigger_col){
-    //     item.__update_calc_trigger_col = updateColsMap[item.columns]?.calc_trigger_col
-    //   }
-    //   if(addColsMap[item.columns]?.calc_trigger_col){
-    //     item.__add_calc_trigger_col = addColsMap[item.columns]?.calc_trigger_col
-    //   }
-    //   if(item.__update_calc_trigger_col || item.__add_calc_trigger_col){
-    //     calcCols.push(item)
-    //   }
-    // }
-    // if(calcCols?.length){
-    //   cols.forEach(col=>{
-    //     const updateCalcDependedCols = calcCols.filter(item=>item.__update_calc_trigger_col?.includes(col.columns)).map(item=>item.columns)
-    //     if(updateCalcDependedCols?.length){
-    //       col.__update_calc_depended_cols = updateCalcDependedCols
-    //     }
-    //     const addCalcDependedCols = calcCols.filter(item=>item.__add_calc_trigger_col?.includes(col.columns)).map(item=>item.columns)
-    //     if(addCalcDependedCols?.length){
-    //       col.__add_calc_depended_cols = addCalcDependedCols
-    //     }
-    //   })
-    // }
-    // cols.filter(item => item?.calc_trigger_col?.length || updateColsMap[item.columns]?.calc_trigger_col?.length || addColsMap[item.columns]?.calc_trigger_col?.length)
-
-    // if (calcCols.length > 0) {
-    //   cols.forEach(col => {
-    //     const calcDependedCols = calcCols.filter(item => item.calc_trigger_col.includes(col.columns)).map(item => item.columns)
-    //     if (calcDependedCols?.length) {
-    //       col.calcDependedCols = calcDependedCols
-    //     }
-    //   })
-    // }
-
-
     cols = cols.filter(
       (item) => item.in_list === 1 || item.in_update === 1 || item.in_add === 1
     );
@@ -307,48 +270,6 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
     }
   }
   return cols;
-};
-// 构建luckysheet的dataVerification
-const buildDataVerification = (data, cols) => {
-  let datas = data.filter((item) => item?.v?.isTitle !== true);
-  let res = {};
-  if (Array.isArray(datas) && datas.length > 0) {
-    datas.forEach((item) => {
-      let key = `${item.r}_${item.c}`;
-      let obj = {
-        // "type": "dropdown",
-        type2: null,
-        // "value1": "Develop,Fix,Done",
-        value2: "",
-        checked: false,
-        remote: false,
-        prohibitInput: false,
-        hintShow: false,
-        hintText: "",
-      };
-      if (item.v.editType === "dropdownFk") {
-        obj.type = "dropdown";
-        if (Array.isArray(item.v.optionsList) && item.v.optionListV2) {
-          let { refed_col, key_disp_col } = item.v.optionListV2;
-          let options = item.v.optionsList.map((item) => {
-            return {
-              value: item[refed_col],
-              text: item[key_disp_col],
-            };
-          });
-          obj.prohibitInput = true;
-          obj.value1 = options.map((item) => item.text).toString();
-          obj.valueMap = options.map((item) => item.value).toString();
-        }
-      } else if (item.v.editType === "dropdownEnum") {
-        obj.prohibitInput = true;
-        obj.type = "dropdown";
-        obj.value1 = item.v.optionsList.map((item) => item.value).toString();
-      }
-      res[key] = obj;
-    });
-  }
-  return res;
 };
 
 function isRichText(column) {

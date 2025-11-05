@@ -1882,7 +1882,7 @@ export default {
           childListType: this.childListType,
           customCols: this.customCols,
         };
-        this.v2data.allFields = buildSrvCols(
+        this.allFields = buildSrvCols(
           this.v2data.srv_cols,
           allColsMap,
           this.childListType,
@@ -1891,10 +1891,6 @@ export default {
           this.colSourceType
         );
 
-        this.listColsMap = this.allFields?.reduce((pre, cur) => {
-          pre[cur.columns] = cur;
-          return pre;
-        }, {});
         this.columns = this.buildColumns();
       };
 
