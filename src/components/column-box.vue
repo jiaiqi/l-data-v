@@ -15,7 +15,7 @@
     <div class="content">
       <el-checkbox-group
         v-model="checkList"
-        @change="$emit('update:checkedColumns', $event)"
+        @change="handleCheckChange"
       >
         <draggable
           :list="singList.list"
@@ -40,7 +40,6 @@
               <el-checkbox
                 :label="item.columns"
                 :name="item.columns"
-                :value="item.columns"
                 class="flex items-center flex-1"
               >
                 <div class="flex items-center w-full all-column-item flex-1">
@@ -208,8 +207,8 @@ export default {
     singList: {
       type: Object,
       default: function () {
-        return {};
-      },
+          return {};
+        },
     },
     props: {
       operator: {
@@ -228,6 +227,20 @@ export default {
   mounted() {
     if (Array.isArray(this.checkedColumns) && this.checkedColumns.length > 0) {
       this.checkList = JSON.parse(JSON.stringify(this.checkedColumns));
+    }
+  },
+  watch: {
+    checkedColumns: {
+      handler(newVal) {
+        if (Array.isArray(newVal)) {
+          const newValStr = JSON.stringify(newVal);
+          const currentValStr = JSON.stringify(this.checkList);
+          if (newValStr !== currentValStr) {
+            this.checkList = JSON.parse(JSON.stringify(newVal));
+          }
+        }
+      },
+      deep: true
     }
   },
   data() {
@@ -358,6 +371,14 @@ export default {
 
         document.body.removeChild(textArea);
       }
+    },
+    handleCheckChange(values) {
+      // 确保没有重复值，只保留唯一的字段名
+      const uniqueValues = [...new Set(values)];
+      // 更新本地checkList
+      this.checkList = uniqueValues;
+      // 通知父组件更新
+      this.$emit('update:checkedColumns', uniqueValues);
     },
     deleteAllData() {
       // 清除组装的数据
