@@ -215,12 +215,10 @@ export default {
     // 在组件销毁前清除定时器
     this.stopAutoSave();
   },
-  mounted() {
+  async created() {
     if (this.srvApp) {
       sessionStorage.setItem("current_app", this.srvApp);
     }
-  },
-  async created() {
     if (this.$route.query?.listType) {
       this.listType = this.$route.query?.listType;
     }
@@ -2807,6 +2805,18 @@ export default {
         this.buildInitCond();
         if (this.colSrv && this.colSourceType !== 'custom' && !this.normalService.includes(this.colSrv)) {
           this.colSourceType = 'custom';
+        } else if (this.colSrv && this.normalService.includes(this.colSrv)) {
+          // 有自定义服务但是自定义服务是list\add\update之一，根据自定义服务判断数据来源类型
+          const normalServiceMap = {
+            "list": this.normalService[0],
+            "add": this.normalService[1],
+            "update": this.normalService[2],
+          }
+          Object.keys(normalServiceMap).forEach(key => {
+            if (normalServiceMap[key] === this.colSrv) {
+              this.colSourceType = key;
+            }
+          })
         }
         this.loading = false;
         // if (refresh) {
