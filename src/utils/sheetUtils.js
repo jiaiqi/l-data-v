@@ -1,4 +1,5 @@
 import { getFkOptions } from "@/service/api";
+import cloneDeep from "lodash/cloneDeep";
 
 function resolveChildListType(childListType) {
   if (!childListType || typeof childListType !== 'string') return null;
@@ -24,6 +25,7 @@ function attachRedundantOptionRefs(col, dependField, addColsMap = {}, updateCols
 // 组装srvCols数据
 // preferType: 可选 'list' | 'add' | 'update'，在 colSrv 未指定或与 serviceName 相同时优先使用指定来源的列
 const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName, preferType = 'list') => {
+  allColsMap = cloneDeep(allColsMap);
   let { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
   let newCols = allColsMap?.[preferType + 'Cols'] || [];
   if (Array.isArray(newCols) && newCols.length) {

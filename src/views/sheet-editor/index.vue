@@ -1865,15 +1865,10 @@ export default {
             }
           }
         }
-        // 重建列：使用当前 v2data.srv_cols 与 preferType
-        const listColsMap = (this.v2data?.srv_cols || []).reduce((pre, cur) => {
-          pre[cur.columns] = cur;
-          return pre;
-        }, {});
         const allColsMap = {
           updateCols: this.updateCols,
           updateColsMap: this.updateColsMap,
-          listColsMap,
+          listColsMap: this.listColsMap,
           listCols: this.listCols,
           addCols: this.addCols,
           addColsMap: this.addColsMap,
@@ -1890,6 +1885,9 @@ export default {
         );
 
         this.columns = this.buildColumns();
+
+        console.log('allFields', cloneDeep(this.allFields));
+        console.log('columns', cloneDeep(this.columns));
       };
 
       if (this.hasUnsavedChanges()) {
@@ -2803,21 +2801,6 @@ export default {
         }
         if (this.childListType === "add") return (this.loading = false); //新增时不查子表数据
         this.buildInitCond();
-        if (this.colSrv && this.colSourceType !== 'custom' && !this.normalService.includes(this.colSrv)) {
-          this.colSourceType = 'custom';
-        } else if (this.colSrv && this.normalService.includes(this.colSrv)) {
-          // 有自定义服务但是自定义服务是list\add\update之一，根据自定义服务判断数据来源类型
-          const normalServiceMap = {
-            "list": this.normalService[0],
-            "add": this.normalService[1],
-            "update": this.normalService[2],
-          }
-          Object.keys(normalServiceMap).forEach(key => {
-            if (normalServiceMap[key] === this.colSrv) {
-              this.colSourceType = key;
-            }
-          })
-        }
         this.loading = false;
         // if (refresh) {
         //   setTimeout(() => {
@@ -2979,17 +2962,6 @@ export default {
               /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
               ""
             )?.length;
-            // if (length && length > 6) {
-            //   // 去掉符号的字符数长度大于6
-            //   // console.log(`${item.label}:${length}`);
-            //   width = length * 30;
-            // }
-            // if (item.col_span) {
-            //   let cfgWidth = item.col_span * 600;
-            //   if (width < cfgWidth) {
-            //     width = cfgWidth;
-            //   }
-            // }
             if (item.list_min_width) {
               width = parseFloat(item.list_min_width);
             }
@@ -2999,52 +2971,15 @@ export default {
               key: item.columns,
               width: width,
               edit: item.editable === true || item.canAdd == true, // 不再根据字段类型控制是否可编辑，所有类型字段都可以编辑，未适配的类型当作String处理
-              // ((item.editable === true || item.canAdd == true) &&
-              //   [
-              //     "String",
-              //     "User",
-              //     "Note",
-              //     "RichText",
-              //     "MultilineText",
-              //     "Enum","Dict",
-              //     "Set",
-              //     "Integer",
-              //     "Float",
-              //     "Money",
-              //     "Date",
-              //     "DateTime",
-              //     "int",
-              //   ].includes(item.col_type)) ||
-              // item?.col_type?.includes("decimal") ||
-              // item?.bx_col_type == "fk",
-              // edit: ['Integer', 'String', 'Float', "Money"].includes(item.col_type) || item.col_type.includes('decimal'),
               __field_info: { ...item },
             };
 
-            // Image
             if (index === 0) {
               if (this.isTree) {
                 // 首列 如果有下级则展示展开折叠图标
                 columnObj.isFirstCol = true;
               }
             }
-            // // 设置固定列
-            // let fixedCol = Number(this.$route.query?.fixedCol || 1);
-            // if (isNaN(fixedCol)) {
-            //   fixedCol = 1;
-            // }
-            // for (let fIndex = 0; fIndex < fixedCol; fIndex++) {
-            //   if (index === fIndex) {
-            //     columnObj.fixed = "left";
-            //   }
-            // }
-
-            // if (this.defaultConditions?.length) {
-            //   columnObj.disabled = this.defaultConditions.some(
-            //     (col) => col.colName === item.columns
-            //   );
-            //   columnObj.edit = !columnObj.disabled && columnObj.edit;
-            // }
 
             columnObj.renderHeaderCell = ({ column }, h) => {
               const conditions = [...this.initCond, ...this.defaultConditions];
@@ -4946,7 +4881,7 @@ export default {
         force
       );
       if (res?.state === "SUCCESS") {
-        const listColsMap = res?.data?.srv_cols?.reduce((pre, cur) => {
+        this.listColsMap = res?.data?.srv_cols?.reduce((pre, cur) => {
           pre[cur.columns] = cur;
           return pre;
         }, {});
@@ -4962,6 +4897,30 @@ export default {
         const editBtn = res.data?.rowButton?.find(
           (item) => item.button_type === "edit"
         );
+        const addBtn = res.data?.gridButton?.find(
+          (item) => item.button_type === "add"
+        );
+
+        const normalService = [this.serviceName, addBtn?.service_name, editBtn?.service_name]
+        this.normalService = normalService
+
+        if (this.colSrv && this.colSourceType !== 'custom' && !this.normalService.includes(this.colSrv)) {
+          this.colSourceType = 'custom';
+        } else if (this.colSrv && this.normalService.includes(this.colSrv)) {
+          // 有自定义服务但是自定义服务是list\add\update之一，根据自定义服务判断数据来源类型
+          const normalServiceMap = {
+            "list": this.normalService[0],
+            "add": this.normalService[1],
+            "update": this.normalService[2],
+          }
+          Object.keys(normalServiceMap).forEach(key => {
+            if (normalServiceMap[key] === this.colSrv) {
+              this.colSourceType = key;
+              // this.onColumnSourceChange(key);
+            }
+          })
+        }
+        // 查找update服务列
         if (editBtn?.service_name) {
           const ress = await getServiceV2(
             editBtn.service_name,
@@ -4976,9 +4935,7 @@ export default {
             return pre;
           }, {});
         }
-        const addBtn = res.data?.gridButton?.find(
-          (item) => item.button_type === "add"
-        );
+        // 查找add服务列
         if (addBtn?.service_name) {
           const ress = await getServiceV2(
             addBtn.service_name,
@@ -4993,8 +4950,7 @@ export default {
             return pre;
           }, {});
         }
-        const normalService = [this.serviceName, addBtn?.service_name, editBtn?.service_name]
-        this.normalService = normalService
+
         if (this.colSrv && !normalService.includes(this.colSrv)) {
           const srv_cols = await this.getColsV2();
           this.customCols = srv_cols || [];
@@ -5002,6 +4958,7 @@ export default {
             this.v2data.srv_cols = srv_cols;
           }
         }
+
         if (Array.isArray(this.v2data.srv_cols)) {
           this.v2data.srv_cols = this.v2data.srv_cols.map((item) => {
             if (item.more_config) {
@@ -5023,14 +4980,22 @@ export default {
         const allColsMap = {
           updateCols: this.updateCols,
           updateColsMap: this.updateColsMap,
-          listColsMap: listColsMap,
+          listColsMap: this.listColsMap,
           listCols: this.listCols,
           addCols: this.addCols,
           addColsMap: this.addColsMap,
           childListType: this.childListType,
           customCols: this.customCols,
         };
-        this.v2data.allFields = buildSrvCols(
+        // this.v2data.allFields = buildSrvCols(
+        //   this.v2data.srv_cols,
+        //   allColsMap,
+        //   this.childListType,
+        //   this.colSrv,
+        //   this.serviceName,
+        //   this.colSourceType
+        // );
+        this.allFields = buildSrvCols(
           this.v2data.srv_cols,
           allColsMap,
           this.childListType,
@@ -5038,11 +5003,7 @@ export default {
           this.serviceName,
           this.colSourceType
         );
-        this.allFields = this.v2data.allFields;
-        this.listColsMap = this.allFields?.reduce((pre, cur) => {
-          pre[cur.columns] = cur;
-          return pre;
-        }, {});
+
         document.title = res.data.service_view_name;
         this.columns = this.buildColumns();
         return res.data;
