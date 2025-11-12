@@ -1913,7 +1913,6 @@ export default {
           return;
         }
       }
-
       const currentCellSelectionType =
         this.$refs?.tableRef?.currentCellSelectionType;
       if (!currentCellSelectionType) {
@@ -1935,8 +1934,6 @@ export default {
       }
     },
     setCellSelection(rowKey, colKey) {
-      // rowKey = rowKey || this.fieldEditorParams?.row?.__id;
-      // colKey = colKey || this.fieldEditorParams?.column?.key;
       if (rowKey && colKey) {
         this.$nextTick(() => {
           this.$refs["tableRef"].setCellSelection({ rowKey, colKey });
@@ -1948,10 +1945,6 @@ export default {
     },
     fksChange(item, row, column) {
       this.setCellSelection();
-      // if (item?.value && item?.value === row[column.field]) {
-      //   // 值未发生改变
-      //   return
-      // }
       let val = item;
       if (typeof item === "object") {
         val = JSON.stringify(item);
@@ -1974,10 +1967,6 @@ export default {
     },
     fkChange(item, row, column) {
       this.setCellSelection();
-      // if (item?.value && item?.value === row[column.field]) {
-      //   // 值未发生改变
-      //   return
-      // }
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
@@ -1997,14 +1986,8 @@ export default {
       }
       this.setCellSelection();
 
-      const defaultValue =
-        item?.label ||
-        item?.[column?.__field_info?.redundant?.refedCol] ||
-        null;
-      // if (defaultValue && defaultValue === row[column.field]) {
-      //   // 值未发生改变
-      //   return
-      // }
+      const defaultValue = item?.label || item?.[column?.__field_info?.redundant?.refedCol] || null;
+
       const obj = {
         rowKey: row.rowKey,
         colKey: column.field,
@@ -2027,11 +2010,9 @@ export default {
         if (fkColumnInfo) {
           let data = rawData || {};
           row[fkColumn] = item?.value;
-          // row[fkColumn] = item.value || item[fkColumnInfo.columns];
           row[`_${fkColumn}_data`] = rawData;
           this.$set(row, fkColumnInfo.columns, row[fkColumn]);
 
-          // this.$set(this.tableData, rowIndex, row);
           if (this.allFields.find((e) => e.columns === fkColumn)) {
             this.$refs["tableRef"].startEditingCell({
               rowKey: row.rowKey,
@@ -2049,13 +2030,9 @@ export default {
     },
     dialogChange(event, row, column, type) {
       // 将html中的文件地址前缀替换为$bxFileAddress$
-      // if (event && event === row[column.field]) {
-      //   // 值未发生改变
-      //   return
-      // }
+
       event = this.replaceFileAddressSuffix(event);
       this.$set(row, column.field, event);
-      // console.log("data-change:", row, column.field, event);
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
@@ -2069,11 +2046,8 @@ export default {
           this.saveData();
         });
       }
-      // this.showFieldEditor = false;
     },
     dialogClose() {
-      // this.$parent?.setCellSelection?.();
-      // this.fieldEditorParams = null;
       this.clearCellSelection();
       this.buildFieldEditorParams();
     },
@@ -2152,13 +2126,10 @@ export default {
     onCtrlS: debounce(
       function () {
         this.saveData();
-      },
-      1000,
-      {
-        leading: true, // 函数是否在首次调用时立即执行
-        trailing: false, // 函数是否在最后一次调用后的延迟时间结束时执行
-      }
-    ),
+      }, 1000, {
+      leading: true, // 函数是否在首次调用时立即执行
+      trailing: false, // 函数是否在最后一次调用后的延迟时间结束时执行
+    }),
     // 初始化document事件监听
     initDocumentEventListener() {
       this.removeDocumentEventListener();
@@ -2177,7 +2148,6 @@ export default {
       }
       if (this.showFieldEditor) {
         // 弹出表单字段编辑器时 不触发快捷键
-
         return;
       }
       if (e.ctrlKey || e.metaKey) {
@@ -3800,24 +3770,11 @@ export default {
             // 值都为空
             return;
           }
-          // if (
-          //   rawData && rawData?.[item.redundant.refedCol] === undefined
-          // ) {
-          //   return;
-          // }
+         
           row[item.columns] = rawData?.[item.redundant.refedCol] || null;
           this.$set(this.tableData, rowIndex, row);
           console.log("handlerRedundant::", item.columns, row[item.columns]);
 
-          // if (this.allFields.find((e) => e.columns === item.columns)) {
-          //   this.$refs["tableRef"]?.startEditingCell?.({
-          //     rowKey: rowKey,
-          //     colKey: item.columns,
-          //     defaultValue: rawData?.[item.redundant.refedCol] || null,
-          //   });
-          //   this.$refs["tableRef"]?.stopEditingCell?.();
-          //   this.clearCellSelection();
-          // }
         });
       }
     },
@@ -3851,7 +3808,6 @@ export default {
       return updateObj;
     },
     buildReqParams() {
-      const tableData = this.tableData;
       // const tableData = JSON.parse(JSON.stringify(this.tableData));
       const reqData = [];
       const addDatas = [];
@@ -3861,36 +3817,6 @@ export default {
           (d) => d.__id && d.__id === item.__id
         );
         if (!item.__flag && oldItem) {
-          // const updateObj = {};
-          // Object.keys(item).forEach((key) => {
-          //   if (
-          //     key.indexOf("_") !== 0 &&
-          //     !ignoreKeys.includes(key) &&
-          //     this.updateColsMap?.[key]?.in_update !== 0
-          //   ) {
-          //     if (oldItem[key] !== item[key]) {
-          //       const nullVal = [null, undefined, ""];
-          //       if (
-          //         nullVal.includes(item[key]) &&
-          //         nullVal.includes(oldItem[key])
-          //       ) {
-          //         return;
-          //       }
-          //       const colInfo = this.updateColsMap?.[key];
-          //       if (["Date", "DateTime"].includes(colInfo?.col_type)) {
-          //         if (dayjs(item[key]).isSame(dayjs(oldItem[key]))) {
-          //           return;
-          //         }
-          //       }
-          //       item.__flag = "update";
-          //       this.$set(item, "__flag", "update");
-          //       if (item[key] === "" || item[key] == undefined) {
-          //         item[key] = null;
-          //       }
-          //       updateObj[key] = item[key];
-          //     }
-          //   }
-          // });
           const updateObj = this.processUpdateData(
             item,
             oldItem,
