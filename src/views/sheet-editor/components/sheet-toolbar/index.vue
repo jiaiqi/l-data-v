@@ -48,7 +48,7 @@
     </div>
 
     <!-- 右侧：操作按钮区域 -->
-    <div class="flex flex-items-center  justify-end p-x-2">
+    <div class="flex flex-items-center  justify-end p-x-2" v-if="showRightSection">
       <!-- 列来源选择 -->
       <div class="flex flex-items-center m-r-10">
         <div class="m-r-2">字段来源</div>
@@ -266,6 +266,7 @@ const emit = defineEmits([
 
 // 响应式数据
 const showGridButton = ref(false)
+const showRightSection = ref(false)
 
 // 方法
 const toggleGridButton = () => {

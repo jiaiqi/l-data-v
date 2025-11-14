@@ -9,9 +9,9 @@ export const webBaseUrl = `http://192.168.0.54:8080`
 // let baseURL = window.backendIpAddr || `https://api.100xsys.cn`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.28:8104`;
 // let baseURL = window.backendIpAddr || `http://113.201.21.178:880/bxapi`;// 延安现网
-let baseURL = window.backendIpAddr || `https://yax.100xsys.cn/bxapi`;// 延安行现网
+// let baseURL = window.backendIpAddr || `https://yax.100xsys.cn/bxapi`;// 延安行现网
 // let baseURL = window.backendIpAddr || `https://www.gxqcxkj.com/bxapi`;// 延安现网
-// let baseURL = window.backendIpAddr || `http://yxsj.sneducloud.com/bxapi`;// 研学2.0现网
+let baseURL = window.backendIpAddr || `http://yxsj.sneducloud.com/bxapi`;// 研学2.0现网
 // let baseURL = window.backendIpAddr || `http://192.168.0.54:8104`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.241:8080`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
@@ -91,37 +91,37 @@ $axios.interceptors.response.use(
           if (currentTenant) {
             sessionStorage.currentTenant = currentTenant
           }
-          if (getRootWindow()?.layer) {
-            var login_page = "/main/login.html";
-            try {
-              if (top.getLoginAddress) {
-                console.info("1");
-                login_page = "/" + top.getLoginAddress();
-              }
-            } catch (exception) { }
-            getRootWindow()?.layer.open({
-              title: false,
-              type: 2,
-              content: window.location.origin + login_page,
-              closeBtn: 0,
-              area: ["300px", "350px"],
-              shade: 0.9,
-            });
-          } else {
-            // 当vue页面在iframe中时，跳转到登录页面
-            if (top !== window) {
-              var login_page = "/main/index.html";
-              try {
-                if (top.getMainAddress) {
-                  console.info("1");
-                  login_page = "/" + top.getMainAddress();
-                }
-              } catch (exception) { }
-              window.location.href = window.location.origin + login_page;
-            } else {
+          // if (getRootWindow()?.layer) {
+          //   var login_page = "/main/login.html";
+          //   try {
+          //     if (top.getLoginAddress) {
+          //       console.info("1");
+          //       login_page = "/" + top.getLoginAddress();
+          //     }
+          //   } catch (exception) { }
+          //   getRootWindow()?.layer.open({
+          //     title: false,
+          //     type: 2,
+          //     content: window.location.origin + login_page,
+          //     closeBtn: 0,
+          //     area: ["300px", "350px"],
+          //     shade: 0.9,
+          //   });
+          // } else {
+          //   // 当vue页面在iframe中时，跳转到登录页面
+          //   if (top !== window) {
+          //     var login_page = "/main/index.html";
+          //     try {
+          //       if (top.getMainAddress) {
+          //         console.info("1");
+          //         login_page = "/" + top.getMainAddress();
+          //       }
+          //     } catch (exception) { }
+          //     window.location.href = window.location.origin + login_page;
+          //   } else {
 
-            }
-          }
+          //   }
+          // }
         } else if (response.data.resultCode == "0000") {
           if (sessionStorage.getItem("need_login_flag") != "need_login") {
             // alert(response.data.resultMessage);

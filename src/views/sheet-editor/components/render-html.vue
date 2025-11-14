@@ -54,7 +54,7 @@
         :title="linkToDetail ? '点击查看详情' : ''"
         @click="toDetail"
       >
-        {{ html }}
+        {{ getText(html) }}
       </span>
       <div
         class="old-value"
@@ -330,7 +330,7 @@ export default {
         // 自定义增加 http  header
         headers: {
           bx_auth_ticket: this.ticket,
-          'bx-auth-ticket': this.ticket,
+          "bx-auth-ticket": this.ticket,
         },
         // 跨域是否传递 cookie ，默认为 false
         withCredentials: true,
@@ -376,6 +376,20 @@ export default {
     };
   },
   methods: {
+    getText() {
+      if (this.column?.bx_col_type === "fk") {
+        let dispKey =
+          this.column?.option_list_v2?.key_disp_col ||
+          this.column?.option_list_v2?.refed_col;
+        if (this.row?._rawData?.[dispKey]) {
+          return this.row?._rawData?.[dispKey];
+        } else {
+          return html;
+        }
+      } else {
+        return html;
+      }
+    },
     getEditorType() {
       if (isFkAutoComplete(this.column)) {
         return "autocomplete";

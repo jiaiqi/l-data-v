@@ -395,7 +395,7 @@ export default {
               //   this.$refs.tableRef?.$refs?.cellSelectionRef?.currentCellEl;
               // console.log({ ...currentCellEl });
 
-              if (column.edit) {
+              if (column.edit || column.editable) {
                 if (["Note", "RichText", "snote"].includes(colType)) {
                   // 富文本
                   event.stopPropagation();
@@ -515,7 +515,7 @@ export default {
       startRowIndex: 0,
       // 是否开启列宽可变
       columnWidthResizeOption: {
-        enable: true,
+        enable: false,
         minWidth: 50,
         sizeChange: ({ column, differWidth, columnWidth }) => {
           console.log({
@@ -1752,6 +1752,12 @@ export default {
           ruleType: "eq",
           value: fkVal,
         };
+      }else if(fkCol){
+        return {
+          colName: fkCol,
+          ruleType: "eq",
+          value: null,
+        };
       }
     },
     addChildButton() {
@@ -2927,7 +2933,7 @@ export default {
         let minWidth = 50;
         columns = columns.concat(
           this.allFields.map((item, index) => {
-            let width = minWidth;
+            let width = undefined;
             const length = item?.label?.replace(
               /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
               ""

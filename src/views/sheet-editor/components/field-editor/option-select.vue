@@ -170,6 +170,7 @@ const handleClickOutside = () => {
 </script>
 
 <style lang="scss" scoped>
+
 .option-select {
   position: relative;
   width: 100%;

@@ -2,7 +2,6 @@
   <div
     v-loading="loading"
     class="flex justify-between items-center"
-    style="max-width: 500px"
   >
     <div
       class="fk-text"

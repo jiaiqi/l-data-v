@@ -152,6 +152,10 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
       const col = cols[index];
       col.editable = updateColsMap?.[col.columns]?.updatable === 1 && updateColsMap?.[col.columns]?.in_update === 1;
       col.canAdd = addColsMap?.[col.columns]?.in_add === 1;
+      if(colSrv && colSrv !== serviceName){
+        col.editable = col.editable && col?.in_update === 1;
+        col.canAdd = col?.in_add === 1;
+      }
       col._display = listColsMap?.[col.columns]?.in_list === 1 || col.editable || col.canAdd; // 显示列是列表列、可编辑列、可新增列的并集
       col.isRequired = col.required === "是" || updateColsMap?.[col.columns]?.required === "是" || addColsMap?.[col.columns]?.required === "是" ||
         col?.validators?.includes("required") ||
