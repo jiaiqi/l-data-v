@@ -3610,7 +3610,7 @@ export default {
           }
           return item;
         });
-        if (this.childListType === "add" && !this.disabled) {
+        if (this.childListType === "add" && !this.disabled&& Array.isArray(this.rowButton) && this.rowButton?.length) {
           columns.push({
             field: "_handler",
             key: "_handler",
@@ -3652,7 +3652,7 @@ export default {
       //     };
       //   })
       // );
-      if (!this.disabled) {
+      if (!this.disabled && Array.isArray(this.rowButton) && this.rowButton?.length) {
         columns.push({
           field: "_handler_btn",
           key: "_handler_btn",
