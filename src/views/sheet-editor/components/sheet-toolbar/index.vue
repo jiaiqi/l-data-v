@@ -266,7 +266,7 @@ const emit = defineEmits([
 
 // 响应式数据
 const showGridButton = ref(false)
-const showRightSection = ref(false)
+const showRightSection = ref(true)
 
 // 方法
 const toggleGridButton = () => {
