@@ -384,10 +384,10 @@ export default {
         if (this.row?._rawData?.[dispKey]) {
           return this.row?._rawData?.[dispKey];
         } else {
-          return html;
+          return this.html;
         }
       } else {
-        return html;
+        return this.html;
       }
     },
     getEditorType() {

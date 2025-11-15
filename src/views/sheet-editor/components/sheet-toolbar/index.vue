@@ -27,10 +27,7 @@
         <i class="i-ic-baseline-add"></i>
       </el-button>
     </div>
-    <div
-      class="text-sm text-gray cursor-not-allowed"
-      v-else
-    >
+    <div class="text-sm text-gray cursor-not-allowed" v-else>
       <!-- 没有添加权限 -->
     </div>
 
@@ -48,7 +45,10 @@
     </div>
 
     <!-- 右侧：操作按钮区域 -->
-    <div class="flex flex-items-center  justify-end p-x-2" v-if="showRightSection">
+    <div
+      class="flex flex-items-center justify-end p-x-2"
+      v-if="showRightSection"
+    >
       <!-- 列来源选择 -->
       <div class="flex flex-items-center m-r-10">
         <div class="m-r-2">字段来源</div>
@@ -57,10 +57,18 @@
           :value="colSourceType"
           @input="emit('column-source-change', $event)"
         >
-          <el-radio-button label="custom" v-if="colSrv && !normalService.includes(colSrv)">自定义</el-radio-button>
+          <el-radio-button
+            label="custom"
+            v-if="colSrv && !normalService.includes(colSrv)"
+            >自定义</el-radio-button
+          >
           <el-radio-button label="list">列表</el-radio-button>
-          <el-radio-button label="add" :disabled="!canSwitchAdd">新增</el-radio-button>
-          <el-radio-button label="update" :disabled="!canSwitchUpdate">编辑</el-radio-button>
+          <el-radio-button label="add" :disabled="!canSwitchAdd"
+            >新增</el-radio-button
+          >
+          <el-radio-button label="update" :disabled="!canSwitchUpdate"
+            >编辑</el-radio-button
+          >
         </el-radio-group>
       </div>
       <!-- 颜色图例 -->
@@ -79,14 +87,8 @@
       </div>
 
       <!-- 网格按钮组 -->
-      <div
-        class="relative"
-        v-if="gridButton && gridButton.length"
-      >
-        <div
-          class="grid-button-box"
-          :class="{ show: showGridButton }"
-        >
+      <div class="relative" v-if="gridButton && gridButton.length">
+        <div class="grid-button-box" :class="{ show: showGridButton }">
           <el-button
             size="mini"
             type="primary"
@@ -154,9 +156,7 @@
         v-loading="onHandler"
         :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
         v-if="
-          !childListType &&
-          calcColumnWidthReq &&
-          calcColumnWidthReq.length > 0
+          !childListType && calcColumnWidthReq && calcColumnWidthReq.length > 0
         "
         title="保存列宽"
       >
@@ -167,111 +167,113 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-
+import { ref, computed } from "vue";
+import { env, baseURL } from "@/common/http";
 // 定义组件名称
 defineOptions({
-  name: 'SheetToolbar'
-})
+  name: "SheetToolbar",
+});
 
 // 定义 props
 const props = defineProps({
   // 基础配置
   disabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   // 列来源选择
   colSourceType: {
     type: String,
-    default: 'list'
+    default: "list",
   },
   serviceName: {
     type: String,
-    default: ''
+    default: "",
   },
   normalService: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   colSrv: {
     type: String,
-    default: ''
+    default: "",
   },
   canSwitchAdd: {
     type: Boolean,
-    default: false
+    default: false,
   },
   canSwitchUpdate: {
     type: Boolean,
-    default: false
+    default: false,
   },
   // 添加按钮配置
   addButton: {
     type: Object,
-    default: null
+    default: null,
   },
   insertRowNumber: {
     type: Number,
-    default: 1
+    default: 1,
   },
   // 列表类型配置
   listType: {
     type: String,
-    default: 'list'
+    default: "list",
   },
   isTree: {
     type: Boolean,
-    default: false
+    default: false,
   },
   childListType: {
     type: String,
-    default: ''
+    default: "",
   },
   // 网格按钮配置
   gridButton: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   // 状态数据
   calcReqData: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   calcColumnWidthReq: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   autoSaveTimeout: {
     type: Number,
-    default: 0
+    default: 0,
   },
   onHandler: {
     type: Boolean,
-    default: false
-  }
-})
+    default: false,
+  },
+});
 
 // 定义 emits
 const emit = defineEmits([
-  'update:insertRowNumber',
-  'batch-insert-rows',
-  'list-type-change',
-  'column-source-change',
-  'grid-button-click',
-  'refresh-data',
-  'save-data',
-  'save-column-width'
-])
+  "update:insertRowNumber",
+  "batch-insert-rows",
+  "list-type-change",
+  "column-source-change",
+  "grid-button-click",
+  "refresh-data",
+  "save-data",
+  "save-column-width",
+]);
 
 // 响应式数据
-const showGridButton = ref(false)
-const showRightSection = ref(true)
+const showGridButton = ref(false);
+const showRightSection = computed(() => {
+  return env !== "yanxue2";
+});
 
 // 方法
 const toggleGridButton = () => {
-  showGridButton.value = !showGridButton.value
-}
+  showGridButton.value = !showGridButton.value;
+};
 </script>
 
 <style scoped>

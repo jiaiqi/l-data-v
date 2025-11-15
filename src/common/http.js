@@ -2,6 +2,15 @@ import axios from "axios";
 import { Message } from "element-ui"; // 引入elementUI的Message组件
 let bx_auth_ticket = "";
 export const webBaseUrl = `http://192.168.0.54:8080`
+const envList = {
+  "saas": "https://api.100xsys.cn", // oa
+  "yanxue2": "http://yxsj.sneducloud.com/bxapi", // 研学2.0
+  "yax": "https://yax.100xsys.cn/bxapi",  // 延安行
+  "park": "https://www.gxqcxkj.com/bxapi" // 延安园区
+}
+export const env = import.meta.env.VITE_ENV || "saas"
+export const baseURL = window.backendIpAddr || envList[env]
+console.log("env:", import.meta.env.VITE_ENV)
 // export const webBaseUrl = `http://localhost:8080`
 // let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
 // let baseURL = window.backendIpAddr || `https://xxld.100xsys.cn`;
@@ -11,7 +20,7 @@ export const webBaseUrl = `http://192.168.0.54:8080`
 // let baseURL = window.backendIpAddr || `http://113.201.21.178:880/bxapi`;// 延安现网
 // let baseURL = window.backendIpAddr || `https://yax.100xsys.cn/bxapi`;// 延安行现网
 // let baseURL = window.backendIpAddr || `https://www.gxqcxkj.com/bxapi`;// 延安现网
-let baseURL = window.backendIpAddr || `http://yxsj.sneducloud.com/bxapi`;// 研学2.0现网
+// let baseURL = window.backendIpAddr || `http://yxsj.sneducloud.com/bxapi`;// 研学2.0现网
 // let baseURL = window.backendIpAddr || `http://192.168.0.54:8104`;
 // let baseURL = window.backendIpAddr || `http://192.168.0.241:8080`;
 // let baseURL = window.backendIpAddr || `https://wx.100xsys.cn`;
