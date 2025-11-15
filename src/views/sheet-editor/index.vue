@@ -85,7 +85,7 @@
     </div>
     <div
       class="empty-data"
-      v-if="!childListType && listMaxHeight && page.total === 0 && !loading"
+      v-if="!childListType && isFetched && page.total === 0 && !loading"
     >
       暂无数据
     </div>
@@ -4769,7 +4769,7 @@ export default {
 
         this.recordManager = new RecordManager();
 
-        if (this.tableData?.length === 0 && insertNewRows) {
+        if (!this.disabled && this.tableData?.length === 0 && insertNewRows) {
           this.insert2Rows(0);
         }
       }
@@ -5048,10 +5048,10 @@ export default {
   overflow: hidden;
 
   &.child-list {
-    height: unset;
+    // height: unset;
 
     .ve-table-container {
-      height: auto !important;
+      // height: auto !important;
     }
   }
 

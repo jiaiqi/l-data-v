@@ -13,7 +13,7 @@ body {
   padding: 0;
 }
 .el-select-dropdown__wrap {
-  max-height: 200px;
+  max-height: 180px;
 }
 :root {
   --primary-color: #1890ff;

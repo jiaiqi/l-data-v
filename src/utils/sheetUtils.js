@@ -131,9 +131,8 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
         }
         return item;
       });
-    }
-    // 处理子表类型，使用对应服务的列配置
-    else if (childListType) {
+    } else if (childListType) {
+      // 处理子表类型，使用对应服务的列配置
       let type = resolveChildListType(childListType) || 'add'
       if (type === 'detail') {
         allColsMap.detailColsMap = allColsMap.listColsMap

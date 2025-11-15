@@ -173,7 +173,8 @@ const handleClickOutside = () => {
 
 .option-select {
   position: relative;
-  width: 100%;
+  width: calc(100% - 30px);
+  // max-width: 500px;
   ::v-deep .el-select {
     width: 100%;
     .el-input {

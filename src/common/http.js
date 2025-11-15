@@ -4,12 +4,13 @@ let bx_auth_ticket = "";
 export const webBaseUrl = `http://192.168.0.54:8080`
 const envList = {
   "saas": "https://api.100xsys.cn", // oa
-  "yanxue2": "http://yxsj.sneducloud.com/bxapi", // 研学2.0
+  "yanxue": "http://yxsj.sneducloud.com/bxapi", // 研学2.0
   "yax": "https://yax.100xsys.cn/bxapi",  // 延安行
   "park": "https://www.gxqcxkj.com/bxapi" // 延安园区
 }
 export const env = import.meta.env.VITE_ENV || "saas"
-export const baseURL = window.backendIpAddr || envList[env]
+let baseURL = window.backendIpAddr || envList[env]
+
 console.log("env:", import.meta.env.VITE_ENV)
 // export const webBaseUrl = `http://localhost:8080`
 // let baseURL = window.backendIpAddr || `http://192.168.0.157:8104`;
@@ -229,3 +230,7 @@ export const isValidResponse = (res, gtZero = false) => {
   }
   return true;
 };
+
+export {
+  baseURL,
+}
