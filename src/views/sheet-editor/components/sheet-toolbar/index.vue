@@ -267,7 +267,7 @@ const emit = defineEmits([
 // 响应式数据
 const showGridButton = ref(false);
 const showRightSection = computed(() => {
-  return env !== "yanxue2";
+  return env !== "yanxue";
 });
 
 // 方法
