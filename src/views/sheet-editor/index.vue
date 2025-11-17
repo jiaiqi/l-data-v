@@ -2586,8 +2586,10 @@ export default {
         broadcastChannel.postMessage(JSON.stringify(msg));
       }
     },
-    emitListData() {
-      let data = JSON.parse(JSON.stringify(this.tableData));
+    async emitListData() {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      await this.$nextTick();
+      let data = cloneDeep(this.tableData);
       if (this.childListType?.includes("add")) {
         data = data.filter((item) =>
           Object.keys(item).some(
@@ -2618,7 +2620,7 @@ export default {
           ],
         },
       ];
-      console.log("emitListData", reuslt);
+      console.warn("emitListData", reuslt);
       this.bcEmit("getData", reuslt);
     },
     fold() {
