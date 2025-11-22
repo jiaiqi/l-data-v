@@ -1723,7 +1723,7 @@ export default {
           ) {
             defaultConditions.push({
               colName: key,
-              ruleType: "eq",
+              ruleType: "in",
               value: query[key],
             });
           }
@@ -2684,7 +2684,7 @@ export default {
           ) {
             let obj = {
               colName: item.columns,
-              ruleType: "eq",
+              ruleType: "in",
             };
             if (item.init_expr?.indexOf("'") === 0) {
               obj.value = item.init_expr.replaceAll("'", "");
