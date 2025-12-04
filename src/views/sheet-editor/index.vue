@@ -3708,7 +3708,10 @@ export default {
         return prev + (cur.width || 0);
       }, 0);
       // 计算未设置宽度的列的平均宽度：表格总宽度减去已设置宽度的总和，再除以未设置宽度的列数
-      const unsetWidthColumnAvgWidth = (tableDomWidth - totalColumnWidth) / unsetWidthColumns.length
+      let unsetWidthColumnAvgWidth = (tableDomWidth - totalColumnWidth) / unsetWidthColumns.length
+      if (unsetWidthColumns.length === 0 || unsetWidthColumnAvgWidth < 100) {
+        unsetWidthColumnAvgWidth = 100
+      }
       // 遍历所有列，为未设置宽度的列分配宽度，并调整所有列的宽度比例
       columns = columns.map((item) => {
         // 如果当前列未设置宽度，则分配计算出的平均宽度
@@ -3717,11 +3720,15 @@ export default {
         }
         // 保存原始宽度，用于后续可能的恢复或对比
         item._originWidth = item.width;
-        // 计算宽度比例：当前列宽度 * 表格总宽度 / (已设置宽度总和 + 未设置宽度列的总宽度)
-        // 这个比例确保所有列的总宽度等于表格可见宽度
-        const ratio = item.width * tableDomWidth / (totalColumnWidth + unsetWidthColumnAvgWidth * unsetWidthColumns.length)
-        // 将计算出的宽度保留两位小数，确保宽度值的精确性
-        item.width = Number(ratio.toFixed(2));
+        if (totalColumnWidth > tableDomWidth) {
+          item.width = item._originWidth 
+        } else {
+          // 计算宽度比例：当前列宽度 * 表格总宽度 / (已设置宽度总和 + 未设置宽度列的总宽度)
+          // 这个比例确保所有列的总宽度等于表格可见宽度
+          const ratio = item.width * tableDomWidth / (totalColumnWidth + unsetWidthColumnAvgWidth * unsetWidthColumns.length)
+          // 将计算出的宽度保留两位小数，确保宽度值的精确性
+          item.width = Number(ratio.toFixed(2));
+        }
         // 返回处理后的列配置
         return item;
       })
