@@ -63,7 +63,6 @@ function attachRedundantOptionRefs(col, dependField, addColsMap = {}, updateCols
 const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName, preferType = 'list') => {
   allColsMap = cloneDeep(allColsMap); // 深拷贝避免修改原始数据
   let { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
-
   let newCols = allColsMap?.[preferType + 'Cols'] || [];
 
   // 如果指定了优先类型的列存在，则使用该类型的列配置
@@ -125,6 +124,8 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
     if (colSrv && colSrv !== serviceName) {
       const srvType = colSrv.slice(colSrv.lastIndexOf("_") + 1);
       cols = cols.map((item) => {
+        item = { ...item }
+        item.list_min_width = item.list_min_width || listColsMap?.[item.columns]?.list_min_width || addColsMap?.[item.columns]?.list_min_width || updateColsMap?.[item.columns]?.list_min_width || null
         item.in_list = item.in_list === 1 ? 1 : item[`in_${srvType}`];
         if (item.in_list !== 1 && listColsMap?.[item.columns]?.in_list === 1) {
           item.in_list = 1;
@@ -202,7 +203,7 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
       const col = cols[index];
 
       // 设置编辑属性
-      col.editable = updateColsMap?.[col.columns]?.updatable === 1 && updateColsMap?.[col.columns]?.in_update === 1;
+      col.editable = updateColsMap?.[col.columns]?.updatable !== 0 && updateColsMap?.[col.columns]?.in_update === 1;
       col.canAdd = addColsMap?.[col.columns]?.in_add === 1;
 
       // 如果使用了自定义服务，进一步控制编辑属性
@@ -211,8 +212,18 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
         col.canAdd = col?.in_add === 1;
       }
 
+
       // 设置显示列：显示列是列表列、可编辑列、可新增列的并集
-      col._display = listColsMap?.[col.columns]?.in_list === 1 || col.editable || col.canAdd;
+      col._union_display = listColsMap?.[col.columns]?.in_list === 1 || col.editable || col.canAdd;
+      if (preferType === 'list') {
+        col._display = listColsMap?.[col.columns]?.in_list === 1
+      } else if (preferType === 'update') {
+        col._display = col.editable
+      } else if (preferType === 'add') {
+        col._display = col.canAdd;
+      } else {
+        col._display = col._union_display;
+      }
 
       // 设置必填属性
       col.isRequired = col.required === "是" || updateColsMap?.[col.columns]?.required === "是" || addColsMap?.[col.columns]?.required === "是" ||

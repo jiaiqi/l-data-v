@@ -42,6 +42,7 @@
     />
     <div
       class="flex-1 list-container"
+      ref="listContainer"
       v-if="isFetched || childListType"
     >
       <ve-table
@@ -61,7 +62,7 @@
       >
         <ve-table
           ref="tableRef"
-          style="word-break: break-word; width: 100vw"
+          style="word-break: break-word;"
           max-height="calc(100vh - 80px)"
           fixed-header
           :scroll-width="0"
@@ -515,8 +516,8 @@ export default {
       startRowIndex: 0,
       // 是否开启列宽可变
       columnWidthResizeOption: {
-        enable: false,
-        minWidth: 50,
+        enable: true,
+        minWidth: 20,
         sizeChange: ({ column, differWidth, columnWidth }) => {
           console.log({
             column,
@@ -1268,7 +1269,7 @@ export default {
         Object.keys(this.columnWidthMap).forEach((key) => {
           if (
             this.columnWidthMap[key]?.width &&
-            !isNaN(parseFloat(this.columnWidthMap[key].width))
+            !isNaN(parseFloat(this.columnWidthMap[key].width) && key !== 'index')
           ) {
             let serviceName = this.columnWidthMap[key].fieldInfo.service_name;
             const addService = this.addColsMap?.[key]?.service_name;
@@ -1752,7 +1753,7 @@ export default {
           ruleType: "eq",
           value: fkVal,
         };
-      }else if(fkCol){
+      } else if (fkCol) {
         return {
           colName: fkCol,
           ruleType: "eq",
@@ -2934,7 +2935,7 @@ export default {
         // }
         let minWidth = 50;
         columns = columns.concat(
-          this.allFields.map((item, index) => {
+          this.allFields.filter(item => item._display).map((item, index) => {
             let width = undefined;
             const length = item?.label?.replace(
               /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
@@ -2947,7 +2948,8 @@ export default {
               title: item.label,
               field: item.columns,
               key: item.columns,
-              width: width,
+              width: width&&width<minWidth?minWidth:width,
+              // minWidth: width,
               edit: item.editable === true || item.canAdd == true, // 不再根据字段类型控制是否可编辑，所有类型字段都可以编辑，未适配的类型当作String处理
               __field_info: { ...item },
             };
@@ -3618,7 +3620,7 @@ export default {
           }
           return item;
         });
-        if (this.childListType === "add" && !this.disabled&& Array.isArray(this.rowButton) && this.rowButton?.length) {
+        if (this.childListType === "add" && !this.disabled && Array.isArray(this.rowButton) && this.rowButton?.length) {
           columns.push({
             field: "_handler",
             key: "_handler",
@@ -3699,6 +3701,32 @@ export default {
           },
         });
       }
+      // 表格宽度减去20px，用于调整宽度计算，避免超出边界
+      const tableDomWidth = this.$refs.spreadsheet.clientWidth - 20;
+      // 设置宽度的字段之和
+      const unsetWidthColumns = columns.filter((item) => !item.width);
+      const totalColumnWidth = columns.reduce((prev, cur) => {
+        return prev + (cur.width || 0);
+      }, 0);
+      // 计算未设置宽度的列的平均宽度：表格总宽度减去已设置宽度的总和，再除以未设置宽度的列数
+      const unsetWidthColumnAvgWidth = (tableDomWidth - totalColumnWidth) / unsetWidthColumns.length
+      // 遍历所有列，为未设置宽度的列分配宽度，并调整所有列的宽度比例
+      columns = columns.map((item) => {
+        // 如果当前列未设置宽度，则分配计算出的平均宽度
+        if (!item.width) {
+          item.width = unsetWidthColumnAvgWidth
+        }
+        // 保存原始宽度，用于后续可能的恢复或对比
+        item._originWidth = item.width;
+        // 计算宽度比例：当前列宽度 * 表格总宽度 / (已设置宽度总和 + 未设置宽度列的总宽度)
+        // 这个比例确保所有列的总宽度等于表格可见宽度
+        const ratio = item.width * tableDomWidth / (totalColumnWidth + unsetWidthColumnAvgWidth*unsetWidthColumns.length)
+        // 将计算出的宽度保留两位小数，确保宽度值的精确性
+        item.width = Number(ratio.toFixed(2));
+        // 返回处理后的列配置
+        return item;
+      })
+      // 返回所有处理后的列配置
       return columns;
     },
     handlerRedundant(rawData = {}, fkColumn, rowKey, rowIndex) {
@@ -3778,7 +3806,7 @@ export default {
             // 值都为空
             return;
           }
-         
+
           row[item.columns] = rawData?.[item.redundant.refedCol] || null;
           this.$set(this.tableData, rowIndex, row);
           console.log("handlerRedundant::", item.columns, row[item.columns]);
