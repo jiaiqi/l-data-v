@@ -89,6 +89,15 @@
         :editable="editable"
         :dialogFullscreen="dialogFullscreen"
       ></rich-text-editor>
+      <!-- <div
+        v-else-if="editorType === 'MultilineText'"
+        contenteditable="true"
+        :class="{ 'bg-gray-100': hasChange }"
+        @input="changeModelValue"
+        @keydown.ctrl.s="onlySaveValue"
+      >
+        {{ modelValue }}
+      </div> -->
       <el-input
         type="textarea"
         :rows="10"
@@ -97,6 +106,7 @@
           '请输入内容'
           "
         v-model="modelValue"
+        @input="changeModelValue"
         v-else-if="editorType === 'MultilineText'"
       >
       </el-input>
@@ -131,16 +141,14 @@
             type="primary"
             plain
             @click="
-              $emit('change', modelValue, row, column);
-            editorVisible = false;
+              confirmValue
             "
           >确认</el-button>
           <el-button
             type="primary"
             :disabled="!hasChange"
-            @click="
-              $emit('save', modelValue, row, column, 'save');
-            stopAutoSave();
+            @click="onlySaveValue
+
             "
           >
             仅保存
@@ -360,7 +368,7 @@ const editorType = computed(() => {
     // 外键自动完成类型判断
     if (isFkAutoComplete(fieldInfo.value)) {
       return "autocomplete"
-    } 
+    }
     // 外键类型判断
     else if (isFk(fieldInfo.value)) {
       return "fk"
@@ -401,7 +409,7 @@ const setPosition = computed(() => {
     let height = onfocus.value
       ? props.position.height
       : props.position.height - 8  // 减去上下各3px偏移 + 2px边框
-    
+
     return `left:${left}px;top:${top}px;width:${width}px;height:${height}px;`
   } else {
     return ""
@@ -474,24 +482,48 @@ const onFinderChange = (item = null) => {
     emit("fk-change", item, props.row, props.column)
     return
   }
-  
+
   // 处理选项类型
   if (item && item?.option) {
     modelValue.value = item?.label || null
   }
-  
+
   // 处理外键自动完成类型
   if (isFkAutoComplete(fieldInfo.value)) {
     modelValue.value = item?.value || null
     emit("fk-autocomplete-change", item, props.row, props.column)
   }
-  
+
   // 处理多外键类型
   const colType = fieldInfo.value.col_type
   if (["fks", "fkjson", "fkjsons"].includes(colType)) {
     emit("fks-change", item, props.row, props.column)
   }
 }
+
+/**
+ * 处理模型值变化事件
+ * @param {any} val - 新值
+ */
+const changeModelValue = (val) => {
+  if(val?.target?.innerHTML){
+    // modelValue.value = val.target.innerHTML
+  }else {
+    modelValue.value = val
+  }
+  console.log("changeModelValue", val);
+  // emit("change", val, props.row, props.column)
+}
+
+const confirmValue = () => {
+  editorVisible.value = false
+  emit("change", modelValue.value, props.row, props.column)
+}
+const onlySaveValue = () => {
+  emit("save", modelValue.value, props.row, props.column, "save")
+  stopAutoSave()
+}
+
 
 /**
  * 处理键盘事件，主要监听Ctrl+S保存快捷键
@@ -501,7 +533,7 @@ const onKeyDown = (e) => {
   // 监听 Ctrl+S 或 Cmd+S 保存快捷键
   if ((e.ctrlKey || e.metaKey) && e.key === "s") {
     e.preventDefault()  // 阻止浏览器默认保存行为
-    
+
     // 只有在编辑器可见、可编辑且有变化时才触发保存
     if (editorVisible.value && props.editable && hasChange.value) {
       emit("save", modelValue.value, props.row, props.column, "save")
@@ -528,19 +560,19 @@ const stopAutoSave = () => {
  */
 const autoSave = () => {
   stopAutoSave()  // 先停止之前的自动保存
-  
+
   // 如果当前值与原始值相同，无需保存
   if (modelValue.value === props.value) {
     console.log("没有需要保存的内容")
     return
   }
-  
+
   // 设置3分钟（180秒）倒计时
   autoSaveTimeout.value = 60 * 3
   autoSaveInterval.value = setInterval(() => {
     autoSaveTimeout.value--
     console.log(`自动保存倒计时：${autoSaveTimeout.value}`)
-    
+
     // 倒计时结束，执行自动保存
     if (autoSaveTimeout.value <= 0) {
       autoSaveTimeout.value = 0
@@ -576,7 +608,7 @@ const handleClose = () => {
  */
 const dblListener = (eve) => {
   console.log(eve)
-  
+
   // 检查是否点击的是富文本编辑器中的图片
   if (
     eve.target?.offsetParent?.className.indexOf("w-e-image-container") > -1 &&
@@ -585,7 +617,7 @@ const dblListener = (eve) => {
     url.value = eve.target.currentSrc
     const arr = []
     let imgIndex = 0
-    
+
     // 收集页面中所有富文本编辑器的图片
     document
       .querySelectorAll(".w-e-image-container")
@@ -600,15 +632,15 @@ const dblListener = (eve) => {
           }
         })
       })
-    
+
     srcList.value = arr
     initialIndex.value = imgIndex
-    
+
     // 延迟触发图片预览组件
     setTimeout(() => {
       document.getElementById("imgPreview")?.click()
     }, 200)
-    
+
     eve.stopPropagation()
     eve.preventDefault()
   }
@@ -652,12 +684,12 @@ watch(
  */
 watch(editorVisible, (newVal) => {
   console.log("editorVisible:", newVal)
-  
+
   // 同步外部show状态
   if (newVal !== props.show) {
     emit("update:show", newVal)
   }
-  
+
   if (newVal) {
     // 编辑器显示时，添加图片双击事件监听
     window.addEventListener("dblclick", dblListener)
@@ -717,18 +749,18 @@ defineExpose({
    * @param {string} val - 触发值
    */
   triggerAutocomplete,
-  
+
   /**
    * 打开编辑器
    * @param {Object} params - 打开参数
    */
   handleOpen,
-  
+
   /**
    * 关闭编辑器
    */
   handleClose,
-  
+
   /**
    * 停止自动保存
    */

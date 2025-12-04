@@ -413,13 +413,13 @@ export default {
                   // event.preventDefault()
                   // this.$refs.fieldEditorDialog.open();
                 } else if (["MultilineText"].includes(colType)) {
-                  event.stopPropagation();
-                  console.log("弹出多行文本编辑器");
-                  this.buildFieldEditorParams(row, column);
-                  this.showFieldEditor = true;
-                  this.$nextTick(() => {
-                    this.clearCellSelection();
-                  });
+                  // event.stopPropagation();
+                  // console.log("弹出多行文本编辑器");
+                  // this.buildFieldEditorParams(row, column);
+                  // this.showFieldEditor = true;
+                  // this.$nextTick(() => {
+                  //   this.clearCellSelection();
+                  // });
                   return false;
                 } else if (["Date", "DateTime"].includes(colType)) {
                   event.stopPropagation();
@@ -2037,7 +2037,6 @@ export default {
     },
     dialogChange(event, row, column, type) {
       // 将html中的文件地址前缀替换为$bxFileAddress$
-
       event = this.replaceFileAddressSuffix(event);
       this.$set(row, column.field, event);
       this.$refs["tableRef"].startEditingCell({
