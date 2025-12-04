@@ -1055,6 +1055,9 @@ export default {
             reqData.condition.map((cond) => {
               this.allColum.list.map((column) => {
                 if (column.columns == cond.colName) {
+                  if(cond.ruleType==='between' && cond.value?.includes(',')){
+                    cond.value = cond.value.split(',');
+                  }
                   column._condition = cond;
                   _condition.push(cond);
                   endData.condition.push(column);
