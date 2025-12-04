@@ -536,7 +536,22 @@ export default {
         this.listData.forEach((item) => {
           Object.keys(endData).forEach((key) => {
             if (item.type === key && item?.list?.length) {
-              endData[key].push(...item.list.map((d) => d[`_${key}`]));
+              const data =[... item.list.map((d) => d[`_${key}`])];
+              if(Array.isArray(data)&&data.length){
+                data.forEach(d=>{
+                  const obj = {...d};
+                  if(obj?.ruleType==='between' && Array.isArray(obj.value)){
+                    obj.value = obj.value.map(o=>{
+                      if(dayjs(o).isValid()){
+                        return dayjs(o).format("YYYY-MM-DD HH:mm:ss")
+                      }
+                      return o
+                    }).toString();
+                  }
+                  endData[key].push(obj);
+                })
+              }
+              // endData[key].push(...item.list.map((d) => d[`_${key}`]));
             }
           });
         });
