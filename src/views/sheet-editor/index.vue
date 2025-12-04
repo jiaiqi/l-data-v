@@ -2948,7 +2948,7 @@ export default {
               title: item.label,
               field: item.columns,
               key: item.columns,
-              width: width&&width<minWidth?minWidth:width,
+              width: width && width < minWidth ? minWidth : width,
               // minWidth: width,
               edit: item.editable === true || item.canAdd == true, // 不再根据字段类型控制是否可编辑，所有类型字段都可以编辑，未适配的类型当作String处理
               __field_info: { ...item },
@@ -3714,13 +3714,13 @@ export default {
       columns = columns.map((item) => {
         // 如果当前列未设置宽度，则分配计算出的平均宽度
         if (!item.width) {
-          item.width = unsetWidthColumnAvgWidth
+          item.width = unsetWidthColumnAvgWidth > 100 ? unsetWidthColumnAvgWidth : 100
         }
         // 保存原始宽度，用于后续可能的恢复或对比
         item._originWidth = item.width;
         // 计算宽度比例：当前列宽度 * 表格总宽度 / (已设置宽度总和 + 未设置宽度列的总宽度)
         // 这个比例确保所有列的总宽度等于表格可见宽度
-        const ratio = item.width * tableDomWidth / (totalColumnWidth + unsetWidthColumnAvgWidth*unsetWidthColumns.length)
+        const ratio = item.width * tableDomWidth / (totalColumnWidth + unsetWidthColumnAvgWidth * unsetWidthColumns.length)
         // 将计算出的宽度保留两位小数，确保宽度值的精确性
         item.width = Number(ratio.toFixed(2));
         // 返回处理后的列配置
