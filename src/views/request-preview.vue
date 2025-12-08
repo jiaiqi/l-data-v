@@ -515,7 +515,7 @@ export default {
                 res[cur.col_name] = {
                   list: [{ ...cur }],
                   key: cur.col_name,
-                  value: -1,
+                  value: 0,
                 };
               }
             }
@@ -524,6 +524,8 @@ export default {
         this.groupByColsVal = {};
         for (const key in this.groupByCols) {
           this.groupByColsVal[key] = null;
+          const groupItem = this.groupByCols[key];
+          this.changeGroup(groupItem.value, groupItem.list, key);
           // this.groupByColsVal[key] = this.groupByCols[key]
         }
       }
@@ -583,8 +585,9 @@ export default {
                 })
               }
             }
-            await this.getGroupFields();
+            
           }
+          await this.getGroupFields();
         }
       }
     },

@@ -646,6 +646,8 @@ async function getTableData(req = {}) {
       finalColumns = allColumns.filter((item) => currentCheckedColumns.value.includes(item.columns));
     }
 
+    console.log(finalColumns, 8888888);
+
     tableTitle.value = finalColumns;
 
   } catch (error) {
