@@ -333,6 +333,7 @@ export default {
                   res = {
                     col_name: item.colName,
                     type_stat: item.type,
+                    seq: item.seq,
                     alias_name: item.aliasName,
                     srv_req_no: this.srv_call_no,
                   };
@@ -506,6 +507,7 @@ export default {
           type: "",
         };
         item["aliasName"] = "";
+        item['seq'] = item.seq || null;
         this.columnsOption.push(item);
         // }
       });

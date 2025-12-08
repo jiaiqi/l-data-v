@@ -13,12 +13,10 @@
       ></el-input>
     </div>
     <div class="content">
-      <el-checkbox-group
-        v-model="checkList"
-        @change="handleCheckChange"
-      >
+      <el-checkbox-group v-model="checkList" @change="handleCheckChange">
         <draggable
           :list="singList.list"
+          handle=".label-container"
           :options="deploy"
           class="dragArea"
           @start="onStart($event, singList)"
@@ -42,7 +40,9 @@
                 :name="item.columns"
                 class="flex items-center flex-1"
               >
-                <div class="flex items-center w-full all-column-item flex-1">
+                <div
+                  class="flex items-center w-full all-column-item flex-1 label-container cursor-move"
+                >
                   <div class="flex justify-center flex-col flex-1 truncate">
                     <div class="truncate">
                       <span v-html="renderLabel(item)"></span>
@@ -51,15 +51,15 @@
                       <span v-html="renderColumns(item)"></span>
                     </div>
                   </div>
-                  <i
+                  <!-- <i
                     class="i-ri-drag-drop-fill handle cursor-move hover-show"
                     title="拖动"
-                  ></i>
+                  ></i> -->
                   <!-- <i
                     class="i-ri:drag-move-2-fill hover-show handle ml-2px cursor-move text-gray-500 hover:text-blue-500"
                   ></i> -->
                   <i
-                    class="i-ri-file-copy-2-fill hover-show ml-2px cursor-pointer "
+                    class="i-ri-file-copy-2-fill hover-show ml-2px cursor-pointer"
                     title="复制"
                     @click.stop.prevent="copyColumn(item)"
                   ></i>
@@ -68,11 +68,10 @@
             </div>
             <div
               v-else
-              class="value handle"
+              class="value cursor-move label-container"
               :class="{ order_value: singList.type === 'order' }"
               v-html="renderLabel(item)"
-            >
-            </div>
+            ></div>
             <el-select
               v-model="item._condition.ruleType"
               filterable
@@ -156,17 +155,18 @@
               class="input-value"
               @click.stop
             ></el-input>
-            <el-input
+            <!-- <el-input
               v-model="item._aggregation.aliasName"
               v-if="singList.type === 'aggregation'"
               placeholder="请输入别名"
               class="input-value"
-            ></el-input>
+            ></el-input> -->
             <el-input
-              v-model="item._group.aliasName"
-              v-if="singList.type === 'group'"
+              v-model="item['_' + singList.type].aliasName"
+              v-if="['group', 'aggregation'].includes(singList.type)"
               placeholder="请输入别名"
               class="input-value"
+              clearable
             ></el-input>
             <el-date-picker
               v-model="item._condition.value"
@@ -181,7 +181,15 @@
               onSt-placeholder="开始日期"
               end-placeholder="结束日期"
               :picker-options="pickerOptions"
+              clearable
             ></el-date-picker>
+            <el-input
+              v-model.number="item['_' + singList.type].seq"
+              v-if="['group', 'aggregation'].includes(singList.type)"
+              placeholder="序号"
+              style="width: 100px"
+              clearable
+            ></el-input>
             <el-button
               type="danger"
               icon="el-icon-delete"
@@ -207,13 +215,13 @@ export default {
     singList: {
       type: Object,
       default: function () {
-          return {};
-        },
+        return {};
+      },
     },
     props: {
       operator: {
         type: Array,
-        default: () => { },
+        default: () => {},
       },
     },
     allowCheck: {
@@ -240,8 +248,8 @@ export default {
           }
         }
       },
-      deep: true
-    }
+      deep: true,
+    },
   },
   data() {
     return {
@@ -378,7 +386,7 @@ export default {
       // 更新本地checkList
       this.checkList = uniqueValues;
       // 通知父组件更新
-      this.$emit('update:checkedColumns', uniqueValues);
+      this.$emit("update:checkedColumns", uniqueValues);
     },
     deleteAllData() {
       // 清除组装的数据
@@ -1035,7 +1043,7 @@ export default {
         });
       }
     },
-    selectData(initial) { },
+    selectData(initial) {},
   },
   created() {
     let val = this.singList;
@@ -1278,7 +1286,7 @@ mark.hl {
       }
 
       .value {
-        min-width: 35%;
+        min-width: 150px;
         font-size: 14px;
         background-color: #fff;
         color: #606266;
@@ -1306,13 +1314,13 @@ mark.hl {
 
       .el-select {
         border-radius: 0;
-        max-width: 18%;
+        max-width: 150px;
       }
 
       .date-picker {
         width: 100%;
         border-radius: 0;
-        max-width: 25%;
+        max-width: 200px;
       }
 
       .input-value {

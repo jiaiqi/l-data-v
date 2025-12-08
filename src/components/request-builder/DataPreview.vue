@@ -631,9 +631,13 @@ async function getTableData(req = {}) {
             col.columns = col.aliasName;
             col.label = col.aliasName;
           }
+          if (item.seq) {
+            col.seq = item.seq;
+          }
           finalColumns.push(col);
         }
-      }); 
+      });
+      finalColumns.sort((a, b) => (a.seq || 0) - (b.seq || 0));
       // finalColumns = allColumns.filter(col => selectedNames.includes(col.columns));
     } else if (
       Array.isArray(currentCheckedColumns.value) &&
