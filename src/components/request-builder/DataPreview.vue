@@ -1,13 +1,7 @@
 <template>
-  <el-card
-    class="preview-box"
-    shadow="hover"
-  >
+  <el-card class="preview-box" shadow="hover">
     <!-- 标题栏 -->
-    <div
-      slot="header"
-      class="preview-title"
-    >
+    <div slot="header" class="preview-title">
       <div class="title-section">
         <h3 class="title">{{ title }}</h3>
         <el-tag
@@ -21,10 +15,7 @@
       </div>
       <div class="header-actions">
         <!-- 字段设置按钮 -->
-        <el-tooltip
-          content="字段设置"
-          placement="top"
-        >
+        <el-tooltip content="字段设置" placement="top">
           <el-button
             @click="showColumnSelector = true"
             type="text"
@@ -38,10 +29,7 @@
         </el-tooltip>
 
         <!-- 新页面打开按钮 -->
-        <el-tooltip
-          content="在新页面中打开"
-          placement="top"
-        >
+        <el-tooltip content="在新页面中打开" placement="top">
           <el-button
             @click="openNewPage"
             type="text"
@@ -63,7 +51,7 @@
           class="refresh-button"
           :loading="refreshing"
         >
-          {{ refreshing ? '刷新中' : '刷新' }}
+          {{ refreshing ? "刷新中" : "刷新" }}
         </el-button>
 
         <!-- 导出按钮 -->
@@ -80,23 +68,17 @@
             class="export-button"
             :loading="isExporting"
           >
-            {{ isExporting ? '导出中...' : '导出Excel' }}
+            {{ isExporting ? "导出中..." : "导出Excel" }}
             <i
               class="el-icon-arrow-down el-icon--right"
               v-if="!isExporting"
             ></i>
           </el-button>
           <el-dropdown-menu slot="dropdown">
-            <el-dropdown-item
-              command="current"
-              icon="el-icon-document"
-            >
+            <el-dropdown-item command="current" icon="el-icon-document">
               导出当前页 ({{ tableData.length }} 条)
             </el-dropdown-item>
-            <el-dropdown-item
-              command="all"
-              icon="el-icon-folder"
-            >
+            <el-dropdown-item command="all" icon="el-icon-folder">
               导出全部数据 ({{ pageInfo.total }} 条)
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -132,7 +114,9 @@
             </el-button>
           </div>
           <div class="selected-count">
-            已选择 <span class="count-number">{{ localCheckedColumns.length }}</span> / {{ allAvailableColumns.length }}
+            已选择
+            <span class="count-number">{{ localCheckedColumns.length }}</span> /
+            {{ allAvailableColumns.length }}
             个字段
           </div>
         </div>
@@ -151,20 +135,18 @@
 
         <!-- 字段列表 -->
         <div class="column-list-container">
-          <el-checkbox-group
-            v-model="localCheckedColumns"
-            class="column-list"
-          >
+          <el-checkbox-group v-model="localCheckedColumns" class="column-list">
             <div
               v-for="column in filteredColumns"
               :key="column.columns"
               class="column-item"
-              :class="{ 'column-item-checked': localCheckedColumns.includes(column.columns) }"
+              :class="{
+                'column-item-checked': localCheckedColumns.includes(
+                  column.columns
+                ),
+              }"
             >
-              <el-checkbox
-                :label="column.columns"
-                class="column-checkbox"
-              >
+              <el-checkbox :label="column.columns" class="column-checkbox">
                 <div class="column-info">
                   <span class="column-label">
                     {{ column.aliasName || column.label || column.columns }}
@@ -175,10 +157,7 @@
                   >
                     {{ column.columns }}
                   </span>
-                  <span
-                    class="column-type"
-                    v-if="column.type"
-                  >
+                  <span class="column-type" v-if="column.type">
                     {{ column.type }}
                   </span>
                 </div>
@@ -187,34 +166,24 @@
           </el-checkbox-group>
 
           <!-- 空状态 -->
-          <div
-            v-if="filteredColumns.length === 0"
-            class="empty-search"
-          >
+          <div v-if="filteredColumns.length === 0" class="empty-search">
             <i class="el-icon-search"></i>
             <p>未找到匹配的字段</p>
           </div>
         </div>
       </div>
 
-      <div
-        slot="footer"
-        class="dialog-footer"
-      >
+      <div slot="footer" class="dialog-footer">
         <div class="footer-left">
-          <el-button
-            @click="handleResetColumns"
-            size="small"
-          >
+          <el-button @click="handleResetColumns" size="small">
             <i class="el-icon-refresh-left"></i>
             重置
           </el-button>
         </div>
         <div class="footer-right">
-          <el-button
-            @click="handleCancelColumnSelection"
-            size="small"
-          >取消</el-button>
+          <el-button @click="handleCancelColumnSelection" size="small"
+            >取消</el-button
+          >
           <el-button
             type="primary"
             @click="handleConfirmColumnSelection"
@@ -232,21 +201,19 @@
       <!-- 字段信息栏 -->
       <div
         class="field-info-bar"
-        v-if="allAvailableColumns.length > 0 && currentCheckedColumns.length > 0"
+        v-if="
+          allAvailableColumns.length > 0 && currentCheckedColumns.length > 0
+        "
       >
         <div class="field-info">
-          <el-tag
-            size="mini"
-            type="success"
-          >
+          <el-tag size="mini" type="success">
             <i class="el-icon-view"></i>
-            显示 {{ currentCheckedColumns.length }}/{{ allAvailableColumns.length }} 字段
+            显示 {{ currentCheckedColumns.length }}/{{
+              allAvailableColumns.length
+            }}
+            字段
           </el-tag>
-          <el-tag
-            size="mini"
-            type="info"
-            v-if="loaded && !isEmpty"
-          >
+          <el-tag size="mini" type="info" v-if="loaded && !isEmpty">
             <i class="el-icon-document"></i>
             当前页 {{ tableData.length }} 条
           </el-tag>
@@ -263,14 +230,8 @@
       </div>
 
       <!-- 加载状态 -->
-      <div
-        v-if="loading"
-        class="loading-container"
-      >
-        <el-skeleton
-          :rows="10"
-          animated
-        />
+      <div v-if="loading" class="loading-container">
+        <el-skeleton :rows="10" animated />
       </div>
 
       <!-- 表格 -->
@@ -294,14 +255,14 @@
             :min-width="column.width || 150"
             :fixed="index < 2 ? 'left' : false"
           >
-            <template
-              slot="header"
-              slot-scope="scope"
-            >
+            <template slot="header">
               <div class="table-header">
-                <span>{{ column.label }}
-                  <template v-if="column.aliasName">
-                    ({{ column.aliasName }})
+                <span>
+                  <!-- <template v-if="column.aliasName">
+                    {{ column.aliasName }}
+                  </template> -->
+                  <template>
+                    {{ column.label || column.columns }}
                   </template>
                 </span>
                 <el-tooltip
@@ -314,46 +275,39 @@
               </div>
             </template>
             <template slot-scope="scope">
-              <span>{{ scope.row[column.aliasName] || scope.row[column.columns] || "" }}</span>
+              <span>
+                {{ scope.row[column.columns] || "" }}
+              </span>
+              <!-- <span>
+                {{
+                  scope.row[column.aliasName] || scope.row[column.columns] || ""
+                }}
+              </span> -->
             </template>
           </el-table-column>
         </template>
       </el-table>
 
       <!-- 空状态 -->
-      <div
-        class="empty-state"
-        v-else-if="loaded && isEmpty"
-      >
+      <div class="empty-state" v-else-if="loaded && isEmpty">
         <div class="empty-icon">
           <i class="el-icon-data-analysis"></i>
         </div>
         <h4>暂无数据</h4>
         <p>请点击刷新按钮获取数据或检查请求参数是否正确</p>
-        <el-button
-          type="primary"
-          @click="handleRefresh"
-          class="retry-btn"
-        >
+        <el-button type="primary" @click="handleRefresh" class="retry-btn">
           <i class="el-icon-refresh"></i>
           重新获取数据
         </el-button>
       </div>
 
-      <div
-        class="empty-state"
-        v-else-if="loaded === false"
-      >
+      <div class="empty-state" v-else-if="loaded === false">
         <div class="empty-icon">
           <i class="el-icon-data-analysis"></i>
         </div>
         <h4>等待数据加载</h4>
         <p>请点击预览按钮获取数据</p>
-        <el-button
-          type="primary"
-          @click="handleRefresh"
-          class="retry-btn"
-        >
+        <el-button type="primary" @click="handleRefresh" class="retry-btn">
           <i class="el-icon-view"></i>
           开始预览
         </el-button>
@@ -361,10 +315,7 @@
     </div>
 
     <!-- 分页 -->
-    <div
-      class="pagination-container"
-      v-if="tableData.length > 0"
-    >
+    <div class="pagination-container" v-if="tableData.length > 0">
       <div class="pagination-info">
         <span>共 {{ pageInfo.total }} 条记录</span>
       </div>
@@ -384,11 +335,19 @@
 </template>
 
 <script setup>
-import { getCurrentInstance, reactive, computed, ref, watch, nextTick } from "vue";
+import {
+  getCurrentInstance,
+  reactive,
+  computed,
+  ref,
+  watch,
+  nextTick,
+} from "vue";
 import dayjs from "dayjs";
 import * as XLSX from "xlsx";
 import { $http } from "@/common/http";
 import { useRoute, useRouter } from "@/common/vueApi.js";
+import cloneDeep from "lodash/cloneDeep";
 
 // 定义props
 const props = defineProps({
@@ -418,8 +377,8 @@ const props = defineProps({
   },
   height: {
     type: [String, Number],
-    default: 'auto'
-  }
+    default: "auto",
+  },
 });
 
 // 定义emits
@@ -429,7 +388,7 @@ const emit = defineEmits([
   "current-change",
   "open-login",
   "columns-change",
-  "sort-change"
+  "sort-change",
 ]);
 
 // 获取当前实例以访问$message
@@ -459,20 +418,26 @@ const showColumnSelector = ref(false);
 const allAvailableColumns = ref([]);
 const localCheckedColumns = ref([]);
 const currentCheckedColumns = ref([]);
-const columnSearchText = ref('');
+const columnSearchText = ref("");
 
 // 表格高度计算
 const tableHeight = computed(() => {
-  if (props.height === 'auto') return undefined;
-  return typeof props.height === 'number' ? props.height : parseInt(props.height);
+  if (props.height === "auto") return undefined;
+  return typeof props.height === "number"
+    ? props.height
+    : parseInt(props.height);
 });
 
 // 过滤后的字段列表
 const filteredColumns = computed(() => {
   if (!columnSearchText.value) return allAvailableColumns.value;
   const searchText = columnSearchText.value.toLowerCase();
-  return allAvailableColumns.value.filter(column => {
-    const label = (column.aliasName || column.label || column.columns).toLowerCase();
+  return allAvailableColumns.value.filter((column) => {
+    const label = (
+      column.aliasName ||
+      column.label ||
+      column.columns
+    ).toLowerCase();
     const name = column.columns.toLowerCase();
     return label.includes(searchText) || name.includes(searchText);
   });
@@ -481,11 +446,14 @@ const filteredColumns = computed(() => {
 // 全选状态
 const checkAll = computed({
   get() {
-    return localCheckedColumns.value.length === allAvailableColumns.value.length && allAvailableColumns.value.length > 0;
+    return (
+      localCheckedColumns.value.length === allAvailableColumns.value.length &&
+      allAvailableColumns.value.length > 0
+    );
   },
   set(val) {
     // 这里不需要实现，因为我们用 handleCheckAllChange 处理
-  }
+  },
 });
 
 // 半选状态
@@ -495,16 +463,22 @@ const isIndeterminate = computed(() => {
 });
 
 // 监听props.checkedColumns变化
-watch(() => props.checkedColumns, (newVal) => {
-  if (Array.isArray(newVal)) {
-    currentCheckedColumns.value = [...newVal];
-  }
-}, { immediate: true });
+watch(
+  () => props.checkedColumns,
+  (newVal) => {
+    if (Array.isArray(newVal)) {
+      currentCheckedColumns.value = [...newVal];
+    }
+  },
+  { immediate: true }
+);
 
 // 处理全选/取消全选
 const handleCheckAllChange = (val) => {
   if (val) {
-    localCheckedColumns.value = allAvailableColumns.value.map(col => col.columns);
+    localCheckedColumns.value = allAvailableColumns.value.map(
+      (col) => col.columns
+    );
   } else {
     localCheckedColumns.value = [];
   }
@@ -512,8 +486,10 @@ const handleCheckAllChange = (val) => {
 
 // 反选
 const handleInvertSelection = () => {
-  const allColumnNames = allAvailableColumns.value.map(col => col.columns);
-  localCheckedColumns.value = allColumnNames.filter(name => !localCheckedColumns.value.includes(name));
+  const allColumnNames = allAvailableColumns.value.map((col) => col.columns);
+  localCheckedColumns.value = allColumnNames.filter(
+    (name) => !localCheckedColumns.value.includes(name)
+  );
 };
 
 // 确认字段选择
@@ -539,12 +515,14 @@ const handleConfirmColumnSelection = () => {
 const handleCancelColumnSelection = () => {
   localCheckedColumns.value = [...currentCheckedColumns.value];
   showColumnSelector.value = false;
-  columnSearchText.value = '';
+  columnSearchText.value = "";
 };
 
 // 重置字段选择
 const handleResetColumns = () => {
-  localCheckedColumns.value = allAvailableColumns.value.map(col => col.columns);
+  localCheckedColumns.value = allAvailableColumns.value.map(
+    (col) => col.columns
+  );
   proxy.$message.info("已重置为全部字段");
 };
 
@@ -615,16 +593,19 @@ async function getTableData(req = {}) {
     allAvailableColumns.value = allColumns;
 
     // 如果请求中带有分组/聚合配置，则仅显示这些字段
-    const groupItems = Array.isArray(req?.group) ? req.group.filter(item => item && item.type) : [];
-    const selectedNames = groupItems.map(item => item.colName || item.columns || item.col_name).filter(Boolean);
-
+    const groupItems = Array.isArray(req?.group)
+      ? req.group.filter((item) => item && item.type)
+      : [];
+    const selectedNames = groupItems
+      .map((item) => item.colName || item.columns || item.col_name)
+      .filter(Boolean);
     // 应用聚合别名到列（如果有）
     if (groupItems.length > 0) {
-      groupItems.forEach(item => {
+      groupItems.forEach((item) => {
         const alias = item.aliasName || item.alias_name;
         const name = item.colName || item.columns || item.col_name;
         if (alias && name) {
-          const col = allColumns.find(c => c.columns === name);
+          const col = allColumns.find((c) => c.columns === name);
           if (col) {
             col.aliasName = alias;
           }
@@ -634,20 +615,36 @@ async function getTableData(req = {}) {
 
     // 如果是第一次加载且没有预设的选中列，默认选中所有列
     if (currentCheckedColumns.value.length === 0 && allColumns.length > 0) {
-      currentCheckedColumns.value = allColumns.map(col => col.columns);
+      currentCheckedColumns.value = allColumns.map((col) => col.columns);
       localCheckedColumns.value = [...currentCheckedColumns.value];
     }
 
     // 根据选中的列过滤显示的列
     let finalColumns = allColumns;
-    if (selectedNames.length > 0) {
-      finalColumns = allColumns.filter(col => selectedNames.includes(col.columns));
-    } else if (Array.isArray(currentCheckedColumns.value) && currentCheckedColumns.value.length > 0) {
-      finalColumns = allColumns.filter((item) => currentCheckedColumns.value.includes(item.columns));
+    if (groupItems.length > 0) {
+      finalColumns = [];
+      groupItems.forEach((item) => {
+        const colObj = allColumns.find((c) => c.columns === item.colName);
+        if (colObj) {
+          const col = cloneDeep(colObj);
+          if (item.aliasName) {
+            col.columns = col.aliasName;
+            col.label = col.aliasName;
+          }
+          finalColumns.push(col);
+        }
+      }); 
+      // finalColumns = allColumns.filter(col => selectedNames.includes(col.columns));
+    } else if (
+      Array.isArray(currentCheckedColumns.value) &&
+      currentCheckedColumns.value.length > 0
+    ) {
+      finalColumns = allColumns.filter((item) =>
+        currentCheckedColumns.value.includes(item.columns)
+      );
     }
 
     tableTitle.value = finalColumns;
-
   } catch (error) {
     console.error("获取数据失败:", error);
     proxy.$message.error("获取数据失败: " + (error.message || "未知错误"));
@@ -696,10 +693,10 @@ const exportAllDataExcel = async () => {
 
   // 使用通知而不是消息，避免被其他消息覆盖
   const notification = proxy.$notify({
-    title: '导出进度',
-    message: '开始导出全部数据，请稍候...',
-    type: 'info',
-    duration: 0
+    title: "导出进度",
+    message: "开始导出全部数据，请稍候...",
+    type: "info",
+    duration: 0,
   });
 
   try {
@@ -745,20 +742,24 @@ const exportAllDataExcel = async () => {
     }
 
     // 更新进度
-    notification.message = '正在处理数据...';
+    notification.message = "正在处理数据...";
 
     // 获取列配置 - 只导出当前选中的字段
     const allColumns = res.data.mdata || props.columnsOption || [];
     // 结合请求的分组/聚合配置来确定导出字段
-    const groupItems = Array.isArray(initReq.value?.group) ? initReq.value.group.filter(item => item && item.type) : [];
-    const selectedNames = groupItems.map(item => item.colName || item.columns || item.col_name).filter(Boolean);
+    const groupItems = Array.isArray(initReq.value?.group)
+      ? initReq.value.group.filter((item) => item && item.type)
+      : [];
+    const selectedNames = groupItems
+      .map((item) => item.colName || item.columns || item.col_name)
+      .filter(Boolean);
     // 应用别名到列
     if (groupItems.length > 0) {
-      groupItems.forEach(item => {
+      groupItems.forEach((item) => {
         const alias = item.aliasName || item.alias_name;
         const name = item.colName || item.columns || item.col_name;
         if (alias && name) {
-          const col = allColumns.find(c => c.columns === name);
+          const col = allColumns.find((c) => c.columns === name);
           if (col) {
             col.aliasName = alias;
           }
@@ -768,22 +769,31 @@ const exportAllDataExcel = async () => {
 
     let finalColumns = allColumns;
     if (selectedNames.length > 0) {
-      finalColumns = allColumns.filter(col => selectedNames.includes(col.columns));
-    } else if (Array.isArray(currentCheckedColumns.value) && currentCheckedColumns.value.length > 0) {
-      finalColumns = allColumns.filter((item) => currentCheckedColumns.value.includes(item.columns));
+      finalColumns = allColumns.filter((col) =>
+        selectedNames.includes(col.columns)
+      );
+    } else if (
+      Array.isArray(currentCheckedColumns.value) &&
+      currentCheckedColumns.value.length > 0
+    ) {
+      finalColumns = allColumns.filter((item) =>
+        currentCheckedColumns.value.includes(item.columns)
+      );
     }
 
     // 创建工作簿
     const wb = XLSX.utils.book_new();
 
     // 准备表头
-    const headers = finalColumns.map(col => col.aliasName || col.label || col.columns);
+    const headers = finalColumns.map(
+      (col) => col.aliasName || col.label || col.columns
+    );
 
     // 准备数据
-    const exportData = allData.map(row => {
+    const exportData = allData.map((row) => {
       const rowData = [];
-      finalColumns.forEach(col => {
-        rowData.push(row[col.columns] || '');
+      finalColumns.forEach((col) => {
+        rowData.push(row[col.columns] || "");
       });
       return rowData;
     });
@@ -795,10 +805,13 @@ const exportAllDataExcel = async () => {
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
     // 设置列宽
-    const colWidths = finalColumns.map(col => ({
-      wch: Math.max(col.width ? col.width / 10 : 15, (col.aliasName || col.label || col.columns).length + 2)
+    const colWidths = finalColumns.map((col) => ({
+      wch: Math.max(
+        col.width ? col.width / 10 : 15,
+        (col.aliasName || col.label || col.columns).length + 2
+      ),
     }));
-    ws['!cols'] = colWidths;
+    ws["!cols"] = colWidths;
 
     // 添加工作表到工作簿
     XLSX.utils.book_append_sheet(wb, ws, "全部数据");
@@ -808,19 +821,18 @@ const exportAllDataExcel = async () => {
     let fileName = `${props.title || props.serviceName}_全部数据_${time}.xlsx`;
 
     // 更新进度
-    notification.message = '正在生成文件...';
+    notification.message = "正在生成文件...";
 
     // 导出文件
     XLSX.writeFile(wb, fileName);
 
     notification.close();
     proxy.$notify({
-      title: '导出成功',
+      title: "导出成功",
       message: `全部数据导出成功，共 ${allData.length} 条记录，${finalColumns.length} 个字段`,
-      type: 'success',
-      duration: 3000
+      type: "success",
+      duration: 3000,
     });
-
   } catch (error) {
     notification.close();
     console.error("导出全部数据失败:", error);
@@ -875,7 +887,7 @@ const showOpenNewPage = computed(() => {
 
 const openNewPage = () => {
   window.open(getNewPageUrl.value, "_blank");
-}
+};
 
 const getNewPageUrl = computed(() => {
   return `/dataview/#/report/${props.reqNo}`;
@@ -1014,7 +1026,7 @@ const getNewPageUrl = computed(() => {
       ::v-deep .el-table__row {
         transition: background-color 0.2s;
 
-        &:hover>td {
+        &:hover > td {
           background-color: #f8fafc !important;
         }
       }
@@ -1204,7 +1216,7 @@ const getNewPageUrl = computed(() => {
         .column-name {
           font-size: 12px;
           color: #6b7280;
-          font-family: 'Monaco', 'Menlo', monospace;
+          font-family: "Monaco", "Menlo", monospace;
         }
 
         .column-type {
