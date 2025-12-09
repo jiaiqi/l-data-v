@@ -79,6 +79,7 @@
               v-if="singList.type == 'condition' && singList.list"
               class="el-select"
               @visible-change="selectConditionOperator(item, 'click')"
+              @change="onChange($event, 'ruleType', item)"
             >
               <el-option
                 v-for="item in selectList"
@@ -98,6 +99,7 @@
               v-if="singList.type == 'group'"
               class="el-select"
               @visible-change="selectGroupOperator(item, 'click')"
+              @change="onChange($event, 'groupType', item)"
             >
               <el-option
                 v-for="item in selectList"
@@ -112,6 +114,7 @@
               placeholder="请选择"
               v-if="singList.type == 'order'"
               class="el-select"
+              @change="onChange($event, 'orderType', item)"
             >
               <el-option
                 v-for="item in selectList"
@@ -130,6 +133,7 @@
               placeholder="请选择"
               v-if="singList.type == 'aggregation'"
               class="el-select"
+              @change="onChange($event, 'groupType', item)"
             >
               <el-option
                 v-for="(item, index) in selectList"
@@ -154,6 +158,7 @@
               placeholder="请输入内容"
               class="input-value"
               @click.stop
+              @change="onChange($event, 'value', item)"
             ></el-input>
             <!-- <el-input
               v-model="item._aggregation.aliasName"
@@ -167,6 +172,7 @@
               placeholder="请输入别名"
               class="input-value"
               clearable
+              @change="onChange($event, 'aliasName', item)"
             ></el-input>
             <el-date-picker
               v-model="item._condition.value"
@@ -182,6 +188,7 @@
               end-placeholder="结束日期"
               :picker-options="pickerOptions"
               clearable
+              @change="onChange($event, 'value', item)"
             ></el-date-picker>
             <el-input
               v-model.number="item['_' + singList.type].seq"
@@ -189,6 +196,7 @@
               placeholder="序号"
               style="width: 100px"
               clearable
+              @change="onChange($event, 'seq', item)"
             ></el-input>
             <el-button
               type="danger"
@@ -204,6 +212,7 @@
 </template>
 
 <script>
+import cloneDeep from "lodash/cloneDeep";
 import draggable from "vuedraggable";
 
 export default {
@@ -310,6 +319,21 @@ export default {
     };
   },
   methods: {
+    onChange(event, type, item) {
+      if (type === "delete") {
+        this.$set(item, "__flag", null);
+      } else if (item.__flag === "db") {
+        this.$set(item, "__flag", "update");
+      } else if (!item.__flag) {
+        this.$set(item, "__flag", "add");
+      }
+      item[type] = event;
+      this.$emit("change", {
+        event,
+        type,
+        item,
+      });
+    },
     // 匹配搜索条件：按 label 或 columns 模糊匹配
     matchesSearch(item) {
       const q = (this.searchKeyword || "").trim().toLowerCase();
@@ -423,8 +447,9 @@ export default {
     onAdd(ev, list) {
       // 如果是order类型，需要验证字段是否在aggregation或group中存在
       let canAdd = true;
+      list.list = cloneDeep(list.list);
+      const draggedItem = list.list[ev.newIndex];
       if (list.type === "order") {
-        const draggedItem = list.list[ev.newIndex];
         const endData = this.$attrs.endData;
         if (draggedItem && endData) {
           const { aggregation = [], group = [] } = endData;
@@ -465,24 +490,29 @@ export default {
         }
       }
       this.setEndData(list);
-
-      this.$emit("save", list, this.endData);
+      // this.$emit("save", list, this.endData);
     },
     deleteItem(sign, list, i) {
       this.setEndData(list);
       sign.aliasName = "";
-      sign._condition.value = "";
-      sign._condition.ruleType = "";
-      sign._aggregation.type = "";
-      sign._group.type = "";
-      sign._order.orderType = "";
-
+      if(this.type === "order"){
+        sign._order.orderType = "";
+      }
+      if(this.type === "condition"){
+        sign._condition.value = "";
+        sign._condition.ruleType = "";
+      }
+      if(this.type === "aggregation"){
+        sign._aggregation.type = "";
+      }
+      if(this.type === "group"){
+        sign._group.type = "";
+      }
       for (let i = 0; i < list.list.length; i++) {
         if (list.list[i].id === sign.id) {
           list.list.splice(i, 1);
         }
       }
-
       if (list.type === "condition") {
         this.endData.condition.splice(i, 1);
       } else if (list.type === "group") {
@@ -492,7 +522,9 @@ export default {
       } else if (list.type === "aggregation") {
         this.endData.aggregation.splice(i, 1);
       }
-      this.$emit("save", list, this.endData);
+      // this.$emit("save", list, this.endData);
+      this.$emit("delete", sign, list.type);
+      // this.onChange(null, "delete", sign);
     },
     onStart(event, list) {
       // if (list.type === "group" || list.type === "aggregation") {
