@@ -911,6 +911,10 @@ export default {
       }
       if (this.reqData.order) {
         reqData.order = this.reqData.order.map((item) => {
+          return {
+            colName: item.col_name,
+            orderType: item.order_type,
+          }
           return item;
         });
       }
