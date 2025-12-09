@@ -151,10 +151,7 @@
                   <span class="column-label">
                     {{ column.label || column.columns }}
                   </span>
-                  <span
-                    class="column-name"
-                    v-if="column.columns"
-                  >
+                  <span class="column-name" v-if="column.columns">
                     {{ column.columns }}
                   </span>
                   <span class="column-type" v-if="column.type">
@@ -590,33 +587,33 @@ async function getTableData(req = {}) {
 
     // 处理列配置
     const allColumns = res.data.mdata || props.columnsOption || [];
-    
+
     // 如果请求中带有分组/聚合配置，则仅显示这些字段
     const groupItems = Array.isArray(req?.group)
       ? req.group.filter((item) => item && item.type)
       : [];
-    
+
     // 处理分组/聚合字段，将每个配置项视为独立字段
     const processedColumns = [];
     const processedColumnKeys = new Set();
-    
+
     if (groupItems.length > 0) {
       groupItems.forEach((item) => {
         const alias = item.aliasName || item.alias_name;
         const name = item.colName || item.columns || item.col_name;
         const colObj = allColumns.find((c) => c.columns === name);
-        
+
         if (colObj) {
           // 深拷贝原始字段配置
           const newCol = cloneDeep(colObj);
-          
+
           // 如果有别名，将其视为新字段
           if (alias) {
             newCol.columns = alias;
             newCol.label = alias;
             newCol.originalColumns = name; // 保存原始字段名
           }
-          
+
           // 确保字段键唯一
           const key = newCol.columns;
           if (!processedColumnKeys.has(key)) {
@@ -625,7 +622,7 @@ async function getTableData(req = {}) {
           }
         }
       });
-      
+
       // 只显示分组/聚合配置的字段
       allAvailableColumns.value = processedColumns;
     } else {
@@ -637,14 +634,19 @@ async function getTableData(req = {}) {
     }
 
     // 如果是第一次加载且没有预设的选中列，默认选中所有可用列
-    if (currentCheckedColumns.value.length === 0 && allAvailableColumns.value.length > 0) {
-      currentCheckedColumns.value = allAvailableColumns.value.map((col) => col.columns);
+    if (
+      currentCheckedColumns.value.length === 0 &&
+      allAvailableColumns.value.length > 0
+    ) {
+      currentCheckedColumns.value = allAvailableColumns.value.map(
+        (col) => col.columns
+      );
       localCheckedColumns.value = [...currentCheckedColumns.value];
     }
 
     // 根据选中的列过滤显示的列
     let finalColumns;
-    
+
     if (groupItems.length > 0) {
       // 对于分组/聚合配置，先获取有序列的处理后列
       const orderedColumns = [];
@@ -661,12 +663,19 @@ async function getTableData(req = {}) {
           orderedColumns.push(col);
         }
       });
-      
       // 如果有序列配置，按序列排序
-      if (orderedColumns.some(col => col.seq !== undefined)) {
-        orderedColumns.sort((a, b) => (a.seq || 0) - (b.seq || 0));
+      if (
+        orderedColumns.some(
+          (col) => col._group?.seq || col._aggregation?.seq || col.seq
+        )
+      ) {
+        orderedColumns.sort(
+          (a, b) =>
+            (a._group?.seq || a._aggregation?.seq || a.seq || 0) -
+            (b._group?.seq || b._aggregation?.seq || b.seq || 0)
+        );
       }
-      
+
       // 根据当前选中的列过滤显示的列
       finalColumns = orderedColumns.filter((item) =>
         currentCheckedColumns.value.includes(item.columns)
@@ -784,29 +793,29 @@ const exportAllDataExcel = async () => {
     const groupItems = Array.isArray(initReq.value?.group)
       ? initReq.value.group.filter((item) => item && item.type)
       : [];
-    
+
     // 处理分组/聚合字段，支持别名
     let finalColumns = [];
     const processedColumnKeys = new Set();
-    
+
     if (groupItems.length > 0) {
       // 处理分组/聚合配置的字段，支持别名
       groupItems.forEach((item) => {
         const alias = item.aliasName || item.alias_name;
         const name = item.colName || item.columns || item.col_name;
         const colObj = allColumns.find((c) => c.columns === name);
-        
+
         if (colObj) {
           // 深拷贝原始字段配置
           const newCol = cloneDeep(colObj);
-          
+
           // 如果有别名，将其视为新字段
           if (alias) {
             newCol.columns = alias;
             newCol.label = alias;
             newCol.originalColumns = name; // 保存原始字段名
           }
-          
+
           // 确保字段键唯一
           const key = newCol.columns;
           if (!processedColumnKeys.has(key)) {
@@ -815,7 +824,7 @@ const exportAllDataExcel = async () => {
           }
         }
       });
-      
+
       // 按照配置顺序排序
       const orderedColumns = [];
       groupItems.forEach((item) => {
@@ -826,7 +835,7 @@ const exportAllDataExcel = async () => {
           orderedColumns.push(col);
         }
       });
-      
+
       finalColumns = orderedColumns;
     } else if (
       Array.isArray(currentCheckedColumns.value) &&
