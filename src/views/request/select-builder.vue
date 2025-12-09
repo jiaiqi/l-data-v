@@ -895,7 +895,11 @@ export default {
         reqData.condition = this.reqData.condition
           .map((item) => {
             if (item.ruleType && item.value) {
-              return item;
+              return {
+                colName: item.colName || item.col_name,
+                ruleType: item.ruleType || item.rule_type,
+                value: item.value,
+              };
             }
           })
           .filter(Boolean);
@@ -904,7 +908,11 @@ export default {
         reqData.group = this.reqData.group
           .map((item) => {
             if (item.type) {
-              return item;
+              return {
+                colName: item.colName || item.col_name,
+                aliasName: item.aliasName || item.alias_name,
+                type: item.type,
+              };
             }
           })
           .filter(Boolean);
@@ -914,7 +922,7 @@ export default {
           return {
             colName: item.col_name,
             orderType: item.order_type,
-          }
+          };
           return item;
         });
       }
