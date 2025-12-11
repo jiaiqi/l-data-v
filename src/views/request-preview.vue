@@ -962,7 +962,7 @@ export default {
           });
 
           const baseColor = colors[index % colors.length];
-          
+
           // 创建渐变色配置
           const seriesConfig = {
             name: groupVal,
@@ -982,10 +982,10 @@ export default {
             seriesConfig.itemStyle = {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: baseColor },
-                { offset: 1, color: baseColor + '80' },
+                { offset: 1, color: baseColor + "80" },
               ]),
             };
-          } 
+          }
           // 折线图渐变
           else if (this.chartType === "line") {
             seriesConfig.lineStyle = {
@@ -998,8 +998,8 @@ export default {
             if (this.isArea) {
               seriesConfig.areaStyle = {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: baseColor + '80' },
-                  { offset: 1, color: baseColor + '20' },
+                  { offset: 0, color: baseColor + "80" },
+                  { offset: 1, color: baseColor + "20" },
                 ]),
               };
             }
@@ -1023,7 +1023,7 @@ export default {
         });
 
         const baseColor = "#5470c6";
-        
+
         // 创建渐变色配置
         const seriesConfig = {
           name:
@@ -1046,10 +1046,10 @@ export default {
           seriesConfig.itemStyle = {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: baseColor },
-              { offset: 1, color: baseColor + '80' },
+              { offset: 1, color: baseColor + "80" },
             ]),
           };
-        } 
+        }
         // 折线图渐变
         else if (this.chartType === "line") {
           seriesConfig.lineStyle = {
@@ -1062,8 +1062,8 @@ export default {
           if (this.isArea) {
             seriesConfig.areaStyle = {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: baseColor + '80' },
-                { offset: 1, color: baseColor + '20' },
+                { offset: 0, color: baseColor + "80" },
+                { offset: 1, color: baseColor + "20" },
               ]),
             };
           }
@@ -1214,7 +1214,7 @@ export default {
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
-  .el-header{
+  .el-header {
     display: flex;
     flex-direction: row-reverse;
     align-items: center;
