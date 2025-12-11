@@ -124,7 +124,7 @@
       </el-header>
       <el-main>
         <!-- 图表区域 -->
-        <div v-if="tableData && tableData.length > 0" class="chart-container">
+        <div v-if="showChart" class="chart-container">
           <div class="chart-header">
             <span> </span>
             <el-radio-group v-model="chartType" @change="updateChart">
@@ -132,7 +132,14 @@
               <el-radio label="line">折线图</el-radio>
             </el-radio-group>
           </div>
-          <div id="chart" class="chart" ref="chartRef"></div>
+          <div class="chart" v-show="hasCols">
+            <div id="chart" class="chart-dom" ref="chartRef"></div>
+          </div>
+          <div v-if="hasCols === false" class="chart-empty-tip">
+            <el-empty
+              description="当前数据不满足生成图表的要求，请选择分组字段"
+            ></el-empty>
+          </div>
         </div>
       </el-main>
       <!-- <div v-else style="height: 0;flex-shrink:0;box-sizing:border-box;"></div> -->
@@ -214,6 +221,17 @@ export default {
     };
   },
   computed: {
+    hasCols() {
+      return (
+        this.groupByCols &&
+        Object.keys(this.groupByCols).filter(
+          (key) => this.groupByCols[key].value > -1
+        ).length > 0
+      );
+    },
+    showChart() {
+      return this.tableData && this.tableData.length > 0;
+    },
     filterModel() {
       if (Array.isArray(this.filterCols) && this.filterCols.length > 0) {
         return this.filterCols.reduce((res, cur) => {
@@ -835,6 +853,12 @@ export default {
 
     // 更新图表
     updateChart() {
+      // 如果没有选中的分组字段，销毁图表
+      if (!this.hasCols) {
+        this.destroyChart();
+        return;
+      }
+
       if (
         !this.chartInstance ||
         !this.tableData ||
@@ -844,22 +868,123 @@ export default {
       }
 
       // 获取x轴和y轴字段
-      const xAxisField = this.getMinSeqField(this.groupCols);
+      const groupCols = this.groupCols.filter(
+        (item) => this.groupByCols[item.colName]?.value !== -1
+      );
+      const xAxisField = this.getMinSeqField(groupCols);
       const yAxisField = this.getMinSeqField(this.calcCols);
-
       if (!xAxisField || !yAxisField) {
         return;
       }
 
-      // 处理数据
-      const xAxisData = this.tableData.map(
-        (item) => item[xAxisField.colName] || item[xAxisField.aliasName]
-      );
-      const yAxisData = this.tableData.map(
-        (item) =>
-          parseFloat(item[yAxisField.colName] || item[yAxisField.aliasName]) ||
-          0
-      );
+      // 检查是否有第二个group字段用于分组
+      let groupField = null;
+      if (groupCols.length > 1) {
+        // 获取seq第二小的字段作为分组字段
+        const sortedGroupCols = [...groupCols].sort((a, b) => a.seq - b.seq);
+        groupField = sortedGroupCols[1];
+      }
+
+      // 处理x轴数据
+      const xAxisData = [
+        ...new Set(
+          this.tableData.map(
+            (item) => item[xAxisField.colName] || item[xAxisField.aliasName]
+          )
+        ),
+      ].sort();
+
+      // 准备图表数据
+      let seriesData = [];
+
+      if (groupField) {
+        // 有分组字段，按分组字段拆分数据为多个系列
+        const groupValues = [
+          ...new Set(
+            this.tableData.map(
+              (item) => item[groupField.colName] || item[groupField.aliasName]
+            )
+          ),
+        ];
+
+        // 预设颜色数组
+        const colors = [
+          "#5470c6",
+          "#91cc75",
+          "#fac858",
+          "#ee6666",
+          "#73c0de",
+          "#3ba272",
+          "#fc8452",
+          "#9a60b4",
+          "#ea7ccc",
+        ];
+
+        // 为每个分组创建一个系列
+        seriesData = groupValues.map((groupVal, index) => {
+          // 筛选当前分组的数据
+          const groupData = this.tableData.filter(
+            (item) =>
+              (item[groupField.colName] || item[groupField.aliasName]) ===
+              groupVal
+          );
+
+          // 准备当前系列的数据，确保与x轴数据顺序一致
+          const seriesItemData = xAxisData.map((xVal) => {
+            const dataItem = groupData.find(
+              (item) =>
+                (item[xAxisField.colName] || item[xAxisField.aliasName]) ===
+                xVal
+            );
+            return dataItem
+              ? parseFloat(
+                  dataItem[yAxisField.colName] || dataItem[yAxisField.aliasName]
+                ) || 0
+              : 0;
+          });
+
+          return {
+            name: groupVal,
+            type: this.chartType,
+            data: seriesItemData,
+            smooth: this.chartType === "line",
+            barMaxWidth: 50,
+            itemStyle: {
+              color: colors[index % colors.length],
+            },
+          };
+        });
+      } else {
+        // 没有分组字段，使用单个系列
+        // 准备数据，确保与x轴数据顺序一致
+        const seriesItemData = xAxisData.map((xVal) => {
+          const dataItem = this.tableData.find(
+            (item) =>
+              (item[xAxisField.colName] || item[xAxisField.aliasName]) === xVal
+          );
+          return dataItem
+            ? parseFloat(
+                dataItem[yAxisField.colName] || dataItem[yAxisField.aliasName]
+              ) || 0
+            : 0;
+        });
+
+        seriesData = [
+          {
+            name:
+              yAxisField.aliasName ||
+              this.colsMap?.[yAxisField.colName]?.label ||
+              yAxisField.colName,
+            type: this.chartType,
+            data: seriesItemData,
+            smooth: this.chartType === "line",
+            barWidth: 50,
+            itemStyle: {
+              color: "#5470c6",
+            },
+          },
+        ];
+      }
 
       // 设置图表配置
       const option = {
@@ -872,11 +997,19 @@ export default {
             yAxisField.aliasName ||
             this.colsMap?.[yAxisField.colName]?.label ||
             yAxisField.colName
+          }${
+            groupField
+              ? ` (按${groupField.aliasName || this.colsMap?.[groupField.colName]?.label || groupField.colName}分组)`
+              : ""
           }`,
           left: "center",
         },
         tooltip: {
           trigger: "axis",
+        },
+        legend: {
+          data: seriesData.map((item) => item.name),
+          bottom: 0,
         },
         xAxis: {
           type: "category",
@@ -893,21 +1026,7 @@ export default {
             this.colsMap?.[yAxisField.colName]?.label ||
             yAxisField.colName,
         },
-        series: [
-          {
-            name:
-              yAxisField.aliasName ||
-              this.colsMap?.[yAxisField.colName]?.label ||
-              yAxisField.colName,
-            type: this.chartType,
-            data: yAxisData,
-            smooth: this.chartType === "line",
-            barWidth: 50,
-            itemStyle: {
-              color: "#5470c6",
-            },
-          },
-        ],
+        series: seriesData,
       };
 
       this.chartInstance.setOption(option);
@@ -1054,6 +1173,21 @@ export default {
   .chart {
     width: 100%;
     height: 400px;
+    .chart-dom {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .chart-empty-tip {
+    width: 100%;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fafafa;
+    border: 1px dashed #d9d9d9;
+    border-radius: 4px;
   }
 }
 </style>
