@@ -2,8 +2,8 @@
   <div class="page-wrap">
     <el-container>
       <el-header style="height: unset">
-        <div class="title" v-if="config && config.list_title">
-          <div>
+        <div class="title">
+          <div v-if="config && config.list_title">
             {{ config.list_title || "" }}
           </div>
           <el-button
@@ -124,13 +124,29 @@
       </el-header>
       <el-main>
         <!-- 图表区域 -->
-        <div v-if="showChart" class="chart-container">
+        <div class="chart-container">
           <div class="chart-header">
             <span> </span>
             <el-radio-group v-model="chartType" @change="updateChart">
               <el-radio label="bar">柱状图</el-radio>
               <el-radio label="line">折线图</el-radio>
             </el-radio-group>
+            <el-switch
+              v-model="isStacked"
+              v-if="chartType === 'bar'"
+              active-text="堆叠"
+              inactive-text="普通"
+              @change="updateChart"
+              style="margin-left: 20px"
+            ></el-switch>
+            <el-switch
+              v-if="chartType === 'line'"
+              v-model="isArea"
+              active-text="面积"
+              inactive-text="普通"
+              @change="updateChart"
+              style="margin-left: 20px"
+            ></el-switch>
           </div>
           <div class="chart" v-show="hasCols">
             <div id="chart" class="chart-dom" ref="chartRef"></div>
@@ -217,6 +233,8 @@ export default {
       sum_row_data: {},
       // 图表相关
       chartType: "bar", // 图表类型：bar-柱状图，line-折线图
+      isStacked: false, // 是否为堆叠柱状图
+      isArea: false, // 是否为区域面积折线图
       chartInstance: null, // echarts实例
     };
   },
@@ -949,6 +967,13 @@ export default {
             data: seriesItemData,
             smooth: this.chartType === "line",
             barMaxWidth: 50,
+            stack:
+              (this.isStacked && this.chartType === "bar") ||
+              (this.chartType === "line" && this.isArea)
+                ? "stackGroup"
+                : undefined,
+            areaStyle:
+              this.chartType === "line" && this.isArea ? {} : undefined,
             itemStyle: {
               color: colors[index % colors.length],
             },
@@ -979,6 +1004,13 @@ export default {
             data: seriesItemData,
             smooth: this.chartType === "line",
             barWidth: 50,
+            stack:
+              (this.isStacked && this.chartType === "bar") ||
+              (this.chartType === "line" && this.isArea)
+                ? "stackGroup"
+                : undefined,
+            areaStyle:
+              this.chartType === "line" && this.isArea ? {} : undefined,
             itemStyle: {
               color: "#5470c6",
             },
@@ -999,7 +1031,11 @@ export default {
             yAxisField.colName
           }${
             groupField
-              ? ` (按${groupField.aliasName || this.colsMap?.[groupField.colName]?.label || groupField.colName}分组)`
+              ? ` (按${
+                  groupField.aliasName ||
+                  this.colsMap?.[groupField.colName]?.label ||
+                  groupField.colName
+                }分组)`
               : ""
           }`,
           left: "center",
@@ -1093,7 +1129,7 @@ export default {
 .page-wrap {
   padding: 10px;
   overflow: auto;
-
+  background-color: #f5f7fa;
   ::v-deep .el-form-item {
     display: flex;
     margin-right: 10px;
@@ -1108,11 +1144,27 @@ export default {
   // padding: 20px;
   .el-container {
     // height: 100vh;
+    gap: 10px;
   }
   .el-main {
     flex: unset;
     -webkit-box-flex: unset;
     overflow: unset;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  .el-footer,
+  .el-header {
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  .el-header{
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .title {
@@ -1131,8 +1183,6 @@ export default {
 
 .group-box {
   padding: 0px;
-  margin-bottom: 10px;
-
   .group-box-item {
     margin-right: 40px;
     display: inline-block;
@@ -1164,10 +1214,11 @@ export default {
 
   .chart-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-bottom: 10px;
     font-weight: bold;
+    gap: 20px;
   }
 
   .chart {
