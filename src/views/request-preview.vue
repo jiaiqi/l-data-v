@@ -122,6 +122,19 @@
           </el-form>
         </div>
       </el-header>
+      <el-main>
+        <!-- 图表区域 -->
+        <div v-if="tableData && tableData.length > 0" class="chart-container">
+          <div class="chart-header">
+            <span> </span>
+            <el-radio-group v-model="chartType" @change="updateChart">
+              <el-radio label="bar">柱状图</el-radio>
+              <el-radio label="line">折线图</el-radio>
+            </el-radio-group>
+          </div>
+          <div id="chart" class="chart" ref="chartRef"></div>
+        </div>
+      </el-main>
       <!-- <div v-else style="height: 0;flex-shrink:0;box-sizing:border-box;"></div> -->
       <el-main>
         <!-- 数据 -->
@@ -171,6 +184,7 @@ import * as XLSX from "xlsx";
 import dayjs from "dayjs";
 import { $http } from "@/common/http";
 import loginDialog from "@/components/login-dialog/index.vue";
+import * as echarts from "echarts";
 
 export default {
   components: {
@@ -194,6 +208,9 @@ export default {
       current: "",
       filterCols: [],
       sum_row_data: {},
+      // 图表相关
+      chartType: "bar", // 图表类型：bar-柱状图，line-折线图
+      chartInstance: null, // echarts实例
     };
   },
   computed: {
@@ -204,6 +221,12 @@ export default {
           return res;
         }, {});
       }
+    },
+    colsMap() {
+      return this.listV2?.srv_cols.reduce((res, cur) => {
+        res[cur.columns] = cur;
+        return res;
+      }, {});
     },
     requestNo() {
       return this.$route.query?.requestNo;
@@ -792,6 +815,123 @@ export default {
       }
       return req;
     },
+    // 初始化图表
+    initChart() {
+      if (this.chartInstance) {
+        this.chartInstance.dispose();
+      }
+      this.chartInstance = echarts.init(this.$refs.chartRef);
+      this.updateChart();
+      // 监听窗口大小变化
+      window.addEventListener("resize", this.handleResize);
+    },
+
+    // 处理窗口大小变化
+    handleResize() {
+      if (this.chartInstance) {
+        this.chartInstance.resize();
+      }
+    },
+
+    // 更新图表
+    updateChart() {
+      if (
+        !this.chartInstance ||
+        !this.tableData ||
+        this.tableData.length === 0
+      ) {
+        return;
+      }
+
+      // 获取x轴和y轴字段
+      const xAxisField = this.getMinSeqField(this.groupCols);
+      const yAxisField = this.getMinSeqField(this.calcCols);
+
+      if (!xAxisField || !yAxisField) {
+        return;
+      }
+
+      // 处理数据
+      const xAxisData = this.tableData.map(
+        (item) => item[xAxisField.colName] || item[xAxisField.aliasName]
+      );
+      const yAxisData = this.tableData.map(
+        (item) =>
+          parseFloat(item[yAxisField.colName] || item[yAxisField.aliasName]) ||
+          0
+      );
+
+      // 设置图表配置
+      const option = {
+        title: {
+          text: `${
+            xAxisField.aliasName ||
+            this.colsMap?.[xAxisField.colName]?.label ||
+            xAxisField.colName
+          } - ${
+            yAxisField.aliasName ||
+            this.colsMap?.[yAxisField.colName]?.label ||
+            yAxisField.colName
+          }`,
+          left: "center",
+        },
+        tooltip: {
+          trigger: "axis",
+        },
+        xAxis: {
+          type: "category",
+          data: xAxisData,
+          name:
+            xAxisField.aliasName ||
+            this.colsMap?.[xAxisField.colName]?.label ||
+            xAxisField.colName,
+        },
+        yAxis: {
+          type: "value",
+          name:
+            yAxisField.aliasName ||
+            this.colsMap?.[yAxisField.colName]?.label ||
+            yAxisField.colName,
+        },
+        series: [
+          {
+            name:
+              yAxisField.aliasName ||
+              this.colsMap?.[yAxisField.colName]?.label ||
+              yAxisField.colName,
+            type: this.chartType,
+            data: yAxisData,
+            smooth: this.chartType === "line",
+            barWidth: 50,
+            itemStyle: {
+              color: "#5470c6",
+            },
+          },
+        ],
+      };
+
+      this.chartInstance.setOption(option);
+    },
+
+    // 获取seq最小的字段
+    getMinSeqField(cols) {
+      if (!cols || cols.length === 0) {
+        return null;
+      }
+      return cols.reduce((min, col) => {
+        return col.seq < min.seq ? col : min;
+      });
+    },
+
+    // 销毁图表
+    destroyChart() {
+      if (this.chartInstance) {
+        this.chartInstance.dispose();
+        this.chartInstance = null;
+        window.removeEventListener("resize", this.handleResize);
+      }
+    },
+
     async getList(p) {
       const url = `/${this.srvReqJson.mapp}/select/${this.srvReqJson.serviceName}`;
       const req = this.buildListReq();
@@ -808,6 +948,10 @@ export default {
         } else {
           this.sum_row_data = null;
         }
+        // 更新图表
+        this.$nextTick(() => {
+          this.initChart();
+        });
       }
     },
   },
@@ -819,11 +963,18 @@ export default {
       this.$message.error("缺少requestNo参数");
     }
   },
+
+  beforeDestroy() {
+    this.destroyChart();
+  },
 };
 </script>
 
 <style lang="scss" scoped>
 .page-wrap {
+  padding: 10px;
+  overflow: auto;
+
   ::v-deep .el-form-item {
     display: flex;
     margin-right: 10px;
@@ -837,7 +988,12 @@ export default {
 
   // padding: 20px;
   .el-container {
-    height: 100vh;
+    // height: 100vh;
+  }
+  .el-main {
+    flex: unset;
+    -webkit-box-flex: unset;
+    overflow: unset;
   }
 
   .title {
@@ -878,6 +1034,26 @@ export default {
 
   .marign-lr {
     margin: 0 10px;
+  }
+}
+
+.chart-container {
+  // margin-bottom: 20px;
+  padding: 0px;
+  // border: 1px solid #eee;
+  border-radius: 4px;
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  .chart {
+    width: 100%;
+    height: 400px;
   }
 }
 </style>
