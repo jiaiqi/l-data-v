@@ -1,22 +1,38 @@
 <template>
   <div class="page-wrap">
-
     <el-container>
-      <el-header style="height: unset;">
+      <el-header style="height: unset">
         <div class="title" v-if="config && config.list_title">
           <div>
-            {{ config.list_title || '' }}
-
+            {{ config.list_title || "" }}
           </div>
-          <el-button size="mini" plain type="primary" v-if="tableData && tableData.length"
-            @click="exportExcel">导出</el-button>
+          <el-button
+            size="mini"
+            plain
+            type="primary"
+            v-if="tableData && tableData.length"
+            @click="exportExcel"
+            >导出</el-button
+          >
         </div>
         <!-- 分组 -->
         <div class="group-box" v-if="groupByCols">
-          <div class="group-box-item" v-for="(groupItem, key) in groupByCols" :key="key">
-            <el-radio-group @input="changeGroup($event, groupItem.list, key)" v-model="groupItem.value">
-              <el-radio :label="index" :value="item.col_name" :key="index" v-for="(item, index) in groupItem.list"
-                @click.native="clickRadio($event, key, index)">
+          <div
+            class="group-box-item"
+            v-for="(groupItem, key) in groupByCols"
+            :key="key"
+          >
+            <el-radio-group
+              @input="changeGroup($event, groupItem.list, key)"
+              v-model="groupItem.value"
+            >
+              <el-radio
+                :label="index"
+                :value="item.col_name"
+                :key="index"
+                v-for="(item, index) in groupItem.list"
+                @click.native="clickRadio($event, key, index)"
+              >
                 <span>{{ item.label }}</span>
               </el-radio>
             </el-radio-group>
@@ -26,19 +42,47 @@
         <div v-if="filterCols && filterCols.length > 0">
           <el-form ref="form" :model="filterModel">
             <el-row>
-              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="4" v-for="(item, index) in filterCols" :key="index">
+              <el-col
+                :xs="24"
+                :sm="12"
+                :md="8"
+                :lg="6"
+                :xl="4"
+                v-for="(item, index) in filterCols"
+                :key="index"
+              >
                 <el-form-item :label="item.label">
-                  <el-date-picker value-format="yyyy-MM-dd" v-model="item.value" type="daterange" range-separator="至"
-                    start-placeholder="开始日期" end-placeholder="结束日期" v-if="item.col_type === 'Date'"
-                    @change="valueChange($event, item)">
+                  <el-date-picker
+                    value-format="yyyy-MM-dd"
+                    v-model="item.value"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    v-if="item.col_type === 'Date'"
+                    @change="valueChange($event, item)"
+                  >
                   </el-date-picker>
-                  <el-date-picker value-format="yyyy-MM-dd HH:mm:ss" v-model="item.value" type="datetimerange" range-separator="至"
-                    start-placeholder="开始日期" end-placeholder="结束日期" v-if="item.col_type === 'DateTime'"
-                    @change="valueChange($event, item)">
+                  <el-date-picker
+                    value-format="yyyy-MM-dd HH:mm:ss"
+                    v-model="item.value"
+                    type="datetimerange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    v-if="item.col_type === 'DateTime'"
+                    @change="valueChange($event, item)"
+                  >
                   </el-date-picker>
-                  <el-input v-model="item.value" clearable
-                    v-else-if="item.col_type === 'String' || (item.col_type && item.col_type.indexOf('bx') === 0)"
-                    @change="valueChange($event, item)"></el-input>
+                  <el-input
+                    v-model="item.value"
+                    clearable
+                    v-else-if="
+                      item.col_type === 'String' ||
+                      (item.col_type && item.col_type.indexOf('bx') === 0)
+                    "
+                    @change="valueChange($event, item)"
+                  ></el-input>
                   <!-- <el-input v-model.number="item.value" type="number"
                     v-else-if="['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)"
                     @change="valueChange($event, item)"></el-input> -->
@@ -47,13 +91,27 @@
                     @change="valueChange($event, item)"></el-input-number>
                   <el-input-number v-model="item.value" clearable v-else-if="['Int', 'Integer'].includes(item.col_type)"
                     @change="valueChange($event, item)"></el-input-number> -->
-                  <div class="number-range-input"
-                    v-else-if="['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)">
-                    <el-input v-model.number="item.value1" clearable @change="valueChange($event, item)"
-                      type="number"></el-input>
+                  <div
+                    class="number-range-input"
+                    v-else-if="
+                      ['Money', 'Float', 'Int', 'Integer'].includes(
+                        item.col_type
+                      )
+                    "
+                  >
+                    <el-input
+                      v-model.number="item.value1"
+                      clearable
+                      @change="valueChange($event, item)"
+                      type="number"
+                    ></el-input>
                     <span class="marign-lr">-</span>
-                    <el-input v-model.number="item.value2" clearable @change="valueChange($event, item)"
-                      type="number"></el-input>
+                    <el-input
+                      v-model.number="item.value2"
+                      clearable
+                      @change="valueChange($event, item)"
+                      type="number"
+                    ></el-input>
                   </div>
                 </el-form-item>
               </el-col>
@@ -63,30 +121,48 @@
             </el-row>
           </el-form>
         </div>
-
       </el-header>
       <!-- <div v-else style="height: 0;flex-shrink:0;box-sizing:border-box;"></div> -->
       <el-main>
-
         <!-- 数据 -->
-        <el-table ref="elTable" :data="tableData" border stripe style="width: 100%" :span-method="objectSpanMethod"
-          v-loading="onLoading" :header-cell-style="{
+        <el-table
+          ref="elTable"
+          :data="tableData"
+          border
+          stripe
+          style="width: 100%"
+          :span-method="objectSpanMethod"
+          v-loading="onLoading"
+          :header-cell-style="{
             background: '#f0f3f9',
             'font-weight': 'bold',
             color: '#000',
-          }">
-          <el-table-column :prop="column.columns" :label="column.label" min-width="180" v-for="column in setSrvCols"
-            :key="column.columns">
+          }"
+        >
+          <el-table-column
+            :prop="column.columns"
+            :label="column.label"
+            min-width="180"
+            v-for="column in setSrvCols"
+            :key="column.columns"
+          >
           </el-table-column>
         </el-table>
       </el-main>
       <el-footer v-if="page" style="padding: 20px; text-align: center">
-        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="page.pageNo"
-          :page-sizes="[10, 20, 50, 100]" :page-size="page.pageSize" layout="total, sizes, prev, pager, next, jumper"
-          :total="page.total">
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="page.pageNo"
+          :page-sizes="[10, 20, 50, 100]"
+          :page-size="page.pageSize"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="page.total"
+        >
         </el-pagination>
       </el-footer>
     </el-container>
+    <login-dialog ref="loginRef"></login-dialog>
   </div>
 </template>
 
@@ -94,8 +170,12 @@
 import * as XLSX from "xlsx";
 import dayjs from "dayjs";
 import { $http } from "@/common/http";
+import loginDialog from "@/components/login-dialog/index.vue";
 
 export default {
+  components: {
+    loginDialog,
+  },
   data() {
     return {
       config: null,
@@ -103,6 +183,7 @@ export default {
       tableData: [],
       listV2: null,
       srvCols: [],
+      _origin_srv_cols: [],
       page: null,
       groupCols: [],
       calcCols: [],
@@ -112,16 +193,16 @@ export default {
       curGroup: null,
       current: "",
       filterCols: [],
-      sum_row_data: {}
+      sum_row_data: {},
     };
   },
   computed: {
     filterModel() {
       if (Array.isArray(this.filterCols) && this.filterCols.length > 0) {
         return this.filterCols.reduce((res, cur) => {
-          res[cur.columns] = cur.value
-          return res
-        }, {})
+          res[cur.columns] = cur.value;
+          return res;
+        }, {});
       }
     },
     requestNo() {
@@ -131,9 +212,13 @@ export default {
       return this.srvReqJson?.serviceName;
     },
     setSrvCols() {
-      if (this.groupByCols && Array.isArray(this.listV2?.srv_cols) && this.listV2?.srv_cols.length > 0) {
-        let arr = this.srvReqJson?.group || []
-        arr = arr.filter(item => item.type && item.type.indexOf('by') == -1)
+      if (
+        this.groupByCols &&
+        Array.isArray(this.listV2?.srv_cols) &&
+        this.listV2?.srv_cols.length > 0
+      ) {
+        let arr = this.srvReqJson?.group || [];
+        arr = arr.filter((item) => item.type && item.type.indexOf("by") == -1);
         for (const key in this.groupByCols) {
           if (Object.hasOwnProperty.call(this.groupByCols, key)) {
             const item = this.groupByCols[key].list;
@@ -146,27 +231,48 @@ export default {
                 try {
                   let group = JSON.parse(info.row_json);
                   arr.push(group);
-                } catch (error) { }
+                } catch (error) {}
               }
             }
           }
         }
-        return this.listV2?.srv_cols.filter(item => {
-          let group = arr.find(g => g.colName === item.columns)
-          if (group?.seq) {
-            item.seq = group.seq
-          }
-          return !!group
-        }).sort((a, b) => a.seq - b.seq)
+
+        const srvCols = [];
+        if (arr.length) {
+          arr.forEach((item) => {
+            const col = this.listV2?.srv_cols.find(
+              (g) => g.columns === item.colName || g.columns === item.col_name
+            );
+            if (col) {
+              const colInfo = {
+                ...col,
+                seq: item.seq,
+                label: item.alias_name || col.label,
+                columns: item.alias_name || col.columns,
+              };
+              srvCols.push(colInfo);
+            }
+          });
+        }
+        // this.listV2?.srv_cols.filter((item) => {
+        //   let group = arr.find(
+        //     (g) => g.colName === item.columns || g.col_name === item.columns
+        //   );
+        //   if (group?.seq) {
+        //     item.seq = group.seq;
+        //   }
+        //   return !!group;
+        // });
+        return srvCols.sort((a, b) => a.seq - b.seq);
       }
     },
   },
   methods: {
     /**
- * 查询后端生成文件的状态
- * @param {*} uuid 后端返回的文件唯一标识
- * @param {string} app 应用编号
- */
+     * 查询后端生成文件的状态
+     * @param {*} uuid 后端返回的文件唯一标识
+     * @param {string} app 应用编号
+     */
     async getFileState(uuid, app) {
       const url = `/${app}/export/file/check?uuid=${uuid}`;
       const res = await $http(url);
@@ -178,11 +284,13 @@ export default {
       }
     },
     downloadexport(uuid) {
-      let app = 'lgs'
+      let app = "lgs";
       if (this.srvReqJson?.mapp) {
-        app = this.srvReqJson?.mapp
+        app = this.srvReqJson?.mapp;
       }
-      const url = `${window.backendIpAddr}/${app}/downloadexport/${uuid}?bx_auth_ticket=${sessionStorage.getItem(
+      const url = `${
+        window.backendIpAddr
+      }/${app}/downloadexport/${uuid}?bx_auth_ticket=${sessionStorage.getItem(
         "bx_auth_ticket"
       )}`;
       window.open(url);
@@ -203,21 +311,21 @@ export default {
       }, 1000);
     },
     exportExcel() {
-      let app = 'lgs'
+      let app = "lgs";
       if (this.srvReqJson?.mapp) {
-        app = this.srvReqJson?.mapp
+        app = this.srvReqJson?.mapp;
       }
-      const url = `/${app}/export/${this.srvReqJson?.serviceName}`
-      const req = this.buildListReq()
-      if(req.page){
-        delete req.page
+      const url = `/${app}/export/${this.srvReqJson?.serviceName}`;
+      const req = this.buildListReq();
+      if (req.page) {
+        delete req.page;
       }
-      $http.post(url, req).then(res => {
+      $http.post(url, req).then((res) => {
         if (res?.data?.data.uuid) {
           this.downloadexport(res?.data?.data.uuid);
         }
-      })
-      return
+      });
+      return;
       if (!this.tableData?.length) {
         alert("表格数据为空");
         return;
@@ -249,18 +357,18 @@ export default {
       }
     },
     resetFilter() {
-      this.filterCols = this.filterCols.map(item => {
-        item.value = undefined
-        return item
-      })
+      this.filterCols = this.filterCols.map((item) => {
+        item.value = undefined;
+        return item;
+      });
     },
     valueChange(e, columnInfo) {
       console.log(e, columnInfo);
-      console.log(this.filterModel)
+      console.log(this.filterModel);
       // if (['Money', 'Float', 'Int', 'Integer'].includes(columnInfo?.col_type) && (!columnInfo.value1 || !columnInfo.value2) && ((columnInfo.value1 || columnInfo.value2))) {
       //   return
       // }
-      this.getList()
+      this.getList();
     },
     clickRadio(e, key, index) {
       console.log(key, index);
@@ -281,7 +389,7 @@ export default {
         //   this.curGroup = [];
         // }
         // this.getList();
-        this.changeGroup()
+        this.changeGroup();
       }
     },
     changeGroup(val, cols) {
@@ -297,8 +405,11 @@ export default {
             if (info.row_json) {
               try {
                 let group = JSON.parse(info.row_json);
+                if (info?.alias_name) {
+                  group.aliasName = info.alias_name;
+                }
                 groupList.push(group);
-              } catch (error) { }
+              } catch (error) {}
             }
           }
         }
@@ -351,11 +462,13 @@ export default {
       const req = {
         serviceName: "srvpage_cfg_com_list_select",
         colNames: ["*"],
-        condition: [{
-          colName: 'list_no',
-          ruleType: 'eq',
-          value: this.requestNo
-        }],
+        condition: [
+          {
+            colName: "list_no",
+            ruleType: "eq",
+            value: this.requestNo,
+          },
+        ],
         page: { pageNo: 1, rownumber: 1 },
       };
       $http.post(url, req).then((res) => {
@@ -367,19 +480,15 @@ export default {
                 ...config,
                 srv_req_no: config.default_srv_req_no,
                 filter_cols: config.filter_cols,
-
-              }
+              };
               // this.config = JSON.parse(config.default_srv_req_json)
-              this.srvReqJson = JSON.parse(config.default_srv_req_json)
-
-            } catch (error) {
-
-            }
+              this.srvReqJson = JSON.parse(config.default_srv_req_json);
+            } catch (error) {}
           }
 
           try {
             this.srvReqJson = JSON.parse(this.config?.srv_req_json);
-          } catch (error) { }
+          } catch (error) {}
           if (this.srvReqJson?.serviceName) {
             // this.page = this.srvReqJson.page
             this.getListV2(this.srvReqJson?.serviceName).then(() => {
@@ -387,9 +496,10 @@ export default {
               // this.getGroupFields()
             });
           }
+        } else if (res?.data?.resultCode === "0011") {
+          this.$refs.loginRef.open();
         }
       });
-
     },
     getRequestCfg() {
       const url = "/config/select/srvpage_cfg_srv_call_select";
@@ -399,14 +509,14 @@ export default {
         condition: [
           { colName: "srv_call_no", ruleType: "like", value: this.requestNo },
         ],
-        page: { pageNo: 1, rownumber: 1 }
+        page: { pageNo: 1, rownumber: 1 },
       };
       $http.post(url, req).then((res) => {
         if (res?.data?.state === "SUCCESS" && res.data.data.length > 0) {
           this.config = res.data.data[0];
           try {
             this.srvReqJson = JSON.parse(this.config?.srv_req_json);
-          } catch (error) { }
+          } catch (error) {}
           if (this.srvReqJson?.serviceName) {
             // this.page = this.srvReqJson.page
             this.getListV2(this.srvReqJson?.serviceName).then(() => {
@@ -472,12 +582,16 @@ export default {
           .filter((item) => calcType.includes(item.type_stat))
           .map((item) => {
             return {
+              aliasName: item.alias_name,
               colName: item.col_name,
               type: item.type_stat,
             };
           });
         this.groupCols = groupFields
-          .filter((item) => item.type_stat === "by")
+          .filter(
+            (item) =>
+              item.type_stat === "by" || item.type_stat?.startsWith("by_")
+          )
           .map((item) => {
             return {
               colName: item.col_name,
@@ -487,7 +601,7 @@ export default {
         this.groupByCols = groupFields
           .filter((item) => groupType.includes(item.type_stat))
           .reduce((res, cur) => {
-            let fieldInfo = this.srvCols.find(
+            let fieldInfo = this._origin_srv_cols.find(
               (item) => item.columns === cur.col_name
             );
             if (fieldInfo) {
@@ -531,9 +645,9 @@ export default {
       }
     },
     async getListV2(serviceName) {
-      let app = 'lgs'
+      let app = "lgs";
       if (this.srvReqJson?.mapp) {
-        app = this.srvReqJson?.mapp
+        app = this.srvReqJson?.mapp;
       }
       const url = `/${app}/select/srvsys_service_columnex_v2_select?colsel_v2=${serviceName}`;
       const req = {
@@ -553,39 +667,59 @@ export default {
       if (res?.data?.state === "SUCCESS") {
         this.listV2 = res.data.data;
         if (Array.isArray(res.data?.data?.srv_cols)) {
+          this._origin_srv_cols = res.data?.data?.srv_cols;
           this.srvCols = res.data?.data?.srv_cols.filter(
             (item) => item.in_list === 1
           );
-
           if (
             Array.isArray(this.srvReqJson?.group) &&
             this.srvReqJson?.group.length > 0
           ) {
-            this.srvCols = res.data?.data?.srv_cols.filter((item) => {
-              let groupItem = this.srvReqJson?.group.find(
-                (e) => item.columns === e.colName
+            const srvCols = [];
+            this.srvReqJson?.group.forEach((item) => {
+              const col = res.data?.data?.srv_cols.find(
+                (e) => e.columns === item.colName || e.columns === item.col_name
               );
-              if (groupItem?.colName) {
-                if (groupItem.aliasName) {
-                  // item.columns = groupItem.aliasName
-                }
-                return true;
+              if (col) {
+                let colInfo = {
+                  ...col,
+                  columns: item.alias_name || item.col_name,
+                  label: item.alias_name || item.label,
+                };
+                srvCols.push(colInfo);
               }
             });
+            this.srvCols = srvCols;
+            // this.srvCols = res.data?.data?.srv_cols.filter((item) => {
+            //   let groupItem = this.srvReqJson?.group.find(
+            //     (e) => item.columns === e.colName || item.columns === e.col_name
+            //   );
+            //   if (groupItem?.colName) {
+            //     if (groupItem.aliasName) {
+            //       // item.columns = groupItem.aliasName
+            //     }
+            //     return true;
+            //   }
+            // });
             if (this.config.filter_cols) {
-              const filter_cols = this.config.filter_cols.split(',')
-              this.filterCols = this.srvCols.filter((item) => filter_cols.includes(item.columns))
+              const filter_cols = this.config.filter_cols.split(",");
+              this.filterCols = this.srvCols.filter((item) =>
+                filter_cols.includes(item.columns)
+              );
               if (this.filterCols.length > 0) {
-                this.filterCols.forEach(item => {
-                  this.$set(this.filterModel, item.columns, undefined)
-                  if (['Money', 'Float', 'Int', 'Integer'].includes(item?.col_type)) {
-                    this.$set(item, 'value1', undefined)
-                    this.$set(item, 'value2', undefined)
+                this.filterCols.forEach((item) => {
+                  this.$set(this.filterModel, item.columns, undefined);
+                  if (
+                    ["Money", "Float", "Int", "Integer"].includes(
+                      item?.col_type
+                    )
+                  ) {
+                    this.$set(item, "value1", undefined);
+                    this.$set(item, "value2", undefined);
                   }
-                })
+                });
               }
             }
-            
           }
           await this.getGroupFields();
         }
@@ -598,37 +732,36 @@ export default {
       if (Array.isArray(this.curGroup) && this.curGroup.length > 0) {
         req.group = this.curGroup;
       } else if (this.calcCols?.length) {
-        req.group = [...this.calcCols]
+        req.group = [...this.calcCols];
         // req.group = [...this.groupCols, ...this.calcCols]
       }
       if (Array.isArray(this.filterCols)) {
         const condition = this.filterCols.reduce((res, item) => {
-          const obj = { colName: item.columns, ruleType: 'like', value: null }
-          if (['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)) {
+          const obj = { colName: item.columns, ruleType: "like", value: null };
+          if (["Money", "Float", "Int", "Integer"].includes(item.col_type)) {
             if (item.value1) {
-              const obj1 = { ...obj }
-              obj1.ruleType = 'ge'
-              obj1.value = Number(item.value1)
-              res.push(obj1)
+              const obj1 = { ...obj };
+              obj1.ruleType = "ge";
+              obj1.value = Number(item.value1);
+              res.push(obj1);
             }
             if (item.value2) {
-              const obj1 = { ...obj }
-              obj1.ruleType = 'le'
-              obj1.value = Number(item.value2)
-              res.push(obj1)
+              const obj1 = { ...obj };
+              obj1.ruleType = "le";
+              obj1.value = Number(item.value2);
+              res.push(obj1);
             }
           } else if (item.value !== undefined) {
-            if (['DateTime','Date'].includes(item.col_type)) {
-              obj.ruleType = 'between'
-              obj.value = item.value
+            if (["DateTime", "Date"].includes(item.col_type)) {
+              obj.ruleType = "between";
+              obj.value = item.value;
             } else {
-              obj.value = item.value
+              obj.value = item.value;
             }
-            res.push(obj)
-
+            res.push(obj);
           }
-          return res
-        }, [])
+          return res;
+        }, []);
         // const condition = this.filterCols.filter(item => {
         //   if (['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)) {
         //     if (!isNaN(Number(item.value1)) && !isNaN(Number(item.value2))) {
@@ -650,13 +783,13 @@ export default {
         //     return obj
         //   }
         // }).filter(item => item?.colName)
-        req.condition = [...(req.condition || []), ...condition]
+        req.condition = [...(req.condition || []), ...condition];
       }
-      return req
+      return req;
     },
     async getList(p) {
       const url = `/${this.srvReqJson.mapp}/select/${this.srvReqJson.serviceName}`;
-      const req = this.buildListReq()
+      const req = this.buildListReq();
       this.onLoading = true;
       const res = await $http.post(url, req);
       this.onLoading = false;
@@ -665,10 +798,10 @@ export default {
         this.tableData = res.data.data;
         this.page = res.data.page;
         if (res.data.sum_row_data) {
-          this.sum_row_data = res.data.sum_row_data
-          this.tableData.push()
+          this.sum_row_data = res.data.sum_row_data;
+          this.tableData.push();
         } else {
-          this.sum_row_data = null
+          this.sum_row_data = null;
         }
       }
     },
@@ -676,7 +809,7 @@ export default {
   mounted() {
     if (this.requestNo) {
       // this.getRequestCfg();
-      this.getListCfg()
+      this.getListCfg();
     } else {
       this.$message.error("缺少requestNo参数");
     }
@@ -686,16 +819,16 @@ export default {
 
 <style lang="scss" scoped>
 .page-wrap {
-::v-deep .el-form-item{
-  display: flex;
-  margin-right: 10px;
-  .el-form-item__content{
-    flex: 1;
+  ::v-deep .el-form-item {
+    display: flex;
+    margin-right: 10px;
+    .el-form-item__content {
+      flex: 1;
+    }
+    .el-date-editor .el-range-separator {
+      min-width: 20px;
+    }
   }
-  .el-date-editor .el-range-separator{
-    min-width: 20px;
-  }
-}
 
   // padding: 20px;
   .el-container {
@@ -728,7 +861,8 @@ export default {
   }
 }
 
-.el-input {}
+.el-input {
+}
 
 .el-date-editor.el-range-editor {
   width: 100%;

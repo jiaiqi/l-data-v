@@ -458,10 +458,10 @@ export default {
             const draggedColumn = draggedItem.columns;
             // 检查字段是否在aggregation或group中存在
             const existsInAggregation = aggregation.some(
-              (item) => item.colName === draggedColumn
+              (item) => item.colName === draggedColumn || item.col_name === draggedColumn
             );
             const existsInGroup = group.some(
-              (item) => item.colName === draggedColumn
+              (item) => item.colName === draggedColumn || item.col_name === draggedColumn
             );
             // 如果字段不在aggregation和group中，则不允许拖入
             if (!existsInAggregation && !existsInGroup) {
