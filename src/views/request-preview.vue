@@ -160,6 +160,22 @@
       </el-main>
       <!-- <div v-else style="height: 0;flex-shrink:0;box-sizing:border-box;"></div> -->
       <el-main>
+        <!-- 表格合并模式切换 -->
+        <div
+          class="table-merge-control"
+          style="margin-bottom: 10px; text-align: right"
+        >
+          <span style="margin-right: 10px">表格合并模式：</span>
+          <el-select
+            v-model="mergeMode"
+            placeholder="选择合并模式"
+            style="width: 200px"
+          >
+            <el-option label="不合并" value="none"></el-option>
+            <el-option label="只合并首列" value="first"></el-option>
+            <el-option label="合并所有符合条件的列" value="all"></el-option>
+          </el-select>
+        </div>
         <!-- 数据 -->
         <el-table
           ref="elTable"
@@ -236,6 +252,8 @@ export default {
       isStacked: false, // 是否为堆叠柱状图
       isArea: false, // 是否为区域面积折线图
       chartInstance: null, // echarts实例
+      // 表格合并相关
+      mergeMode: "first", // 合并模式：none-不合并，first-只合并首列，all-合并所有符合条件的列
     };
   },
   computed: {
@@ -477,9 +495,56 @@ export default {
       this.getList();
     },
     objectSpanMethod({ row, column, rowIndex, columnIndex }) {
+      // 不合并模式
+      if (this.mergeMode === "none") {
+        return;
+      }
+
       const colName = column.property;
       // 只有group type是by的字段可以合并
-      if (this.groupCols.find((item) => item.colName === colName)) {
+      const isMergeCol = this.groupCols.find(
+        (item) => item.colName === colName
+      );
+
+      // 只合并首列模式
+      if (this.mergeMode === "first") {
+        // 获取所有可合并列
+        const mergeCols = this.groupCols.map((item) => item.colName);
+        // 只处理首列
+        if (mergeCols.length > 0 && colName === mergeCols[0]) {
+          // 首列合并逻辑
+          const currentValue = row[colName];
+          let rowspan = 1;
+          // 遍历之后的行，判断是否需要合并
+          for (let i = rowIndex + 1; i < this.tableData.length; i++) {
+            const nextRow = this.tableData[i];
+            if (nextRow[colName] === currentValue) {
+              rowspan++;
+            } else {
+              break;
+            }
+          }
+
+          // 遍历之前的行 跟上一行的值一样 则和上一行合并 rowspan置为0
+          for (let i = rowIndex - 1; i >= 0; i--) {
+            const previousRow = this.tableData[i];
+            if (previousRow[colName] === currentValue) {
+              rowspan = 0;
+            } else {
+              break;
+            }
+          }
+          // 返回合并的行数和列数
+          return {
+            rowspan,
+            colspan: 1,
+          };
+        }
+        return;
+      }
+
+      // 合并所有符合条件的列模式
+      if (this.mergeMode === "all" && isMergeCol) {
         const currentValue = row[colName];
         let rowspan = 1;
         // 遍历之后的行，判断是否需要合并
