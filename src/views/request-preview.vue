@@ -961,7 +961,10 @@ export default {
               : 0;
           });
 
-          return {
+          const baseColor = colors[index % colors.length];
+          
+          // 创建渐变色配置
+          const seriesConfig = {
             name: groupVal,
             type: this.chartType,
             data: seriesItemData,
@@ -972,12 +975,37 @@ export default {
               (this.chartType === "line" && this.isArea)
                 ? "stackGroup"
                 : undefined,
-            areaStyle:
-              this.chartType === "line" && this.isArea ? {} : undefined,
-            itemStyle: {
-              color: colors[index % colors.length],
-            },
           };
+
+          // 柱状图渐变
+          if (this.chartType === "bar") {
+            seriesConfig.itemStyle = {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: baseColor },
+                { offset: 1, color: baseColor + '80' },
+              ]),
+            };
+          } 
+          // 折线图渐变
+          else if (this.chartType === "line") {
+            seriesConfig.lineStyle = {
+              color: baseColor,
+            };
+            seriesConfig.itemStyle = {
+              color: baseColor,
+            };
+            // 面积图渐变
+            if (this.isArea) {
+              seriesConfig.areaStyle = {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: baseColor + '80' },
+                  { offset: 1, color: baseColor + '20' },
+                ]),
+              };
+            }
+          }
+
+          return seriesConfig;
         });
       } else {
         // 没有分组字段，使用单个系列
@@ -994,28 +1022,54 @@ export default {
             : 0;
         });
 
-        seriesData = [
-          {
-            name:
-              yAxisField.aliasName ||
-              this.colsMap?.[yAxisField.colName]?.label ||
-              yAxisField.colName,
-            type: this.chartType,
-            data: seriesItemData,
-            smooth: this.chartType === "line",
-            barWidth: 50,
-            stack:
-              (this.isStacked && this.chartType === "bar") ||
-              (this.chartType === "line" && this.isArea)
-                ? "stackGroup"
-                : undefined,
-            areaStyle:
-              this.chartType === "line" && this.isArea ? {} : undefined,
-            itemStyle: {
-              color: "#5470c6",
-            },
-          },
-        ];
+        const baseColor = "#5470c6";
+        
+        // 创建渐变色配置
+        const seriesConfig = {
+          name:
+            yAxisField.aliasName ||
+            this.colsMap?.[yAxisField.colName]?.label ||
+            yAxisField.colName,
+          type: this.chartType,
+          data: seriesItemData,
+          smooth: this.chartType === "line",
+          barWidth: 50,
+          stack:
+            (this.isStacked && this.chartType === "bar") ||
+            (this.chartType === "line" && this.isArea)
+              ? "stackGroup"
+              : undefined,
+        };
+
+        // 柱状图渐变
+        if (this.chartType === "bar") {
+          seriesConfig.itemStyle = {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: baseColor },
+              { offset: 1, color: baseColor + '80' },
+            ]),
+          };
+        } 
+        // 折线图渐变
+        else if (this.chartType === "line") {
+          seriesConfig.lineStyle = {
+            color: baseColor,
+          };
+          seriesConfig.itemStyle = {
+            color: baseColor,
+          };
+          // 面积图渐变
+          if (this.isArea) {
+            seriesConfig.areaStyle = {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: baseColor + '80' },
+                { offset: 1, color: baseColor + '20' },
+              ]),
+            };
+          }
+        }
+
+        seriesData = [seriesConfig];
       }
 
       // 设置图表配置
