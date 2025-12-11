@@ -611,8 +611,10 @@ export default {
                   cur.label = "按年";
                   break;
                 case "by_month":
-                case "by_month_of_year":
                   cur.label = "按月";
+                  break;
+                case "by_month_of_year":
+                  cur.label = "按年月";
                   break;
                 case "by_week":
                 case "by_week_of_year":
