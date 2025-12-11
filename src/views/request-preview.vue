@@ -585,6 +585,7 @@ export default {
               aliasName: item.alias_name,
               colName: item.col_name,
               type: item.type_stat,
+              seq: item.seq,
             };
           });
         this.groupCols = groupFields
@@ -594,8 +595,10 @@ export default {
           )
           .map((item) => {
             return {
+              aliasName: item.alias_name,
               colName: item.col_name,
               type: item.type_stat,
+              seq: item.seq,
             };
           });
         this.groupByCols = groupFields
