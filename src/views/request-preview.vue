@@ -219,8 +219,8 @@
 </template>
 
 <script>
-import * as XLSX from "xlsx";
-import dayjs from "dayjs";
+// import * as XLSX from "xlsx";
+// import dayjs from "dayjs";
 import { $http } from "@/common/http";
 import loginDialog from "@/components/login-dialog/index.vue";
 import * as echarts from "echarts";
