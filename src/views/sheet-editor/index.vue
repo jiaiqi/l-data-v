@@ -636,6 +636,9 @@ export default {
                         if (typeof lastVal === "number") {
                           curVal = Number(curVal);
                         }
+                        if(!item['__update_col']){
+                          this.$set(item, '__update_col', {[key]: true});
+                        }
                         this.$set(item, key, curVal);
                       }
                     });
@@ -654,6 +657,9 @@ export default {
                     if (typeof lastVal === "string") {
                       curVal = curVal + "";
                     }
+                    if(!item['__update_col']){
+                      this.$set(item, '__update_col', {[key]: true});
+                    }
                     this.$set(item, key, curVal);
                   }
                 });
@@ -667,6 +673,18 @@ export default {
                 const sourceData = this.tableData.find(
                   (item) => item.rowKey === rowKey
                 );
+                   let key = Object.keys(sourceSelectionData[0]).find(
+                (e) => e !== "rowKey"
+              );
+                this.tableData.forEach((item,tIndex) => {
+                  for (let index = targetSelectionRangeIndexes.startRowIndex; index <= targetSelectionRangeIndexes.endRowIndex; index++) {
+                    if(tIndex >-1 &&tIndex===index){
+                      if(!item['__update_col']){
+                        this.$set(item, '__update_col', {[key]: true});
+                      }
+                    }
+                  }
+                });
                 if (sourceData) {
                   this.$nextTick(() => {
                     this.triggerEditCell(
@@ -2837,6 +2855,7 @@ export default {
             item.field
           )
       );
+      debugger
       const changedCols = [];
       for (let i = startRowIndex; i <= endRowIndex; i++) {
         const row = this.tableData[i];
@@ -3864,11 +3883,14 @@ export default {
       // const tableData = JSON.parse(JSON.stringify(this.tableData));
       const reqData = [];
       const addDatas = [];
-
+      console.log("buildReqParams-start");
+      
       this.tableData.forEach((item, index) => {
         const oldItem = this.oldTableData?.find(
           (d) => d.__id && d.__id === item.__id
         );
+      // debugger
+
         if (!item.__flag && oldItem) {
           const updateObj = this.processUpdateData(
             item,
