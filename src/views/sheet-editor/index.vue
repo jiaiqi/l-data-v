@@ -189,21 +189,24 @@ import { ignoreKeys } from "./util/constant";
 import { RecordManager } from "./util/recordManager.js";
 
 // 导入自定义组件
-import HeaderCell from "./components/header-cell.vue";
+// 必要组件 - 同步引入
+import LoadingView from "./components/loading/index.vue";
+import SheetToolbar from "./components/sheet-toolbar/index.vue";
+import FieldEditor from "./components/field-editor/index.vue";
+
+// 非必要组件 - 异步引入
+const HeaderCell = () => import("./components/header-cell.vue");
 // import fkSelector from "./components/fk-selector.vue";
-import RenderHtml from "./components/render-html.vue";
-import FileUpload from "./components/file-upload.vue";
-import selectParentNode from "./components/select-parent-node.vue";
+const RenderHtml = () => import("./components/render-html.vue");
+const FileUpload = () => import("./components/file-upload.vue");
+const selectParentNode = () => import("./components/select-parent-node.vue");
 // import fkAutocomplete from "./components/fk-autocomplete.vue";
 // import IconFold from "../../components/icons/icon-fold.vue";
 // import IconUnfold from "../../components/icons/icon-unfold.vue";
-import LoadingView from "./components/loading/index.vue";
-import ChooseTenant from "./components/choose-tenant/index.vue";
-import loginDialog from "../../components/login-dialog/index.vue";
-import DropMenu from "./components/drop-menu/drop-menu.vue";
-// import OutFormDialog from "./components/out-comp/dialog.vue";
-import FieldEditor from "./components/field-editor/index.vue";
-import SheetToolbar from "./components/sheet-toolbar/index.vue";
+const ChooseTenant = () => import("./components/choose-tenant/index.vue");
+const loginDialog = () => import("../../components/login-dialog/index.vue");
+const DropMenu = () => import("./components/drop-menu/drop-menu.vue");
+// import OutFormDialog from "./components/out-comp/dialog.vue"; 
 
 let broadcastChannel = null; //跨iframe通信的实例
 export default {

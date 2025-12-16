@@ -189,9 +189,14 @@ import {
   isFkAutoComplete,
   getFieldType,
 } from "@/utils/sheetUtils.js";
-import Finder from "./finder.vue";
-import RichTextEditor from "./rich-text.vue";
-import OptionSelect from "./option-select.vue";
+
+const Finder = () => import("./finder.vue");
+const RichTextEditor = () => import("./rich-text.vue");
+const OptionSelect = () => import("./option-select.vue");
+
+// import Finder from "./finder.vue";
+// import RichTextEditor from "./rich-text.vue";
+// import OptionSelect from "./option-select.vue";
 
 /**
  * 组件 Props 定义
