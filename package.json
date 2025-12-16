@@ -37,7 +37,8 @@
     "terser": "^5.14.2",
     "unocss": "^0.54.1",
     "unplugin-vue-define-options": "3.0.0-beta.16",
-    "vite": "^3.2.5"
+    "vite": "^3.2.5",
+    "vite-plugin-compression": "^0.5.1"
   },
   "volta": {
     "node": "20.19.0"

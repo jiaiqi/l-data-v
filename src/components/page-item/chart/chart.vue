@@ -1,5 +1,5 @@
 <script setup>
-import * as echarts from "echarts";
+import echarts from "@/utils/echarts.js";
 import { onMounted, ref, watch } from "vue";
 const props = defineProps({
   pageItem: {

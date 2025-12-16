@@ -1,12 +1,8 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-// import HomeView from "@/views/page-editor/index.vue";
-import HomeView from "@/views/sheet-editor/index.vue";
-// import { importRouters } from "./autoImportRouter";
+// 懒加载首页组件,优化首屏加载速度
+const HomeView = () => import("@/views/sheet-editor/index.vue");
 Vue.use(VueRouter);
-
-// const routers = importRouters();
-// console.log(routers);
 const router = new VueRouter({
   mode: "hash",
   base: import.meta.env.BASE_URL,

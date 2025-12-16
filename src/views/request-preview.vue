@@ -223,7 +223,7 @@
 // import dayjs from "dayjs";
 import { $http } from "@/common/http";
 import loginDialog from "@/components/login-dialog/index.vue";
-import * as echarts from "echarts";
+import echarts from "@/utils/echarts.js";
 
 export default {
   components: {
