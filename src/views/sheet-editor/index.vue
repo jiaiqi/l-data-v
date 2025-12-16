@@ -188,6 +188,13 @@ import { FkUtil } from "./util/fkUtil.js";
 import { ignoreKeys } from "./util/constant";
 import { RecordManager } from "./util/recordManager.js";
 
+// 引入EasyTable组件
+import { VeTable,VeLocale } from 'vue-easytable'
+// 引入样式（必须）
+import 'vue-easytable/libs/theme-default/index.css'
+import zhCN from "vue-easytable/libs/locale/lang/zh-CN.js";
+VeLocale.use(zhCN);
+
 // 导入自定义组件
 // 必要组件 - 同步引入
 import LoadingView from "./components/loading/index.vue";
@@ -262,6 +269,7 @@ export default {
     });
   },
   components: {
+    VeTable,
     selectParentNode,
     loginDialog,
     LoadingView,

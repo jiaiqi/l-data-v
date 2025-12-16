@@ -39,14 +39,14 @@ Vue.use(ElementUI);
 
 // 引入VueEasytable
 // 引入样式
-import "vue-easytable/libs/theme-default/index.css";
+// import "vue-easytable/libs/theme-default/index.css";
 // 引入组件库
-import VueEasytable from "vue-easytable";
-Vue.use(VueEasytable);
+// import VueEasytable from "vue-easytable";
+// Vue.use(VueEasytable);
 // 引入中文文语言包
-import { VeLocale } from "vue-easytable";
-import zhCN from "vue-easytable/libs/locale/lang/zh-CN.js";
-VeLocale.use(zhCN);
+// import { VeLocale } from "vue-easytable";
+// import zhCN from "vue-easytable/libs/locale/lang/zh-CN.js";
+// VeLocale.use(zhCN);
 
 Vue.prototype.getImagePath = getImagePath
 

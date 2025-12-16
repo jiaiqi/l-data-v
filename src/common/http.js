@@ -8,8 +8,8 @@ const envList = {
   "yax": "https://yax.100xsys.cn/bxapi",  // 延安行
   "park": "https://www.gxqcxkj.com/bxapi" // 延安园区
 }
-export const env = import.meta.env.VITE_ENV || "saas"
-// export const env =  "saas"
+// export const env = import.meta.env.VITE_ENV || "saas"
+export const env =  "saas"
 let baseURL = window.backendIpAddr || envList[env]
 
 console.log("env:", import.meta.env.VITE_ENV)
