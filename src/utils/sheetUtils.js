@@ -218,7 +218,7 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
       if (preferType === 'list') {
         col._display = listColsMap?.[col.columns]?.in_list === 1
       } else if (preferType === 'update') {
-        col._display = col.editable
+        col._display = col.editable || col?.in_update === 1
       } else if (preferType === 'add') {
         col._display = col.canAdd;
       } else {
