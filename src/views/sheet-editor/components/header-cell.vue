@@ -25,7 +25,7 @@
         <el-tooltip class="item" effect="dark" content="必填" placement="bottom-center" v-if="column.isRequired">
           <span class="required color-red m-r-2 font-bold">*</span>
         </el-tooltip>
-        <el-tooltip class="item" effect="dark" content="可编辑列" placement="bottom-end" v-if="column.editable">
+        <el-tooltip class="item" effect="dark" content="可编辑列" placement="bottom-end" v-if="column.editable || column.edit">
           <i class="el-icon-edit-outline"></i>
         </el-tooltip>
         <el-tooltip class="item" effect="dark" content="autocomplete" placement="bottom-end" v-if="isAutoCompleteField">

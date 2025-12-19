@@ -94,6 +94,7 @@
             type="primary"
             :title="item.button_name"
             v-for="item in gridButton"
+            :key="item.button_name"
             class="button"
             @click="emit('grid-button-click', item)"
           >
@@ -145,6 +146,32 @@
         >
           {{ autoSaveTimeout }}
         </span>
+      </el-button>
+
+      <!-- 超级管理员模式切换 -->
+      <el-button
+        class="icon-button"
+        size="mini"
+        :type="isSuperAdmin ? 'warning' : 'primary'"
+        @click="emit('toggle-super-admin')"
+        v-if="isAdmin"
+        :title="isSuperAdmin ? '退出超级管理员模式' : '切换到超级管理员模式'"
+      >
+        <i class="i-ic-baseline-admin-panel-settings"></i>
+        <span class="ml-1">{{ isSuperAdmin ? '超管模式' : '用户模式' }}</span>
+      </el-button>
+
+      <!-- 显示所有字段按钮 -->
+      <el-button
+        class="icon-button"
+        size="mini"
+        :type="showAllFields ? 'success' : 'primary'"
+        @click="emit('toggle-show-all-fields')"
+        v-if="isSuperAdmin"
+        :title="showAllFields ? '隐藏不必要字段' : '显示所有字段'"
+      >
+        <i class="i-ri:table-view"></i>
+        <span class="ml-1">{{ showAllFields ? '全部显示' : '默认显示' }}</span>
       </el-button>
 
       <!-- 保存列宽按钮 -->
@@ -250,6 +277,19 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // 超级管理员模式
+  isSuperAdmin: {
+    type: Boolean,
+    default: false,
+  },
+  showAllFields: {
+    type: Boolean,
+    default: false,
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // 定义 emits
@@ -262,6 +302,8 @@ const emit = defineEmits([
   "refresh-data",
   "save-data",
   "save-column-width",
+  "toggle-super-admin",
+  "toggle-show-all-fields",
 ]);
 
 // 响应式数据

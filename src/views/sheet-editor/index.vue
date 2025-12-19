@@ -32,6 +32,9 @@
       :can-switch-update="Boolean(Object.keys(updateColsMap || {}).length)"
       :service-name="serviceName"
       :normal-service="normalService"
+      :is-super-admin="isSuperAdmin"
+      :show-all-fields="showAllFields"
+      :is-admin="isAdmin"
       @batch-insert-rows="batchInsertRows"
       @list-type-change="listTypeChange"
       @column-source-change="onColumnSourceChange"
@@ -39,6 +42,8 @@
       @refresh-data="refreshData"
       @save-data="saveData"
       @save-column-width="saveColumnWidth"
+      @toggle-super-admin="toggleSuperAdmin"
+      @toggle-show-all-fields="toggleShowAllFields"
     />
     <div
       class="flex-1 list-container"
@@ -227,6 +232,9 @@ export default {
     this.stopAutoSave();
   },
   async created() {
+    // 初始化用户状态管理
+    this.userStore = useUserStore();
+    
     if(this.$route.query?.forceNormalList === 'true' || this.$route.query?.forceList === 'true'){
       this.forceNormalList = true;
     }
@@ -341,6 +349,10 @@ export default {
       allFields: [], //所有字段
       columns: [], //表头字段
       originalPage: {}, //原始分页信息（树形列表使用）
+      // 超级管理员模式
+      isSuperAdmin: false, // 是否处于超级管理员模式
+      showAllFields: false, // 是否显示所有字段
+      userStore: null, // 用户状态管理实例
       eventCustomOption: {
         bodyRowEvents: ({ row, rowIndex }) => {
           return {
@@ -412,7 +424,7 @@ export default {
               //   this.$refs.tableRef?.$refs?.cellSelectionRef?.currentCellEl;
               // console.log({ ...currentCellEl });
 
-              if (column.edit || column.editable) {
+              if (column.edit || column.editable || this.isSuperAdmin) {
                 if (["Note", "RichText", "snote"].includes(colType)) {
                   // 富文本
                   event.stopPropagation();
@@ -869,6 +881,19 @@ export default {
       // 单元格编辑配置
       editOption: {
         beforeStartCellEditing: ({ row, column, cellValue, rowIndex }) => {
+          // 超级管理员拥有所有编辑权限，只检查特殊字段类型
+          if (this.isSuperAdmin) {
+            const colType = column?.__field_info?.col_type;
+            if (!row || !colType) {
+              return;
+            }
+            if (["FileList", "Image"].includes(colType)) {
+              this.$message.warning(`【${colType}】类型字段不支持双击进行编辑`);
+              return false;
+            }
+            return;
+          }
+          
           const colType = column?.__field_info?.col_type;
           if (!row || !colType) {
             return;
@@ -948,9 +973,7 @@ export default {
           if (!colType) {
             return;
           }
-          // let oldRowData = this.oldTableData?.find(
-          //   (item) => item.__id === row.__id
-          // );
+          
           let currentRow = this.tableData?.find(
             (item) => item.__id === row.__id
           );
@@ -958,37 +981,41 @@ export default {
             // 值没变
             return false;
           }
-          if (row.__flag === "add") {
-            // 新增行 处理in_add 为0或者add服务没有这个字段
-            if (!this.addColsMap[column.field]?.in_add) {
-              this.$message({
-                message: "新增行不支持编辑当前列",
-                type: "warning",
-              });
-              return false;
-            }
-            if (this.addColsMap[column.field].updatable === 0) {
-              this.$message({
-                message: "当前列新增时不支持编辑",
-                type: "warning",
-              });
-              return false;
-            }
-          } else {
-            // 编辑行 处理in_update
-            if (!this.updateColsMap[column.field]?.in_update) {
-              this.$message({
-                message: "当前列不支持编辑",
-                type: "warning",
-              });
-              return false;
-            }
-            if (this.updateColsMap[column.field]?.updatable === 0) {
-              this.$message({
-                message: "当前列不支持编辑",
-                type: "warning",
-              });
-              return false;
+          
+          // 超级管理员拥有所有编辑权限，跳过权限检查，只保留数据类型校验
+          if (!this.isSuperAdmin) {
+            if (row.__flag === "add") {
+              // 新增行 处理in_add 为0或者add服务没有这个字段
+              if (!this.addColsMap[column.field]?.in_add) {
+                this.$message({
+                  message: "新增行不支持编辑当前列",
+                  type: "warning",
+                });
+                return false;
+              }
+              if (this.addColsMap[column.field].updatable === 0) {
+                this.$message({
+                  message: "当前列新增时不支持编辑",
+                  type: "warning",
+                });
+                return false;
+              }
+            } else {
+              // 编辑行 处理in_update
+              if (!this.updateColsMap[column.field]?.in_update) {
+                this.$message({
+                  message: "当前列不支持编辑",
+                  type: "warning",
+                });
+                return false;
+              }
+              if (this.updateColsMap[column.field]?.updatable === 0) {
+                this.$message({
+                  message: "当前列不支持编辑",
+                  type: "warning",
+                });
+                return false;
+              }
             }
           }
 
@@ -1846,6 +1873,10 @@ export default {
     isTree() {
       return this.treeInfo && this.v2data?.is_tree === true && !this.forceNormalList;
     },
+    isAdmin() {
+      // 检查用户是否有admin角色
+      return this.userStore?.hasRole('admin') || this.userStore?.hasRole('ADMIN');
+    },
     parentColOption() {
       if (
         this.treeInfo?.pidCol &&
@@ -1879,6 +1910,18 @@ export default {
       } catch (e) {
         return false;
       }
+    },
+    // 切换超级管理员模式
+    toggleSuperAdmin() {
+      this.isSuperAdmin = !this.isSuperAdmin;
+      // 切换模式后重新构建列
+      this.columns = this.buildColumns();
+    },
+    // 切换显示所有字段
+    toggleShowAllFields() {
+      this.showAllFields = !this.showAllFields;
+      // 切换后重新构建列
+      this.columns = this.buildColumns();
     },
     async onColumnSourceChange(type) {
       if (type === this.colSourceType) return;
@@ -1924,7 +1967,9 @@ export default {
           this.childListType,
           this.colSrv,
           this.serviceName,
-          this.colSourceType
+          this.colSourceType,
+          this.isSuperAdmin
+
         );
 
         this.columns = this.buildColumns();
@@ -2116,6 +2161,9 @@ export default {
       }
       if (row.__flag !== "add" && !row?.__button_auth?.edit) {
         editable = false;
+      }
+      if(this.isSuperAdmin){
+        editable = true
       }
       const oldRowData = this.oldTableData?.find(
         (item) => item.__id && item.__id === row.__id
@@ -2971,7 +3019,7 @@ export default {
         // }
         let minWidth = 50;
         columns = columns.concat(
-          this.allFields.filter(item => item._display).map((item, index) => {
+          this.allFields.filter(item => this.showAllFields || item._display).map((item, index) => {
             let width = undefined;
             const length = item?.label?.replace(
               /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
@@ -2986,8 +3034,9 @@ export default {
               key: item.columns,
               width: width && width < minWidth ? minWidth : width,
               // minWidth: width,
-              edit: item.editable === true || item.canAdd == true, // 不再根据字段类型控制是否可编辑，所有类型字段都可以编辑，未适配的类型当作String处理
-              __field_info: { ...item },
+              edit: this.isSuperAdmin || item.editable === true || item.canAdd == true, // 超级管理员拥有所有编辑权限
+             
+             __field_info: { ...item },
             };
 
             if (index === 0) {
@@ -3480,6 +3529,9 @@ export default {
                   if (row.__flag !== "add" && !row?.__button_auth?.edit) {
                     editable = false;
                   }
+                  if(this.isSuperAdmin){
+                    editable = true
+                  }
                   return h(FileUpload, {
                     attrs: {
                       row,
@@ -3547,6 +3599,9 @@ export default {
                   }
                   if (row.__flag !== "add" && !row?.__button_auth?.edit) {
                     editable = false;
+                  }
+                  if(this.isSuperAdmin){
+                    editable = true
                   }
                   return h(RenderHtml, {
                     attrs: {
@@ -3766,6 +3821,7 @@ export default {
           // 将计算出的宽度保留两位小数，确保宽度值的精确性
           item.width = Number(ratio.toFixed(2));
         }
+        item.width = item._originWidth
         // 返回处理后的列配置
         return item;
       })
@@ -4446,7 +4502,7 @@ export default {
         }, {});
 
         this.allFields.forEach((field) => {
-          if (field.editable || field.canAdd) {
+          if (field.editable || field.canAdd || this.isSuperAdmin) {
             dataItem[field.columns] = null;
             if (itemData && itemData[field.columns]) {
               dataItem[field.columns] = itemData[field.columns];
@@ -4788,6 +4844,7 @@ export default {
         });
         // 树形列表在前端分页，获取所有数据
         const isTreeMode = this.isTree && this.listType === "treelist";
+        
         const res = await onSelect(this.serviceName, this.srvApp, condition, {
           rownumber: isTreeMode ? 999999 : this.page.rownumber, // 树形列表获取所有数据
           pageNo: isTreeMode ? 1 : this.page.pageNo, // 树形列表从第一页开始
@@ -5026,7 +5083,8 @@ export default {
           this.childListType,
           this.colSrv,
           this.serviceName,
-          this.colSourceType
+          this.colSourceType,
+          this.isSuperAdmin
         );
 
         document.title = res.data.service_view_name;
@@ -5071,7 +5129,7 @@ export default {
 .custom-style {
   .ve-table-container {
     min-height: 80px;
-    height: calc(100vh - 80px) !important;
+    max-height: calc(100vh - 80px) !important;
     overflow: auto;
   }
 

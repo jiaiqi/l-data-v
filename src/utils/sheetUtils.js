@@ -60,7 +60,7 @@ function attachRedundantOptionRefs(col, dependField, addColsMap = {}, updateCols
  *   新增行使用add服务列，更新行使用update服务列，展示使用三个服务的交集
  * - 即展示list服务列中in_list不为0或者add服务列中in_add不为0或者update服务列中in_update不为0的列
  */
-const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName, preferType = 'list') => {
+const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName, preferType = 'list', isSuperAdmin = false) => {
   allColsMap = cloneDeep(allColsMap); // 深拷贝避免修改原始数据
   let { updateColsMap, addColsMap, listColsMap } = allColsMap || {};
   let newCols = allColsMap?.[preferType + 'Cols'] || [];
@@ -203,13 +203,13 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
       const col = cols[index];
 
       // 设置编辑属性
-      col.editable = updateColsMap?.[col.columns]?.updatable !== 0 && updateColsMap?.[col.columns]?.in_update === 1;
-      col.canAdd = addColsMap?.[col.columns]?.in_add === 1;
+      col.editable = isSuperAdmin || updateColsMap?.[col.columns]?.updatable !== 0 && updateColsMap?.[col.columns]?.in_update === 1;
+      col.canAdd = isSuperAdmin || addColsMap?.[col.columns]?.in_add === 1;
 
       // 如果使用了自定义服务，进一步控制编辑属性
       if (colSrv && colSrv !== serviceName) {
-        col.editable = col.editable && col?.in_update === 1;
-        col.canAdd = col?.in_add === 1;
+        col.editable = isSuperAdmin || (col.editable && col?.in_update === 1);
+        col.canAdd = isSuperAdmin || (col.canAdd && col?.in_add === 1);
       }
 
 
