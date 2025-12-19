@@ -227,13 +227,16 @@ export default {
     this.stopAutoSave();
   },
   async created() {
+    if(this.$route.query?.forceNormalList === 'true' || this.$route.query?.forceList === 'true'){
+      this.forceNormalList = true;
+    }
     if (this.srvApp) {
       sessionStorage.setItem("current_app", this.srvApp);
     }
     if (this.$route.query?.listType) {
       this.listType = this.$route.query?.listType;
     }
-    if (this.$route.query.isTree) {
+    if (this.$route.query.isTree && !this.forceNormalList && this.$route.query?.forceList !== 'true') {
       this.listType = "treelist";
     }
     if (this.$route.query?.disabled) {
@@ -258,7 +261,7 @@ export default {
       });
     }
     this.initPage().then(() => {
-      if (this.v2data?.is_tree === true && this.listType !== "treelist") {
+      if (this.v2data?.is_tree === true && this.listType !== "treelist" && !this.forceNormalList) {
         this.listType = "treelist";
         this.initPage();
       }
@@ -281,6 +284,7 @@ export default {
   },
   data() {
     return {
+      forceNormalList:false,
       colSourceType: 'list',
       fkRawDataMap: {},
       bx_auth_ticket: null,
@@ -1745,6 +1749,8 @@ export default {
               "menuapp",
               "isTree",
               "topTreeData",
+              "forceNormalList",
+              "forceList",
               "fixedCol",
               "initCond",
               "colSrv", // 用来查找显示的列的服务
@@ -1837,7 +1843,7 @@ export default {
       return this.$route.params?.colSrv || this.$route.query?.colSrv;
     },
     isTree() {
-      return this.treeInfo && this.v2data?.is_tree === true;
+      return this.treeInfo && this.v2data?.is_tree === true && !this.forceNormalList;
     },
     parentColOption() {
       if (
