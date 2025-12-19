@@ -340,6 +340,7 @@ export default {
       v2data: {}, //select v2
       allFields: [], //所有字段
       columns: [], //表头字段
+      originalPage: {}, //原始分页信息（树形列表使用）
       eventCustomOption: {
         bodyRowEvents: ({ row, rowIndex }) => {
           return {
@@ -4785,12 +4786,14 @@ export default {
           }
           return item;
         });
+        // 树形列表在前端分页，获取所有数据
+        const isTreeMode = this.isTree && this.listType === "treelist";
         const res = await onSelect(this.serviceName, this.srvApp, condition, {
-          rownumber: this.page.rownumber,
-          pageNo: this.page.pageNo,
+          rownumber: isTreeMode ? 999999 : this.page.rownumber, // 树形列表获取所有数据
+          pageNo: isTreeMode ? 1 : this.page.pageNo, // 树形列表从第一页开始
           vpage_no: this.v2data?.vpage_no,
           order: this.sortState,
-          isTree: this.isTree && this.listType === "treelist",
+          isTree: isTreeMode,
           pidCol: this.treeInfo?.pidCol,
           forceUseTTD: this.$route?.query?.topTreeData,
         });
@@ -4798,7 +4801,8 @@ export default {
 
         if (res?.data?.length) {
           if (res.page) {
-            this.page = res.page;
+            // 保存原始页码信息，树形列表需要使用
+            this.originalPage = res.page;
           }
           res.data = res.data.map((item) => {
             item.__button_auth = this.setButtonAuth(
@@ -4814,8 +4818,12 @@ export default {
           });
           return;
         }
+        
+        // 处理总数据量
         if (res.page && "total" in res.page) {
           this.page.total = res.page.total;
+        } else {
+          this.page.total = res.data?.length || 0;
         }
 
         let tableData = [];
@@ -4835,7 +4843,17 @@ export default {
         }
 
         if (unfoldIds?.length) {
-          this.tableData = await this.loadChildren(unfoldIds, tableData);
+          tableData = await this.loadChildren(unfoldIds, tableData);
+        }
+        
+        // 树形列表前端分页处理
+        if (isTreeMode) {
+          // 计算分页范围
+          const startIndex = (this.page.pageNo - 1) * this.page.rownumber;
+          const endIndex = startIndex + this.page.rownumber;
+          
+          // 只显示当前页的数据
+          this.tableData = tableData.slice(startIndex, endIndex);
         } else {
           this.tableData = tableData;
         }
