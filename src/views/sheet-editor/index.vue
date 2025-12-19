@@ -1654,25 +1654,34 @@ export default {
         {
           type: "SEPARATOR",
         },
-        {
-          type: "insertRowAbove",
-          label: "上方插入行",
-        },
-        {
-          type: "insertRowsAbove",
-          label: "上方插入多行",
-        },
-        {
-          type: "insertRowBelow",
-          label: "下方插入行",
-        },
-        {
-          type: "insertRowsBelow",
-          label: "下方插入多行",
-        },
-        {
-          type: "SEPARATOR",
-        },
+      ];
+      
+      // 只有当有addButton时才显示插入行选项
+      if (this.addButton) {
+        arr.push(
+          {
+            type: "insertRowAbove",
+            label: "上方插入行",
+          },
+          {
+            type: "insertRowsAbove",
+            label: "上方插入多行",
+          },
+          {
+            type: "insertRowBelow",
+            label: "下方插入行",
+          },
+          {
+            type: "insertRowsBelow",
+            label: "下方插入多行",
+          },
+          {
+            type: "SEPARATOR",
+          }
+        );
+      }
+      
+      arr.push(
         {
           type: "removeRow",
           label: "删除选中行数据",
@@ -1705,8 +1714,8 @@ export default {
               label: "最小值",
             },
           ],
-        },
-      ];
+        }
+      );
 
       let addChildButton = this.v2data?.rowButton?.find((item) =>
         item.button_type.includes("addchild")
