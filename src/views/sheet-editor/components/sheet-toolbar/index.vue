@@ -4,8 +4,10 @@
     v-if="!disabled"
   >
     <!-- 左侧：添加行区域 -->
-    <div class="toolbar-left flex items-center gap-2 flex-shrink-0 min-w-[250px]"
-         v-if="addButton && addButton.service_name">
+    <div
+      class="toolbar-left flex items-center gap-2 flex-shrink-0 min-w-[250px]"
+      v-if="addButton && addButton.service_name"
+    >
       <div class="text-sm text-gray-700 whitespace-nowrap">添加</div>
       <el-input-number
         size="mini"
@@ -47,10 +49,14 @@
     </div>
 
     <!-- 右侧：操作按钮区域 -->
-    <div class="toolbar-right flex items-center justify-end gap-2 flex-shrink-0"
-         v-if="showRightSection">
+    <div
+      class="toolbar-right flex items-center justify-end gap-2 flex-shrink-0"
+      v-if="showRightSection"
+    >
       <!-- 字段来源选择组 -->
-      <div class="button-group flex items-center gap-3 p-1 rounded-lg bg-gray-50 mr-2 hidden md:flex">
+      <div
+        class="button-group flex items-center gap-3 p-1 rounded-lg bg-gray-50 mr-2 hidden md:flex"
+      >
         <div class="text-xs text-gray-600 whitespace-nowrap">字段来源：</div>
         <el-radio-group
           size="mini"
@@ -61,10 +67,18 @@
             label="custom"
             v-if="colSrv && !normalService.includes(colSrv)"
             size="mini"
-          >自定义</el-radio-button>
+            >自定义</el-radio-button
+          >
           <el-radio-button label="list" size="mini">列表</el-radio-button>
-          <el-radio-button label="add" :disabled="!canSwitchAdd" size="mini">新增</el-radio-button>
-          <el-radio-button label="update" :disabled="!canSwitchUpdate" size="mini">编辑</el-radio-button>
+          <el-radio-button label="add" :disabled="!canSwitchAdd" size="mini"
+            >新增</el-radio-button
+          >
+          <el-radio-button
+            label="update"
+            :disabled="!canSwitchUpdate"
+            size="mini"
+            >编辑</el-radio-button
+          >
         </el-radio-group>
       </div>
 
@@ -85,9 +99,14 @@
 
       <!-- 网格按钮组 -->
       <div class="relative" v-if="gridButton && gridButton.length">
-        <div class="grid-button-box absolute right-full top-0 flex gap-2 p-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
-             :class="{ 'opacity-100 translate-x-0': showGridButton, 'opacity-0 -translate-x-2 pointer-events-none': !showGridButton }"
-             style="transition: all 0.2s ease">
+        <div
+          class="grid-button-box absolute right-full top-0 flex gap-2 p-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
+          :class="{
+            'opacity-100 translate-x-0': showGridButton,
+            'opacity-0 -translate-x-2 pointer-events-none': !showGridButton,
+          }"
+          style="transition: all 0.2s ease"
+        >
           <el-button
             size="mini"
             type="primary"
@@ -158,7 +177,11 @@
           @click="emit('save-column-width')"
           v-loading="onHandler"
           :disabled="!calcColumnWidthReq || calcColumnWidthReq.length == 0"
-          v-if="!childListType && calcColumnWidthReq && calcColumnWidthReq.length > 0"
+          v-if="
+            !childListType &&
+            calcColumnWidthReq &&
+            calcColumnWidthReq.length > 0
+          "
           title="保存列宽"
         >
           <i class="i-ic-baseline-view-column"></i>
@@ -170,11 +193,15 @@
           :type="isSuperAdmin ? 'warning' : 'primary'"
           @click="emit('toggle-super-admin')"
           v-if="isAdmin"
-          :title="isSuperAdmin ? '点击退出超级管理员模式' : '点击切换到超级管理员模式'"
-          class="admin-button flex items-center gap-1"
+          :title="
+            isSuperAdmin ? '点击退出超级管理员模式' : '点击切换到超级管理员模式'
+          "
+          class="admin-button icon-button flex items-center gap-1"
         >
           <i class="i-ic-baseline-admin-panel-settings"></i>
-          <span class="text-xs hidden sm:inline">{{ isSuperAdmin ? '超管' : '正常' }}</span>
+          <span class="text-xs hidden sm:inline">{{
+            isSuperAdmin ? "超管" : "正常"
+          }}</span>
         </el-button>
 
         <!-- 显示所有字段按钮 -->
@@ -183,11 +210,17 @@
           :type="showAllFields ? 'success' : 'primary'"
           @click="emit('toggle-show-all-fields')"
           v-if="isSuperAdmin"
-          :title="showAllFields ? '点击退出显示全部字段模式' : '点击切换为显示所有字段'"
-          class="flex items-center gap-1"
+          :title="
+            showAllFields
+              ? '点击退出显示全部字段模式'
+              : '点击切换为显示所有字段'
+          "
+          class="icon-button flex items-center gap-1"
         >
           <i class="i-ri:table-view"></i>
-          <span class="text-xs hidden sm:inline">{{ showAllFields ? '全部' : '默认' }}</span>
+          <span class="text-xs hidden sm:inline">{{
+            showAllFields ? "全部" : "默认"
+          }}</span>
         </el-button>
       </div>
     </div>
@@ -335,6 +368,11 @@ const toggleGridButton = () => {
   align-items: center;
   justify-content: center;
 }
+.icon-button ::v-deep span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* 左侧添加区域 */
 .toolbar-left {
@@ -390,28 +428,28 @@ const toggleGridButton = () => {
     gap: 8px;
     padding: 6px;
   }
-  
+
   .toolbar-left {
     min-width: auto;
     order: 2;
   }
-  
+
   .toolbar-center {
     order: 1;
     flex: 1 1 100%;
     padding: 0;
     margin-bottom: 8px;
   }
-  
+
   .toolbar-right {
     order: 3;
     min-width: auto;
   }
-  
+
   .color-map {
     display: none;
   }
-  
+
   .admin-button span,
   .toolbar-right .el-button span {
     display: none;
@@ -423,12 +461,12 @@ const toggleGridButton = () => {
     flex: 1 1 100%;
     justify-content: center;
   }
-  
+
   .toolbar-right {
     flex: 1 1 100%;
     justify-content: center;
   }
-  
+
   .icon-button {
     padding: 4px 6px;
     min-width: 28px;
