@@ -12,7 +12,7 @@
       <el-input-number
         size="mini"
         :value="insertRowNumber"
-        style="width: 100px"
+        style="width: 70px"
         @input="emit('update:insertRowNumber', $event)"
         controls-position="right"
       />
@@ -363,7 +363,7 @@ const toggleGridButton = () => {
 .icon-button {
   padding: 5px 8px;
   min-width: 32px;
-  height: 28px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,6 +379,14 @@ const toggleGridButton = () => {
   box-sizing: border-box;
 }
 
+::v-deep .el-input .el-input__inner {
+  padding-right: 30px;
+  padding-left: 0;
+}
+::v-deep .el-input--mini .el-input__inner {
+  height: 30px;
+  line-height: 30px;
+}
 /* 中间区域 */
 .toolbar-center {
   box-sizing: border-box;
