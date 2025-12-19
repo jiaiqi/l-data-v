@@ -268,12 +268,17 @@ export default {
         this.watchPageHeight();
       });
     }
-    this.initPage().then(() => {
-      if (this.v2data?.is_tree === true && this.listType !== "treelist" && !this.forceNormalList) {
-        this.listType = "treelist";
-        this.initPage();
-      }
-    });
+    if(this.listType !== "treelist" && !this.forceNormalList){
+      this.listType = "treelist";
+    }
+    this.initPage();
+   
+    // this.initPage().then(() => {
+    //   if (this.v2data?.is_tree === true && this.listType !== "treelist" && !this.forceNormalList) {
+    //     this.listType = "treelist";
+    //     this.initPage();
+    //   }
+    // });
     this.$nextTick(() => {
       this.unfold();
       this.initDocumentEventListener();
