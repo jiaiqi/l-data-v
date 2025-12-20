@@ -14,7 +14,7 @@
     </div>
     <div v-else-if="isImage && getImageUrl">
       <el-image
-        style="width: 100px; height: 100px"
+        class="image-preview"
         :src="getImageUrl"
         :preview-src-list="srcList"
         @click.native="getFileList()"
@@ -388,13 +388,13 @@ export default {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
   .edit-icon {
     position: absolute;
     // bottom: 10px;
     // right: 20px;
-    top: calc(50% - 20px);
-    right: calc(50% - 10px);
+    top: calc(50% - 5px);
+    right: 0;
+    transform: translate(-50%, -50%);
     width: 20px;
     height: 20px;
     display: none;
@@ -410,6 +410,15 @@ export default {
 
   .el-upload-list__item-name {
     text-align: left;
+  }
+  .image-preview {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    transition: transform 0.2s;
+    &:hover {
+      transform: scale(1.2);
+    }
   }
 }
 
