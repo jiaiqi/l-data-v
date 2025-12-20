@@ -303,6 +303,7 @@ export default {
   },
   data() {
     return {
+      tableMap: {},
       forceNormalList:false,
       colSourceType: 'list',
       fkRawDataMap: {},
@@ -2983,6 +2984,15 @@ export default {
       if (this.serviceName) {
         this.startLoading();
         const v2Data = await this.getV2Data();
+        if(v2Data.srv_cols && v2Data.srv_cols?.length) {
+          v2Data.srv_cols.forEach(i => {
+            this.tableMap[i.columns] = {
+              serviceName: i.table_name?.replace(/^bx/,'srv')?.concat('_update'),
+              id: i.table_name === v2Data.main_table ? 'id' : i.table_name?.replace(new RegExp(`^bx${this.srvApp}`),'id'),
+              column: i.table_column
+            }
+          })
+        }
         this.bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
         if (v2Data === false) {
           return;
@@ -4445,8 +4455,49 @@ export default {
       //乐观更新
       const { _oldTableData, _tableData, _recordManager } =
         this.optimisticUpdate();
-      onBatchOperate(reqData, service, this.srvApp)
-        .then((res) => {
+      const batchOperateList = []
+      const reqDataObj = {}
+      reqData.forEach(item => {
+        const { value } = item.condition.find(conditionItem => conditionItem.colName === 'id')
+        const raw = this.tableData.find(tableDataItem => tableDataItem.id === value)
+        const serviceNameData = {}
+        Object.keys(item?.data[0]).forEach(key => {
+          const column = this.tableMap[key]
+          serviceNameData[column.serviceName] || (serviceNameData[column.serviceName] = {})
+          serviceNameData[column.serviceName].data || (serviceNameData[column.serviceName].data = [{}])
+          serviceNameData[column.serviceName].data[0][column.column] = item?.data[0][key]
+          if(!serviceNameData[column.serviceName].condition) {
+            serviceNameData[column.serviceName].condition = JSON.parse(JSON.stringify(item.condition))
+            serviceNameData[column.serviceName].condition.forEach(conditionItem => {
+              if(conditionItem.colName === 'id') {
+                conditionItem.value = raw[column.id]
+              }
+            })
+          }
+          serviceNameData[column.serviceName].serviceName || (serviceNameData[column.serviceName].serviceName = column.serviceName)
+        })
+        Object.keys(serviceNameData).forEach(k => {
+          reqDataObj[k] || (reqDataObj[k] = [])
+          reqDataObj[k].push(serviceNameData[k])
+        })
+      })
+      Object.keys(reqDataObj).forEach(k => {
+        batchOperateList.push(onBatchOperate(reqDataObj[k], k, this.srvApp))
+      })
+      Promise.all(batchOperateList)
+        .then((resList) => {
+          const res = {
+            state: '',
+            resultMessage: '',
+            response: [],
+            resultCode: ''
+          }
+          resList.forEach(r => {
+            res.state = r.state
+            res.resultMessage = r.resultMessage
+            Array.isArray(r.response) && res.response.push(...r.response)
+            res.resultCode = r.resultCode
+          })
           this.onHandler = false;
           if (res?.state === "SUCCESS") {
             let msg = res.resultMessage || "操作成功";
