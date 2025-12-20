@@ -100,8 +100,13 @@
       class="text-center flex justify-between"
       v-if="!['add', 'addchildlist'].includes(childListType)"
     >
-      <div class="position-relative">
+      <div class="position-relative flex items-center">
         <choose-tenant />
+            <!-- 选中单元格统计组件 -->
+        <selection-stats
+          :stats="selectionStats"
+          :visible="selectionStats.visible"
+        />
       </div>
       <el-pagination
         @size-change="handleSizeChange"
@@ -268,7 +273,7 @@ export default {
         this.watchPageHeight();
       });
     }
-    if(this.listType !== "treelist" && !this.forceNormalList){
+    if(this.listType === "treelist" && !this.forceNormalList){
       this.listType = "treelist";
     }
     this.initPage();
@@ -294,6 +299,7 @@ export default {
     FieldEditor,
     SheetToolbar,
     Teleport,
+    SelectionStats: () => import("./components/selection-stats.vue"),
   },
   data() {
     return {
@@ -358,6 +364,16 @@ export default {
       isSuperAdmin: false, // 是否处于超级管理员模式
       showAllFields: false, // 是否显示所有字段
       userStore: null, // 用户状态管理实例
+      // 选中单元格统计信息
+      selectionStats: {
+        visible: false,
+        sum: 0,
+        count: 0,
+        numericCount: 0,
+        avg: 0,
+        min: 0,
+        max: 0
+      },
       eventCustomOption: {
         bodyRowEvents: ({ row, rowIndex }) => {
           return {
@@ -374,7 +390,12 @@ export default {
         },
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
+            mouseenter: (event) => {
+              // 处理单元格选择统计
+              this.handleCellSelection()
+            },
             click: (event) => {
+              // 清除之前的字段编辑器
               if (
                 this.fieldEditorParams?.row?.rowKey &&
                 this.fieldEditorParams?.column?.key
@@ -386,6 +407,8 @@ export default {
                   this.clearFieldEditorParams();
                 }
               }
+
+
               if (column.edit) {
                 const colType = column?.__field_info?.col_type;
                 if (!colType) {
@@ -1918,6 +1941,95 @@ export default {
     },
   },
   methods: {
+    // 处理单元格选择变化
+    handleCellSelection() {
+      this.$nextTick(() => {
+        const selection = this.$refs?.tableRef?.getRangeCellSelection()
+        
+        if (!selection || !selection.selectionRangeIndexes) {
+          // 没有选择或选择无效，隐藏统计信息
+          this.selectionStats.visible = false
+          return
+        }
+
+        const { startRowIndex, endRowIndex, startColIndex, endColIndex } = selection.selectionRangeIndexes
+        
+        // 如果是单个单元格选择
+        if (startRowIndex === endRowIndex && startColIndex === endColIndex) {
+          this.selectionStats.visible = false
+          return
+        }
+
+        // 计算统计数据
+        const stats = this.calculateSelectionStats(startRowIndex, endRowIndex, startColIndex, endColIndex)
+        
+        if (stats.count === 0) {
+          this.selectionStats.visible = false
+          return
+        }
+
+        // 更新统计信息
+        this.selectionStats = {
+          ...this.selectionStats,
+          visible: true,
+          sum: stats.sum, // 求和
+          count: stats.count, // 计数
+          numericCount: stats.numericCount, // 数值计数
+          avg: stats.avg, // 平均值
+          min: stats.min, // 最小值
+          max: stats.max // 最大值
+        }
+      })
+    },
+
+    // 计算选中区域的统计数据
+    calculateSelectionStats(startRowIndex, endRowIndex, startColIndex, endColIndex) {
+      let sum = 0
+      let count = 0
+      let numericCount = 0
+      let numbers = []
+
+      // 遍历选中的所有行
+      for (let i = startRowIndex; i <= endRowIndex; i++) {
+        const row = this.tableData[i]
+        if (!row) continue
+
+        // 遍历选中的所有列
+        for (let j = startColIndex; j <= endColIndex; j++) {
+          const column = this.columns[j]
+          if (!column || !column.field) continue
+
+          const cellValue = row[column.field]
+          count++
+
+          // 检查是否为数值
+          if (cellValue !== null && cellValue !== undefined && cellValue !== '') {
+            const numValue = Number(cellValue)
+            if (!isNaN(numValue) && isFinite(numValue)) {
+              sum += numValue
+              numericCount++
+              numbers.push(numValue)
+            }
+          }
+        }
+      }
+
+      // 计算平均值
+      const avg = numericCount > 0 ? sum / numericCount : 0
+      // 计算最小值
+      const min = numbers.length > 0 ? Math.min(...numbers) : 0
+      // 计算最大值
+      const max = numbers.length > 0 ? Math.max(...numbers) : 0
+
+      return {
+        sum: Number(sum.toFixed(2)),
+        count,
+        numericCount,
+        avg: Number(avg.toFixed(2)),
+        min: Number(min.toFixed(2)),
+        max: Number(max.toFixed(2))
+      }
+    },
     hasUnsavedChanges() {
       try {
         return Array.isArray(this.tableData) && this.tableData.some(r => r?.__flag === 'add' || r?.__flag === 'update');
@@ -5244,4 +5356,6 @@ export default {
     }
   }
 }
+
+
 </style>
