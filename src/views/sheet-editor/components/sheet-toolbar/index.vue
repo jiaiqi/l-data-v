@@ -230,10 +230,6 @@
 <script setup>
 import { ref, computed } from "vue";
 import { env, baseURL } from "@/common/http";
-// 定义组件名称
-defineOptions({
-  name: "SheetToolbar",
-});
 
 // 定义 props
 const props = defineProps({

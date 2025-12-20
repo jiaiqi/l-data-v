@@ -3,7 +3,7 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import vue2 from "@vitejs/plugin-vue2";
 import UnoCSS from "unocss/vite";
-import defineOptions from 'unplugin-vue-define-options/vite';
+// import defineOptions from 'unplugin-vue-define-options/vite';
 import viteCompression from 'vite-plugin-compression';
 
 // https://vitejs.dev/config/
@@ -12,7 +12,7 @@ export default defineConfig({
   plugins: [
     vue2(),
     UnoCSS(),
-    defineOptions(),
+    // defineOptions(),
     // Gzip压缩
     viteCompression({
       verbose: true,
