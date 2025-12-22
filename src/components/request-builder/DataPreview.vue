@@ -970,7 +970,7 @@ const getNewPageUrl = computed(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   padding: 20px;
   transition: all 0.3s ease;
-  width: 100%;
+  width: calc(100% - 40px);
 
   &:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;

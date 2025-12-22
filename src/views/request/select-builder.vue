@@ -314,8 +314,13 @@ export default {
               col_name: item.columns,
               srv_req_no: srv_call_no,
             };
-            if (item.groupType || item._aggregation?.type || item._group?.type) {
-              res.type_stat = item.groupType || item._aggregation?.type || item._group?.type;
+            if (
+              item.groupType ||
+              item._aggregation?.type ||
+              item._group?.type
+            ) {
+              res.type_stat =
+                item.groupType || item._aggregation?.type || item._group?.type;
             }
             if (item.seq) {
               res.seq = item.seq;
@@ -1706,8 +1711,9 @@ export default {
 .hual {
   display: flex;
   flex-direction: column;
-  max-width: 1600px;
-  min-width: 1200px;
+  max-width: 1800px;
+  min-width: 900px;
+  /* max-width: calc(100% - 40px); */
   margin: 0 auto;
   padding: 20px;
   border-radius: 8px;
@@ -1762,7 +1768,7 @@ export default {
       gap: 16px;
       display: grid;
       justify-content: center;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
 
       .sing_hual {
         // width: calc(50% - 10px);
