@@ -46,7 +46,7 @@
 import { Loading } from "element-ui";
 import columnBox from "@/components/column-box.vue";
 import dayjs from "dayjs";
-import FileSaver from "file-saver";
+// import FileSaver from "file-saver";
 import * as XLSX from "xlsx";
 import loginDialog from "@/components/login-dialog/index.vue";
 import RequestForm from "@/components/request-builder/RequestForm.vue";

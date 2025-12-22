@@ -63,7 +63,7 @@ import DataPreview from "@/components/request-builder/DataPreview.vue";
 import ActionButtons from "@/components/request-builder/ActionButtons.vue";
 import columnBox from "@/components/column-box.vue";
 import dayjs from "dayjs";
-import FileSaver from "file-saver";
+// import FileSaver from "file-saver";
 import * as XLSX from "xlsx";
 export default {
   name: "RequestBuilder",
