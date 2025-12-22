@@ -1224,32 +1224,32 @@ export default {
         //   text: this.config.list_title || "",
         //   left: "center",
         // },
-        // title: {
-        //   text: `${
-        //     xAxisField.aliasName ||
-        //     this.colsMap?.[xAxisField.colName]?.label ||
-        //     xAxisField.colName
-        //   }${
-        //     groupField
-        //       ? ` - ${
-        //           yAxisField.aliasName ||
-        //           this.colsMap?.[yAxisField.colName]?.label ||
-        //           yAxisField.colName
-        //         } (按${
-        //           groupField.aliasName ||
-        //           this.colsMap?.[groupField.colName]?.label ||
-        //           groupField.colName
-        //         }分组)`
-        //       : calcCols.length > 1
-        //       ? " (按聚合字段分组)"
-        //       : ` - ${
-        //           yAxisField.aliasName ||
-        //           this.colsMap?.[yAxisField.colName]?.label ||
-        //           yAxisField.colName
-        //         }`
-        //   }`,
-        //   left: "center",
-        // },
+        title: {
+          text: !this.config.list_title ? `${
+            xAxisField.aliasName ||
+            this.colsMap?.[xAxisField.colName]?.label ||
+            xAxisField.colName
+          }${
+            groupField
+              ? ` - ${
+                  yAxisField.aliasName ||
+                  this.colsMap?.[yAxisField.colName]?.label ||
+                  yAxisField.colName
+                } (按${
+                  groupField.aliasName ||
+                  this.colsMap?.[groupField.colName]?.label ||
+                  groupField.colName
+                }分组)`
+              : calcCols.length > 1
+              ? " (按聚合字段分组)"
+              : ` - ${
+                  yAxisField.aliasName ||
+                  this.colsMap?.[yAxisField.colName]?.label ||
+                  yAxisField.colName
+                }`
+          }`:null,
+          left: "center",
+        },
         tooltip: {
           trigger: "axis",
         },
