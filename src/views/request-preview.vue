@@ -6,6 +6,7 @@
           <div v-if="config && config.list_title">
             {{ config.list_title || "" }}
           </div>
+          <div class="title" v-else></div>
           <el-button
             size="mini"
             plain
@@ -16,7 +17,14 @@
           >
         </div>
         <!-- 分组 -->
-        <div class="group-box" v-if="groupByCols">
+        <div
+          class="group-box"
+          v-if="
+            groupByCols &&
+            typeof groupByCols === 'object' &&
+            Object.keys(groupByCols).length > 1
+          "
+        >
           <div
             class="group-box-item"
             v-for="(groupItem, key) in groupByCols"
@@ -1212,10 +1220,10 @@ export default {
       // 设置图表配置
       const yAxisField = this.getMinSeqField(calcCols);
       const option = {
-        title: {
-          text: this.config.list_title || "",
-          left: "center",
-        },
+        // title: {
+        //   text: this.config.list_title || "",
+        //   left: "center",
+        // },
         // title: {
         //   text: `${
         //     xAxisField.aliasName ||
@@ -1369,6 +1377,9 @@ export default {
     flex-direction: row-reverse;
     align-items: center;
     justify-content: space-between;
+    .title {
+      flex: 1;
+    }
   }
 
   .title {
@@ -1376,7 +1387,7 @@ export default {
     font-weight: bold;
     display: flex;
     justify-content: space-between;
-    padding: 20px 0 10px;
+    padding: 10px 0;
   }
 
   .table-header {
