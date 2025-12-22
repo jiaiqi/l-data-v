@@ -314,8 +314,8 @@ export default {
               col_name: item.columns,
               srv_req_no: srv_call_no,
             };
-            if (item.groupType) {
-              res.type_stat = item.groupType;
+            if (item.groupType || item._aggregation?.type || item._group?.type) {
+              res.type_stat = item.groupType || item._aggregation?.type || item._group?.type;
             }
             if (item.seq) {
               res.seq = item.seq;
@@ -819,7 +819,6 @@ export default {
       });
       this.deleteListData();
       const checkedColumns = await this.fetchRequestColumns();
-      debugger;
       if (Array.isArray(checkedColumns) && checkedColumns.length > 0) {
         this.checkedColumns = checkedColumns.map((item) => item.columns);
       } else {
