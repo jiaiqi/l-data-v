@@ -2985,12 +2985,19 @@ export default {
         this.startLoading();
         const v2Data = await this.getV2Data();
         if(v2Data.srv_cols && v2Data.srv_cols?.length) {
+          const tbaleId = {}
           v2Data.srv_cols.forEach(i => {
+            if(i.table_column === 'id') {
+              tbaleId[i.table_name] = i.columns
+            }
             this.tableMap[i.columns] = {
               serviceName: i.table_name?.replace(/^bx/,'srv')?.concat('_update'),
-              id: i.table_name === v2Data.main_table ? 'id' : i.table_name?.replace(new RegExp(`^bx${this.srvApp}`),'id'),
+              table: i.table_name,
               column: i.table_column
             }
+          })
+          Object.keys(this.tableMap).forEach(key => {
+            this.tableMap[key].id = tbaleId[this.tableMap[key].table]
           })
         }
         this.bx_auth_ticket = sessionStorage.getItem("bx_auth_ticket");
