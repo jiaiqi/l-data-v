@@ -63,7 +63,7 @@ import DataPreview from "@/components/request-builder/DataPreview.vue";
 import ActionButtons from "@/components/request-builder/ActionButtons.vue";
 import columnBox from "@/components/column-box.vue";
 import dayjs from "dayjs";
-import FileSaver from "file-saver";
+// import FileSaver from "file-saver";
 import * as XLSX from "xlsx";
 export default {
   name: "RequestBuilder",
@@ -314,8 +314,13 @@ export default {
               col_name: item.columns,
               srv_req_no: srv_call_no,
             };
-            if (item.groupType) {
-              res.type_stat = item.groupType;
+            if (
+              item.groupType ||
+              item._aggregation?.type ||
+              item._group?.type
+            ) {
+              res.type_stat =
+                item.groupType || item._aggregation?.type || item._group?.type;
             }
             if (item.seq) {
               res.seq = item.seq;
@@ -819,7 +824,6 @@ export default {
       });
       this.deleteListData();
       const checkedColumns = await this.fetchRequestColumns();
-      debugger;
       if (Array.isArray(checkedColumns) && checkedColumns.length > 0) {
         this.checkedColumns = checkedColumns.map((item) => item.columns);
       } else {
@@ -1707,8 +1711,9 @@ export default {
 .hual {
   display: flex;
   flex-direction: column;
-  max-width: 1600px;
-  min-width: 1200px;
+  max-width: 1800px;
+  min-width: 900px;
+  /* max-width: calc(100% - 40px); */
   margin: 0 auto;
   padding: 20px;
   border-radius: 8px;
@@ -1763,7 +1768,7 @@ export default {
       gap: 16px;
       display: grid;
       justify-content: center;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
 
       .sing_hual {
         // width: calc(50% - 10px);

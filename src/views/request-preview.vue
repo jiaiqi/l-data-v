@@ -6,6 +6,7 @@
           <div v-if="config && config.list_title">
             {{ config.list_title || "" }}
           </div>
+          <div class="title" v-else></div>
           <el-button
             size="mini"
             plain
@@ -16,7 +17,14 @@
           >
         </div>
         <!-- 分组 -->
-        <div class="group-box" v-if="groupByCols">
+        <div
+          class="group-box"
+          v-if="
+            groupByCols &&
+            typeof groupByCols === 'object' &&
+            Object.keys(groupByCols).length > 1
+          "
+        >
           <div
             class="group-box-item"
             v-for="(groupItem, key) in groupByCols"
@@ -955,8 +963,8 @@ export default {
         (item) => this.groupByCols[item.colName]?.value !== -1
       );
       const xAxisField = this.getMinSeqField(groupCols);
-      const yAxisField = this.getMinSeqField(this.calcCols);
-      if (!xAxisField || !yAxisField) {
+      const calcCols = this.calcCols;
+      if (!xAxisField || calcCols.length === 0) {
         return;
       }
 
@@ -980,27 +988,27 @@ export default {
       // 准备图表数据
       let seriesData = [];
 
+      // 预设颜色数组
+      const colors = [
+        "#5470c6",
+        "#91cc75",
+        "#fac858",
+        "#ee6666",
+        "#73c0de",
+        "#3ba272",
+        "#fc8452",
+        "#9a60b4",
+        "#ea7ccc",
+      ];
+
       if (groupField) {
-        // 有分组字段，按分组字段拆分数据为多个系列
+        // 有第二个分组字段，按分组字段拆分数据为多个系列
         const groupValues = [
           ...new Set(
             this.tableData.map(
               (item) => item[groupField.colName] || item[groupField.aliasName]
             )
           ),
-        ];
-
-        // 预设颜色数组
-        const colors = [
-          "#5470c6",
-          "#91cc75",
-          "#fac858",
-          "#ee6666",
-          "#73c0de",
-          "#3ba272",
-          "#fc8452",
-          "#9a60b4",
-          "#ea7ccc",
         ];
 
         // 为每个分组创建一个系列
@@ -1019,6 +1027,7 @@ export default {
                 (item[xAxisField.colName] || item[xAxisField.aliasName]) ===
                 xVal
             );
+            const yAxisField = this.getMinSeqField(calcCols);
             return dataItem
               ? parseFloat(
                   dataItem[yAxisField.colName] || dataItem[yAxisField.aliasName]
@@ -1072,8 +1081,79 @@ export default {
 
           return seriesConfig;
         });
+      } else if (calcCols.length > 1) {
+        // 只有一个分组字段，但有多个聚合字段，按不同聚合字段分组
+        seriesData = calcCols.map((yAxisField, index) => {
+          // 准备当前系列的数据，确保与x轴数据顺序一致
+          const seriesItemData = xAxisData.map((xVal) => {
+            const dataItem = this.tableData.find(
+              (item) =>
+                (item[xAxisField.colName] || item[xAxisField.aliasName]) ===
+                xVal
+            );
+            return dataItem
+              ? parseFloat(
+                  dataItem[yAxisField.colName] || dataItem[yAxisField.aliasName]
+                ) || 0
+              : 0;
+          });
+
+          const baseColor = colors[index % colors.length];
+
+          // 创建渐变色配置
+          const seriesConfig = {
+            name:
+              yAxisField.aliasName ||
+              this.colsMap?.[yAxisField.colName]?.label ||
+              yAxisField.colName,
+            type: this.chartType,
+            data: seriesItemData,
+            smooth: this.chartType === "line",
+            barMaxWidth: 50,
+            stack:
+              (this.isStacked && this.chartType === "bar") ||
+              (this.chartType === "line" && this.isArea)
+                ? "stackGroup"
+                : undefined,
+          };
+
+          // 柱状图渐变
+          if (this.chartType === "bar") {
+            seriesConfig.itemStyle = {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: baseColor },
+                { offset: 1, color: baseColor + "80" },
+              ]),
+            };
+          }
+          // 折线图渐变
+          else if (this.chartType === "line") {
+            seriesConfig.lineStyle = {
+              color: baseColor,
+            };
+            seriesConfig.itemStyle = {
+              color: baseColor,
+            };
+            // 面积图渐变
+            if (this.isArea) {
+              seriesConfig.areaStyle = {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: baseColor + "80" },
+                  { offset: 1, color: baseColor + "20" },
+                ]),
+              };
+            }
+          }
+
+          return seriesConfig;
+        });
       } else {
-        // 没有分组字段，使用单个系列
+        // 只有一个分组字段和一个聚合字段，使用单个系列
+        const yAxisField = this.getMinSeqField(calcCols);
+        if (!yAxisField) {
+          return;
+        }
+
         // 准备数据，确保与x轴数据顺序一致
         const seriesItemData = xAxisData.map((xVal) => {
           const dataItem = this.tableData.find(
@@ -1138,25 +1218,36 @@ export default {
       }
 
       // 设置图表配置
+      const yAxisField = this.getMinSeqField(calcCols);
       const option = {
+        // title: {
+        //   text: this.config.list_title || "",
+        //   left: "center",
+        // },
         title: {
-          text: `${
+          text: !this.config.list_title ? `${
             xAxisField.aliasName ||
             this.colsMap?.[xAxisField.colName]?.label ||
             xAxisField.colName
-          } - ${
-            yAxisField.aliasName ||
-            this.colsMap?.[yAxisField.colName]?.label ||
-            yAxisField.colName
           }${
             groupField
-              ? ` (按${
+              ? ` - ${
+                  yAxisField.aliasName ||
+                  this.colsMap?.[yAxisField.colName]?.label ||
+                  yAxisField.colName
+                } (按${
                   groupField.aliasName ||
                   this.colsMap?.[groupField.colName]?.label ||
                   groupField.colName
                 }分组)`
-              : ""
-          }`,
+              : calcCols.length > 1
+              ? " (按聚合字段分组)"
+              : ` - ${
+                  yAxisField.aliasName ||
+                  this.colsMap?.[yAxisField.colName]?.label ||
+                  yAxisField.colName
+                }`
+          }`:null,
           left: "center",
         },
         tooltip: {
@@ -1177,9 +1268,11 @@ export default {
         yAxis: {
           type: "value",
           name:
-            yAxisField.aliasName ||
-            this.colsMap?.[yAxisField.colName]?.label ||
-            yAxisField.colName,
+            calcCols.length > 1
+              ? "数值"
+              : yAxisField.aliasName ||
+                this.colsMap?.[yAxisField.colName]?.label ||
+                yAxisField.colName,
         },
         series: seriesData,
       };
@@ -1284,6 +1377,9 @@ export default {
     flex-direction: row-reverse;
     align-items: center;
     justify-content: space-between;
+    .title {
+      flex: 1;
+    }
   }
 
   .title {
@@ -1291,7 +1387,7 @@ export default {
     font-weight: bold;
     display: flex;
     justify-content: space-between;
-    padding: 20px 0 10px;
+    padding: 10px 0;
   }
 
   .table-header {
