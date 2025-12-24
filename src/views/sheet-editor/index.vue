@@ -5039,6 +5039,7 @@ export default {
           forceUseTTD: this.$route?.query?.topTreeData,
         });
         this.loading = false;
+        this.isFetched = true;
 
         if (res?.data?.length) {
           if (res.page) {
