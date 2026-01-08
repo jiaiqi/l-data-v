@@ -15,7 +15,7 @@
       </div>
       <div class="header-actions">
         <!-- 字段调整按钮 -->
-        <el-tooltip content="字段调整" placement="top">
+        <!-- <el-tooltip content="字段调整" placement="top">
           <el-button
             @click="showColumnSelector = true"
             type="text"
@@ -26,7 +26,7 @@
           >
             字段调整
           </el-button>
-        </el-tooltip>
+        </el-tooltip> -->
 
         <!-- 新页面打开按钮 -->
         <el-tooltip content="在新页面中打开" placement="top">
@@ -196,7 +196,7 @@
     <!-- 内容区域 -->
     <div class="preview-content">
       <!-- 字段信息栏 -->
-      <div
+      <!-- <div
         class="field-info-bar"
         v-if="
           allAvailableColumns.length > 0 && currentCheckedColumns.length > 0
@@ -224,7 +224,7 @@
           <i class="el-icon-setting"></i>
           字段调整
         </el-button>
-      </div>
+      </div> -->
 
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-container">
@@ -534,6 +534,11 @@ async function getTableData(req = {}) {
     initReq.value = req;
   } else if (!req || Object.keys(req).length === 0) {
     req = initReq.value || {};
+  }
+
+  if(req?.group?.length){
+    localCheckedColumns.value = req.group.map((item) => item.colName || item.columns || item.col_name);
+    currentCheckedColumns.value = [...localCheckedColumns.value];
   }
 
   loading.value = true;
