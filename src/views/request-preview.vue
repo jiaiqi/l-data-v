@@ -135,26 +135,69 @@
         <div class="chart-container">
           <div class="chart-header">
             <span> </span>
-            <el-radio-group v-model="chartType" @change="updateChart">
-              <el-radio label="bar">柱状图</el-radio>
-              <el-radio label="line">折线图</el-radio>
-            </el-radio-group>
-            <el-switch
-              v-model="isStacked"
-              v-if="chartType === 'bar'"
-              active-text="堆叠"
-              inactive-text="普通"
-              @change="updateChart"
-              style="margin-left: 20px"
-            ></el-switch>
-            <el-switch
-              v-if="chartType === 'line'"
-              v-model="isArea"
-              active-text="面积"
-              inactive-text="普通"
-              @change="updateChart"
-              style="margin-left: 20px"
-            ></el-switch>
+            <div v-if="showChartSettings" class="chart-controls chart-controls-popover">
+              <div class="chart-controls-title">
+                <span>设置</span>
+                <el-button type="text" icon="el-icon-close" @click="showChartSettings = false" size="mini"></el-button>
+              </div>
+              <div class="chart-controls-content">
+                <div class="chart-control-item">
+                  <span class="control-label">图表类型：</span>
+                  <el-switch
+                    v-model="chartType"
+                    active-value="line"
+                    inactive-value="bar"
+                    active-text="折线"
+                    inactive-text="柱状"
+                    @change="updateChart"
+                  ></el-switch>
+                </div>
+                <div class="chart-control-item" v-if="chartType === 'bar'">
+                  <span class="control-label">堆叠：</span>
+                  <el-switch
+                    v-model="isStacked"
+                    active-text="堆叠"
+                    inactive-text="普通"
+                    @change="updateChart"
+                  ></el-switch>
+                </div>
+                <div class="chart-control-item" v-if="chartType === 'line'">
+                  <span class="control-label">面积：</span>
+                  <el-switch
+                    v-model="isArea"
+                    active-text="面积"
+                    inactive-text="普通"
+                    @change="updateChart"
+                  ></el-switch>
+                </div>
+                <div class="chart-control-item">
+                  <span class="control-label">图例：</span>
+                  <el-switch
+                    v-model="showLegend"
+                    active-text="显示"
+                    inactive-text="隐藏"
+                    @change="updateChart"
+                  ></el-switch>
+                </div>
+                <div class="chart-control-item">
+                  <span class="control-label">单元格合并：</span>
+                  <el-select v-model="mergeMode" placeholder="选择合并模式" size="mini" style="width: 140px">
+                    <el-option label="不合并" value="none"></el-option>
+                    <el-option label="只合并首列" value="first"></el-option>
+                    <el-option label="合并所有符合条件的列" value="all"></el-option>
+                  </el-select>
+                </div>
+              </div>
+            </div>
+            <el-button 
+               type="primary" 
+               icon="el-icon-setting" 
+               circle 
+               size="mini"
+               class="chart-settings-btn"
+               @click="showChartSettings = !showChartSettings"
+               :title="showChartSettings ? '收起设置' : '展开设置'"
+             ></el-button>
           </div>
           <div class="chart" v-show="hasCols">
             <div id="chart" class="chart-dom" ref="chartRef"></div>
@@ -169,7 +212,7 @@
       <!-- <div v-else style="height: 0;flex-shrink:0;box-sizing:border-box;"></div> -->
       <el-main>
         <!-- 表格合并模式切换 -->
-        <div
+        <!-- <div
           class="table-merge-control"
           style="margin-bottom: 10px; text-align: right"
         >
@@ -183,7 +226,7 @@
             <el-option label="只合并首列" value="first"></el-option>
             <el-option label="合并所有符合条件的列" value="all"></el-option>
           </el-select>
-        </div>
+        </div> -->
         <!-- 数据 -->
         <el-table
           ref="elTable"
@@ -260,6 +303,8 @@ export default {
       isStacked: false, // 是否为堆叠柱状图
       isArea: false, // 是否为区域面积折线图
       chartInstance: null, // echarts实例
+      showLegend: true, // 是否显示图例
+      showChartSettings: false, // 是否显示图表设置面板
       // 表格合并相关
       mergeMode: "first", // 合并模式：none-不合并，first-只合并首列，all-合并所有符合条件的列
     };
@@ -332,8 +377,8 @@ export default {
               const colInfo = {
                 ...col,
                 seq: item.seq,
-                label: item.alias_name || col.label,
-                columns: item.alias_name || col.columns,
+                label: item.aliasName || item.alias_name || col.label,
+                columns: item.aliasName || item.alias_name || col.columns,
               };
               srvCols.push(colInfo);
             }
@@ -990,15 +1035,26 @@ export default {
 
       // 预设颜色数组
       const colors = [
-        "#5470c6",
-        "#91cc75",
-        "#fac858",
-        "#ee6666",
-        "#73c0de",
-        "#3ba272",
-        "#fc8452",
-        "#9a60b4",
-        "#ea7ccc",
+        "#5470c6", // 深蓝色
+        "#91cc75", // 浅绿色
+        "#fac858", // 浅黄色
+        "#ee6666", // 浅红色
+        "#73c0de", // 浅蓝色
+        "#3ba272", // 深绿色
+        "#fc8452", // 浅橙色
+        "#9a60b4", // 紫色
+        "#ea7ccc", // 粉色
+        "#5c616c", // 深灰色
+        "#597ef7", // 亮蓝色
+        "#53d9d1", // 青色
+        "#a0a7e6", // 淡紫色
+        "#f6b26b", // 橙色
+        "#8e7cc3", // 紫罗兰色
+        "#6aa84f", // 橄榄绿
+        "#e69138", // 深橙色
+        "#d5a6bd", // 淡粉色
+        "#6fa8dc", // 天蓝色
+        "#93c47d", // 薄荷绿
       ];
 
       if (groupField) {
@@ -1219,6 +1275,24 @@ export default {
 
       // 设置图表配置
       const yAxisField = this.getMinSeqField(calcCols);
+      
+      // 计算堆叠图的最大值
+      let maxValue = 0;
+      const isStackedChart = ((this.isStacked && this.chartType === "bar") || (this.chartType === "line" && this.isArea));
+      
+      if (isStackedChart && seriesData.length > 0) {
+        // 计算每个x轴位置上的堆叠总和
+        for (let i = 0; i < xAxisData.length; i++) {
+          let stackSum = 0;
+          for (let j = 0; j < seriesData.length; j++) {
+            stackSum += seriesData[j].data[i] || 0;
+          }
+          if (stackSum > maxValue) {
+            maxValue = stackSum;
+          }
+        }
+      }
+      
       const option = {
         // title: {
         //   text: this.config.list_title || "",
@@ -1252,8 +1326,27 @@ export default {
         },
         tooltip: {
           trigger: "axis",
+          formatter: function(params) {
+            let result = params[0].name + '<br/>';
+            params.forEach(function(item) {
+              // 过滤掉数值为0或没有数值的项
+              const value = parseFloat(item.value);
+              if (!isNaN(value) && value !== 0) {
+                // 处理渐变色情况，获取原始颜色
+                let color = item.color;
+                if (typeof color === 'object' && color.type === 'linear') {
+                  // 对于渐变色，使用第一个颜色停止点的颜色
+                  color = color.colorStops[0].color;
+                }
+                result += '<span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:' + color + '"></span>';
+                result += item.seriesName + ': ' + value + '<br/>';
+              }
+            });
+            return result;
+          }
         },
         legend: {
+          show: this.showLegend,
           data: seriesData.map((item) => item.name),
           bottom: 0,
         },
@@ -1273,11 +1366,12 @@ export default {
               : yAxisField.aliasName ||
                 this.colsMap?.[yAxisField.colName]?.label ||
                 yAxisField.colName,
+          // max: isStackedChart && maxValue > 0 ? this.getNiceMax(maxValue) : undefined, // 使用合适的最大值
         },
         series: seriesData,
       };
 
-      this.chartInstance.setOption(option);
+      this.chartInstance.setOption(option, { notMerge: true });
     },
 
     // 获取seq最小的字段
@@ -1288,6 +1382,31 @@ export default {
       return cols.reduce((min, col) => {
         return col.seq < min.seq ? col : min;
       });
+    },
+    
+    /** 
+      * 获取一个最合适的最大值 
+      * @param {number} maxVal 原始最大值 
+      * @returns {number} 最合适的最大值 
+      */ 
+    getNiceMax(maxVal) { 
+      if (maxVal === 0) return 0; 
+      
+      const magnitude = Math.pow(10, Math.floor(Math.log10(maxVal))); 
+      const normalized = maxVal / magnitude; 
+      
+      let niceNormalized; 
+      if (normalized <= 1) { 
+        niceNormalized = 1; 
+      } else if (normalized <= 2) { 
+        niceNormalized = 2; 
+      } else if (normalized <= 5) { 
+        niceNormalized = 5; 
+      } else { 
+        niceNormalized = 10; 
+      } 
+      
+      return parseFloat((niceNormalized * magnitude).toFixed(2)); 
     },
 
     // 销毁图表
@@ -1426,6 +1545,7 @@ export default {
   padding: 0px;
   // border: 1px solid #eee;
   border-radius: 4px;
+  position: relative;
 
   .chart-header {
     display: flex;
@@ -1433,7 +1553,70 @@ export default {
     align-items: center;
     margin-bottom: 10px;
     font-weight: bold;
-    gap: 20px;
+    gap: 10px;
+  }
+
+  .chart-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 15px;
+    background-color: #f5f7fa;
+    border-radius: 4px;
+    border: 1px solid #e4e7ed;
+  }
+
+  .chart-controls-popover {
+     position: fixed;
+     right: 60px;
+     top: 50%;
+     transform: translateY(-50%);
+     z-index: 1000;
+     flex-direction: column;
+     align-items: flex-start;
+     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+     min-width: 200px;
+     background-color: rgba(245, 247, 250, 0.5);
+     backdrop-filter: blur(10px);
+
+    .chart-controls-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #e4e7ed;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+   .chart-controls-content {
+       display: flex;
+       flex-direction: column;
+       gap: 12px;
+       align-items: flex-start;
+       width: 100%;
+     }
+
+     .chart-control-item {
+       display: flex;
+       align-items: center;
+       gap: 10px;
+       width: 100%;
+
+       .control-label {
+         min-width: 80px;
+         text-align: right;
+         font-size: 13px;
+         color: #606266;
+       }
+
+       .el-switch {
+         flex: 1;
+       }
+     }
   }
 
   .chart {
@@ -1454,6 +1637,21 @@ export default {
     background-color: #fafafa;
     border: 1px dashed #d9d9d9;
     border-radius: 4px;
+  }
+
+  .chart-settings-btn {
+    position: fixed;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      transform: translateY(-50%) scale(1.1);
+    }
   }
 }
 </style>
