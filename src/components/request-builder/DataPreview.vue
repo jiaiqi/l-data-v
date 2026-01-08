@@ -537,7 +537,7 @@ async function getTableData(req = {}) {
   }
 
   if(req?.group?.length){
-    localCheckedColumns.value = req.group.map((item) => item.colName || item.columns || item.col_name);
+    localCheckedColumns.value = req.group.map((item) => item.aliasName || item.alias_name || item.colName || item.columns || item.col_name);
     currentCheckedColumns.value = [...localCheckedColumns.value];
   }
 
