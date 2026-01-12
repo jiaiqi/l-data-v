@@ -3053,7 +3053,6 @@ export default {
             item.field
           )
       );
-      debugger
       const changedCols = [];
       for (let i = startRowIndex; i <= endRowIndex; i++) {
         const row = this.tableData[i];
@@ -5088,10 +5087,6 @@ export default {
           }
           tableData.push(dataItem);
         }
-
-        if (unfoldIds?.length) {
-          tableData = await this.loadChildren(unfoldIds, tableData);
-        }
         
         // 树形列表前端分页处理
         if (isTreeMode) {
@@ -5103,6 +5098,10 @@ export default {
           this.tableData = tableData.slice(startIndex, endIndex);
         } else {
           this.tableData = tableData;
+        }
+
+        if (unfoldIds?.length) {
+          this.tableData = await this.loadChildren(unfoldIds, this.tableData);
         }
 
         this.oldTableData = JSON.parse(JSON.stringify(this.tableData));
