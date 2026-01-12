@@ -4466,23 +4466,27 @@ export default {
       const batchOperateList = []
       const reqDataObj = {}
       reqData.forEach(item => {
-        const { value } = item.condition.find(conditionItem => conditionItem.colName === 'id')
-        const raw = this.tableData.find(tableDataItem => tableDataItem.id === value)
+        const isAdd = !item.condition || !item.condition.length
+        const raw = isAdd ? null : this.tableData.find(tableDataItem => tableDataItem.id === item.condition.find(conditionItem => conditionItem.colName === 'id')?.value)
         const serviceNameData = {}
         Object.keys(item?.data[0]).forEach(key => {
           const column = this.tableMap[key]
-          serviceNameData[column.serviceName] || (serviceNameData[column.serviceName] = {})
-          serviceNameData[column.serviceName].data || (serviceNameData[column.serviceName].data = [{}])
-          serviceNameData[column.serviceName].data[0][column.column] = item?.data[0][key]
-          if(!serviceNameData[column.serviceName].condition) {
-            serviceNameData[column.serviceName].condition = JSON.parse(JSON.stringify(item.condition))
-            serviceNameData[column.serviceName].condition.forEach(conditionItem => {
+          let operateService = column.serviceName
+          if(isAdd){
+            operateService = item.serviceName
+          }
+          serviceNameData[operateService] || (serviceNameData[operateService] = {})
+          serviceNameData[operateService].data || (serviceNameData[operateService].data = [{}])
+          serviceNameData[operateService].data[0][column.column] = item?.data[0][key]
+          if(!serviceNameData[operateService].condition && !isAdd) {
+            serviceNameData[operateService].condition = JSON.parse(JSON.stringify(item.condition))
+            serviceNameData[operateService].condition.forEach(conditionItem => {
               if(conditionItem.colName === 'id') {
                 conditionItem.value = raw[column.id]
               }
             })
           }
-          serviceNameData[column.serviceName].serviceName || (serviceNameData[column.serviceName].serviceName = column.serviceName)
+          serviceNameData[operateService].serviceName || (serviceNameData[operateService].serviceName = operateService)
         })
         Object.keys(serviceNameData).forEach(k => {
           reqDataObj[k] || (reqDataObj[k] = [])
