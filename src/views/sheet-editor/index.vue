@@ -3774,7 +3774,8 @@ export default {
                         this.clearCellSelection();
                       },
                       unfold: (event, callback) => {
-                        this.loadTree(event, row, rowIndex, callback);
+                        const pageNo = 1
+                        this.loadTree(event, row, rowIndex, callback, pageNo);
                       },
                       event: (event) => {
                         if (event === "showRichEditor") {
@@ -4872,7 +4873,7 @@ export default {
       }
       return tableData;
     },
-    async loadTree(load, row, rowIndex, callback) {
+    async loadTree(load, row, rowIndex, callback, pageNo) {
       // 将展开状态存储到行数据
       this.$set(this.tableData[rowIndex], "__unfold", load);
 
@@ -4893,7 +4894,7 @@ export default {
           ],
           {
             rownumber: 500,
-            pageNo: this.page.pageNo,
+            pageNo: pageNo || this.page.pageNo,
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
             use_type:
