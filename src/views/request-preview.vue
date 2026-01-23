@@ -2,28 +2,30 @@
   <div class="page-wrap">
     <el-container>
       <el-header style="height: unset">
-        <div class="title">
-          <div v-if="config && config.list_title">
+        <div class="header-box">
+          <div v-if="config && config.list_title" class="title">
             {{ config.list_title || "" }}
           </div>
           <div class="title" v-else></div>
-          <el-button
-            size="mini"
-            plain
-            type="primary"
-            v-if="tableData && tableData.length"
-            @click="exportExcel"
-            >导出</el-button
-          >
-          <el-button
-            size="mini"
-            plain
-            type="primary"
-            @click="toReqSetting"
-            v-if="showSettingBtn"
-          >
-            <i class="el-icon-setting"></i>
-          </el-button>
+          <div>
+            <el-button
+              size="mini"
+              plain
+              type="primary"
+              v-if="tableData && tableData.length"
+              @click="exportExcel"
+              >导出</el-button
+            >
+            <el-button
+              size="mini"
+              plain
+              type="primary"
+              @click="toReqSetting"
+              v-if="showSettingBtn"
+            >
+              <i class="el-icon-setting"></i>
+            </el-button>
+          </div>
         </div>
         <!-- 分组 -->
         <div
@@ -440,8 +442,8 @@ export default {
      * 跳转请求定义详情页
      */
     toReqSetting() {
-      const reqNo= this.config.default_srv_req_no;
-      if(!reqNo){
+      const reqNo = this.config.default_srv_req_no;
+      if (!reqNo) {
         alert("请先配置默认请求");
         return;
       }
@@ -1528,7 +1530,12 @@ export default {
       min-width: 20px;
     }
   }
-
+  .header-box {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
   // padding: 20px;
   .el-container {
     // height: 100vh;
