@@ -21,9 +21,10 @@
               plain
               type="primary"
               @click="toReqSetting"
+              title="编辑请求"
               v-if="showSettingBtn"
             >
-              <i class="el-icon-setting"></i>
+              <i class="el-icon-edit-outline"></i>
             </el-button>
           </div>
         </div>
