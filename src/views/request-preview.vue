@@ -15,6 +15,15 @@
             @click="exportExcel"
             >导出</el-button
           >
+          <el-button
+            size="mini"
+            plain
+            type="primary"
+            @click="toReqSetting"
+            v-if="showSettingBtn"
+          >
+            <i class="el-icon-setting"></i>
+          </el-button>
         </div>
         <!-- 分组 -->
         <div
@@ -135,10 +144,18 @@
         <div class="chart-container">
           <div class="chart-header">
             <span> </span>
-            <div v-if="showChartSettings" class="chart-controls chart-controls-popover">
+            <div
+              v-if="showChartSettings"
+              class="chart-controls chart-controls-popover"
+            >
               <div class="chart-controls-title">
                 <span>设置</span>
-                <el-button type="text" icon="el-icon-close" @click="showChartSettings = false" size="mini"></el-button>
+                <el-button
+                  type="text"
+                  icon="el-icon-close"
+                  @click="showChartSettings = false"
+                  size="mini"
+                ></el-button>
               </div>
               <div class="chart-controls-content">
                 <div class="chart-control-item">
@@ -181,23 +198,31 @@
                 </div>
                 <div class="chart-control-item">
                   <span class="control-label">单元格合并：</span>
-                  <el-select v-model="mergeMode" placeholder="选择合并模式" size="mini" style="width: 140px">
+                  <el-select
+                    v-model="mergeMode"
+                    placeholder="选择合并模式"
+                    size="mini"
+                    style="width: 140px"
+                  >
                     <el-option label="不合并" value="none"></el-option>
                     <el-option label="只合并首列" value="first"></el-option>
-                    <el-option label="合并所有符合条件的列" value="all"></el-option>
+                    <el-option
+                      label="合并所有符合条件的列"
+                      value="all"
+                    ></el-option>
                   </el-select>
                 </div>
               </div>
             </div>
-            <el-button 
-               type="primary" 
-               icon="el-icon-setting" 
-               circle 
-               size="mini"
-               class="chart-settings-btn"
-               @click="showChartSettings = !showChartSettings"
-               :title="showChartSettings ? '收起设置' : '展开设置'"
-             ></el-button>
+            <el-button
+              type="primary"
+              icon="el-icon-setting"
+              circle
+              size="mini"
+              class="chart-settings-btn"
+              @click="showChartSettings = !showChartSettings"
+              :title="showChartSettings ? '收起设置' : '展开设置'"
+            ></el-button>
           </div>
           <div class="chart" v-show="hasCols">
             <div id="chart" class="chart-dom" ref="chartRef"></div>
@@ -310,6 +335,19 @@ export default {
     };
   },
   computed: {
+    showSettingBtn() {
+      // 是否显示表定义详情按钮
+      const current_login_user = sessionStorage.getItem("current_login_user");
+      if (!current_login_user) {
+        return false;
+      }
+      try {
+        const user = JSON.parse(current_login_user);
+        return user?.roles?.includes("admin") || user?.roles?.includes("rd");
+      } catch (error) {
+        return false;
+      }
+    },
     hasCols() {
       return (
         this.groupByCols &&
@@ -398,6 +436,18 @@ export default {
     },
   },
   methods: {
+    /**
+     * 跳转请求定义详情页
+     */
+    toReqSetting() {
+      const reqNo= this.config.default_srv_req_no;
+      if(!reqNo){
+        alert("请先配置默认请求");
+        return;
+      }
+      const url = `/dataview/#/select-builder/${reqNo}`;
+      window.open(url);
+    },
     /**
      * 查询后端生成文件的状态
      * @param {*} uuid 后端返回的文件唯一标识
@@ -1275,11 +1325,13 @@ export default {
 
       // 设置图表配置
       const yAxisField = this.getMinSeqField(calcCols);
-      
+
       // 计算堆叠图的最大值
       let maxValue = 0;
-      const isStackedChart = ((this.isStacked && this.chartType === "bar") || (this.chartType === "line" && this.isArea));
-      
+      const isStackedChart =
+        (this.isStacked && this.chartType === "bar") ||
+        (this.chartType === "line" && this.isArea);
+
       if (isStackedChart && seriesData.length > 0) {
         // 计算每个x轴位置上的堆叠总和
         for (let i = 0; i < xAxisData.length; i++) {
@@ -1292,58 +1344,63 @@ export default {
           }
         }
       }
-      
+
       const option = {
         // title: {
         //   text: this.config.list_title || "",
         //   left: "center",
         // },
         title: {
-          text: !this.config.list_title ? `${
-            xAxisField.aliasName ||
-            this.colsMap?.[xAxisField.colName]?.label ||
-            xAxisField.colName
-          }${
-            groupField
-              ? ` - ${
-                  yAxisField.aliasName ||
-                  this.colsMap?.[yAxisField.colName]?.label ||
-                  yAxisField.colName
-                } (按${
-                  groupField.aliasName ||
-                  this.colsMap?.[groupField.colName]?.label ||
-                  groupField.colName
-                }分组)`
-              : calcCols.length > 1
-              ? " (按聚合字段分组)"
-              : ` - ${
-                  yAxisField.aliasName ||
-                  this.colsMap?.[yAxisField.colName]?.label ||
-                  yAxisField.colName
-                }`
-          }`:null,
+          text: !this.config.list_title
+            ? `${
+                xAxisField.aliasName ||
+                this.colsMap?.[xAxisField.colName]?.label ||
+                xAxisField.colName
+              }${
+                groupField
+                  ? ` - ${
+                      yAxisField.aliasName ||
+                      this.colsMap?.[yAxisField.colName]?.label ||
+                      yAxisField.colName
+                    } (按${
+                      groupField.aliasName ||
+                      this.colsMap?.[groupField.colName]?.label ||
+                      groupField.colName
+                    }分组)`
+                  : calcCols.length > 1
+                  ? " (按聚合字段分组)"
+                  : ` - ${
+                      yAxisField.aliasName ||
+                      this.colsMap?.[yAxisField.colName]?.label ||
+                      yAxisField.colName
+                    }`
+              }`
+            : null,
           left: "center",
         },
         tooltip: {
           trigger: "axis",
-          formatter: function(params) {
-            let result = params[0].name + '<br/>';
-            params.forEach(function(item) {
+          formatter: function (params) {
+            let result = params[0].name + "<br/>";
+            params.forEach(function (item) {
               // 过滤掉数值为0或没有数值的项
               const value = parseFloat(item.value);
               if (!isNaN(value) && value !== 0) {
                 // 处理渐变色情况，获取原始颜色
                 let color = item.color;
-                if (typeof color === 'object' && color.type === 'linear') {
+                if (typeof color === "object" && color.type === "linear") {
                   // 对于渐变色，使用第一个颜色停止点的颜色
                   color = color.colorStops[0].color;
                 }
-                result += '<span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:' + color + '"></span>';
-                result += item.seriesName + ': ' + value + '<br/>';
+                result +=
+                  '<span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:' +
+                  color +
+                  '"></span>';
+                result += item.seriesName + ": " + value + "<br/>";
               }
             });
             return result;
-          }
+          },
         },
         legend: {
           show: this.showLegend,
@@ -1383,30 +1440,30 @@ export default {
         return col.seq < min.seq ? col : min;
       });
     },
-    
-    /** 
-      * 获取一个最合适的最大值 
-      * @param {number} maxVal 原始最大值 
-      * @returns {number} 最合适的最大值 
-      */ 
-    getNiceMax(maxVal) { 
-      if (maxVal === 0) return 0; 
-      
-      const magnitude = Math.pow(10, Math.floor(Math.log10(maxVal))); 
-      const normalized = maxVal / magnitude; 
-      
-      let niceNormalized; 
-      if (normalized <= 1) { 
-        niceNormalized = 1; 
-      } else if (normalized <= 2) { 
-        niceNormalized = 2; 
-      } else if (normalized <= 5) { 
-        niceNormalized = 5; 
-      } else { 
-        niceNormalized = 10; 
-      } 
-      
-      return parseFloat((niceNormalized * magnitude).toFixed(2)); 
+
+    /**
+     * 获取一个最合适的最大值
+     * @param {number} maxVal 原始最大值
+     * @returns {number} 最合适的最大值
+     */
+    getNiceMax(maxVal) {
+      if (maxVal === 0) return 0;
+
+      const magnitude = Math.pow(10, Math.floor(Math.log10(maxVal)));
+      const normalized = maxVal / magnitude;
+
+      let niceNormalized;
+      if (normalized <= 1) {
+        niceNormalized = 1;
+      } else if (normalized <= 2) {
+        niceNormalized = 2;
+      } else if (normalized <= 5) {
+        niceNormalized = 5;
+      } else {
+        niceNormalized = 10;
+      }
+
+      return parseFloat((niceNormalized * magnitude).toFixed(2));
     },
 
     // 销毁图表
@@ -1568,17 +1625,17 @@ export default {
   }
 
   .chart-controls-popover {
-     position: fixed;
-     right: 60px;
-     top: 50%;
-     transform: translateY(-50%);
-     z-index: 1000;
-     flex-direction: column;
-     align-items: flex-start;
-     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-     min-width: 200px;
-     background-color: rgba(245, 247, 250, 0.5);
-     backdrop-filter: blur(10px);
+    position: fixed;
+    right: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+    flex-direction: column;
+    align-items: flex-start;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    background-color: rgba(245, 247, 250, 0.5);
+    backdrop-filter: blur(10px);
 
     .chart-controls-title {
       display: flex;
@@ -1592,31 +1649,31 @@ export default {
       font-size: 14px;
     }
 
-   .chart-controls-content {
-       display: flex;
-       flex-direction: column;
-       gap: 12px;
-       align-items: flex-start;
-       width: 100%;
-     }
+    .chart-controls-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+      width: 100%;
+    }
 
-     .chart-control-item {
-       display: flex;
-       align-items: center;
-       gap: 10px;
-       width: 100%;
+    .chart-control-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
 
-       .control-label {
-         min-width: 80px;
-         text-align: right;
-         font-size: 13px;
-         color: #606266;
-       }
+      .control-label {
+        min-width: 80px;
+        text-align: right;
+        font-size: 13px;
+        color: #606266;
+      }
 
-       .el-switch {
-         flex: 1;
-       }
-     }
+      .el-switch {
+        flex: 1;
+      }
+    }
   }
 
   .chart {
