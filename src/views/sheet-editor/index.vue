@@ -3053,7 +3053,6 @@ export default {
             item.field
           )
       );
-      debugger
       const changedCols = [];
       for (let i = startRowIndex; i <= endRowIndex; i++) {
         const row = this.tableData[i];
@@ -3774,7 +3773,8 @@ export default {
                         this.clearCellSelection();
                       },
                       unfold: (event, callback) => {
-                        this.loadTree(event, row, rowIndex, callback);
+                        const pageNo = 1
+                        this.loadTree(event, row, rowIndex, callback, pageNo);
                       },
                       event: (event) => {
                         if (event === "showRichEditor") {
@@ -4468,24 +4468,27 @@ export default {
         const isAdd = !item.condition || !item.condition.length
         const raw = isAdd ? null : this.tableData.find(tableDataItem => tableDataItem.id === item.condition.find(conditionItem => conditionItem.colName === 'id')?.value)
         const serviceNameData = {}
-        Object.keys(item?.data[0]).forEach(key => {
-          const column = this.tableMap[key]
-          let operateService = column.serviceName
-          if(isAdd){
-            operateService = item.serviceName
-          }
-          serviceNameData[operateService] || (serviceNameData[operateService] = {})
-          serviceNameData[operateService].data || (serviceNameData[operateService].data = [{}])
-          serviceNameData[operateService].data[0][column.column] = item?.data[0][key]
-          if(!serviceNameData[operateService].condition && !isAdd) {
-            serviceNameData[operateService].condition = JSON.parse(JSON.stringify(item.condition))
-            serviceNameData[operateService].condition.forEach(conditionItem => {
-              if(conditionItem.colName === 'id') {
-                conditionItem.value = raw[column.id]
-              }
-            })
-          }
-          serviceNameData[operateService].serviceName || (serviceNameData[operateService].serviceName = operateService)
+        item?.data?.forEach((data, index) => {
+          Object.keys(data).forEach(key => {
+            const column = this.tableMap[key]
+            let operateService = column.serviceName
+            if(isAdd){
+              operateService = item.serviceName
+            }
+            serviceNameData[operateService] || (serviceNameData[operateService] = {})
+            serviceNameData[operateService].data || (serviceNameData[operateService].data = [])
+            serviceNameData[operateService].data[index] || (serviceNameData[operateService].data[index] = {})
+            serviceNameData[operateService].data[index][column.column] = data[key]
+            if(!serviceNameData[operateService].condition && !isAdd) {
+              serviceNameData[operateService].condition = JSON.parse(JSON.stringify(item.condition))
+              serviceNameData[operateService].condition.forEach(conditionItem => {
+                if(conditionItem.colName === 'id') {
+                  conditionItem.value = raw[column.id]
+                }
+              })
+            }
+            serviceNameData[operateService].serviceName || (serviceNameData[operateService].serviceName = operateService)
+          })
         })
         Object.keys(serviceNameData).forEach(k => {
           reqDataObj[k] || (reqDataObj[k] = [])
@@ -4876,7 +4879,7 @@ export default {
       }
       return tableData;
     },
-    async loadTree(load, row, rowIndex, callback) {
+    async loadTree(load, row, rowIndex, callback, pageNo) {
       // 将展开状态存储到行数据
       this.$set(this.tableData[rowIndex], "__unfold", load);
 
@@ -4897,7 +4900,7 @@ export default {
           ],
           {
             rownumber: 500,
-            pageNo: this.page.pageNo,
+            pageNo: pageNo || this.page.pageNo,
             vpage_no: this.v2data?.vpage_no,
             order: this.sortState,
             use_type:
@@ -5087,10 +5090,6 @@ export default {
           }
           tableData.push(dataItem);
         }
-
-        if (unfoldIds?.length) {
-          tableData = await this.loadChildren(unfoldIds, tableData);
-        }
         
         // 树形列表前端分页处理
         if (isTreeMode) {
@@ -5102,6 +5101,10 @@ export default {
           this.tableData = tableData.slice(startIndex, endIndex);
         } else {
           this.tableData = tableData;
+        }
+
+        if (unfoldIds?.length) {
+          this.tableData = await this.loadChildren(unfoldIds, this.tableData);
         }
 
         this.oldTableData = JSON.parse(JSON.stringify(this.tableData));
