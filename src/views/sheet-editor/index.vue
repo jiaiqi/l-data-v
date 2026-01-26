@@ -91,7 +91,7 @@
     </div>
     <div
       class="empty-data"
-      v-if="!childListType && isFetched && page.total === 0 && !loading"
+      v-if="!childListType && isFetched && page.total === 0 && !loading && !tableData.length"
     >
       暂无数据
     </div>
