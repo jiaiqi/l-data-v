@@ -2151,7 +2151,16 @@ export default {
     setCellSelection(rowKey, colKey) {
       if (rowKey && colKey) {
         this.$nextTick(() => {
+          // 保存当前滚动位置
+          const tableContainer = this.$refs["tableRef"]?.$el.querySelector('.ve-table-container');
+          const scrollTop = tableContainer.scrollTop;
+          const scrollLeft = tableContainer.scrollLeft;
           this.$refs["tableRef"].setCellSelection({ rowKey, colKey });
+          // 恢复滚动位置
+          this.$nextTick(() => {
+            tableContainer.scrollTop = scrollTop;
+            tableContainer.scrollLeft = scrollLeft;
+          });
         });
       }
     },
