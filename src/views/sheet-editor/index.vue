@@ -2734,6 +2734,7 @@ export default {
           operate_item: item,
           row,
           mainData: this.mainData,
+          service: this.service,
           vm: this,
         }).then((res) => {
           if (res?.type === "deleteRowData") {

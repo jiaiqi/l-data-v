@@ -370,23 +370,23 @@ export async function rowButtonClick(params) {
   } else if ("duplicatedeep" == type) {
     onDuplicateDeepClicked(row);
   } else if ("closeproc" == type) {
-    procOperate(row, operate_item);
+    procOperate(row, operate_item, params);
   } else if ("proccancel" == type) {
-    procOperate(row, operate_item);
+    procOperate(row, operate_item, params);
   } else if ("deleteproc" == type) {
-    procOperate(row, operate_item);
+    procOperate(row, operate_item, params);
   } else if ("startproc" == type) {
     //开启数据流程
-    start_dataproc(row, operate_item);
+    start_dataproc(row, operate_item, params);
   } else if ("deletedraft" == type) {
-    procOperate(row, operate_item);
+    procOperate(row, operate_item, params);
   } else if ("extjs" === type) {
     operate_item.handlerFunc && operate_item.handlerFunc(row);
   } else if ("manage_childlist" === type) {
-    onPopupMemListClick(row, button);
+    onPopupMemListClick(row, button, params);
   } else if ("urge" == type) {
     //催办
-    procOperate(row, operate_item);
+    procOperate(row, operate_item, params);
   } else if ("customize" == type) {
     if (button.hasOwnProperty("version") && button.version == "v2") {
       customButtonV2(button, row);
@@ -399,7 +399,7 @@ export async function rowButtonClick(params) {
       } else if (operate_item.operate_type == "增加") {
         customize_add(operate_item, data);
       } else {
-        operate_item.listservice = service;
+        operate_item.listservice = params?.service || operate_item.service_name;
         customizeOperate(operate_item, data, (e) => {
           // dialog操作完成之后的回调 刷新列表
           // this.loadTableData();
@@ -523,8 +523,139 @@ export function onDuplicateDeepClicked(row) {
   console.log("onDuplicateDeepClicked", row);
 }
 
-export function procOperate(row, operate_item) {
-  console.log("procOperate", row, operate_item);
+export function procRelateOperate(row, buttinfo, remark, params = {}) {
+  const vm = params?.vm;
+  if (!vm) {
+    console.error("procRelateOperate: vm is required");
+    return;
+  }
+
+  const requests = [];
+  const request = {};
+  request["serviceName"] = buttinfo.service_name;
+  const cMap = {
+    colName: "proc_instance_no",
+    ruleType: "eq",
+    value: row.proc_instance_no,
+  };
+  request["condition"] = [cMap];
+
+  if (remark != undefined && remark != null && remark != "") {
+    const dataMap = {
+      remark: remark,
+    };
+    request["data"] = [dataMap];
+  }
+
+  requests.push(request);
+
+  if (vm.operate) {
+    vm.operate(requests).then((response) => {
+      const state = response.body?.state || response.data?.state;
+
+      if ("SUCCESS" == state) {
+        let resultMessage = "操作成功!";
+        if (response.body?.resultMessage || response.data?.resultMessage) {
+          resultMessage = response.body?.resultMessage || response.data?.resultMessage;
+        }
+
+        vm.$message({
+          type: "success",
+          message: resultMessage,
+        });
+
+        if (vm.loadTableData) {
+          vm.loadTableData();
+        }
+      } else {
+        vm.$message({
+          type: "error",
+          message: response.body?.resultMessage || response.data?.resultMessage || "操作失败",
+        });
+      }
+    });
+  } else {
+    console.error("vm.operate method not found");
+  }
+}
+
+export function procOperate(row, operate_item, params = {}) {
+  const vm = params?.vm;
+  if (!vm) {
+    console.error("procOperate: vm is required");
+    return;
+  }
+
+  const type = operate_item.button_type;
+
+  if ("closeproc" == type) {
+    vm.$prompt("", "请输入关闭原因", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      inputValidator: function (value) {
+        if (value == "" || (value == undefined && value == null)) {
+          return "请输入关闭原因";
+        }
+      },
+    })
+      .then(({ value }) => {
+        if (value == "" || (value == undefined && value == null)) {
+          vm.$message({
+            type: "info",
+            message: "请输入关闭原因",
+          });
+        } else {
+          procRelateOperate(row, operate_item, value, params);
+        }
+      })
+      .catch(() => {
+        vm.$message({
+          type: "info",
+          message: "取消操作",
+        });
+      });
+  } else if ("proccancel" == type) {
+    vm.$prompt("", "请输入撤销原因", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      inputValidator: function (value) {
+        if (value == "" || (value == undefined && value == null)) {
+          return "请输入撤销原因";
+        }
+      },
+    })
+      .then(({ value }) => {
+        if (value == "" || (value == undefined && value == null)) {
+          vm.$message({
+            type: "info",
+            message: "请输入撤销原因",
+          });
+        } else {
+          procRelateOperate(row, operate_item, value, params);
+        }
+      })
+      .catch(() => {
+        vm.$message({
+          type: "info",
+          message: "取消操作",
+        });
+      });
+  } else {
+    vm.$confirm("您确定要执行此操作?", "提示", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "info",
+    })
+      .then(() => {
+        procRelateOperate(row, operate_item, null, params);
+      })
+      .catch(() => {
+        vm.$message({
+          type: "info",
+          message: "已取消",
+        });
+      });
+  }
 }
 
 export function customButtonV2(row, operate_item) {
@@ -563,7 +694,7 @@ export function customizeOperate(operate_item, data, callback, params) {
   var application = butinfo.application;
   var operate_type = butinfo.operate_type;
   if (type == "batchadd") {
-    customize_popup(butinfo, operateData, params);
+    customize_popup(butinfo, operateData, callback, params);
     return;
   } else {
   }
@@ -588,7 +719,7 @@ export function customizeOperate(operate_item, data, callback, params) {
   } else if (operate_type.endsWith("弹出")) {
     customize_popup(butinfo, operateData, callback, params);
   } else if (operate_type === "选择填充表格") {
-    customize_popup(butinfo, operateData, params);
+    customize_popup(butinfo, operateData, callback, params);
   } else {
     alert("暂未实现");
   }
@@ -1152,13 +1283,17 @@ export function pre_data_handle(butinfo, operateData, params = {}) {
 /**
  * 后置动作
  * @param {*} butinfo
+ * @param {*} params
  */
-export function suffix_actions(butinfo) {
+export function suffix_actions(butinfo, params = {}) {
+  const vm = params?.vm;
   var page_type = butinfo.page_type;
   var suffix_actions = butinfo.suffix_actions;
 
   if (page_type && page_type.endsWith("列表")) {
-    this.loadTableData();
+    if (vm && vm.loadTableData) {
+      vm.loadTableData();
+    }
   } else {
     if (suffix_actions == "refresh") {
       window.location.reload();
@@ -1335,4 +1470,411 @@ export function getPackageData(butinfo, operateData, params = {}) {
   packagedata.data = new_data;
   packagedata.conditions = new_conditions;
   return packagedata;
+}
+
+/**
+ * 开启数据流程
+ * @param {*} row
+ * @param {*} buttinfo
+ * @param {*} params
+ */
+/**
+ * 管理子列表弹出
+ * @param {*} row
+ * @param {*} button
+ * @param {*} params
+ */
+export function onPopupMemListClick(row, button, params = {}) {
+  console.log("onPopupMemListClick", row, button);
+  const vm = params?.vm;
+  if (!vm) {
+    console.error("onPopupMemListClick: vm is required");
+    return;
+  }
+
+  // 这个功能需要根据具体的业务逻辑实现
+  // 暂时保留 console.log
+  vm.$message({
+    type: "info",
+    message: "管理子列表功能待实现",
+  });
+}
+
+/**
+ * 自定义弹出
+ * @param {*} item
+ * @param {*} operateData
+ * @param {*} callback
+ * @param {*} params
+ */
+/**
+ * 自定义草稿保存
+ * @param {*} butinfo
+ * @param {*} operateData
+ * @param {*} params
+ */
+export function customize_save(butinfo, operateData, params = {}) {
+  console.log("customize_save", butinfo, operateData);
+  const vm = params?.vm;
+  if (!vm) {
+    console.error("customize_save: vm is required");
+    return;
+  }
+
+  // 草稿保存功能需要根据具体的业务逻辑实现
+  vm.$message({
+    type: "info",
+    message: "草稿保存功能待实现",
+  });
+}
+
+export function customize_popup(item, operateData, callback, params = {}) {
+  console.log("customize_popup", item, operateData, callback);
+  const vm = params?.vm;
+  if (!vm) {
+    console.error("customize_popup: vm is required");
+    return;
+  }
+
+  // 处理form表单不支持列表卡片渲染页面的情况
+  if (item.operate_type == "申请弹出") {
+    const queryData = {
+      colName: "order_no",
+      ruleType: "eq",
+      value: operateData[0]?.order_no
+    };
+
+    let bigquerydata = {
+      colNames: ["*"],
+      condition: [],
+      draft: false,
+      page: { pageNo: 1, rownumber: 10 },
+      query_source: "list_page",
+      serviceName: item.service_name,
+      srvApp: item.application
+    };
+
+    bigquerydata.condition.push(queryData);
+
+    // 这里需要根据实际的 API 调用方式来实现
+    vm.$message({
+      type: "info",
+      message: "申请弹出功能待实现",
+    });
+    return;
+  }
+
+  if (item.more_config && typeof item.more_config === "string") {
+    try {
+      item["moreConfig"] = JSON.parse(item.more_config);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  operateData = pre_data_handle(item, operateData, params);
+
+  // 弹出功能需要根据具体的业务逻辑实现
+  vm.$message({
+    type: "info",
+    message: "自定义弹出功能待实现",
+  });
+}
+
+export function start_dataproc(row, buttinfo, params = {}) {
+  const vm = params?.vm;
+  if (!vm) {
+    console.error("start_dataproc: vm is required");
+    return;
+  }
+
+  const pre_confirm_msg = buttinfo.pre_confirm_msg || "您确定要执行此操作?";
+
+  vm.$confirm(pre_confirm_msg, "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "info",
+  })
+    .then(() => {
+      const requests = [];
+      const request = {};
+      requests.push(request);
+
+      const parent_proc_instance_no = row.parent_proc_instance_no;
+      if (parent_proc_instance_no) {
+        request["parent_proc_instance_no"] = parent_proc_instance_no;
+      }
+
+      try {
+        request["proc_no"] = JSON.parse(buttinfo.operate_params).proc_no;
+      } catch (e) {
+        console.error("Failed to parse operate_params:", e);
+        return;
+      }
+
+      const condition = [
+        {
+          colName: "id",
+          ruleType: "eq",
+          value: row.id,
+        },
+      ];
+      request["condition"] = condition;
+      request["serviceName"] = buttinfo.service_name;
+
+      if (vm.operate) {
+        vm.operate(requests).then((response) => {
+          const state = response.body?.state || response.data?.state;
+
+          if ("SUCCESS" == state) {
+            let resultMessage = "操作成功!";
+            if (response.body?.resultMessage || response.data?.resultMessage) {
+              resultMessage = response.body?.resultMessage || response.data?.resultMessage;
+            }
+
+            vm.$message({
+              type: "success",
+              message: resultMessage,
+            });
+
+            if (vm.loadTableData) {
+              vm.loadTableData();
+            }
+          } else {
+            vm.$message({
+              type: "error",
+              message: response.body?.resultMessage || response.data?.resultMessage || "操作失败",
+            });
+          }
+        });
+      } else {
+        console.error("vm.operate method not found");
+      }
+    })
+    .catch(() => {
+      vm.$message({
+        type: "info",
+        message: "已取消",
+      });
+    });
+}
+
+/**
+ * 自定义操作
+ * @param {*} butinfo
+ * @param {*} operateData
+ * @param {*} params
+ */
+export function customize_operate(butinfo, operateData, params = {}) {
+  const vm = params?.vm;
+  if (!vm) {
+    console.error("customize_operate: vm is required");
+    return;
+  }
+
+  pre_data_handle(butinfo, operateData, params);
+
+  const operate_mode = butinfo.operate_mode;
+  const operate_service = butinfo.operate_service;
+  const packageData = getPackageData(butinfo, operateData, params);
+  const new_data = packageData.data;
+  const new_conditions = packageData.conditions;
+
+  if (new_conditions.length == 0 && operateData.length != 0) {
+    const cMap = { colName: "id", value: "", ruleType: "in" };
+    let value_ids = "";
+    for (const itemdata of operateData) {
+      value_ids = value_ids + "," + itemdata.id;
+    }
+    value_ids = value_ids.substring(1);
+    cMap.value = value_ids;
+    new_conditions.push(cMap);
+  }
+
+  if ("弹出" == operate_mode) {
+    if (operateData.length == 0) {
+      vm.$message({
+        type: "warning",
+        message: "请选择操作数据",
+      });
+    } else {
+      vm.$message({
+        type: "info",
+        message: "弹出模式功能待实现",
+      });
+    }
+  } else if ("跳转" == operate_mode) {
+    vm.$message({
+      type: "info",
+      message: "跳转模式功能待实现",
+    });
+  } else if ("静默操作" == operate_mode) {
+    const operate_params_cfg = butinfo.operate_params;
+    const bxRequests = [];
+
+    if (
+      (butinfo.select_data == null ||
+        butinfo.select_data == undefined ||
+        butinfo.select_data == "是") &&
+      operateData.length <= 0 &&
+      operate_params_cfg != undefined &&
+      operate_params_cfg != "" &&
+      operate_params_cfg != null
+    ) {
+      vm.$message({
+        type: "warning",
+        message: "请选择操作数据",
+      });
+    } else {
+      const operate = () => {
+        const request = {};
+        request["serviceName"] = butinfo["operate_service"];
+        request["data"] = [new_data];
+        request["srvApp"] = butinfo["application"];
+        request["condition"] = new_conditions;
+        bxRequests.push(request);
+
+        if (bxRequests.length > 0 && vm.operate) {
+          vm.operate(bxRequests).then((response) => {
+            const state = response.body?.state || response.data?.state;
+
+            if ("SUCCESS" == state) {
+              let resultMessage = "操作成功!";
+              if (response.body?.resultMessage || response.data?.resultMessage) {
+                resultMessage = response.body?.resultMessage || response.data?.resultMessage;
+              }
+
+              vm.$message({
+                type: "success",
+                message: resultMessage,
+              });
+
+              suffix_actions(butinfo, params);
+            } else {
+              vm.$message({
+                type: "error",
+                message: response.body?.resultMessage || response.data?.resultMessage || "操作失败",
+              });
+            }
+          });
+        }
+      };
+
+      const pre_confirm_msg = butinfo["pre_confirm_msg"];
+
+      if (!["", null, undefined].includes(pre_confirm_msg)) {
+        vm.$confirm(pre_confirm_msg, "提示", {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "info",
+        })
+          .then(() => {
+            operate();
+          })
+          .catch(() => {
+            vm.$message({
+              type: "info",
+              message: "已取消",
+            });
+          });
+      } else {
+        operate();
+      }
+    }
+  }
+}
+
+/**
+ * 流程申请
+ * @param {*} butinfo
+ * @param {*} operateData
+ * @param {*} params
+ */
+export function customize_apply(butinfo, operateData, params = {}) {
+  const vm = params?.vm;
+  if (!vm) {
+    console.error("customize_apply: vm is required");
+    return;
+  }
+
+  pre_data_handle(butinfo, operateData, params);
+  const operate_service = butinfo.operate_service;
+  const packageData = getPackageData(butinfo, operateData, params);
+  const new_data = packageData.data;
+  const new_conditions = packageData.conditions;
+
+  const urlParams = "/" + new_data.proc_service;
+  const operate_params_str = encodeURI(JSON.stringify(new_data));
+  const application = butinfo.application;
+
+  const fullUrl =
+    urlParams +
+    "?srvApp=" +
+    application +
+    "&operate_params=" +
+    operate_params_str +
+    "&time=" +
+    new Date().getTime();
+
+  addTab({
+    type: "start-proc_v2",
+    urlParams: fullUrl,
+    tab_title: "流程申请",
+    srv: operate_service,
+    button: butinfo,
+    vm,
+  });
+}
+
+/**
+ * 直接请求地址
+ * @param {*} item
+ * @param {*} operateData
+ * @param {*} params
+ */
+export function addressRequest(item, operateData, params = {}) {
+  const vm = params?.vm;
+  if (!vm) {
+    console.error("addressRequest: vm is required");
+    return;
+  }
+
+  if (item?.select_data === '是' && !operateData.length) {
+    return vm.$message({
+      type: "warning",
+      message: "请选择操作数据",
+    });
+  }
+
+  let address = "";
+  const back_url = url_pre_data_handle(item, { operateData, ...params });
+  
+  if (back_url != "") {
+    address = back_url;
+  } else {
+    const url = item["operate_params"];
+    if (url != "" && url != null && url != undefined) {
+      const urls = url.split("/");
+      let index = 0;
+      for (const step of urls) {
+        if (step.startsWith("{") && step.endsWith("}")) {
+          const col_key = step.substring(1, step.length - 1);
+          if (operateData.length > 0) {
+            urls[index] = operateData[0][col_key];
+          }
+        }
+        index++;
+      }
+      address = urls.join("/");
+    }
+  }
+
+  if (address) {
+    window.open(address, "_blank");
+  } else {
+    vm.$message({
+      type: "warning",
+      message: "无效的地址",
+    });
+  }
 }
