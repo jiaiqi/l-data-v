@@ -149,11 +149,8 @@
             </el-select>
             <el-input
               v-model="item._condition.value"
-              v-if="
-                singList.type != 'all' &&
-                singList.type === 'condition' &&
-                item.col_type !== 'DateTime' &&
-                item.col_type !== 'Date'
+              v-if="!['date','datetime'].includes(item.col_type.toLowerCase()) &&
+                singList.type === 'condition'
               "
               placeholder="请输入内容"
               class="input-value"
@@ -176,8 +173,7 @@
             ></el-input>
             <el-date-picker
               v-model="item._condition.value"
-              v-if="
-                (item.col_type == 'DateTime' || item.col_type == 'Date') &&
+              v-if="['date','datetime'].includes(item.col_type.toLowerCase()) &&
                 singList.type === 'condition'
               "
               type="daterange"
@@ -547,7 +543,7 @@ export default {
         if (dataType) {
           dataType = dataType.toLowerCase();
         }
-        if (dataType == "Date" || dataType == "DateTime") {
+        if (dataType == "date" || dataType == "datetime") {
           dataType = "date";
         } else if (dataType == "string") {
           dataType = "string";
@@ -725,7 +721,7 @@ export default {
           let dataType = item.col_type || "string"; // 暂定有时间、数字、其它三种
 
           dataType = dataType.toLowerCase();
-          if (dataType == "Date" || dataType == "DateTime") {
+          if (dataType == "date" || dataType == "datetime") {
             dataType = "date";
           } else if (dataType == "string") {
             dataType = "string";
@@ -820,7 +816,8 @@ export default {
       let self = this;
       if (isClick) {
         let dataType = sign.col_type; // 暂定有时间、数字、其它三种
-        if (dataType == "Date" || dataType == "DateTime") {
+        dataType = dataType.toLowerCase();
+        if (['date','datetime'].includes(dataType)) {
           dataType = "date";
         } else {
           dataType = "others";
@@ -896,8 +893,8 @@ export default {
         sign.forEach((item) => {
           // 切换group的操作符
           let dataType = item.col_type || "string"; // 暂定有时间、数字、其它三种
-
-          if (dataType == "Date" || dataType == "DateTime") {
+          dataType = dataType.toLowerCase();
+          if (["date","datetime"].includes(dataType)) {
             dataType = "date";
           } else {
             dataType = "others";
