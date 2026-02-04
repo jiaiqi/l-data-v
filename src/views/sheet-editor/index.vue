@@ -1048,9 +1048,9 @@ export default {
             }
           }
 
-          if (["DateTime", "Date"].includes(colType)) {
+          if (["DateTime", "Date","date",'datetime'].includes(colType)) {
             // 日期时间类型格式化
-            let dateStr = extractAndFormatDatesOrTimestamps(changeValue);
+            let dateStr = extractAndFormatDatesOrTimestamps(changeValue,colType.toLowerCase());
             if (dateStr && dateStr !== changeValue) {
               const index = this.tableData.findIndex(
                 (item) => item.__id === row.__id

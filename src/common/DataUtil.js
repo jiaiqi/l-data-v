@@ -498,16 +498,34 @@ export function extractDates(str) {
 
 /**
  * 从字符串中提取并格式化日期或时间戳
- * 支持多种日期格式：YYYYMMDD, YYYY/MM/DD, YYYY-MM-DD, YYYY.M.D, YYYY.M, YY.M.D, YY.M, M.D, YY-M-D, YY-MM-D, YY-M-DD 或者 Unix 时间戳 (10 or 13 digits)
+ * 支持多种日期格式：
+ * - 带分隔符完整日期：YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+ * - 带时间的日期：YYYY-MM-DD HH:mm:ss, YYYY/MM/DD HH:mm:ss
+ * - 无分隔符：YYYYMMDD
+ * - 年月格式：YYYY-MM, YYYY/MM, YYYY.M
+ * - 两位年份：YY-MM-DD, YY/MM/DD, YY.M.D, YY-M-D
+ * - 月日格式：M.D, M-D, M/D, MM-DD, MM/DD
+ * - 中文格式：YYYY年M月D日, YYYY年M月
+ * - Unix时间戳：10位(秒)或13位(毫秒)
  * @param {string} str - 要提取日期的字符串
- * @returns {string} 格式化后的日期字符串（YYYY-MM-DD格式），如果没有匹配到则返回空字符串
+ * @param {string} [type='date'] - 返回格式类型，'date' 返回 YYYY-MM-DD，'datetime' 返回 YYYY-MM-DD HH:mm:ss
+ * @returns {string} 格式化后的日期字符串，如果没有匹配到则返回空字符串
  * @example
- * extractAndFormatDatesOrTimestamps("2023.12.1") // "2023-12-01"
- * extractAndFormatDatesOrTimestamps("1640995200") // "2022-01-01" (时间戳)
- * extractAndFormatDatesOrTimestamps("23.12.1") // "2023-12-01"
+ * extractAndFormatDatesOrTimestamps("2023-12-01 14:30:00") // "2023-12-01"
+ * extractAndFormatDatesOrTimestamps("2023-12-01 14:30:00", "datetime") // "2023-12-01 14:30:00"
+ * extractAndFormatDatesOrTimestamps("2023年7月23日") // "2023-07-23"
+ * extractAndFormatDatesOrTimestamps("2023-07") // "2023-07-01"
  */
-export function extractAndFormatDatesOrTimestamps(str) {
+export function extractAndFormatDatesOrTimestamps(str, type="date") {
   const currentYear = new Date().getFullYear();
+
+  // 辅助函数：根据 type 返回对应格式
+  const formatResult = (dateStr, timeStr = '00:00:00') => {
+    if (type === 'datetime') {
+      return `${dateStr} ${timeStr}`;
+    }
+    return dateStr;
+  };
 
   // 匹配 YYYYMMDD, YYYY-MM-DD, YYYY/MM/DD 格式的日期
   const fullYearDatePattern = /(\d{4})(\/|-|\.)(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])/g;
@@ -536,6 +554,24 @@ export function extractAndFormatDatesOrTimestamps(str) {
   // 匹配 10位或13位的时间戳
   const timestampPattern = /\b\d{10}(?:\d{3})?\b/g;
 
+  // 匹配中文日期格式 YYYY年M月D日 或 YYYY年MM月DD日
+  const chineseDatePattern = /(\d{4})年(0?[1-9]|1[0-2])月([12]\d|3[01]|0?[1-9])日?/g;
+
+  // 匹配中文年月格式 YYYY年M月 或 YYYY年MM月（无日期）
+  const chineseYearMonthPattern = /(\d{4})年(0?[1-9]|1[0-2])月(?!\d)/g;
+
+  // 匹配 YYYY-MM 或 YYYY/MM 格式的年月（无日期）
+  const yearMonthPattern = /^(\d{4})(\-|\/)(0?[1-9]|1[0-2])$/;
+
+  // 匹配无分隔符格式 YYYYMMDD
+  const noSeparatorPattern = /^(\d{4})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])$/;
+
+  // 匹配 M-D, M/D, MM-DD, MM/DD 格式的月日
+  const monthDayDashPattern = /(0?[1-9]|1[0-2])(\-|\/)([12]\d|0?[1-9]|3[01])/g;
+
+  // 匹配带时间的日期格式 YYYY-MM-DD HH:mm:ss 或 YYYY/MM/DD HH:mm:ss
+  const dateTimePattern = /(\d{4})(\-|\/)(0[1-9]|1[0-2])\2(0[1-9]|[12]\d|3[01])[\sT](\d{2}):(\d{2})(?::(\d{2}))?/g;
+
   let matches;
 
   // 尝试匹配时间戳格式
@@ -554,7 +590,58 @@ export function extractAndFormatDatesOrTimestamps(str) {
       date = new Date(timestamp);
     }
 
-    return date.toISOString().split('T')[0];
+    return formatResult(date.toISOString().split('T')[0]);
+  }
+
+  // 尝试匹配带时间的日期格式 YYYY-MM-DD HH:mm:ss
+  matches = dateTimePattern.exec(str);
+  if (matches) {
+    let yearPart = matches[1];
+    let monthPart = matches[3];
+    let dayPart = matches[4];
+    let hourPart = matches[5];
+    let minutePart = matches[6];
+    let secondPart = matches[7] || '00'; // 秒可选，默认00
+
+    return formatResult(`${yearPart}-${monthPart}-${dayPart}`, `${hourPart}:${minutePart}:${secondPart}`);
+  }
+
+  // 尝试匹配无分隔符格式 YYYYMMDD
+  matches = noSeparatorPattern.exec(str);
+  if (matches) {
+    let yearPart = matches[1];
+    let monthPart = matches[2];
+    let dayPart = matches[3];
+
+    return formatResult(`${yearPart}-${monthPart}-${dayPart}`);
+  }
+
+  // 尝试匹配中文日期格式 YYYY年M月D日
+  matches = chineseDatePattern.exec(str);
+  if (matches) {
+    let yearPart = matches[1];
+    let monthPart = matches[2].padStart(2, '0'); // 补零到两位
+    let dayPart = matches[3].padStart(2, '0'); // 补零到两位
+
+    return formatResult(`${yearPart}-${monthPart}-${dayPart}`);
+  }
+
+  // 尝试匹配 YYYY-MM 或 YYYY/MM 格式的年月
+  matches = yearMonthPattern.exec(str);
+  if (matches) {
+    let yearPart = matches[1];
+    let monthPart = matches[3].padStart(2, '0'); // 补零到两位
+
+    return formatResult(`${yearPart}-${monthPart}-01`); // 默认为该月第一天
+  }
+
+  // 尝试匹配中文年月格式 YYYY年M月
+  matches = chineseYearMonthPattern.exec(str);
+  if (matches) {
+    let yearPart = matches[1];
+    let monthPart = matches[2].padStart(2, '0'); // 补零到两位
+
+    return formatResult(`${yearPart}-${monthPart}-01`); // 默认为该月第一天
   }
 
   // 尝试匹配完整年份的日期格式
@@ -564,7 +651,7 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let monthPart = matches[3];
     let dayPart = matches[4];
 
-    return `${yearPart}-${monthPart}-${dayPart}`;
+    return formatResult(`${yearPart}-${monthPart}-${dayPart}`);
   }
 
   // 尝试匹配两位数年份的日期格式
@@ -575,7 +662,7 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let monthPart = matches[3];
     let dayPart = matches[4];
 
-    return `${yearPart}-${monthPart}-${dayPart}`;
+    return formatResult(`${yearPart}-${monthPart}-${dayPart}`);
   }
 
   // 尝试匹配 YYYY.M.D 格式的日期
@@ -585,7 +672,7 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let monthPart = matches[2].padStart(2, '0'); // 补零到两位
     let dayPart = matches[3].padStart(2, '0'); // 补零到两位
 
-    return `${yearPart}-${monthPart}-${dayPart}`;
+    return formatResult(`${yearPart}-${monthPart}-${dayPart}`);
   }
 
   // 尝试匹配 YYYY.M 格式的日期
@@ -594,7 +681,7 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let yearPart = matches[1];
     let monthPart = matches[2].padStart(2, '0'); // 补零到两位
 
-    return `${yearPart}-${monthPart}-01`; // 默认为该月第一天
+    return formatResult(`${yearPart}-${monthPart}-01`); // 默认为该月第一天
   }
 
   // 尝试匹配 YY.M.D 格式的日期
@@ -604,7 +691,7 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let monthPart = matches[2].padStart(2, '0'); // 补零到两位
     let dayPart = matches[3].padStart(2, '0'); // 补零到两位
 
-    return `${yearPart}-${monthPart}-${dayPart}`;
+    return formatResult(`${yearPart}-${monthPart}-${dayPart}`);
   }
 
   // 尝试匹配 YY.M 格式的日期
@@ -613,7 +700,7 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let yearPart = `20${matches[1]}`; // 假设是21世纪的年份，可根据需要调整
     let monthPart = matches[2].padStart(2, '0'); // 补零到两位
 
-    return `${yearPart}-${monthPart}-01`; // 默认为该月第一天
+    return formatResult(`${yearPart}-${monthPart}-01`); // 默认为该月第一天
   }
 
   // 尝试匹配 M.D 或 M.DD 或 MM.DD 格式的日期
@@ -622,7 +709,16 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let monthPart = matches[1].padStart(2, '0'); // 补零到两位
     let dayPart = matches[2].padStart(2, '0'); // 补零到两位
 
-    return `${currentYear}-${monthPart}-${dayPart}`; // 使用当前年份
+    return formatResult(`${currentYear}-${monthPart}-${dayPart}`); // 使用当前年份
+  }
+
+  // 尝试匹配 M-D, M/D, MM-DD, MM/DD 格式的月日
+  matches = monthDayDashPattern.exec(str);
+  if (matches) {
+    let monthPart = matches[1].padStart(2, '0'); // 补零到两位
+    let dayPart = matches[3].padStart(2, '0'); // 补零到两位
+
+    return formatResult(`${currentYear}-${monthPart}-${dayPart}`); // 使用当前年份
   }
 
   // 尝试匹配 YY-M-D, YY-MM-D, YY-M-DD 格式的日期
@@ -632,7 +728,7 @@ export function extractAndFormatDatesOrTimestamps(str) {
     let monthPart = matches[2].padStart(2, '0'); // 补零到两位
     let dayPart = matches[3].padStart(2, '0'); // 补零到两位
 
-    return `${yearPart}-${monthPart}-${dayPart}`;
+    return formatResult(`${yearPart}-${monthPart}-${dayPart}`);
   }
 
   // 如果没有匹配到任何内容，返回空字符串或其他默认值
