@@ -98,7 +98,7 @@ const setValue = ref(null);
 watch(
   () => props.value,
   (val) => {
-    if (val) {
+    if (val || val === 0 || val === false) {
       if (props.multiple && typeof val === "string") {
         setValue.value = val.split(",");
       } else {
