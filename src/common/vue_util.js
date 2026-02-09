@@ -1506,6 +1506,9 @@ function init_util() {
    * @returns 
    */
   Vue.prototype.replaceFileAddressSuffix = (val = "") => {
+    if(typeof val !== "string"){
+      return val;
+    }
     const prefix = backendIpAddr + "/file/download";
     val = val?.replaceAll?.(prefix, "$bxFileAddress$");
     return val;

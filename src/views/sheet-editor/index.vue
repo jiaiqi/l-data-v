@@ -2250,7 +2250,7 @@ export default {
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
-        defaultValue: event || null,
+        defaultValue: event ?? null,
       });
       this.$refs["tableRef"].stopEditingCell();
 

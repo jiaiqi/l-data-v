@@ -386,6 +386,15 @@ export default {
         } else {
           return this.html;
         }
+      } else if (
+        this.column?.col_type === "Dict" &&
+        Array.isArray(this.column?.option_list_v2) &&
+        this.column?.option_list_v2.length
+      ) {
+        return (
+          this.column?.option_list_v2.find((item) => item.value === this.html)
+            ?.label || this.html
+        );
       } else {
         return this.html;
       }

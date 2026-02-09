@@ -170,10 +170,9 @@ const handleClickOutside = () => {
 </script>
 
 <style lang="scss" scoped>
-
 .option-select {
   position: relative;
-  width: calc(100% - 30px);
+  width: 100%;
   // max-width: 500px;
   ::v-deep .el-select {
     width: 100%;
