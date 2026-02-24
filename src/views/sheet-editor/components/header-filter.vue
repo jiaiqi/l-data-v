@@ -232,6 +232,11 @@
                 plain
                 v-for="item in dateShortcuts.day"
                 :key="item"
+                :class="{
+                  active:
+                    modelValue === item ||
+                    (multiple && multipleValMap[item] == true),
+                }"
                 @click="shortFilter(item)"
               >{{ item }}</el-button>
             </div>
@@ -713,6 +718,13 @@ export default {
                 this.strList = Array.from(new Set(this.strList));
                 this.modelValue = this.strList.toString();
                 this.onFilter = true;
+                if (item.ruleType === "in" && this.strList?.length > 1) {
+                  this.multiple = true;
+                  this.strList.forEach((item) => {
+                    this.$set(this.multipleValMap, item, true);
+                      // this.multipleValMap[item] = true;
+                  })
+                }
               });
             } else if (["ge", "le", "gt", "lt"].includes(item.ruleType)) {
               this.$nextTick(() => {
@@ -998,6 +1010,11 @@ export default {
       background: #ecf5ff;
       border-color: #b3d8ff;
     }
+  }
+  .el-button.active{
+      color: #409eff;
+      background: #ecf5ff;
+      border-color: #b3d8ff;
   }
 
   ::v-deep .el-checkbox.str-checkbox {
