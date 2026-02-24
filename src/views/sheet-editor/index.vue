@@ -91,7 +91,7 @@
     </div>
     <div
       class="empty-data"
-      v-if="!childListType && isFetched && page.total === 0 && !loading"
+      v-if="!childListType && isFetched && page.total === 0 && !loading && !tableData.length"
     >
       暂无数据
     </div>
@@ -2151,7 +2151,16 @@ export default {
     setCellSelection(rowKey, colKey) {
       if (rowKey && colKey) {
         this.$nextTick(() => {
+          // 保存当前滚动位置
+          const tableContainer = this.$refs["tableRef"]?.$el.querySelector('.ve-table-container');
+          const scrollTop = tableContainer.scrollTop;
+          const scrollLeft = tableContainer.scrollLeft;
           this.$refs["tableRef"].setCellSelection({ rowKey, colKey });
+          // 恢复滚动位置
+          this.$nextTick(() => {
+            tableContainer.scrollTop = scrollTop;
+            tableContainer.scrollLeft = scrollLeft;
+          });
         });
       }
     },
@@ -2483,6 +2492,7 @@ export default {
     onGridButton(button) {
       //　列表头部按钮
       console.log("gridButtonClick", button);
+      this.$emit("extend-change", button);
       let self = this;
       var type = button.button_type;
       var exeservice = button.service_name;
@@ -2521,6 +2531,7 @@ export default {
       }
 
       if ("select" == type) {
+        self.toggleFilters(button);
       } else if ("extjs" === type) {
         button.handlerFunc && button.handlerFunc();
       } else if ("shrink" == type) {
@@ -2528,7 +2539,13 @@ export default {
       } else if ("refresh" == type) {
         self.refreshData();
       } else if ("batch_delete" == type) {
-        // self.batchDeleteData(exeservice);
+        self.batchDeleteData(exeservice);
+      } else if (type === 'pay') {
+        if (this.multipleSelection.length == 0) {
+          return this.$message.warning("请选择需要支付的数据", "提示");
+        }
+        this.buttonInfo = button
+        this.activeForm = 'pay';
       } else if ("add" == type) {
         self.insert2Rows();
       } else if ("confirmadd" == type) {
@@ -2586,56 +2603,50 @@ export default {
         }
       } else if ("batchadd" == type) {
         console.log("batchadd", button);
-        // if (button.hasOwnProperty("btn_cfg_json")) {
-        //   this.buildBatchConfig(button);
-        // } else {
-        //   console.error(button);
-        // }
+        if (button.hasOwnProperty("btn_cfg_json")) {
+          this.buildBatchConfig(button);
+        } else {
+          console.error(button);
+        }
       } else if ("batchupdate" == type) {
-        //批量添加
-        console.log("batchupdate", button);
-        // if (this.header_view_model != "normal") {
-        //   this.header_view_model = "normal";
-        //   this.gridHeader = this.noramlHeaders;
-        // }
-        // this.onBatchUpdateClick();
-        // this.onInplaceEditClicked();
+        if (this.header_view_model != "normal") {
+          this.header_view_model = "normal";
+          this.gridHeader = this.noramlHeaders;
+        }
+        this.onBatchUpdateClick();
       } else if ("saveall" == type) {
-        this.saveData();
-        // this.onSaveAllClicked();
+        this.onSaveAllClicked();
       } else if ("apply" == type) {
-        // var urlParams = `/${exeservice}?time=${(new Date()).getTime()}`;
-        // var urlParams = `/${exeservice}`;
-        // this.addTab(
-        //   "start-proc",
-        //   urlParams,
-        //   tab_title,
-        //   null,
-        //   button,
-        //   button.application
-        // );
+        var urlParams = `/${exeservice}`;
+        this.addTab(
+          "start-proc",
+          urlParams,
+          tab_title,
+          null,
+          button,
+          button.application
+        );
       } else if ("export" == type) {
-        // this.onExportClicked();
-        // this.activeForm = "export"   // 显示导出配置
+        this.onExportClicked(null, button);
       } else if ("import" == type) {
-        // this.onImportClicked(button);
+        this.onImportClicked(button);
       } else if ("customize" == type) {
         var operate_params_cfg = button.operate_params;
         var select_data = button.select_data;
-        // if (
-        //   (select_data == null ||
-        //     select_data == undefined ||
-        //     select_data == "是") &&
-        //   this.multipleSelection <= 0 &&
-        //   operate_params_cfg != undefined &&
-        //   operate_params_cfg != "" &&
-        //   operate_params_cfg != null
-        // ) {
-        //   this.$alert("请选择操作数据", "提示", {
-        //     confirmButtonText: "确定",
-        //   });
-        // } else {
-        var me = this;
+        if (
+          (select_data == null ||
+            select_data == undefined ||
+            select_data == "是") &&
+          this.multipleSelection <= 0 &&
+          operate_params_cfg != undefined &&
+          operate_params_cfg != "" &&
+          operate_params_cfg != null
+        ) {
+          this.$alert("请选择操作数据", "提示", {
+            confirmButtonText: "确定",
+          });
+        } else {
+          var me = this;
 
         if (button.operate_type == "修改") {
           this.customize_update(button, this.multipleSelection);
@@ -2648,24 +2659,71 @@ export default {
           customizeOperate(button, this.multipleSelection, (e) => {
             // dialog操作完成之后的回调 刷新列表
             this.loadTableData();
-          });
+            this.$emit('customize-action-complete', e, button);
+          }, { vm: this });
           // this.customize_add(button, this.multipleSelection);
         } else {
           button.listservice = this.service;
-          customizeOperate(
-            button,
-            this.multipleSelection,
-            (e) => {
-              // dialog操作完成之后的回调 刷新列表
-              // this.loadTableData();
-            },
-            { vm: this }
-          );
+          customizeOperate(button, this.multipleSelection, (e) => {
+            // dialog操作完成之后的回调 刷新列表
+            this.loadTableData();
+            this.$emit('customize-action-complete', e, button);
+          }, { vm: this });
         }
-        // }
+        }
       } else if ("batch_approve" == type) {
-        // this.onBatchApprove(this.multipleSelection, button);
+        this.onBatchApprove(this.multipleSelection, button);
       }
+    },
+    onAddClicked() {
+      this.activeForm = "add";
+    },
+    toggleFilters(item) {
+      if (this.selectFormShow === true) {
+        this.selectFormShow = false;
+        item.button_cls = null
+      } else {
+        this.selectFormShow = true;
+        item.button_cls = 'success'
+      }
+    },
+    batchDeleteData(exeservice) {
+      if (this.multipleSelection.length == 0) {
+        this.$alert("请选择删除数据", "提示", {
+          confirmButtonText: "确定",
+        });
+      } else {
+        this.deleteRow(this.multipleSelection);
+      }
+    },
+    buildBatchConfig(button) {
+      console.log('buildBatchConfig', button);
+      this.$message.warning('批量添加功能待完善');
+    },
+    onBatchUpdateClick() {
+      console.log('onBatchUpdateClick');
+      this.$message.warning('批量更新功能待完善');
+    },
+    onSaveAllClicked() {
+      this.saveData();
+    },
+    addTab(type, urlParams, tab_title, row, button, application) {
+      console.log('addTab', type, urlParams, tab_title);
+      // 使用现有的 addTabByUrl 方法
+      const url = urlParams;
+      this.addTabByUrl(url, tab_title);
+    },
+    onExportClicked(event, button) {
+      console.log('onExportClicked', button);
+      this.$message.warning('导出功能待完善');
+    },
+    onImportClicked(button) {
+      console.log('onImportClicked', button);
+      this.$message.warning('导入功能待完善');
+    },
+    onBatchApprove(selection, button) {
+      console.log('onBatchApprove', selection, button);
+      this.$message.warning('批量审批功能待完善');
     },
     onRowButton(item) {
       const currentRowIndex = this.currentRowIndex;
@@ -2676,6 +2734,7 @@ export default {
           operate_item: item,
           row,
           mainData: this.mainData,
+          service: this.service,
           vm: this,
         }).then((res) => {
           if (res?.type === "deleteRowData") {

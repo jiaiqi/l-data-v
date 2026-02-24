@@ -33,7 +33,7 @@
       :defaultConfig="editorConfig"
       :disabled="!editable"
       :mode="mode"
-      @click.stop
+      @click.stop.native
       @onCreated="onCreated"
       @customPaste="customPaste"
       :key="ticket + 2"
