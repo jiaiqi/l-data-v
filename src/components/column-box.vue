@@ -51,17 +51,10 @@
                       <span v-html="renderColumns(item)"></span>
                     </div>
                   </div>
-                  <!-- <i
-                    class="i-ri-drag-drop-fill handle cursor-move hover-show"
-                    title="拖动"
-                  ></i> -->
-                  <!-- <i
-                    class="i-ri:drag-move-2-fill hover-show handle ml-2px cursor-move text-gray-500 hover:text-blue-500"
-                  ></i> -->
                   <i
                     class="i-ri-file-copy-2-fill hover-show ml-2px cursor-pointer"
-                    title="复制"
-                    @click.stop.prevent="copyColumn(item)"
+                    title="复制字段"
+                    @click.stop.prevent="showCopyOptions(item)"
                   ></i>
                 </div>
               </el-checkbox>
@@ -362,23 +355,40 @@ export default {
     renderColumns(item) {
       return this.highlightText(String(item.columns || ""));
     },
-    copyColumn(item) {
-      const textToCopy = item.columns;
-
+    showCopyOptions(item) {
+      const columnName = item.columns || '';
+      const columnLabel = item.label || columnName;
+      
+      this.$confirm(`请选择要复制的内容`, '复制字段', {
+        confirmButtonText: '复制中文名',
+        cancelButtonText: '复制英文名',
+        distinguishCancelAndClose: true,
+        type: 'info'
+      }).then(() => {
+        // 点击确认按钮：复制中文名
+        this.copyToClipboard(columnLabel, '已复制中文名');
+      }).catch(action => {
+        if (action === 'cancel') {
+          // 点击取消按钮：复制英文名
+          this.copyToClipboard(columnName, '已复制英文名');
+        }
+      });
+    },
+    copyToClipboard(text, successMessage) {
       // 使用 Clipboard API 如果可用
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard
-          .writeText(textToCopy)
+          .writeText(text)
           .then(() => {
-            this.$message.success(`字段[${textToCopy} ]已复制`);
+            this.$message.success(`${successMessage}：${text}`);
           })
           .catch((err) => {
-            this.$message.error("复制失败: ", err);
+            this.$message.error("复制失败：", err);
           });
       } else {
         // 回退到 execCommand 方式
         const textArea = document.createElement("textarea");
-        textArea.value = textToCopy;
+        textArea.value = text;
         textArea.style.position = "fixed";
         textArea.style.top = "-999999px";
         textArea.style.left = "-999999px";
@@ -389,7 +399,7 @@ export default {
         try {
           const successful = document.execCommand("copy");
           if (successful) {
-            this.$message.success(`字段[${textToCopy} ]已复制`);
+            this.$message.success(`${successMessage}：${text}`);
           } else {
             throw new Error("execCommand 复制失败");
           }
