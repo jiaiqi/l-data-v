@@ -1,12 +1,23 @@
 <template>
   <div class="dndList-list1">
     <div class="title">
-      <span class="title-name">{{ singList.name }}</span>
+      <div class="title-name">
+        <span class="mr-8px">
+        {{ singList.name }}
+        </span>
+        <!-- 批量复制按钮 -->
+        <i
+          class="i-ri-file-copy-line cursor-pointer "
+          v-if="allowCheck"
+          @click.stop="showBatchCopyOptions"
+          title="批量复制选中字段"
+        ></i>
+      </div>
       <!-- 搜索框：移动到标题区域，仅在允许勾选时显示 -->
       <el-input
         v-if="allowCheck"
         v-model="searchKeyword"
-        placeholder="搜索字段(名称/列名)"
+        placeholder="搜索字段 (名称/列名)"
         clearable
         size="small"
         class="column-search-input"
@@ -142,7 +153,8 @@
             </el-select>
             <el-input
               v-model="item._condition.value"
-              v-if="!['date','datetime'].includes(item.col_type.toLowerCase()) &&
+              v-if="
+                !['date', 'datetime'].includes(item.col_type.toLowerCase()) &&
                 singList.type === 'condition'
               "
               placeholder="请输入内容"
@@ -166,7 +178,8 @@
             ></el-input>
             <el-date-picker
               v-model="item._condition.value"
-              v-if="['date','datetime'].includes(item.col_type.toLowerCase()) &&
+              v-if="
+                ['date', 'datetime'].includes(item.col_type.toLowerCase()) &&
                 singList.type === 'condition'
               "
               type="daterange"
@@ -356,23 +369,25 @@ export default {
       return this.highlightText(String(item.columns || ""));
     },
     showCopyOptions(item) {
-      const columnName = item.columns || '';
+      const columnName = item.columns || "";
       const columnLabel = item.label || columnName;
-      
-      this.$confirm(`请选择要复制的内容`, '复制字段', {
-        confirmButtonText: '复制中文名',
-        cancelButtonText: '复制英文名',
+
+      this.$confirm(`请选择要复制的内容`, "复制字段", {
+        confirmButtonText: "复制中文名",
+        cancelButtonText: "复制英文名",
         distinguishCancelAndClose: true,
-        type: 'info'
-      }).then(() => {
-        // 点击确认按钮：复制中文名
-        this.copyToClipboard(columnLabel, '已复制中文名');
-      }).catch(action => {
-        if (action === 'cancel') {
-          // 点击取消按钮：复制英文名
-          this.copyToClipboard(columnName, '已复制英文名');
-        }
-      });
+        type: "info",
+      })
+        .then(() => {
+          // 点击确认按钮：复制中文名
+          this.copyToClipboard(columnLabel, "已复制中文名");
+        })
+        .catch((action) => {
+          if (action === "cancel") {
+            // 点击取消按钮：复制英文名
+            this.copyToClipboard(columnName, "已复制英文名");
+          }
+        });
     },
     copyToClipboard(text, successMessage) {
       // 使用 Clipboard API 如果可用
@@ -409,6 +424,51 @@ export default {
 
         document.body.removeChild(textArea);
       }
+    },
+    showBatchCopyOptions() {
+      // 获取所有选中的字段
+      const checkedItems = this.singList.list.filter((item) =>
+        this.checkList.includes(item.columns)
+      );
+
+      if (checkedItems.length === 0) {
+        this.$message.warning("请先选择要复制的字段");
+        return;
+      }
+
+      const columnNames = checkedItems
+        .map((item) => item.columns || "")
+        .join(",");
+      const columnLabels = checkedItems
+        .map((item) => item.label || item.columns || "")
+        .join(",");
+
+      this.$confirm(
+        `已选择 ${checkedItems.length} 个字段，请选择要复制的内容`,
+        "批量复制字段",
+        {
+          confirmButtonText: "复制中文名",
+          cancelButtonText: "复制英文名",
+          distinguishCancelAndClose: true,
+          type: "info",
+        }
+      )
+        .then(() => {
+          // 点击确认按钮：复制中文名
+          this.copyToClipboard(
+            columnLabels,
+            `已复制 ${checkedItems.length} 个字段中文名`
+          );
+        })
+        .catch((action) => {
+          if (action === "cancel") {
+            // 点击取消按钮：复制英文名
+            this.copyToClipboard(
+              columnNames,
+              `已复制 ${checkedItems.length} 个字段英文名`
+            );
+          }
+        });
     },
     handleCheckChange(values) {
       // 确保没有重复值，只保留唯一的字段名
@@ -464,10 +524,14 @@ export default {
             const draggedColumn = draggedItem.columns;
             // 检查字段是否在aggregation或group中存在
             const existsInAggregation = aggregation.some(
-              (item) => item.colName === draggedColumn || item.col_name === draggedColumn
+              (item) =>
+                item.colName === draggedColumn ||
+                item.col_name === draggedColumn
             );
             const existsInGroup = group.some(
-              (item) => item.colName === draggedColumn || item.col_name === draggedColumn
+              (item) =>
+                item.colName === draggedColumn ||
+                item.col_name === draggedColumn
             );
             // 如果字段不在aggregation和group中，则不允许拖入
             if (!existsInAggregation && !existsInGroup) {
@@ -501,17 +565,17 @@ export default {
     deleteItem(sign, list, i) {
       this.setEndData(list);
       sign.aliasName = "";
-      if(this.type === "order"){
+      if (this.type === "order") {
         sign._order.orderType = "";
       }
-      if(this.type === "condition"){
+      if (this.type === "condition") {
         sign._condition.value = "";
         sign._condition.ruleType = "";
       }
-      if(this.type === "aggregation"){
+      if (this.type === "aggregation") {
         sign._aggregation.type = "";
       }
-      if(this.type === "group"){
+      if (this.type === "group") {
         sign._group.type = "";
       }
       for (let i = 0; i < list.list.length; i++) {
@@ -827,7 +891,7 @@ export default {
       if (isClick) {
         let dataType = sign.col_type; // 暂定有时间、数字、其它三种
         dataType = dataType.toLowerCase();
-        if (['date','datetime'].includes(dataType)) {
+        if (["date", "datetime"].includes(dataType)) {
           dataType = "date";
         } else {
           dataType = "others";
@@ -904,7 +968,7 @@ export default {
           // 切换group的操作符
           let dataType = item.col_type || "string"; // 暂定有时间、数字、其它三种
           dataType = dataType.toLowerCase();
-          if (["date","datetime"].includes(dataType)) {
+          if (["date", "datetime"].includes(dataType)) {
             dataType = "date";
           } else {
             dataType = "others";
@@ -1169,6 +1233,21 @@ export default {
     // max-width: 180px;
   }
 
+  // 批量复制按钮样式
+  .batch-copy-btn {
+    color: #fff;
+    font-size: 18px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    margin-left: 8px;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+  }
+
   ::v-deep .el-input__inner {
     background-color: rgba(255, 255, 255, 0.2);
     border: none;
@@ -1188,6 +1267,11 @@ export default {
   font-weight: 600;
   white-space: nowrap;
   padding-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  font-size: 16px;
 }
 
 mark.hl {
