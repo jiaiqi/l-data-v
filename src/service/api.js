@@ -222,6 +222,14 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber, params =
   if (app && app.indexOf("${") > -1) {
     app = renderStr(app, { data: row });
   }
+  if(!app) {
+    Message({
+      showClose: true,
+      message: "应用为空！",
+      type: "error",
+    });
+    return []
+  }
   let req = {
     serviceName: option_list_v2.serviceName,
     colNames: ["*"],

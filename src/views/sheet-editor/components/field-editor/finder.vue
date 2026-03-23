@@ -373,7 +373,7 @@ export default {
     onFocus() {
       this.$emit("focus");
       this.$parent.$parent.$parent.clearCellSelection();
-      if (this.isFk) {
+      if (this.isFk && (['fks', 'fkjson', 'fkjsons'].includes(this.column.colType) ||this.isFkAutoComplete)) {
         this.querySearch("");
       }
     },
@@ -398,7 +398,7 @@ export default {
       const valColumn = this.optionListFinal.refed_col;
       const labelCol = this.optionListFinal.key_disp_col;
       let results = [];
-      const url = `/${this.app}/select/${req.serviceName}`;
+      const url = `/${this.srvInfo?.srv_app || this.app}/select/${req.serviceName}`;
       return this.$http.post(url, req).then((response) => {
         if (response && response.data && response.data.data) {
           let options = response.data.data;
