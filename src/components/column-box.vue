@@ -154,7 +154,7 @@
             <el-input
               v-model="item._condition.value"
               v-if="
-                !['date', 'datetime'].includes(item.col_type.toLowerCase()) &&
+                !['date', 'datetime'].includes(item.col_type && item.col_type.toLowerCase()) &&
                 singList.type === 'condition'
               "
               placeholder="请输入内容"
@@ -179,7 +179,7 @@
             <el-date-picker
               v-model="item._condition.value"
               v-if="
-                ['date', 'datetime'].includes(item.col_type.toLowerCase()) &&
+                ['date', 'datetime'].includes(item.col_type && item.col_type.toLowerCase()) &&
                 singList.type === 'condition'
               "
               type="daterange"
