@@ -14,6 +14,50 @@
     >
       {{ modelValue }}
     </div>
+    <fk-only-edit
+      v-else-if="isOnlyEdit && !setDisabled"
+      :app="app"
+      :field-info="column"
+      :value="value"
+      :column="column"
+      :row="row"
+      :default-options="defaultOptions"
+      :disabled="disabled"
+      @input="onInput"
+      @select="onSelect"
+      @focus="onFocus"
+    ></fk-only-edit>
+
+    <fk-edit-select
+      v-else-if="isEditSelect && !setDisabled"
+      :app="app"
+      :field-info="column"
+      :value="value"
+      :column="column"
+      :row="row"
+      :default-options="defaultOptions"
+      :disabled="disabled"
+      @input="onInput"
+      @select="onSelect"
+      @focus="onFocus"
+      @open-add-dialog="onOpenAddDialog"
+      @open-edit-dialog="onOpenEditDialog"
+    ></fk-edit-select>
+
+    <fk-select
+      v-else-if="srvInfo && srvInfo.refed_col && !setDisabled"
+      :app="app"
+      :field-info="column"
+      :value="value"
+      :column="column"
+      :row="row"
+      :default-options="defaultOptions"
+      :disabled="disabled"
+      @input="onInput"
+      @select="onSelect"
+      @focus="onFocus"
+    ></fk-select>
+
     <div
       v-else-if="isTree && !setDisabled"
       style="width: 100%"
@@ -33,7 +77,6 @@
           <span>
             {{ modelLabel || modelValue || "" }}
           </span>
-          <!-- <el-input  v-model="modelValue"></el-input> -->
         </div>
         <div
           slot="reference"
@@ -77,7 +120,6 @@
       v-else-if="!setDisabled"
       class="flex items-center justify-between w-full"
     >
-      <!-- <span class="text-[14px]" @click="showFinder">{{ modelValue }}</span> -->
       <el-autocomplete
         append-to-body
         clearable
@@ -163,7 +205,16 @@ import { $http } from "../../../common/http.js";
 import { cloneDeep } from "lodash-es";
 import { getFkOptions, onSelect } from "../../../service/api";
 import { renderStr } from "../../../common/common";
+import fkSelect from "./fk-select/fk-select.vue";
+import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
+import fkEditSelect from "./fk-select/fk-edit-select.vue";
+
 export default {
+  components: {
+    fkSelect,
+    fkOnlyEdit,
+    fkEditSelect,
+  },
   data() {
     return {
       allOptions: [],
@@ -200,7 +251,6 @@ export default {
     },
     column: Object,
     row: {
-      // 行数据
       type: Object,
       default: null,
     },
@@ -217,6 +267,7 @@ export default {
     },
     defaultConditionsMap: Object,
     detailButton: Object,
+    defaultOptions: Array,
   },
   computed: {
     linkToDetail() {
@@ -255,6 +306,28 @@ export default {
     srvInfo() {
       return this.column?.redundant_options;
     },
+    addSrvCfg() {
+      return this.srvInfo?.add_srv_cfg;
+    },
+    isEditSelect() {
+      if (this.row?.__inFilterForm === true) {
+        return false;
+      }
+      const addSrvCfg = this.addSrvCfg;
+      return (
+        addSrvCfg?.permission &&
+        addSrvCfg.srv &&
+        this.srvInfo?.allow_input === "编辑选择"
+      );
+    },
+    isOnlyEdit() {
+      const addSrvCfg = this.addSrvCfg;
+      return (
+        addSrvCfg?.permission &&
+        addSrvCfg.srv &&
+        this.srvInfo?.allow_input === "自行输入"
+      );
+    },
   },
   watch: {
     value: {
@@ -264,13 +337,13 @@ export default {
           this.modelValue = newValue;
           if (
             (this.row?.__flag === "add" || this.row?.__flag === "update") &&
-            newValue
+            newValue &&
+            !this.isOnlyEdit &&
+            !this.isEditSelect
           ) {
             this.$nextTick(() => {
-              // this.$refs?.inputRef?.focus()
               this.loadOptions(newValue).then((res) => {
                 if (res?.length > 1) {
-                  // 模糊匹配结果数量大于1
                   let matchedVal = res.find(
                     (item) => item.value === this.value
                   );
@@ -279,7 +352,6 @@ export default {
                   }
                   this.$refs?.inputRef?.focus();
                 } else if (res?.length) {
-                  // 模糊匹配结果数量为1
                   this.$emit("select", cloneDeep(res[0]));
                   if (this.$refs?.inputRef?.activated) {
                     this.$nextTick(() => {
@@ -324,13 +396,27 @@ export default {
     };
   },
   methods: {
+    onInput(val) {
+      this.$emit("input", val);
+    },
+    onSelect(data) {
+      this.$emit("select", data);
+    },
+    onFocus() {
+      this.$emit("onfocus");
+    },
+    onOpenAddDialog(data) {
+      this.$emit("open-add-dialog", data);
+    },
+    onOpenEditDialog(data) {
+      this.$emit("open-edit-dialog", data);
+    },
     showFinder() {
       this.$refs.inputRef?.focus();
     },
     clickNode(node, data) {
       if (this.props.checkStrictly === false) {
         if (data.is_leaf !== "是") {
-          // 非叶子节点 只能选择叶子节点
           return;
         }
       }
@@ -344,13 +430,6 @@ export default {
         this.modelValue = currentValue.label;
       }
       this.$emit("input", this.modelValue);
-      // this.field.model = data;
-      // if (this.dispLoaderV2?.lazyLoad === false) {
-      //   this.selected = [data[this.props.value]];
-      // } else {
-      // this.selected = node.path;
-      // }
-      // this.$emit("field-value-changed", this.field.info.name, this.field);
       this.$nextTick(() => {
         this.$refs.treePopover?.doClose?.();
       });
@@ -360,7 +439,7 @@ export default {
         let address = `/vpages/#/detail/${this.srvInfo.serviceName}/${this.row.id}?srvApp=${this.app}`;
         let tab_title = this.detailButton.service_view_name;
         let disp_col = this.detailButton._disp_col;
-        let disp_value = this.row[disp_col]; //详情页面上的标签
+        let disp_value = this.row[disp_col];
         tab_title = tab_title.replace("查询", "");
         if (disp_value != null && disp_value != undefined && disp_value != "") {
           tab_title = disp_value + "(" + tab_title + "详情)";
@@ -376,17 +455,12 @@ export default {
         if (window.top.tab) {
           window.top.tab.addTab(page);
         } else {
-          // 没有tab实例，在浏览器中打开新标签页
           const page = window.open(address);
           setTimeout(() => {
             page.document.title = tab_title;
           }, 500);
         }
       }
-    },
-    onFocus() {
-      console.log("onfocus");
-      this.$emit("onfocus");
     },
     onFilterClear() {
       this.modelValue = "";
@@ -395,12 +469,10 @@ export default {
       this.remoteMethod();
     },
     onFilterInput(value) {
-      // this.$emit('input',value)
       this.modelValue = value;
       this.remoteMethod(value);
     },
     onPopoverShow() {
-      // this.onFocus()
       this.modelValue = this.value;
       this.remoteMethod(this.modelValue);
     },
@@ -440,7 +512,6 @@ export default {
       if (query && typeof query === "string") {
         queryString = query;
       }
-      //   if (query !== "") {
       if (!this.options?.length) {
         this.loading = true;
         setTimeout(() => {
@@ -484,12 +555,6 @@ export default {
               return item;
             });
             this.allOptions.push(...this.options);
-            // if (this.modelValue) {
-            //   let currentValue = this.options.find(item => item[option.refed_col] === this.modelValue);
-            //   if (currentValue) {
-            //     this.$emit('select', currentValue)
-            //   }
-            // }
             resolve(this.options);
           } else {
             this.options = [];
@@ -515,7 +580,6 @@ export default {
     toFilter(query) {
       this.pageNo = 1;
       this.total = 0;
-      // this.tableloading = true;
 
       let queryString = "";
       if (query && typeof query === "string") {
@@ -562,7 +626,6 @@ export default {
         } else {
           this.options = [];
         }
-        // this.tableloading = false;
       });
     },
     handleSizeChange(val) {
@@ -576,8 +639,6 @@ export default {
     },
     onDBClick(row, column, cell, event) {
       this.$emit("select", cloneDeep(row));
-      // this.modelValue = row[this.srvInfo.refed_col];
-      // this.$emit("input", this.modelValue);
       this.options = JSON.parse(JSON.stringify(this.tableData));
       this.dialogVisible = false;
       this.filterText = "";
@@ -631,8 +692,6 @@ export default {
       ).then((res) => {
         if (res?.data?.length) {
           this.tableData = res.data.map((item) => {
-            // item.label = item[this.srvInfo.key_disp_col];
-            // item.value = item[this.srvInfo.refed_col];
             return item;
           });
           this.total = res?.page?.total;
@@ -660,13 +719,11 @@ export default {
       this.$emit("select", cloneDeep(item));
     },
     querySearch(queryString, callback) {
-      // 关键词搜索
       this.loadOptions(queryString).then((res) => {
         callback(res);
       });
     },
     async loadOptions(queryString, initValue) {
-      // 查询选项
       const srvInfo = this.srvInfo;
       const req = {
         serviceName: srvInfo?.serviceName,
@@ -708,21 +765,13 @@ export default {
             obj.value.indexOf("'") === 0 &&
             obj.value.lastIndexOf("'") === obj.value.length - 1
           ) {
-            // 常量，去掉单引号
             obj.value = obj.value.replace(/\'/gi, "");
           }
           req.condition.push(obj);
         }
       }
       if (queryString) {
-        req.condition = [
-          ...req.condition,
-          // {
-          //   colName: this.srvInfo.key_disp_col,
-          //   ruleType: "like",
-          //   value: queryString,
-          // },
-        ];
+        req.condition = [...req.condition];
         req.relation_condition = {
           relation: "OR",
           data: [{
@@ -747,7 +796,6 @@ export default {
             value: initValue,
           },
         ];
-
       }
       if (srvInfo?.relation_condition) {
         req.relation_condition = srvInfo?.relation_condition;
@@ -762,32 +810,6 @@ export default {
         });
         if (initValue && this.options?.length) {
           this.$emit("select", cloneDeep(this.options[0]));
-        } else if (queryString && this.options?.length) {
-          // let matchedVal = this.options.filter(item => item[this.srvInfo.refed_col] === queryString)
-          // if (matchedVal?.length) {
-          //   this.$emit('select', cloneDeep(matchedVal[0]))
-          //   if (matchedVal?.length === 1) {
-          //     // 有唯一精确匹配结果
-          //     if (this.$refs?.inputRef) {
-          //       this.$nextTick(() => {
-          //         this.$refs.inputRef.activated = false
-          //       })
-          //     }
-          //   }
-          // } else {
-          //   let fuzzyMatchedVal = this.options.filter(item => item[this.srvInfo.refed_col]?.includes(queryString))
-          //   if (fuzzyMatchedVal?.length) {
-          //     if (fuzzyMatchedVal?.length === 1) {
-          //       // 有唯一模糊匹配结果
-          //       this.$emit('select', cloneDeep(fuzzyMatchedVal[0]))
-          //       if (this.$refs?.inputRef) {
-          //         this.$nextTick(() => {
-          //           this.$refs.inputRef.activated = false
-          //         })
-          //       }
-          //     }
-          //   }
-          // }
         }
         return res.data.data;
       } else {
@@ -805,7 +827,6 @@ export default {
 }
 
 .el-popover {
-  // position: fixed;
 }
 
 .el-autocomplete-suggestion.el-popper {

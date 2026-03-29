@@ -23,6 +23,8 @@
     @select="onPickerSelected"
     @input="onInput"
     @onfocus="onFocus"
+    @open-add-dialog="onOpenAddDialog"
+    @open-edit-dialog="onOpenEditDialog"
     v-else-if="isFkAutoComplete"
   >
   </fk-autocomplete>
@@ -37,6 +39,8 @@
     @select="onFkSelect"
     @onfocus="onFocus"
     @multi-tab-option-select-change="onMultiTabOptionSelectChange"
+    @open-add-dialog="onOpenAddDialog"
+    @open-edit-dialog="onOpenEditDialog"
     v-else-if="isFk"
   >
   </fk-selector>
@@ -329,6 +333,12 @@ export default {
       this.field.model = selected?.value || null;
       this.selected = selected || null;
       this.$emit("change", selected);
+    },
+    onOpenAddDialog(data) {
+      this.$emit("open-add-dialog", data);
+    },
+    onOpenEditDialog(data) {
+      this.$emit("open-edit-dialog", data);
     },
     onPickerSelected(selected) {
       this.field.model = selected;

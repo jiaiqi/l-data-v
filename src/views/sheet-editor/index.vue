@@ -156,6 +156,7 @@
         :show.sync="showFieldEditor"
         v-bind="fieldEditorParams"
         @change="dialogChange"
+        @input="onInput"
         @fk-autocomplete-change="fkAutocompleteChange"
         @fk-change="fkChange"
         @fks-change="fksChange"
@@ -2204,14 +2205,25 @@ export default {
       this.$set(this.tableData, rowIndex, row);
       this.handlerRedundant(row["_rawData"], column.key, row.rowKey, rowIndex);
     },
+    onInput(val, row, column) {
+      this.$refs["tableRef"].startEditingCell({
+        rowKey: row.rowKey,
+        colKey: column.field,
+        defaultValue: val || null,
+      });
+      this.$set(row, column.field, val);
+      this.$refs["tableRef"].stopEditingCell();
+    },
     async fkAutocompleteChange(item, row, column) {
       if (!item) {
         item = null;
       }
       this.setCellSelection();
 
-      const defaultValue = item?.label || item?.[column?.__field_info?.redundant?.refedCol] || null;
-
+      let defaultValue = item?.label || item?.[column?.__field_info?.redundant?.refedCol] || null;
+      if(item?.rawData){
+        defaultValue = item?.rawData?.[column?.__field_info?.redundant?.refedCol] || null;
+      }
       const obj = {
         rowKey: row.rowKey,
         colKey: column.field,
@@ -2222,7 +2234,7 @@ export default {
       this.$set(row, column.field, defaultValue);
 
       // 对应的fk字段
-      const rawData = item?.option || item || null;
+      const rawData = item?.option  || item?.rawData || item || null;
       const fkColumn = column?.__field_info?.redundant?.dependField;
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey

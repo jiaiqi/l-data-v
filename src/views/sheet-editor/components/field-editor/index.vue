@@ -44,6 +44,9 @@
       @change="onFinderChange"
       @focus="onfocus = true"
       @blur="onfocus = false"
+      @input="onInput"
+      @open-add-dialog="onOpenAddDialog"
+      @open-edit-dialog="onOpenEditDialog"
       v-else-if="
         ['autocomplete', 'fk', 'fks', 'fkjsons', 'fkjson'].includes(editorType)
       "
@@ -189,8 +192,7 @@ import {
   isFkAutoComplete,
   getFieldType,
 } from "@/utils/sheetUtils.js";
-
-const Finder = () => import("./finder.vue");
+import Finder from "./finder.vue";
 const RichTextEditor = () => import("./rich-text.vue");
 const OptionSelect = () => import("./option-select.vue");
 
@@ -292,10 +294,13 @@ const emit = defineEmits([
   'close',
   'focus',
   'blur',
+  'input',
   'update:show',
   'fk-change',
   'fk-autocomplete-change',
-  'fks-change'
+  'fks-change',
+  'open-add-dialog',
+  'open-edit-dialog'
 ])
 
 // ==================== 响应式数据定义 ====================
@@ -474,6 +479,15 @@ const triggerAutocomplete = (val) => {
 }
 
 /**
+ * 处理输入值变化
+ * @param {string} val - 新的输入值
+ */
+const onInput = (val) => {
+  modelValue.value = val
+  emit("input", val, props.row, props.column)
+}
+
+/**
  * 处理Finder组件的值变化
  * @param {Object|null} item - 选中的项目对象
  * @param {string} item.value - 项目值
@@ -504,6 +518,22 @@ const onFinderChange = (item = null) => {
   if (["fks", "fkjson", "fkjsons"].includes(colType)) {
     emit("fks-change", item, props.row, props.column)
   }
+}
+
+/**
+ * 处理打开新增弹窗事件
+ * @param {Object} data - 包含 field, row, optionCfg 的数据
+ */
+const onOpenAddDialog = (data) => {
+  emit("open-add-dialog", data, props.row, props.column)
+}
+
+/**
+ * 处理打开编辑弹窗事件
+ * @param {Object} data - 包含 field, row, optionCfg, selectedValue 的数据
+ */
+const onOpenEditDialog = (data) => {
+  emit("open-edit-dialog", data, props.row, props.column)
 }
 
 /**
