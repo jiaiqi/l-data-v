@@ -2168,6 +2168,9 @@ export default {
     clearCellSelection() {
       this.$refs?.tableRef?.clearCellSelectionCurrentCell?.();
     },
+    isPlainFkInput(item) {
+      return item?.matched === false && !item?.rawData;
+    },
     fksChange(item, row, column) {
       this.setCellSelection();
       let val = item;
@@ -2192,26 +2195,49 @@ export default {
     },
     fkChange(item, row, column) {
       this.setCellSelection();
+      const rowIndex = this.tableData.findIndex(
+        (item) => item.rowKey === row.rowKey
+      );
+      if (this.isPlainFkInput(item)) {
+        this.$set(row, column.field, item?.value || null);
+        row["_rawData"] = null;
+        this.$set(this.tableData, rowIndex, row);
+        this.handlerRedundant({}, column.key, row.rowKey, rowIndex);
+        return;
+      }
+
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
         defaultValue: item?.value || null,
       });
       this.$refs["tableRef"].stopEditingCell();
-      const rowIndex = this.tableData.findIndex(
-        (item) => item.rowKey === row.rowKey
-      );
       row["_rawData"] = item?.option || item.rawData;
       this.$set(this.tableData, rowIndex, row);
       this.handlerRedundant(row["_rawData"], column.key, row.rowKey, rowIndex);
     },
     onInput(val, row, column) {
+      const rowIndex = this.tableData.findIndex(
+        (item) => item.rowKey === row.rowKey
+      );
+      // if (
+      //   isFk(column?.__field_info) ||
+      //   isFkAutoComplete(column?.__field_info)
+      // ) {
+      //   this.$set(row, column.field, val);
+      //   if (rowIndex > -1) {
+      //     this.$set(this.tableData, rowIndex, row);
+      //   }
+      //   return;
+      // }
+       row =  this.tableData[rowIndex]
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
         defaultValue: val || null,
       });
       this.$set(row, column.field, val);
+      this.$set(this.tableData[rowIndex],column.field, val)
       this.$refs["tableRef"].stopEditingCell();
     },
     async fkAutocompleteChange(item, row, column) {
@@ -2220,7 +2246,11 @@ export default {
       }
       this.setCellSelection();
 
-      let defaultValue = item?.label || item?.[column?.__field_info?.redundant?.refedCol] || null;
+      let defaultValue =
+        item?.displayValue ||
+        item?.label ||
+        item?.[column?.__field_info?.redundant?.refedCol] ||
+        null;
       if(item?.rawData){
         defaultValue = item?.rawData?.[column?.__field_info?.redundant?.refedCol] || null;
       }
@@ -2239,6 +2269,25 @@ export default {
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
       );
+      if (this.isPlainFkInput(item)) {
+        if (fkColumn) {
+          row[fkColumn] = null;
+          row[`_${fkColumn}_data`] = null;
+          if (this.allFields.find((e) => e.columns === fkColumn)) {
+            this.$refs["tableRef"].startEditingCell({
+              rowKey: row.rowKey,
+              colKey: fkColumn,
+              defaultValue: null,
+            });
+            this.$refs["tableRef"].stopEditingCell();
+            this.clearCellSelection();
+          }
+          this.handlerRedundant({}, fkColumn, row.rowKey, rowIndex);
+        }
+        row["_rawData"] = null;
+        this.$set(this.tableData, rowIndex, row);
+        return;
+      }
       if (fkColumn) {
         const fkColumnInfo = this.setAllFields.find(
           (item) => item.columns === fkColumn

@@ -36,6 +36,7 @@
     :fieldInfo="column"
     :srvInfo="column._update_option_list_v2 || column._add_option_list_v2"
     v-model="row[column.columns]"
+    @input="onInput"
     @select="onFkSelect"
     @onfocus="onFocus"
     @multi-tab-option-select-change="onMultiTabOptionSelectChange"

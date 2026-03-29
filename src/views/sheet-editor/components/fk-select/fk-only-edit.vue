@@ -7,8 +7,9 @@
       :placeholder="placeholder"
       :disabled="setDisabled"
       class="native-input"
-      @focus.stop.capture.prevent="handleFocus"
-      @input.stop.capture.prevent="handleInput"
+      @focus.stop="handleFocus"
+      @input.stop="handleInput"
+      @blur="handleBlur"
       @keydown.down.prevent="handleKeyDown"
       @keydown.up.prevent="handleKeyUp"
       @keydown.enter.prevent="handleKeyEnter"
@@ -63,6 +64,8 @@ export default {
       showDropdown: false,
       selectedIndex: -1,
       loading: false,
+      pendingSearchPromise: null,
+      selectedOption: null,
     };
   },
   computed: {
@@ -108,6 +111,9 @@ export default {
         if (newValue !== undefined && newValue !== null) {
           this.inputValue = newValue;
           this.loadLabelByValue(newValue);
+        } else {
+          this.inputValue = "";
+          this.selectedOption = null;
         }
       },
     },
@@ -177,11 +183,12 @@ export default {
         if (res?.data?.state === "SUCCESS" && res?.data?.data?.length) {
           const item = res.data.data[0];
           this.inputValue = item[option.key_disp_col] || val;
-          this.allOptions.push({
+          this.selectedOption = {
             label: item[option.key_disp_col],
             value: item[option.refed_col],
             ...item,
-          });
+          };
+          this.allOptions.push(this.selectedOption);
         }
       } catch (e) {
         console.error("loadLabelByValue error:", e);
@@ -194,8 +201,11 @@ export default {
 
       this.showDropdown = true;
       this.selectedIndex = -1;
+      if (this.shouldClearSelectedOption(inputValue)) {
+        this.selectedOption = null;
+      }
+
       this.remoteSearch(inputValue || null);
-      // this.$emit("input", inputValue || null);
     },
     handleFocus() {
       this.showDropdown = true;
@@ -230,52 +240,50 @@ export default {
       this.showDropdown = false;
       this.selectedIndex = -1;
     },
-    handleSelect(item) {
+    handleSelect(item, extra = {}) {
       if (item) {
         this.inputValue = item[this.labelKey];
         this.showDropdown = false;
+        this.selectedOption = item;
         this.$emit("input", item[this.valueKey]);
         this.$emit("select", {
           value: item[this.valueKey],
           rawData: item,
+          matched: true,
+          inputType: extra.inputType || "select",
+          displayValue: item[this.labelKey],
         });
       }
     },
-    handleBlur() {
+    async handleBlur() {
       if (!this.showDropdown) return;
 
       const queryString = this.inputValue;
       this.showDropdown = false;
 
+      if (this.pendingSearchPromise) {
+        try {
+          await this.pendingSearchPromise;
+        } catch (e) {
+          console.error("handleBlur remoteSearch error:", e);
+        }
+      }
+
       if (!queryString) {
-        this.$emit("input", null);
-        this.$emit("select", { value: null, rawData: null });
+        this.emitPlainInput(null, "clear");
         return;
       }
 
-      const matchedOption = this.options.find(
-        (item) =>
-          String(item[this.valueKey]) === String(queryString) ||
-          String(item[this.labelKey]) === String(queryString)
-      );
+      const matchedOption = this.resolveMatchedOption(queryString);
       if (matchedOption) {
-        this.inputValue = matchedOption[this.labelKey];
-        this.$emit("input", matchedOption[this.valueKey]);
-        this.$emit("select", {
-          value: matchedOption[this.valueKey],
-          rawData: matchedOption,
-        });
+        this.handleSelect(matchedOption, { inputType: "manual-match" });
       } else {
-        this.$emit("input", queryString);
-        this.$emit("select", {
-          value: queryString,
-          rawData: null,
-        });
+        this.emitPlainInput(queryString, "manual-input");
       }
     },
     remoteSearch(queryString) {
       if (!this.srvInfo) {
-        return;
+        return Promise.resolve([]);
       }
 
       this.loading = true;
@@ -283,7 +291,7 @@ export default {
 
       const req = this.buildQueryRequest(option, queryString);
 
-      this.$http
+      const request = this.$http
         .post(
           `/${option.srv_app || this.app}/select/${option.serviceName}`,
           req
@@ -302,10 +310,78 @@ export default {
             this.options = [];
           }
           this.loading = false;
+          return this.options;
         })
         .catch(() => {
           this.loading = false;
+          return [];
+        })
+        .finally(() => {
+          if (this.pendingSearchPromise === request) {
+            this.pendingSearchPromise = null;
+          }
         });
+
+      this.pendingSearchPromise = request;
+      return request;
+    },
+    normalizeOptionValue(val) {
+      return String(val ?? "")
+        .trim()
+        .toLowerCase();
+    },
+    getUniqueOption(matches = []) {
+      const seen = new Set();
+      const uniqueMatches = matches.filter((item) => {
+        const key = `${item?.[this.valueKey] ?? ""}::${item?.[this.labelKey] ?? ""}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+      return uniqueMatches.length === 1 ? uniqueMatches[0] : null;
+    },
+    resolveMatchedOption(queryString) {
+      const query = this.normalizeOptionValue(queryString);
+      if (!query) {
+        return null;
+      }
+
+      const exactMatches = this.options.filter((item) => {
+        const value = this.normalizeOptionValue(item?.[this.valueKey]);
+        const label = this.normalizeOptionValue(item?.[this.labelKey]);
+        return value === query || label === query;
+      });
+      const exactMatch = this.getUniqueOption(exactMatches);
+      return exactMatch;
+    },
+    emitPlainInput(value, inputType = "manual-input") {
+      this.selectedOption = null;
+      this.$emit("input", value);
+      this.$emit("select", {
+        value,
+        rawData: null,
+        matched: false,
+        inputType,
+        displayValue: value,
+      });
+    },
+    shouldClearSelectedOption(inputValue) {
+      if (!this.selectedOption) {
+        return false;
+      }
+      const normalizedInput = this.normalizeOptionValue(inputValue);
+      const normalizedLabel = this.normalizeOptionValue(
+        this.selectedOption?.[this.labelKey]
+      );
+      const normalizedValue = this.normalizeOptionValue(
+        this.selectedOption?.[this.valueKey]
+      );
+      return (
+        normalizedInput !== normalizedLabel &&
+        normalizedInput !== normalizedValue
+      );
     },
     buildQueryRequest(option, queryString) {
       const app =
