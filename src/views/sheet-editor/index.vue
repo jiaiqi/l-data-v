@@ -2216,29 +2216,21 @@ export default {
       this.$set(this.tableData, rowIndex, row);
       this.handlerRedundant(row["_rawData"], column.key, row.rowKey, rowIndex);
     },
-    onInput(val, row, column) {
+    async onInput(val, row, column) {
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
       );
-      // if (
-      //   isFk(column?.__field_info) ||
-      //   isFkAutoComplete(column?.__field_info)
-      // ) {
-      //   this.$set(row, column.field, val);
-      //   if (rowIndex > -1) {
-      //     this.$set(this.tableData, rowIndex, row);
-      //   }
-      //   return;
-      // }
-       row =  this.tableData[rowIndex]
+      row =  this.tableData[rowIndex]
       this.$refs["tableRef"].startEditingCell({
         rowKey: row.rowKey,
         colKey: column.field,
         defaultValue: val || null,
       });
-      this.$set(row, column.field, val);
-      this.$set(this.tableData[rowIndex],column.field, val)
       this.$refs["tableRef"].stopEditingCell();
+      await this.$nextTick();
+      
+      this.$set(row, column.field, val);
+      // this.$set(this.tableData[rowIndex],column.field, val)
     },
     async fkAutocompleteChange(item, row, column) {
       if (!item) {
@@ -4215,7 +4207,6 @@ export default {
         const oldItem = this.oldTableData?.find(
           (d) => d.__id && d.__id === item.__id
         );
-      // debugger
 
         if (!item.__flag && oldItem) {
           const updateObj = this.processUpdateData(
