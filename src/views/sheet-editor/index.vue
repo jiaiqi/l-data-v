@@ -426,12 +426,13 @@ export default {
                   currentCellSelection?.rowKey === row.rowKey
                 ) {
                   if (
-                    ["Date", "DateTime"].includes(colType) ||
+                    this.isFieldEditable(row, column) &&
+                    (["Date", "DateTime"].includes(colType) ||
                     ["fks", "fkjson", "fkjsons"].includes(colType) ||
                     ["Enum", "Dict", "Set"].includes(colType) ||
                     isFkAutoComplete(column?.__field_info) ||
                     isFk(column?.__field_info) ||
-                    column?.__field_info?.trig_act
+                    column?.__field_info?.trig_act)
                   ) {
                     this.$nextTick(() => {
                       this.clearFieldEditorParams();
@@ -456,7 +457,7 @@ export default {
               //   this.$refs.tableRef?.$refs?.cellSelectionRef?.currentCellEl;
               // console.log({ ...currentCellEl });
 
-              if (column.edit || column.editable || this.isSuperAdmin) {
+              if (this.isFieldEditable(row, column)) {
                 // trig_act 字段处理
                 if (column?.__field_info?.trig_act) {
                   event.stopPropagation();
@@ -943,60 +944,42 @@ export default {
           let oldRowData = this.oldTableData?.find(
             (item) => item.__id === row.__id
           );
-          if (row.__flag === "add") {
-            // 新增行 处理in_add
-            if (!this.addColsMap[column.field]?.in_add) {
+          
+          if (!this.isFieldEditable(row, column)) {
+            if (row.__flag === "add") {
               this.$message({
                 message: "新增行不支持编辑当前列",
                 type: "warning",
               });
-              return false;
-            }
-            if (this.addColsMap[column.field].updatable === 0) {
+            } else if (row._edit_field && Array.isArray(row._edit_field)) {
               this.$message({
-                message: "当前列新增时不支持编辑",
+                message: "没有编辑当前列的权限",
+                // message: "当前列不在可编辑字段列表中",
                 type: "warning",
               });
-              return false;
-            }
-          } else {
-            // 编辑行 处理in_update
-            if (!this.updateColsMap?.[column.field]?.in_update) {
+            } else if (!row?.__button_auth?.edit) {
+              console.log("没有当前行的编辑权限！", row, column, oldRowData);
+              Message.error("没有当前行的编辑权限！");
+              if (oldRowData) {
+                const index = this.tableData.findIndex(
+                  (item) => item.__id === row.__id
+                );
+                let rowData = this.tableData[index];
+                this.$set(rowData, column.field, oldRowData[column.field]);
+              }
+              this.$nextTick(() => {
+                this.$refs["tableRef"].stopEditingCell();
+                this.clearCellSelection();
+              });
+            } else {
               this.$message({
                 message: "当前列不支持编辑",
                 type: "warning",
               });
-              return false;
             }
-            if (this.updateColsMap[column.field]?.updatable === 0) {
-              this.$message({
-                message: "当前列不支持编辑",
-                type: "warning",
-              });
-              return false;
-            }
-          }
-          if (
-            row.__flag !== "add" &&
-            !row?.__button_auth?.edit
-            //&& oldRowData?.[column.field] !== row[column.field]
-          ) {
-            console.log("没有当前行的编辑权限！", row, column, oldRowData);
-            Message.error("没有当前行的编辑权限！");
-            if (oldRowData) {
-              // 恢复原来的值
-              const index = this.tableData.findIndex(
-                (item) => item.__id === row.__id
-              );
-              let rowData = this.tableData[index];
-              this.$set(rowData, column.field, oldRowData[column.field]);
-            }
-            this.$nextTick(() => {
-              this.$refs["tableRef"].stopEditingCell();
-              this.clearCellSelection();
-            });
             return false;
           }
+          
           if (["FileList", "Image"].includes(colType)) {
             this.$message.warning(`【${colType}】类型字段不支持双击进行编辑`);
             return false;
@@ -1024,41 +1007,24 @@ export default {
             return false;
           }
           
-          // 超级管理员拥有所有编辑权限，跳过权限检查，只保留数据类型校验
-          if (!this.isSuperAdmin) {
+          if (!this.isFieldEditable(row, column)) {
             if (row.__flag === "add") {
-              // 新增行 处理in_add 为0或者add服务没有这个字段
-              if (!this.addColsMap[column.field]?.in_add) {
-                this.$message({
-                  message: "新增行不支持编辑当前列",
-                  type: "warning",
-                });
-                return false;
-              }
-              if (this.addColsMap[column.field].updatable === 0) {
-                this.$message({
-                  message: "当前列新增时不支持编辑",
-                  type: "warning",
-                });
-                return false;
-              }
+              this.$message({
+                message: "新增行不支持编辑当前列",
+                type: "warning",
+              });
+            } else if (row._edit_field && Array.isArray(row._edit_field)) {
+              this.$message({
+                message: "当前列不在可编辑字段列表中",
+                type: "warning",
+              });
             } else {
-              // 编辑行 处理in_update
-              if (!this.updateColsMap[column.field]?.in_update) {
-                this.$message({
-                  message: "当前列不支持编辑",
-                  type: "warning",
-                });
-                return false;
-              }
-              if (this.updateColsMap[column.field]?.updatable === 0) {
-                this.$message({
-                  message: "当前列不支持编辑",
-                  type: "warning",
-                });
-                return false;
-              }
+              this.$message({
+                message: "当前列不支持编辑",
+                type: "warning",
+              });
             }
+            return false;
           }
 
           if (["DateTime", "Date","date",'datetime'].includes(colType)) {
@@ -1955,7 +1921,25 @@ export default {
     },
   },
   methods: {
-    // 处理单元格选择变化
+    isFieldEditable(row, column) {
+      if (this.isSuperAdmin) {
+        return true;
+      }
+      
+      if (row.__flag === "add") {
+        return !!this.addColsMap[column.field]?.in_add;
+      }
+      
+      if (row._edit_field && Array.isArray(row._edit_field)) {
+        return row._edit_field.includes(column.field);
+      }
+      
+      if (!row?.__button_auth?.edit) {
+        return false;
+      }
+      
+      return !!this.updateColsMap[column.field]?.in_update;
+    },
     handleCellSelection() {
       this.$nextTick(() => {
         const selection = this.$refs?.tableRef?.getRangeCellSelection()
@@ -2356,24 +2340,7 @@ export default {
         this.clearFieldEditorParams();
         return;
       }
-      let editable = true;
-      if (row.__flag === "add") {
-        // 新增行 处理in_add
-        if (!this.addColsMap[column.field]?.in_add) {
-          editable = false;
-        }
-      } else {
-        // 编辑行 处理in_update
-        if (!this.updateColsMap[column.field]?.in_update) {
-          editable = false;
-        }
-      }
-      if (row.__flag !== "add" && !row?.__button_auth?.edit) {
-        editable = false;
-      }
-      if(this.isSuperAdmin){
-        editable = true
-      }
+      const editable = this.isFieldEditable(row, column);
       const oldRowData = this.oldTableData?.find(
         (item) => item.__id && item.__id === row.__id
       );
@@ -3460,11 +3427,7 @@ export default {
                     attrs: {
                       row,
                       column: setColumn,
-                      disabled:
-                        this.disabled ||
-                        !columnObj.edit ||
-                        (row.__flag !== "add" &&
-                          row?.__button_auth?.edit === false),
+                      disabled: this.disabled || !this.isFieldEditable(row, column),
                       app: this.srvApp,
                       value: row[column.field],
                       defaultConditionsMap: this.defaultConditionsMap,
@@ -3788,24 +3751,7 @@ export default {
                   );
                 } else if (["FileList", "Image"].includes(item.col_type)) {
                   // 文件
-                  let editable = true;
-                  if (row.__flag === "add") {
-                    // 新增行 处理in_add
-                    if (!this.addColsMap[column.field]?.in_add) {
-                      editable = false;
-                    }
-                  } else {
-                    // 编辑行 处理in_update
-                    if (!this.updateColsMap[column.field]?.in_update) {
-                      editable = false;
-                    }
-                  }
-                  if (row.__flag !== "add" && !row?.__button_auth?.edit) {
-                    editable = false;
-                  }
-                  if(this.isSuperAdmin){
-                    editable = true
-                  }
+                  const editable = this.isFieldEditable(row, column);
                   return h(FileUpload, {
                     attrs: {
                       row,
@@ -3859,24 +3805,7 @@ export default {
                     },
                   });
                 } else {
-                  let editable = true;
-                  if (row.__flag === "add") {
-                    // 新增行 处理in_add
-                    if (!this.addColsMap[column.field]?.in_add) {
-                      editable = false;
-                    }
-                  } else {
-                    // 编辑行 处理in_update
-                    if (!this.updateColsMap[column.field]?.in_update) {
-                      editable = false;
-                    }
-                  }
-                  if (row.__flag !== "add" && !row?.__button_auth?.edit) {
-                    editable = false;
-                  }
-                  if(this.isSuperAdmin){
-                    editable = true
-                  }
+                  const editable = this.isFieldEditable(row, column);
                   return h(RenderHtml, {
                     attrs: {
                       treeInfo: this.treeInfo,
@@ -3909,7 +3838,7 @@ export default {
                         this.loadTree(event, row, rowIndex, callback, pageNo);
                       },
                       event: (event) => {
-                        if (event === "showRichEditor") {
+                        if (event === "showRichEditor" && this.isFieldEditable(row, column)) {
                           this.buildFieldEditorParams(row, column);
                           this.showFieldEditor = true;
                           this.clearCellSelection();
@@ -5199,23 +5128,10 @@ export default {
           return;
         }
         
-        // 处理总数据量
         if (res.page && "total" in res.page) {
           this.page.total = res.page.total;
         } else {
           this.page.total = res.data?.length || 0;
-        }
-
-        // 处理 _edit_field 字段控制编辑权限
-        // 如果后端返回了 _edit_field，只有其中的字段可以编辑
-        // 如果没有返回 _edit_field，所有字段保持原有的可编辑状态
-        const editFields = res.data?.[0]?._edit_field;
-        if (editFields && Array.isArray(editFields)) {
-          Object.keys(this.updateColsMap).forEach((colName) => {
-            if (!editFields.includes(colName)) {
-              this.updateColsMap[colName].in_update = 0;
-            }
-          });
         }
 
         let tableData = [];
