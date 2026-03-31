@@ -52,6 +52,18 @@
       "
     >
     </finder>
+    <trig-act-editor
+      v-else-if="editorType === 'trig_act'"
+      :row="row"
+      :column="fieldInfo"
+      :field-info="fieldInfo"
+      :app="app"
+      :value="modelValue"
+      @add-success="onTrigActAddSuccess"
+      @focus="$emit('focus')"
+      @blur="$emit('blur')"
+    >
+    </trig-act-editor>
   </div>
 
   <el-dialog
@@ -195,6 +207,7 @@ import {
 import Finder from "./finder.vue";
 const RichTextEditor = () => import("./rich-text.vue");
 const OptionSelect = () => import("./option-select.vue");
+const TrigActEditor = () => import("./trig-act-editor.vue");
 
 // import Finder from "./finder.vue";
 // import RichTextEditor from "./rich-text.vue";
@@ -299,6 +312,7 @@ const emit = defineEmits([
   'fk-change',
   'fk-autocomplete-change',
   'fks-change',
+  'trig-act-add-success',
   'open-add-dialog',
   'open-edit-dialog'
 ])
@@ -371,6 +385,10 @@ const setDisabled = computed(() => {
  */
 const editorType = computed(() => {
   if (props.show) {
+    // trig_act 类型判断
+    if (fieldInfo.value?.trig_act) {
+      return "trig_act"
+    }
     // 富文本类型判断
     if (isRichText(fieldInfo.value)) {
       return "RichText"
@@ -534,6 +552,14 @@ const onOpenAddDialog = (data) => {
  */
 const onOpenEditDialog = (data) => {
   emit("open-edit-dialog", data, props.row, props.column)
+}
+
+/**
+ * 处理 trig_act 字段新增成功事件
+ * @param {Object} data - 新增结果
+ */
+const onTrigActAddSuccess = (data) => {
+  emit("trig-act-add-success", data, props.row, props.column)
 }
 
 /**

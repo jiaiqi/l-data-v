@@ -162,6 +162,7 @@
         @fks-change="fksChange"
         @save="dialogChange"
         @close="dialogClose"
+        @trig-act-add-success="handleTrigActAddSuccess"
         @focus="onFieldEditorFocus"
         @blur="onFieldEditorBlur"
       ></field-editor>
@@ -429,7 +430,8 @@ export default {
                     ["fks", "fkjson", "fkjsons"].includes(colType) ||
                     ["Enum", "Dict", "Set"].includes(colType) ||
                     isFkAutoComplete(column?.__field_info) ||
-                    isFk(column?.__field_info)
+                    isFk(column?.__field_info) ||
+                    column?.__field_info?.trig_act
                   ) {
                     this.$nextTick(() => {
                       this.clearFieldEditorParams();
@@ -455,6 +457,16 @@ export default {
               // console.log({ ...currentCellEl });
 
               if (column.edit || column.editable || this.isSuperAdmin) {
+                // trig_act 字段处理
+                if (column?.__field_info?.trig_act) {
+                  event.stopPropagation();
+                  this.buildFieldEditorParams(row, column);
+                  this.showFieldEditor = true;
+                  this.$nextTick(() => {
+                    this.clearCellSelection();
+                  });
+                  return false;
+                }
                 if (["Note", "RichText", "snote"].includes(colType)) {
                   // 富文本
                   event.stopPropagation();
@@ -2327,6 +2339,14 @@ export default {
       this.clearCellSelection();
       this.buildFieldEditorParams();
     },
+    handleTrigActAddSuccess() {
+      this.clearCellSelection();
+      this.clearFieldEditorParams();
+      this.isFetched = false;
+      this.getList().then(() => {
+        this.isFetched = true;
+      });
+    },
     clearFieldEditorParams() {
       this.fieldEditorParams = null;
       this.showFieldEditor = false;
@@ -3288,7 +3308,7 @@ export default {
               key: item.columns,
               width: width && width < minWidth ? minWidth : width,
               // minWidth: width,
-              edit: this.isSuperAdmin || item.editable === true || item.canAdd == true, // 超级管理员拥有所有编辑权限
+              edit: this.isSuperAdmin || item.editable === true || item.canAdd == true || !!item?.trig_act, // trig_act 字段可触发编辑器显示操作图标，超级管理员拥有所有编辑权限
              
              __field_info: { ...item },
             };
@@ -5184,6 +5204,18 @@ export default {
           this.page.total = res.page.total;
         } else {
           this.page.total = res.data?.length || 0;
+        }
+
+        // 处理 _edit_field 字段控制编辑权限
+        // 如果后端返回了 _edit_field，只有其中的字段可以编辑
+        // 如果没有返回 _edit_field，所有字段保持原有的可编辑状态
+        const editFields = res.data?.[0]?._edit_field;
+        if (editFields && Array.isArray(editFields)) {
+          Object.keys(this.updateColsMap).forEach((colName) => {
+            if (!editFields.includes(colName)) {
+              this.updateColsMap[colName].in_update = 0;
+            }
+          });
         }
 
         let tableData = [];
