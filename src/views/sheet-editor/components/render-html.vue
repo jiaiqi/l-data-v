@@ -215,6 +215,11 @@ export default {
   },
   created() {
     this.ticket = sessionStorage.getItem("bx_auth_ticket");
+    // Autocomplete 类型字段不应在此处理，由 fkAutocomplete 组件处理
+    if (isFkAutoComplete(this.column)) {
+      this.$emit("created", this);
+      return;
+    }
     if (this.row?.__flag === "add") {
       const redundant = this.column?.redundant;
       const dependField = redundant?.dependField;

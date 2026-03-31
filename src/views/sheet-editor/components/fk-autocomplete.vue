@@ -45,7 +45,7 @@
     ></fk-edit-select>
 
     <fk-select
-      v-else-if="srvInfo && srvInfo.refed_col && !setDisabled"
+      v-else-if="srvInfo && srvInfo.refed_col && isFk && !setDisabled"
       :app="app"
       :field-info="column"
       :value="value"
@@ -208,6 +208,7 @@ import { renderStr } from "../../../common/common";
 import fkSelect from "./fk-select/fk-select.vue";
 import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
+import { isFk } from "@/utils/sheetUtils";
 
 export default {
   components: {
@@ -270,6 +271,9 @@ export default {
     defaultOptions: Array,
   },
   computed: {
+    isFk() {
+      return isFk(this.column);
+    },
     linkToDetail() {
       return (
         this?.column?.linkToDetail === true && this.detailButton?.permission
