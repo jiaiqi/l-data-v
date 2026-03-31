@@ -123,10 +123,10 @@ export default {
       return this.trigAct?.sel_srv || null;
     },
     hasAddSrv() {
-      return !!this.addSrvConfig?.srv;
+      return !!this.addSrvConfig?.srv &&this.addSrvConfig?.permission!==false;
     },
     hasSelSrv() {
-      return !!this.selSrvConfig?.srv;
+      return !!this.selSrvConfig?.srv &&this.selSrvConfig?.permission!==false;
     },
     displayValue() {
       return this.value ?? "";
