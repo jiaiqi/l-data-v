@@ -14,7 +14,7 @@
         :title="btn.title"
         @click.stop="btn.handler"
       >
-        <i :class="btn.icon"></i>
+        <img :src="btn.icon" class="btn-icon" :alt="btn.text" />
         <span class="btn-text">{{ btn.text }}</span>
       </div>
     </div>
@@ -59,6 +59,9 @@
 </template>
 
 <script>
+import addIcon from "@/assets/img/add.png";
+import historyIcon from "@/assets/img/history.png";
+
 export default {
   name: "TrigActEditor",
   directives: {
@@ -136,7 +139,7 @@ export default {
       if (this.hasAddSrv) {
         buttons.push({
           key: "add",
-          icon: "el-icon-plus",
+          icon: addIcon,
           text: "新增",
           title: this.addDialogTitle,
           className: "btn-add",
@@ -147,7 +150,7 @@ export default {
       if (this.hasSelSrv) {
         buttons.push({
           key: "history",
-          icon: "el-icon-time",
+          icon: historyIcon,
           text: "历史",
           title: this.historyDialogTitle,
           className: "btn-history",
@@ -325,6 +328,13 @@ export default {
         transition: color 0.2s ease;
       }
 
+      .btn-icon {
+        width: 18px;
+        height: 18px;
+        margin-bottom: 2px;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
+
       .btn-text {
         font-size: 12px;
         color: #606266;
@@ -335,8 +345,8 @@ export default {
       &:hover {
         background: #f5f7fa;
 
-        i {
-          color: #66b1ff;
+        .btn-icon {
+          transform: scale(1.1);
         }
 
         .btn-text {
@@ -346,28 +356,32 @@ export default {
 
       &:active {
         background: #ecf5ff;
+
+        .btn-icon {
+          transform: scale(0.95);
+        }
       }
 
       &.btn-add {
-        i {
-          color: #67c23a;
+        .btn-icon {
+          opacity: 1;
         }
 
         &:hover {
-          i {
-            color: #85ce61;
+          .btn-icon {
+            opacity: 0.85;
           }
         }
       }
 
       &.btn-history {
-        i {
-          color: #409eff;
+        .btn-icon {
+          opacity: 1;
         }
 
         &:hover {
-          i {
-            color: #66b1ff;
+          .btn-icon {
+            opacity: 0.85;
           }
         }
       }
