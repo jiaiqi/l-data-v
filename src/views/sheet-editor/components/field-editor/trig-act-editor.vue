@@ -5,19 +5,18 @@
     v-clickoutside="handleClickOutside"
   >
     <div class="cell-display">{{ displayValue }}</div>
-    <div class="action-icons">
-      <i
-        v-if="hasAddSrv"
-        class="icon-add el-icon-plus"
-        title="新增"
-        @click.stop="openAddDialog"
-      ></i>
-      <i
-        v-if="hasSelSrv"
-        class="icon-history el-icon-time"
-        title="历史记录"
-        @click.stop="openHistoryDialog"
-      ></i>
+    <div class="action-icons" v-if="actionButtons.length > 0">
+      <div
+        v-for="btn in actionButtons"
+        :key="btn.key"
+        class="action-btn"
+        :class="btn.className"
+        :title="btn.title"
+        @click.stop="btn.handler"
+      >
+        <i :class="btn.icon"></i>
+        <span class="btn-text">{{ btn.text }}</span>
+      </div>
     </div>
 
     <el-dialog
@@ -130,6 +129,33 @@ export default {
     },
     displayValue() {
       return this.value ?? "";
+    },
+    actionButtons() {
+      const buttons = [];
+      
+      if (this.hasAddSrv) {
+        buttons.push({
+          key: "add",
+          icon: "el-icon-plus",
+          text: "新增",
+          title: this.addDialogTitle,
+          className: "btn-add",
+          handler: this.openAddDialog,
+        });
+      }
+      
+      if (this.hasSelSrv) {
+        buttons.push({
+          key: "history",
+          icon: "el-icon-time",
+          text: "历史",
+          title: this.historyDialogTitle,
+          className: "btn-history",
+          handler: this.openHistoryDialog,
+        });
+      }
+      
+      return buttons;
     },
     historyDialogTitle() {
       return this.selSrvConfig?.title || "历史记录";
@@ -270,24 +296,80 @@ export default {
     position: absolute;
     right: 0;
     top: 50%;
-    transform: translateX(calc(100% + 5px)) translateY(-50%);
+    transform: translateX(calc(100% + 8px)) translateY(-50%);
     z-index: 9;
     display: flex;
-    align-items: center;
-    gap: 4px;
+    flex-direction: column;
+    gap: 2px;
     background: #fff;
-    border: 1px solid #333;
-    border-radius: 4px;
-    padding: 4px;
+    border: 1px solid #dcdfe6;
+    border-radius: 6px;
+    padding: 6px 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 
-    i {
-      font-size: 16px;
-      color: #409eff;
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 8px;
+      border-radius: 4px;
       cursor: pointer;
-      padding: 2px;
+      transition: all 0.2s ease;
+      min-width: 50px;
+
+      i {
+        font-size: 18px;
+        color: #409eff;
+        margin-bottom: 2px;
+        transition: color 0.2s ease;
+      }
+
+      .btn-text {
+        font-size: 12px;
+        color: #606266;
+        white-space: nowrap;
+        transition: color 0.2s ease;
+      }
 
       &:hover {
-        color: #66b1ff;
+        background: #f5f7fa;
+
+        i {
+          color: #66b1ff;
+        }
+
+        .btn-text {
+          color: #409eff;
+        }
+      }
+
+      &:active {
+        background: #ecf5ff;
+      }
+
+      &.btn-add {
+        i {
+          color: #67c23a;
+        }
+
+        &:hover {
+          i {
+            color: #85ce61;
+          }
+        }
+      }
+
+      &.btn-history {
+        i {
+          color: #409eff;
+        }
+
+        &:hover {
+          i {
+            color: #66b1ff;
+          }
+        }
       }
     }
   }

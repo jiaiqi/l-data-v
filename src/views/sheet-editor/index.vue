@@ -173,11 +173,16 @@
 <script>
 // 导入外部工具库、js
 import dayjs from "dayjs";
-import { uniqueId, cloneDeep, debounce } from "lodash-es";
+import { uniqueId, cloneDeep, debounce, throttle, memoize } from "lodash-es";
 
 // 导入外部组件
 import { Message, Loading } from "element-ui"; // 引入elementUI的Message组件
 import Teleport from "vue2-teleport";
+
+// 导入 Composables
+import { usePermission } from "./composables/usePermission.js";
+import { useDataProcessor } from "./composables/useDataProcessor.js";
+import { useEventHandler } from "./composables/useEventHandler.js";
 
 // 导入js
 import { useUserStore } from "@/stores/user.js";
@@ -230,13 +235,30 @@ const DropMenu = () => import("./components/drop-menu/drop-menu.vue");
 let broadcastChannel = null; //跨iframe通信的实例
 export default {
   name: "SheetEditor",
+  setup(props, context) {
+    // ========== Composables 初始化 ==========
+    // 注意：这是 Vue 2 Options API 与 Composition API 混合使用的过渡方案
+    // setup() 返回的状态会与 Options API 中的 data 合并
+    // 由于 Vue 2 的限制，这里返回的简单值不是响应式的
+    // 响应式状态仍然由 Options API 的 data() 管理
+    // 
+    // 迁移进度说明：
+    // - usePermission: 已创建 Composable，待逐步迁移
+    // - useDataProcessor: 已创建 Composable，待逐步迁移
+    // - useEventHandler: 已创建 Composable，待逐步迁移
+    //
+    // 下一步：将 Options API 中的 data/computed/methods 逐步迁移到 Composables
+    
+    return {};
+  },
   beforeDestroy() {
     broadcastChannel?.close();
     broadcastChannel = null;
-    // 移除事件监听
     this.removeDocumentEventListener();
-    // 在组件销毁前清除定时器
     this.stopAutoSave();
+    this.clearColumnsCache();
+    this.oldTableData = [];
+    this.tableData = [];
   },
   async created() {
     // 初始化用户状态管理
@@ -313,8 +335,8 @@ export default {
       fieldEditorParams: null,
       fieldEditorPosition: {},
       showFieldEditor: false,
-      autoSaveInterval: null, //用于储存定时保存的定时器
-      autoSaveTimeout: 0, //自动保存倒计时
+      autoSaveInterval: null,
+      autoSaveTimeout: 0,
       showDropMenu: false,
       dLeft: 0,
       dTop: 0,
@@ -324,7 +346,6 @@ export default {
       initData: null,
       mainData: null,
       mainService: "",
-      //子表配置
       childListCfg: {
         foreign_key: null,
         data_source_cfg: null,
@@ -333,26 +354,27 @@ export default {
       initExprCols: [],
       initCond: [],
       calcReqData: null,
-      columnWidthMap: {}, //存储改变后的列宽
+      columnWidthMap: {},
       pageNo: uniqueId("pageNo"),
       listType: "list",
-      childListType: null, //子表类型 addchildlist/updatechildlist/detaillist
+      childListType: null,
       treeList: [],
       page: {
-        //分页信息
         total: 0,
         rownumber: 20,
         pageNo: 1,
       },
-      sortState: [], // 表头排序
-      filterState: {}, //筛选
-      normalService: [], //普通服务，select、add、update
-      listColsMap: {}, //列表字段映射
-      listCols: [], //列表字段
-      addColsMap: {}, //新增字段映射
-      addCols: [], //新增字段
-      updateColsMap: {}, //编辑字段映射
-      updateCols: [], //编辑字段
+      sortState: [],
+      filterState: {},
+      normalService: [],
+      listColsMap: {},
+      listCols: [],
+      addColsMap: {},
+      addCols: [],
+      updateColsMap: {},
+      updateCols: [],
+      _columnsCache: null,
+      _lastColumnsKey: null,
       customCols: [], //自定义服务查回来的字段
       loading: false,
       isFetched: false, //数据加载完成
@@ -604,7 +626,9 @@ export default {
       },
       // 虚拟滚动配置
       virtualScrollOption: {
-        enable: false,
+        enable: true,
+        threshold: 50,
+        estimatedRowHeight: 40,
         scrolling: this.scrolling,
       },
       // 单元格自动填充配置
@@ -1226,7 +1250,7 @@ export default {
   },
   watch: {
     tableData: {
-      deep: true,
+      deep: false,
       handler(newValue, oldValue) {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         this.calcReqData = this.buildReqParams();
@@ -1234,6 +1258,13 @@ export default {
           currentSelection?.selectionRangeIndexes?.startRowIndex;
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
+        }
+      },
+    },
+    'tableData.length': {
+      handler(newLen, oldLen) {
+        if (newLen !== oldLen) {
+          this.calcReqData = this.buildReqParams();
         }
       },
     },
@@ -1272,31 +1303,30 @@ export default {
       }
     },
     gridButton() {
-      return this.v2data?.gridButton?.filter((item) => {
+      const buttons = this.v2data?.gridButton;
+      if (!buttons || !buttons.length) return [];
+      return buttons.filter((item) => {
         if (["select", "refresh"].includes(item.button_type)) {
           return false;
         }
         if (["增加弹出"]?.includes(item.operate_type)) {
           return false;
         }
-        if (!item.permission) {
-          return false;
-        }
-        return true;
+        return item.permission === true;
       });
     },
     rowButton() {
-      return this.v2data?.rowButton
-        ?.filter((item, index) => {
+      const buttons = this.v2data?.rowButton;
+      if (!buttons || !buttons.length) return [];
+      return buttons
+        .filter((item, index) => {
           item._index = index;
           return !["edit"].includes(item.button_type) && item.permission;
         })
-        ?.map((item) => {
-          return {
-            label: item.button_name,
-            ...item,
-          };
-        });
+        .map((item) => ({
+          label: item.button_name,
+          ...item,
+        }));
     },
     setAllFields() {
       // 所有字段
@@ -1921,6 +1951,62 @@ export default {
     },
   },
   methods: {
+    freezeReadOnlyData(data) {
+      if (!data || typeof data !== 'object') return data;
+      if (Array.isArray(data)) {
+        return Object.freeze(data.map(item => this.freezeReadOnlyData(item)));
+      }
+      const frozen = { ...data };
+      Object.keys(frozen).forEach(key => {
+        if (frozen[key] && typeof frozen[key] === 'object') {
+          frozen[key] = this.freezeReadOnlyData(frozen[key]);
+        }
+      });
+      return Object.freeze(frozen);
+    },
+    clearColumnsCache() {
+      this._columnsCache = null;
+      this._lastColumnsKey = null;
+    },
+    // ========== 权限相关方法（待迁移到 usePermission）==========
+    // 迁移进度：已创建 usePermission Composable，以下方法待逐步迁移
+    // - isFieldEditable: 字段可编辑性判断
+    // - setButtonAuth: 按钮权限设置
+    // - toggleSuperAdmin: 切换超级管理员模式
+    // - toggleShowAllFields: 切换显示所有字段
+    // - hasRowEditPermission: 行编辑权限判断
+    // - hasRowDeletePermission: 行删除权限判断
+    
+    /**
+     * 判断指定行的指定字段是否可编辑
+     * 
+     * 该方法是表格编辑权限控制的核心方法，根据多种条件综合判断字段的编辑权限：
+     * 1. 超级管理员模式：拥有所有字段的编辑权限
+     * 2. 新增行：根据 addColsMap 中的 in_add 属性判断
+     * 3. 行级可编辑字段：根据 _edit_field 数组判断（后端返回的可编辑字段列表）
+     * 4. 行级编辑权限：根据 __button_auth.edit 判断是否有行编辑权限
+     * 5. 字段级更新权限：根据 updateColsMap 中的 in_update 属性判断
+     * 
+     * @param {Object} row - 行数据对象，包含以下关键属性：
+     *   - __flag: 行状态标识 ('add' | 'update' | null)
+     *   - _edit_field: 行级可编辑字段数组（可选）
+     *   - __button_auth: 按钮权限对象，包含 edit 属性
+     * @param {Object} column - 列配置对象，包含以下关键属性：
+     *   - field: 字段名称
+     *   - __field_info: 字段元信息
+     * @returns {boolean} 返回字段是否可编辑
+     * 
+     * @example
+     * // 检查新增行的字段是否可编辑
+     * const editable = this.isFieldEditable({ __flag: 'add' }, { field: 'name' });
+     * 
+     * @example
+     * // 检查已存在行的字段是否可编辑
+     * const editable = this.isFieldEditable(
+     *   { __button_auth: { edit: true }, _edit_field: ['name', 'age'] },
+     *   { field: 'name' }
+     * );
+     */
     isFieldEditable(row, column) {
       if (this.isSuperAdmin) {
         return true;
@@ -1940,25 +2026,31 @@ export default {
       
       return !!this.updateColsMap[column.field]?.in_update;
     },
-    handleCellSelection() {
+    // ========== 事件处理相关方法（待迁移到 useEventHandler）==========
+    // 迁移进度：已创建 useEventHandler Composable，以下方法待逐步迁移
+    // - handleCellSelection: 处理单元格选择统计
+    // - calculateSelectionStats: 计算选中区域统计
+    // - bindKeydownListener: 绑定键盘事件监听
+    // - initDocumentEventListener: 初始化文档事件监听
+    // - removeDocumentEventListener: 移除文档事件监听
+    // - onCtrlS: Ctrl+S 保存快捷键
+    
+    handleCellSelection: throttle(function() {
       this.$nextTick(() => {
         const selection = this.$refs?.tableRef?.getRangeCellSelection()
         
         if (!selection || !selection.selectionRangeIndexes) {
-          // 没有选择或选择无效，隐藏统计信息
           this.selectionStats.visible = false
           return
         }
 
         const { startRowIndex, endRowIndex, startColIndex, endColIndex } = selection.selectionRangeIndexes
         
-        // 如果是单个单元格选择
         if (startRowIndex === endRowIndex && startColIndex === endColIndex) {
           this.selectionStats.visible = false
           return
         }
 
-        // 计算统计数据
         const stats = this.calculateSelectionStats(startRowIndex, endRowIndex, startColIndex, endColIndex)
         
         if (stats.count === 0) {
@@ -1966,19 +2058,18 @@ export default {
           return
         }
 
-        // 更新统计信息
         this.selectionStats = {
           ...this.selectionStats,
           visible: true,
-          sum: stats.sum, // 求和
-          count: stats.count, // 计数
-          numericCount: stats.numericCount, // 数值计数
-          avg: stats.avg, // 平均值
-          min: stats.min, // 最小值
-          max: stats.max // 最大值
+          sum: stats.sum,
+          count: stats.count,
+          numericCount: stats.numericCount,
+          avg: stats.avg,
+          min: stats.min,
+          max: stats.max
         }
       })
-    },
+    }, 100, { leading: true, trailing: false }),
 
     // 计算选中区域的统计数据
     calculateSelectionStats(startRowIndex, endRowIndex, startColIndex, endColIndex) {
@@ -5036,6 +5127,19 @@ export default {
         callback();
       }
     },
+    // ========== 数据处理相关方法（待迁移到 useDataProcessor）==========
+    // 迁移进度：已创建 useDataProcessor Composable，以下方法待逐步迁移
+    // - getList: 获取列表数据
+    // - saveData: 保存数据
+    // - deleteRow: 删除行
+    // - buildReqParams: 构建请求参数
+    // - optimisticUpdate: 乐观更新
+    // - processUpdateData: 处理更新数据
+    // - loadTree: 加载树形数据
+    // - loadChildren: 加载子节点
+    // - refreshData: 刷新数据
+    // - refreshV2: 刷新V2数据
+    
     setButtonAuth(btns, data) {
       const obj = {};
       if (Array.isArray(btns) && btns?.length) {
@@ -5057,6 +5161,38 @@ export default {
       }
       return obj;
     },
+    /**
+     * 获取列表数据
+     * 
+     * 该方法是表格数据加载的核心方法，负责从服务器获取数据并进行处理。
+     * 支持普通列表和树形列表两种模式，具有以下功能：
+     * 
+     * ## 主要功能
+     * 1. **登录状态检查**：检测登录票据变化，自动刷新 V2 配置
+     * 2. **条件构建**：合并默认条件、初始条件和筛选条件
+     * 3. **数据请求**：调用 onSelect 接口获取数据
+     * 4. **权限处理**：为每行数据设置按钮权限
+     * 5. **数据转换**：为数据添加内部属性（__id, rowKey, __flag 等）
+     * 6. **分页处理**：普通列表后端分页，树形列表前端分页
+     * 7. **树形展开**：支持树形列表的节点展开状态保持
+     * 
+     * ## 数据处理流程
+     * 1. 检查登录状态 → 2. 构建查询条件 → 3. 请求数据
+     * 4. 设置权限 → 5. 转换数据格式 → 6. 处理分页 → 7. 加载子节点
+     * 
+     * @param {boolean} [insertNewRows=true] - 当列表为空时是否自动插入新行
+     * @param {Array<string|number>} [unfoldIds] - 需要保持展开状态的节点ID数组（树形列表使用）
+     * @returns {Promise<void>}
+     * 
+     * @example
+     * // 普通列表刷新
+     * await this.getList();
+     * 
+     * @example
+     * // 树形列表刷新并保持展开状态
+     * const unfoldIds = this.tableData.filter(item => item.__unfold).map(item => item.id);
+     * await this.getList(true, unfoldIds);
+     */
     async getList(insertNewRows = true, unfoldIds) {
       if (
         sessionStorage.getItem("bx_auth_ticket") &&
@@ -5076,7 +5212,6 @@ export default {
           this.initCond.forEach((item) => {
             if (!condition.find((c) => c.colName === item.colName)) {
               if (item.ruleType === "eq" && item.value === undefined) {
-                // 变量值不存在的默认条件忽略掉
                 return;
               }
               condition.push(item);
@@ -5093,12 +5228,11 @@ export default {
           }
           return item;
         });
-        // 树形列表在前端分页，获取所有数据
         const isTreeMode = this.isTree && this.listType === "treelist";
         
         const res = await onSelect(this.serviceName, this.srvApp, condition, {
-          rownumber: isTreeMode ? 999999 : this.page.rownumber, // 树形列表获取所有数据
-          pageNo: isTreeMode ? 1 : this.page.pageNo, // 树形列表从第一页开始
+          rownumber: isTreeMode ? 999999 : this.page.rownumber,
+          pageNo: isTreeMode ? 1 : this.page.pageNo,
           vpage_no: this.v2data?.vpage_no,
           order: this.sortState,
           isTree: isTreeMode,
@@ -5110,7 +5244,6 @@ export default {
 
         if (res?.data?.length) {
           if (res.page) {
-            // 保存原始页码信息，树形列表需要使用
             this.originalPage = res.page;
           }
           res.data = res.data.map((item) => {
@@ -5121,7 +5254,6 @@ export default {
             return item;
           });
         } else if (res?.resultCode === "0011") {
-          // this.$message.error('登录超时请重新登录')
           this.$refs?.loginRef?.open(() => {
             this.initPage(false);
           });
@@ -5142,7 +5274,6 @@ export default {
             __id,
             __flag: null,
             ...res.data[i],
-            // __flag: "update",
           };
           if (unfoldIds && unfoldIds?.includes(res.data[i].id)) {
             dataItem.__unfold = true;
@@ -5150,13 +5281,9 @@ export default {
           tableData.push(dataItem);
         }
         
-        // 树形列表前端分页处理
         if (isTreeMode) {
-          // 计算分页范围
           const startIndex = (this.page.pageNo - 1) * this.page.rownumber;
           const endIndex = startIndex + this.page.rownumber;
-          
-          // 只显示当前页的数据
           this.tableData = tableData.slice(startIndex, endIndex);
         } else {
           this.tableData = tableData;
@@ -5166,7 +5293,7 @@ export default {
           this.tableData = await this.loadChildren(unfoldIds, this.tableData);
         }
 
-        this.oldTableData = JSON.parse(JSON.stringify(this.tableData));
+        this.oldTableData = cloneDeep(this.tableData);
 
         this.recordManager = new RecordManager();
 
