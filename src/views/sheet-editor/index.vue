@@ -31,15 +31,18 @@
       :can-switch-add="Boolean(Object.keys(addColsMap || {}).length)"
       :can-switch-update="Boolean(Object.keys(updateColsMap || {}).length)"
       :service-name="serviceName"
+      :srv-app="srvApp"
       :normal-service="normalService"
       :is-super-admin="isSuperAdmin"
       :show-all-fields="showAllFields"
       :is-admin="isAdmin"
+      :v2data="v2data"
       @batch-insert-rows="batchInsertRows"
       @list-type-change="listTypeChange"
       @column-source-change="onColumnSourceChange"
       @grid-button-click="onGridButton"
       @refresh-data="refreshData"
+      @refresh-v2-data="refreshV2Data"
       @save-data="saveData"
       @save-column-width="saveColumnWidth"
       @toggle-super-admin="toggleSuperAdmin"
@@ -4366,6 +4369,48 @@ export default {
         });
       }
       return reqData?.length ? reqData : null;
+    },
+    refreshV2Data(){
+      if (this.onHandler) {
+        Message.warning("正在进行其他操作，请稍候重试~");
+        return;
+      }
+      this.startLoading();
+      this.onHandler = true;
+      
+      this.getV2Data(true).then((v2Data) => {
+        if (v2Data && v2Data.srv_cols && v2Data.srv_cols.length) {
+          const tableId = {};
+          v2Data.srv_cols.forEach(i => {
+            if (i.table_column === 'id') {
+              tableId[i.table_name] = i.columns;
+            }
+            this.tableMap[i.columns] = {
+              serviceName: i.table_name?.replace(/^bx/, 'srv')?.concat('_update'),
+              table: i.table_name,
+              column: i.table_column
+            };
+          });
+          Object.keys(this.tableMap).forEach(key => {
+            this.tableMap[key].id = tableId[this.tableMap[key].table];
+          });
+        }
+        
+        this.buildColumns();
+        this.getList().then(() => {
+          this.loading = false;
+          this.onHandler = false;
+          Message.success("V2数据已刷新");
+        }).catch(() => {
+          this.loading = false;
+          this.onHandler = false;
+        });
+      }).catch((error) => {
+        console.error('刷新V2数据失败:', error);
+        this.loading = false;
+        this.onHandler = false;
+        Message.error("刷新V2数据失败");
+      });
     },
     refreshData() {
       if (this.onHandler) {

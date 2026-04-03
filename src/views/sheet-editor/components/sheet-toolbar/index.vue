@@ -134,6 +134,50 @@
         </el-button>
       </div>
 
+      <!-- 开发者按钮下拉菜单 -->
+      <el-dropdown v-if="isDeveloper" trigger="hover" size="mini">
+        <el-button type="primary" size="mini">
+          <i class="el-icon-setting"></i>
+          <span>开发</span>
+          <i class="el-icon-arrow-down el-icon--right"></i>
+        </el-button>
+        <el-dropdown-menu slot="dropdown">
+          <el-dropdown-item>
+            <el-button
+              type="text"
+              @click="handleDeveloperRefresh"
+              title="刷新列表"
+              size="mini"
+            >
+              <i class="el-icon-refresh"></i>
+              刷新V2及列表
+            </el-button>
+          </el-dropdown-item>
+          <el-dropdown-item v-if="serviceName">
+            <el-button
+              type="text"
+              @click="handleToTableDefineDetail"
+              title="跳转到表定义详情"
+              size="mini"
+            >
+              <i class="el-icon-setting"></i>
+              表定义详情
+            </el-button>
+          </el-dropdown-item>
+          <el-dropdown-item>
+            <el-button
+              type="text"
+              @click="copyServiceName"
+              title="复制service"
+              size="mini"
+            >
+              <i class="el-icon-document-copy"></i>
+              复制service
+            </el-button>
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </el-dropdown>
+
       <!-- 功能按钮组 -->
       <div class="button-group flex items-center gap-1">
         <!-- 刷新按钮 -->
@@ -229,10 +273,16 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { ElMessage } from "element-ui";
 import { env, baseURL } from "@/common/http";
 
 // 定义 props
 const props = defineProps({
+  // V2数据
+  v2data: {
+    type: Object,
+    default: null,
+  },
   // 基础配置
   disabled: {
     type: Boolean,
@@ -244,6 +294,10 @@ const props = defineProps({
     default: "list",
   },
   serviceName: {
+    type: String,
+    default: "",
+  },
+  srvApp: {
     type: String,
     default: "",
   },
@@ -341,6 +395,70 @@ const showGridButton = ref(false);
 const showRightSection = computed(() => {
   return env !== "yanxue";
 });
+
+// 开发者相关计算属性
+const isDeveloper = computed(() => {
+  // 是否 开发角色 是的话才会显示表定义详情按钮
+  let userInfo = top.user 
+  if(sessionStorage.current_login_user){
+    try{
+      userInfo = JSON.parse(sessionStorage.current_login_user)
+    }catch(e){
+      userInfo = {}
+    }
+  }
+  const user_type = userInfo?.user_type;
+  return user_type === "KF" || props.isSuperAdmin || false;
+  return props.isSuperAdmin || props.isAdmin || false;
+});
+
+// 开发者菜单方法
+const copyServiceName = () => {
+  if (props.serviceName) {
+    const input = document.createElement("input");
+    input.value = props.serviceName;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand("copy");
+    document.body.removeChild(input);
+    ElMessage({
+      message: "service已复制",
+      type: "success",
+    });
+  }
+};
+
+const handleDeveloperRefresh = () => {
+  emit("refresh-v2-data");
+};
+
+const handleToTableDefineDetail = () => {
+  if (props.serviceName) {
+        // 跳转到表定义详情页
+      const table_name = props.v2data.main_table
+      const table_name_cn = props.v2data.service_view_name?.replace(/列表|查询/g, "") + '(表定义详情)';
+      const service = 'srvsys_table_defined_select';
+      const srvApp = props.srvApp || "";
+      const url = `/vpages/#/detail/${service}/table_name/${table_name}?srvApp=${srvApp}`;
+      addTabByUrl(url, table_name_cn);
+  }
+};
+const addTabByUrl = function (url, tab_title, urlParams, type) {
+  url = url || common_page_path[type] + "?data=" + urlParams;
+  let page = {
+    title: tab_title || "新标页签",
+    url,
+  };
+
+  if (window.top.tab && window.top.tab.addTab) {
+    window.top.tab.addTab(page);
+  } else {
+    let strWindowFeatures =
+      "menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes";
+    let newWindow = window.open(url, "CNN_WindowName", strWindowFeatures);
+    newWindow.document.title = tab_title;
+  }
+};
 
 // 方法
 const toggleGridButton = () => {
