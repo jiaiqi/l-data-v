@@ -434,8 +434,22 @@ export default {
         });
       }
     },
-    handleIframeLoad() {
+    handleIframeLoad(event) {
       console.log("iframe loaded");
+      
+      const target = event.target;
+      let iframe = null;
+      if (target === this.$refs.addIframe) {
+        iframe = this.$refs.addIframe;
+      } else if (target === this.$refs.editIframe) {
+        iframe = this.$refs.editIframe;
+      }
+      
+      if (iframe && iframe.contentDocument) {
+        const style = iframe.contentDocument.createElement('style');
+        style.textContent = '.el-card { overflow-y: auto; }';
+        iframe.contentDocument.head.appendChild(style);
+      }
     },
     handleIframeMessage(event) {
       console.info("收到 iframe 消息:", event.data);
