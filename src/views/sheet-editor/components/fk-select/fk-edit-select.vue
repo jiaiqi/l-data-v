@@ -19,29 +19,65 @@
         </div>
       </template>
     </el-autocomplete>
-    <el-button
-      v-if="!modelValue"
-      class="add-btn"
-      icon="el-icon-plus"
-      :disabled="setDisabled"
-      @click.stop="handleAdd"
-    ></el-button>
-    <el-button
-      v-else
-      class="edit-btn"
-      icon="el-icon-edit"
-      :disabled="setDisabled"
-      @click.stop="handleEdit"
-    ></el-button>
+    <action-button-group
+      v-if="actionButtons.length > 0"
+      :buttons="actionButtons"
+    />
+
+    <el-dialog
+      :title="addDialogTitle"
+      :visible.sync="addDialogVisible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      :close-on-click-modal="false"
+      @close="handleAddDialogClose"
+      custom-class="fk-edit-dialog"
+    >
+      <iframe
+        v-if="addDialogVisible"
+        ref="addIframe"
+        :src="addIframeUrl"
+        frameborder="0"
+        style="width: 100%; height: 70vh; border: none"
+        @load="handleIframeLoad"
+      ></iframe>
+    </el-dialog>
+
+    <el-dialog
+      :title="editDialogTitle"
+      :visible.sync="editDialogVisible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      :close-on-click-modal="false"
+      @close="handleEditDialogClose"
+      custom-class="fk-edit-dialog"
+    >
+      <iframe
+        v-if="editDialogVisible"
+        ref="editIframe"
+        :src="editIframeUrl"
+        frameborder="0"
+        style="width: 100%; height: 70vh; border: none"
+        @load="handleIframeLoad"
+      ></iframe>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { cloneDeep } from "lodash-es";
 import { getFkOptions } from "@/service/api";
+import addIcon from "@/assets/img/add.png";
+import editIcon from "@/assets/img/edit.png";
+import { ActionButtonGroup } from "../action-button";
 
 export default {
   name: "FkEditSelect",
+  components: {
+    ActionButtonGroup
+  },
   props: {
     app: {
       type: String,
@@ -62,8 +98,13 @@ export default {
   data() {
     return {
       options: [],
+      selectItem: null,
       allOptions: [],
       inputValue: "",
+      addDialogVisible: false,
+      editDialogVisible: false,
+      addIcon,
+      editIcon,
     };
   },
   computed: {
@@ -81,9 +122,6 @@ export default {
     srvInfo() {
       return this.getOptionListV2();
     },
-    addSrvCfg() {
-      return this.srvInfo?.add_srv_cfg;
-    },
     valueKey() {
       return this.srvInfo?.refed_col || "value";
     },
@@ -99,6 +137,99 @@ export default {
       }
       return this.disabled;
     },
+    showAddBtn() {
+      return !this.modelValue && this.addSrvCfg?.srv && this.addSrvCfg?.permission !== false;
+    },
+    showEditBtn() {
+      return !!this.modelValue && this.updateSrvCfg?.srv && this.updateSrvCfg?.permission !== false;
+    },
+    actionButtons() {
+      const buttons = [];
+      
+      if (this.showAddBtn) {
+        buttons.push({
+          key: 'add',
+          icon: addIcon,
+          text: '新增',
+          title: '新增',
+          className: 'btn-add',
+          handler: this.handleAdd
+        });
+      }
+      
+      if (this.showEditBtn) {
+        buttons.push({
+          key: 'edit',
+          icon: editIcon,
+          text: '编辑',
+          title: '编辑',
+          className: 'btn-edit',
+          handler: this.handleEdit
+        });
+      }
+      
+      return buttons;
+    },
+    addSrvCfg() {
+      return this.srvInfo?.add_srv_cfg;
+    },
+    updateSrvCfg() {
+      return this.srvInfo?.update_srv_cfg;
+    },
+    addDialogTitle() {
+      return this.addSrvCfg?.title || "新增";
+    },
+    editDialogTitle() {
+      return this.updateSrvCfg?.title || "编辑";
+    },
+    addIframeUrl() {
+      if (!this.addSrvCfg?.srv) {
+        return "";
+      }
+      const serviceName = this.addSrvCfg.srv;
+      let url = `/vpages/#/add/${serviceName}`;
+      const params = [];
+      
+      if (this.srvInfo?.refed_col && this.row) {
+        const operate_params = {
+          data: [
+            {
+              [this.srvInfo.refed_col]: this.row[this.srvInfo.refed_col],
+            },
+          ],
+        };
+        params.push(`operate_params=${JSON.stringify(operate_params)}`);
+      }
+      
+      if (this.addSrvCfg?.app || this.app) {
+        params.push(`srvApp=${encodeURIComponent(this.addSrvCfg?.app || this.app)}`);
+      }
+      
+      if (params.length > 0) {
+        url += `?${params.join("&")}`;
+      }
+      
+      return url;
+    },
+    editIframeUrl() {
+      if (!this.updateSrvCfg?.srv || !this.modelValue) {
+        return "";
+      }
+      // 正确的 update 路由格式：/update/{service_name}/{id}
+      let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.selectItem.id}`;
+      
+      const params = [];
+      
+      if (this.updateSrvCfg?.app || this.app) {
+        params.push(`srvApp=${encodeURIComponent(this.updateSrvCfg?.app || this.app)}`);
+      }
+      
+      if (params.length > 0) {
+        url += `?${params.join("&")}`;
+      }
+      
+      return url;
+    },
   },
   watch: {
     value: {
@@ -112,6 +243,12 @@ export default {
         }
       },
     },
+  },
+  mounted() {
+    window.addEventListener("message", this.handleIframeMessage);
+  },
+  beforeDestroy() {
+    window.removeEventListener("message", this.handleIframeMessage);
   },
   methods: {
     getOptionListV2() {
@@ -144,14 +281,7 @@ export default {
         return;
       }
       const option = cloneDeep(this.srvInfo);
-      const condition = [
-        {
-          colName: option.refed_col,
-          value: val,
-          ruleType: "eq",
-        },
-      ];
-
+      
       try {
         const res = await getFkOptions(
           { ...this.column, option_list_v2: option },
@@ -166,10 +296,11 @@ export default {
 
         if (res?.data?.length) {
           const item = res.data[0];
-          this.inputValue = item[option.key_disp_col] || val;
+          // 使用 labelKey 确保一致性
+          this.inputValue = item[this.labelKey] || item[option.key_disp_col] || val;
           this.allOptions.push({
-            label: item[option.key_disp_col],
-            value: item[option.refed_col],
+            label: item[this.labelKey] || item[option.key_disp_col] || val,
+            value: item[this.valueKey] || item[option.refed_col],
             ...item,
           });
         }
@@ -240,6 +371,7 @@ export default {
         value: item[this.valueKey],
         rawData: item,
       });
+      this.selectItem = item;
     },
     handleBlur() {
       const queryString = this.inputValue;
@@ -277,38 +409,106 @@ export default {
       if (this.setDisabled) {
         return;
       }
-      this.$emit("open-add-dialog", {
-        field: this.fieldInfo,
-        row: this.row,
-        optionCfg: this.srvInfo,
-      });
+      if (this.addSrvCfg?.srv) {
+        this.addDialogVisible = true;
+      } else {
+        this.$emit("open-add-dialog", {
+          field: this.fieldInfo,
+          row: this.row,
+          optionCfg: this.srvInfo,
+        });
+      }
     },
     handleEdit() {
       if (this.setDisabled) {
         return;
       }
-      this.$emit("open-edit-dialog", {
-        field: this.fieldInfo,
-        row: this.row,
-        optionCfg: this.srvInfo,
-        selectedValue: this.modelValue,
-      });
+      if (this.updateSrvCfg?.srv && this.modelValue) {
+        this.editDialogVisible = true;
+      } else {
+        this.$emit("open-edit-dialog", {
+          field: this.fieldInfo,
+          row: this.row,
+          optionCfg: this.srvInfo,
+          selectedValue: this.modelValue,
+        });
+      }
+    },
+    handleIframeLoad() {
+      console.log("iframe loaded");
+    },
+    handleIframeMessage(event) {
+      console.info("收到 iframe 消息:", event.data);
+
+      const addIframeWindow = this.$refs.addIframe?.contentWindow;
+      const editIframeWindow = this.$refs.editIframe?.contentWindow;
+
+      if (event.source !== addIframeWindow && event.source !== editIframeWindow) {
+        return;
+      }
+
+      if (!event.data || typeof event.data !== "object") {
+        return;
+      }
+
+      const { type, data } = event.data;
+
+      switch (type) {
+        case "ADD_SUCCESS":
+          this.$message.success("添加成功");
+          this.addDialogVisible = false;
+          this.$emit("add-success", data);
+          if (data?.[this.valueKey]) {
+            this.$emit("input", data[this.valueKey]);
+            this.inputValue = data[this.labelKey] || data[this.valueKey];
+          }
+          break;
+        case "UPDATE_SUCCESS":
+          this.$message.success("更新成功");
+          this.editDialogVisible = false;
+          this.$emit("edit-success", data);
+          if (data?.[this.labelKey]) {
+            this.inputValue = data[this.labelKey];
+          }
+          break;
+        case "CLOSE_DIALOG":
+          this.addDialogVisible = false;
+          this.editDialogVisible = false;
+          break;
+        case "FORM_READY":
+          console.log("表单已准备好");
+          break;
+        default:
+          break;
+      }
+    },
+    handleAddDialogClose() {
+      console.log("添加弹窗关闭");
+    },
+    handleEditDialogClose() {
+      console.log("编辑弹窗关闭");
     },
   },
 };
 </script>
 
+<style lang="scss">
+  .fk-edit-dialog{
+    .el-dialog__body{
+      padding: 0 20px 20px;
+      iframe{
+        width: 100%;
+        height: 100%;
+      }
+    }
+  }
+</style>
 <style lang="scss" scoped>
 .fk-edit-select-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 8px;
-
-  .add-btn,
-  .edit-btn {
-    flex-shrink: 0;
-  }
 
   .fk-option-item {
     padding: 4px 0;

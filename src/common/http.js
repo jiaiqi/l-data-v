@@ -11,6 +11,7 @@ const envList = {
 }
 // export const env = import.meta.env.VITE_ENV || "saas"
 export const env =  "saas"
+// export const env =  "park"
 let baseURL = window.backendIpAddr || envList[env]
 
 console.log("env:", import.meta.env.VITE_ENV)

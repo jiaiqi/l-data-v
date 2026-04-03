@@ -5,19 +5,10 @@
     v-clickoutside="handleClickOutside"
   >
     <div class="cell-display">{{ displayValue }}</div>
-    <div class="action-icons" v-if="actionButtons.length > 0">
-      <div
-        v-for="btn in actionButtons"
-        :key="btn.key"
-        class="action-btn"
-        :class="btn.className"
-        :title="btn.title"
-        @click.stop="btn.handler"
-      >
-        <img :src="btn.icon" class="btn-icon" :alt="btn.text" />
-        <span class="btn-text">{{ btn.text }}</span>
-      </div>
-    </div>
+    <action-button-group
+      v-if="actionButtons.length > 0"
+      :buttons="actionButtons"
+    />
 
     <el-dialog
       :title="addDialogTitle"
@@ -61,9 +52,13 @@
 <script>
 import addIcon from "@/assets/img/add.png";
 import historyIcon from "@/assets/img/history.png";
+import { ActionButtonGroup } from "../action-button";
 
 export default {
   name: "TrigActEditor",
+  components: {
+    ActionButtonGroup
+  },
   directives: {
     clickoutside: {
       bind(el, binding, vnode) {
@@ -293,99 +288,6 @@ export default {
     text-overflow: ellipsis;
     white-space: nowrap;
     padding: 0 4px;
-  }
-
-  .action-icons {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateX(calc(100% + 8px)) translateY(-50%);
-    z-index: 9;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    background: #fff;
-    border: 1px solid #dcdfe6;
-    border-radius: 6px;
-    padding: 6px 4px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-
-    .action-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 6px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      min-width: 50px;
-
-      i {
-        font-size: 18px;
-        color: #409eff;
-        margin-bottom: 2px;
-        transition: color 0.2s ease;
-      }
-
-      .btn-icon {
-        width: 18px;
-        height: 18px;
-        margin-bottom: 2px;
-        transition: transform 0.2s ease, opacity 0.2s ease;
-      }
-
-      .btn-text {
-        font-size: 12px;
-        color: #606266;
-        white-space: nowrap;
-        transition: color 0.2s ease;
-      }
-
-      &:hover {
-        background: #f5f7fa;
-
-        .btn-icon {
-          transform: scale(1.1);
-        }
-
-        .btn-text {
-          color: #409eff;
-        }
-      }
-
-      &:active {
-        background: #ecf5ff;
-
-        .btn-icon {
-          transform: scale(0.95);
-        }
-      }
-
-      &.btn-add {
-        .btn-icon {
-          opacity: 1;
-        }
-
-        &:hover {
-          .btn-icon {
-            opacity: 0.85;
-          }
-        }
-      }
-
-      &.btn-history {
-        .btn-icon {
-          opacity: 1;
-        }
-
-        &:hover {
-          .btn-icon {
-            opacity: 0.85;
-          }
-        }
-      }
-    }
   }
 }
 </style>
