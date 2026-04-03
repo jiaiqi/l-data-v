@@ -42,6 +42,8 @@
       @focus="onFocus"
       @open-add-dialog="onOpenAddDialog"
       @open-edit-dialog="onOpenEditDialog"
+      @add-success="onAddSuccess"
+      @edit-success="onEditSuccess"
     ></fk-edit-select>
 
     <fk-select
@@ -414,6 +416,14 @@ export default {
     },
     onOpenEditDialog(data) {
       this.$emit("open-edit-dialog", data);
+    },
+    onAddSuccess(data) {
+      console.log("fk-autocomplete 收到 add-success:", data);
+      this.$emit("add-success", data);
+    },
+    onEditSuccess(data) {
+      console.log("fk-autocomplete 收到 edit-success:", data);
+      this.$emit("edit-success", data);
     },
     showFinder() {
       this.$refs.inputRef?.focus();

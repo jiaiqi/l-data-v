@@ -25,6 +25,8 @@
     @onfocus="onFocus"
     @open-add-dialog="onOpenAddDialog"
     @open-edit-dialog="onOpenEditDialog"
+    @add-success="onAddSuccess"
+    @edit-success="onEditSuccess"
     v-else-if="isFkAutoComplete"
   >
   </fk-autocomplete>
@@ -49,7 +51,6 @@
     class="inline-input"
     ref="inputRef"
     v-model="inputVal"
-    clearable
     :trigger-on-focus="true"
     :fetch-suggestions="querySearch"
     :placeholder="placeholder"
@@ -340,6 +341,14 @@ export default {
     },
     onOpenEditDialog(data) {
       this.$emit("open-edit-dialog", data);
+    },
+    onAddSuccess(data) {
+      console.log("finder 收到 add-success:", data);
+      this.$emit("add-success", data);
+    },
+    onEditSuccess(data) {
+      console.log("finder 收到 edit-success:", data);
+      this.$emit("edit-success", data);
     },
     onPickerSelected(selected) {
       this.field.model = selected;

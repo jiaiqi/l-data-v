@@ -22,6 +22,7 @@
     <action-button-group
       v-if="actionButtons.length > 0"
       :buttons="actionButtons"
+      @button-click="handleButtonClick"
     />
 
     <el-dialog
@@ -188,6 +189,9 @@ export default {
       }
       const serviceName = this.addSrvCfg.srv;
       let url = `/vpages/#/add/${serviceName}`;
+      if(process.env.NODE_ENV === 'development'){
+        url = `http://localhost:8080/vpages/#/add/${serviceName}`;
+      }
       const params = [];
       
       if (this.srvInfo?.refed_col && this.row) {
@@ -217,6 +221,9 @@ export default {
       }
       // 正确的 update 路由格式：/update/{service_name}/{id}
       let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.selectItem.id}`;
+      if(process.env.NODE_ENV === 'development'){
+        url = `http://localhost:8080/vpages/#/update/${this.updateSrvCfg.srv}/${this.selectItem.id}`;
+      }
       
       const params = [];
       
@@ -278,13 +285,12 @@ export default {
     },
     async loadLabelByValue(val) {
       if (!val || !this.srvInfo) {
-        return;
+        return Promise.resolve();
       }
-      const option = cloneDeep(this.srvInfo);
       
-      try {
-        const res = await getFkOptions(
-          { ...this.column, option_list_v2: option },
+      return new Promise((resolve, reject) => {
+        getFkOptions(
+          { ...this.column, option_list_v2: this.srvInfo },
           this.row,
           this.app,
           1,
@@ -292,21 +298,50 @@ export default {
           {
             mainData: this.$route?.query || {},
           }
-        );
-
-        if (res?.data?.length) {
-          const item = res.data[0];
-          // 使用 labelKey 确保一致性
-          this.inputValue = item[this.labelKey] || item[option.key_disp_col] || val;
-          this.allOptions.push({
-            label: item[this.labelKey] || item[option.key_disp_col] || val,
-            value: item[this.valueKey] || item[option.refed_col],
-            ...item,
-          });
-        }
-      } catch (e) {
-        console.error("loadLabelByValue error:", e);
-      }
+        ).then((res) => {
+          if (res?.data?.length) {
+            const item = res.data[0];
+            
+            const labelValue = item[this.labelKey] || 
+                             item[this.srvInfo?.key_disp_col] || 
+                             item.label || 
+                             val;
+            
+            const idValue = item[this.valueKey] || 
+                           item[this.srvInfo?.refed_col] || 
+                           item.value || 
+                           val;
+            
+            this.inputValue = labelValue;
+            
+            const optionItem = {
+              label: labelValue,
+              value: idValue,
+              ...item,
+            };
+            
+            // 检查是否已存在相同的选项
+            const existingIndex = this.allOptions.findIndex(opt => opt.value === idValue);
+            if (existingIndex >= 0) {
+              this.allOptions.splice(existingIndex, 1, optionItem);
+            } else {
+              this.allOptions.push(optionItem);
+            }
+            
+            this.selectItem = optionItem;
+            resolve(optionItem);
+          } else {
+            // 如果API没有返回数据，尝试使用传入的值作为显示值
+            this.inputValue = val;
+            resolve();
+          }
+        }).catch((e) => {
+          console.error("loadLabelByValue error:", e);
+          // 失败时使用传入的值作为显示值
+          this.inputValue = val;
+          reject(e);
+        });
+      });
     },
     querySearch(queryString, cb) {
       if (!this.srvInfo) {
@@ -405,6 +440,11 @@ export default {
       this.$emit("input", null);
       this.$emit("select", { value: null, rawData: null });
     },
+    handleButtonClick(button) {
+      if (button.handler) {
+        button.handler();
+      }
+    },
     handleAdd() {
       if (this.setDisabled) {
         return;
@@ -468,31 +508,71 @@ export default {
       const { type, data } = event.data;
 
       switch (type) {
+        case "FORM_READY":
+          console.log("表单已准备好", data);
+          this.$emit("form-ready", data);
+          break;
+          
         case "ADD_SUCCESS":
           this.$message.success("添加成功");
           this.addDialogVisible = false;
-          this.$emit("add-success", data);
-          if (data?.[this.valueKey]) {
-            this.$emit("input", data[this.valueKey]);
-            this.inputValue = data[this.labelKey] || data[this.valueKey];
+          
+          if (data) {
+            // 获取新增记录的ID
+            const addedId = data.id || data.effectData?.id;
+            
+            if (addedId) {
+              // 1. 更新 v-model（通知父组件更新行的字段值）
+              this.$emit("input", addedId);
+              
+              // 2. 触发 add-success 事件
+              this.$emit("add-success", {
+                ...data,
+                addedId: addedId
+              });
+              
+              // 3. 重新加载完整的记录信息（包括显示标签等）
+              this.loadLabelByValue(addedId).then(() => {
+                // 加载完成后触发 select 事件
+                if (this.selectItem) {
+                  this.$emit("select", this.selectItem);
+                }
+              });
+            }
           }
           break;
+          
         case "UPDATE_SUCCESS":
           this.$message.success("更新成功");
           this.editDialogVisible = false;
-          this.$emit("edit-success", data);
-          if (data?.[this.labelKey]) {
-            this.inputValue = data[this.labelKey];
+          
+          if (data) {
+            // 获取更新记录的ID（通常和外键值相同）
+            const updatedId = data.id || data.effectData?.id || this.modelValue;
+            
+            // 1. 触发 edit-success 事件，传递完整的更新数据
+            this.$emit("edit-success", {
+              ...data,
+              updatedId: updatedId
+            });
+            
+            // 2. 重新加载完整的记录信息以确保数据一致性
+            this.reloadLabelByValue(updatedId).then(() => {
+              // 加载完成后触发 select 事件
+              if (this.selectItem) {
+                this.$emit("select", this.selectItem);
+              }
+            });
           }
           break;
+          
         case "CLOSE_DIALOG":
           this.addDialogVisible = false;
           this.editDialogVisible = false;
           break;
-        case "FORM_READY":
-          console.log("表单已准备好");
-          break;
+          
         default:
+          console.log("收到未知消息类型:", type, data);
           break;
       }
     },
@@ -501,6 +581,63 @@ export default {
     },
     handleEditDialogClose() {
       console.log("编辑弹窗关闭");
+    },
+    async reloadLabelByValue(val) {
+      if (!val || !this.srvInfo) {
+        return Promise.resolve();
+      }
+      
+      return new Promise((resolve, reject) => {
+        getFkOptions(
+          { ...this.column, option_list_v2: this.srvInfo },
+          this.row,
+          this.app,
+          1,
+          1,
+          {
+            mainData: this.$route?.query || {},
+          }
+        ).then((res) => {
+          if (res?.data?.length) {
+            const item = res.data[0];
+            
+            const labelValue = item[this.labelKey] || 
+                             item[this.srvInfo?.key_disp_col] || 
+                             item.label || 
+                             val;
+            
+            const idValue = item[this.valueKey] || 
+                           item[this.srvInfo?.refed_col] || 
+                           item.value || 
+                           val;
+            
+            // 更新 selectItem（保留原有数据，只更新标签）
+            const optionItem = {
+              ...(this.selectItem || {}),
+              label: labelValue,
+              value: idValue,
+              ...item
+            };
+            
+            this.selectItem = optionItem;
+            
+            // 检查是否已存在相同的选项
+            const existingIndex = this.allOptions.findIndex(opt => opt.value === idValue);
+            if (existingIndex >= 0) {
+              this.allOptions.splice(existingIndex, 1, optionItem);
+            } else {
+              this.allOptions.push(optionItem);
+            }
+            
+            resolve(optionItem);
+          } else {
+            resolve();
+          }
+        }).catch((e) => {
+          console.error("reloadLabelByValue error:", e);
+          reject(e);
+        });
+      });
     },
   },
 };

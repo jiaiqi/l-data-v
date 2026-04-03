@@ -166,6 +166,8 @@
         @save="dialogChange"
         @close="dialogClose"
         @trig-act-add-success="handleTrigActAddSuccess"
+        @fk-add-success="handleFkAddSuccess"
+        @fk-edit-success="handleFkEditSuccess"
         @focus="onFieldEditorFocus"
         @blur="onFieldEditorBlur"
       ></field-editor>
@@ -2420,6 +2422,22 @@ export default {
     handleTrigActAddSuccess() {
       this.clearCellSelection();
       this.clearFieldEditorParams();
+      this.isFetched = false;
+      this.getList().then(() => {
+        this.isFetched = true;
+      });
+    },
+    handleFkAddSuccess(data, row, column) {
+      console.log("sheet-editor 收到 fk-add-success:", data, row, column);
+      // 刷新当前列表以获取最新数据
+      this.isFetched = false;
+      this.getList().then(() => {
+        this.isFetched = true;
+      });
+    },
+    handleFkEditSuccess(data, row, column) {
+      console.log("sheet-editor 收到 fk-edit-success:", data, row, column);
+      // 刷新当前列表以获取最新数据
       this.isFetched = false;
       this.getList().then(() => {
         this.isFetched = true;

@@ -47,6 +47,8 @@
       @input="onInput"
       @open-add-dialog="onOpenAddDialog"
       @open-edit-dialog="onOpenEditDialog"
+      @add-success="onAddSuccess"
+      @edit-success="onEditSuccess"
       v-else-if="
         ['autocomplete', 'fk', 'fks', 'fkjsons', 'fkjson'].includes(editorType)
       "
@@ -314,7 +316,9 @@ const emit = defineEmits([
   'fks-change',
   'trig-act-add-success',
   'open-add-dialog',
-  'open-edit-dialog'
+  'open-edit-dialog',
+  'fk-add-success',
+  'fk-edit-success'
 ])
 
 // ==================== 响应式数据定义 ====================
@@ -560,6 +564,24 @@ const onOpenEditDialog = (data) => {
  */
 const onTrigActAddSuccess = (data) => {
   emit("trig-act-add-success", data, props.row, props.column)
+}
+
+/**
+ * 处理 fk-edit-select 新增成功事件
+ * @param {Object} data - 新增结果，包含 addedId 等信息
+ */
+const onAddSuccess = (data) => {
+  console.log("field-editor 收到 add-success:", data)
+  emit("fk-add-success", data, props.row, props.column)
+}
+
+/**
+ * 处理 fk-edit-select 编辑成功事件
+ * @param {Object} data - 编辑结果，包含 updatedId 等信息
+ */
+const onEditSuccess = (data) => {
+  console.log("field-editor 收到 edit-success:", data)
+  emit("fk-edit-success", data, props.row, props.column)
 }
 
 /**
