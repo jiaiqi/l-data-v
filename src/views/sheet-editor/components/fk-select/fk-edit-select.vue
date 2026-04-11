@@ -516,26 +516,26 @@ export default {
         case "ADD_SUCCESS":
           this.$message.success("添加成功");
           this.addDialogVisible = false;
-          
+
           if (data) {
             // 获取新增记录的ID
             const addedId = data.id || data.effectData?.id;
-            
+
             if (addedId) {
-              // 1. 更新 v-model（通知父组件更新行的字段值）
-              this.$emit("input", addedId);
-              
-              // 2. 触发 add-success 事件
+              // 1. 触发 add-success 事件
               this.$emit("add-success", {
                 ...data,
                 addedId: addedId
               });
-              
-              // 3. 重新加载完整的记录信息（包括显示标签等）
+
+              // 2. 重新加载完整的记录信息（包括显示标签等）
               this.loadLabelByValue(addedId).then(() => {
-                // 加载完成后触发 select 事件
+                // 加载完成后
                 if (this.selectItem) {
+                  // 触发 select 事件，传递完整的选项数据
                   this.$emit("select", this.selectItem);
+                  // 触发 input 事件，确保父组件更新值
+                  this.$emit("input", addedId);
                 }
               });
             }
@@ -545,22 +545,25 @@ export default {
         case "UPDATE_SUCCESS":
           this.$message.success("更新成功");
           this.editDialogVisible = false;
-          
+
           if (data) {
             // 获取更新记录的ID（通常和外键值相同）
             const updatedId = data.id || data.effectData?.id || this.modelValue;
-            
+
             // 1. 触发 edit-success 事件，传递完整的更新数据
             this.$emit("edit-success", {
               ...data,
               updatedId: updatedId
             });
-            
+
             // 2. 重新加载完整的记录信息以确保数据一致性
             this.reloadLabelByValue(updatedId).then(() => {
-              // 加载完成后触发 select 事件
+              // 加载完成后
               if (this.selectItem) {
+                // 触发 select 事件，传递更新后的数据
                 this.$emit("select", this.selectItem);
+                // 触发 input 事件，确保父组件更新值
+                this.$emit("input", updatedId);
               }
             });
           }

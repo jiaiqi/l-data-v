@@ -403,10 +403,10 @@ export default {
   },
   methods: {
     onInput(val) {
-      this.$emit("input", val);
+      this.$emit("input", val, this.row, this.column);
     },
     onSelect(data) {
-      this.$emit("select", data);
+      this.$emit("select", data, this.row, this.column);
     },
     onFocus() {
       this.$emit("onfocus");

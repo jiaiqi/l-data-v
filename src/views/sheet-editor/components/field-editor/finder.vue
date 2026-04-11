@@ -329,12 +329,14 @@ export default {
     },
     onInput(val) {
       this.inputVal = val;
-      this.$emit("input", val);
+      this.$emit("input", val, this.row, this.column);
     },
     onFkSelect(selected = null) {
       this.field.model = selected?.value || null;
-      this.selected = selected || null;
-      this.$emit("change", selected);
+      this.selected = selected;
+      if (selected) {
+        this.$emit("select", selected, this.row, this.column);
+      }
     },
     onOpenAddDialog(data) {
       this.$emit("open-add-dialog", data);
