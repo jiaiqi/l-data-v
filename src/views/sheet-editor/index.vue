@@ -2485,6 +2485,7 @@ export default {
         console.log("没有需要保存的内容");
         return;
       }
+      this.calcReqData = reqData;
       this.autoSaveTimeout = 60 * 3;
       this.autoSaveInterval = setInterval(() => {
         const reqData = this.buildReqParams();
