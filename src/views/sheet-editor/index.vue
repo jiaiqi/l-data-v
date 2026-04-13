@@ -4499,7 +4499,7 @@ export default {
     },
     // 更新服务列的最小宽度
     saveColumnWidth() {
-      const url = `/${this.srvApp}/operate/srvsys_service_columns_query_update`;
+      const url = `/${this.srvApp}/operate/srvsys_service_columns_update`;
       const req = this.calcColumnWidthReq;
       this.startLoading();
       if (this.onHandler) return;
@@ -4515,6 +4515,7 @@ export default {
               this.loading = false;
             });
           } else {
+            this.updateTableColumn();
             this.$message.error(res.data.resultMessage);
           }
         })
