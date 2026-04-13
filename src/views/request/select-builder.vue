@@ -1768,7 +1768,7 @@ export default {
       gap: 16px;
       display: grid;
       justify-content: center;
-      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
 
       .sing_hual {
         // width: calc(50% - 10px);
