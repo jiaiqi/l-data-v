@@ -10,4 +10,5 @@ export const ignoreKeys = [
   "__indent",
   "__update_col",
   "listType",
+  "_checked",
 ];

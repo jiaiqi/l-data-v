@@ -37,6 +37,7 @@
       :show-all-fields="showAllFields"
       :is-admin="isAdmin"
       :v2data="v2data"
+      :checked-req-data="checkedReqData"
       @batch-insert-rows="batchInsertRows"
       @list-type-change="listTypeChange"
       @column-source-change="onColumnSourceChange"
@@ -44,6 +45,7 @@
       @refresh-data="refreshData"
       @refresh-v2-data="refreshV2Data"
       @save-data="saveData"
+      @save-checked-data="saveCheckedData"
       @save-column-width="saveColumnWidth"
       @toggle-super-admin="toggleSuperAdmin"
       @toggle-show-all-fields="toggleShowAllFields"
@@ -1365,6 +1367,9 @@ export default {
         });
         return arr;
       }
+    },
+    checkedReqData() {
+      return this.buildReqParams(true);
     },
     // 更新服务列最小列宽的请求参数
     calcColumnWidthReq() {
@@ -3352,6 +3357,33 @@ export default {
       const startRowIndex = this.startRowIndex;
       let columns = [
         {
+          field: "_checked",
+          key: "_checked",
+          title: "",
+          width: 40,
+          fixed: "left",
+          renderBodyCell: function ({ row }, h) {
+            const oldItem = self.oldTableData?.find(
+              (d) => d.__id && d.__id === row.__id
+            );
+            const hasChange = row.__flag === 'add' || row.__flag === 'update' ||
+              (oldItem && Object.keys(self.processUpdateData(row, oldItem, self.updateColsMap)).length > 0);
+            return h("el-checkbox", {
+              props: {
+                value: row._checked === true,
+                disabled: !hasChange,
+              },
+              on: {
+                input: function (val) {
+                  if (hasChange) {
+                    self.$set(row, "_checked", val);
+                  }
+                },
+              },
+            });
+          },
+        },
+        {
           field: "index",
           key: "index",
           operationColumn: true,
@@ -4259,13 +4291,16 @@ export default {
       });
       return updateObj;
     },
-    buildReqParams() {
+    buildReqParams(onlyChecked = false) {
       // const tableData = JSON.parse(JSON.stringify(this.tableData));
       const reqData = [];
       const addDatas = [];
       console.log("buildReqParams-start");
       
       this.tableData.forEach((item, index) => {
+        if (onlyChecked && !item._checked) {
+          return;
+        }
         const oldItem = this.oldTableData?.find(
           (d) => d.__id && d.__id === item.__id
         );
@@ -4479,13 +4514,10 @@ export default {
               message: res.resultMessage,
               type: "success",
             });
-            // this.getList();
-            // 不刷新列表，直接从本地数据中删掉需要删掉的数据
             this.tableData = this.tableData.filter(
               (item) => !deleIds.includes(item.id)
             );
           } else if (res?.resultMessage) {
-            // 删除失败，恢复数据状态
             this.oldTableData = _oldTableData;
             this.tableData = _tableData;
             this.recordManager = _recordManager;
@@ -4875,6 +4907,172 @@ export default {
           }, 200);
         });
     },
+    async saveCheckedData() {
+      const checkedRows = this.tableData.filter(item => item._checked);
+      if (!checkedRows.length) {
+        this.$message.warning("请先勾选要保存的行");
+        return;
+      }
+      const checkedReqData = this.buildReqParams(true);
+      if (!checkedReqData?.length) {
+        this.$message.warning("勾选的行没有需要保存的改动");
+        return;
+      }
+      if (this.onHandler) {
+        return;
+      }
+      this.onHandler = true;
+      this.stopAutoSave();
+      console.log(checkedReqData, ":::saveCheckedData");
+      const { _oldTableData, _tableData, _recordManager } =
+        this.optimisticUpdate();
+      const batchOperateList = []
+      const reqDataObj = {}
+      checkedReqData.forEach(item => {
+        const isAdd = !item.condition || !item.condition.length
+        const raw = isAdd ? null : this.tableData.find(tableDataItem => tableDataItem.id === item.condition.find(conditionItem => conditionItem.colName === 'id')?.value)
+        const serviceNameData = {}
+        item?.data?.forEach((data, index) => {
+          Object.keys(data).forEach(key => {
+            const column = this.tableMap[key]
+            let operateService = column.serviceName
+            if(isAdd){
+              operateService = item.serviceName
+            }
+            serviceNameData[operateService] || (serviceNameData[operateService] = {})
+            serviceNameData[operateService].data || (serviceNameData[operateService].data = [])
+            serviceNameData[operateService].data[index] || (serviceNameData[operateService].data[index] = {})
+            serviceNameData[operateService].data[index][column.column] = data[key]
+            if(!serviceNameData[operateService].condition && !isAdd) {
+              serviceNameData[operateService].condition = JSON.parse(JSON.stringify(item.condition))
+              serviceNameData[operateService].condition.forEach(conditionItem => {
+                if(conditionItem.colName === 'id') {
+                  conditionItem.value = raw[column.id]
+                }
+              })
+            }
+            serviceNameData[operateService].serviceName || (serviceNameData[operateService].serviceName = operateService)
+          })
+        })
+        Object.keys(serviceNameData).forEach(k => {
+          reqDataObj[k] || (reqDataObj[k] = [])
+          reqDataObj[k].push(serviceNameData[k])
+        })
+      })
+      Object.keys(reqDataObj).forEach(k => {
+        batchOperateList.push(onBatchOperate(reqDataObj[k], k, this.srvApp))
+      })
+      Promise.all(batchOperateList)
+        .then((resList) => {
+          const res = {
+            state: '',
+            resultMessage: '',
+            response: [],
+            resultCode: ''
+          }
+          resList.forEach(r => {
+            res.state = r.state
+            res.resultMessage = r.resultMessage
+            Array.isArray(r.response) && res.response.push(...r.response)
+            res.resultCode = r.resultCode
+          })
+          this.onHandler = false;
+          if (res?.state === "SUCCESS") {
+            let msg = "保存成功!";
+            Message({
+              showClose: true,
+              message: msg,
+              type: "success",
+              duration: 800,
+            });
+            console.log(res);
+            if (res.response?.length) {
+              const updateList = [];
+              const addList = [];
+              res.response.forEach((item) => {
+                if (
+                  item.serviceName?.lastIndexOf("_update") ===
+                  item.serviceName.length - 7
+                ) {
+                  if (item.response.effect_data?.length) {
+                    updateList.push(...item.response.effect_data);
+                  }
+                } else if (
+                  item.serviceName?.lastIndexOf("_add") ===
+                  item.serviceName.length - 4
+                ) {
+                  if (item.response.effect_data?.length) {
+                    addList.push(...item.response.effect_data);
+                  }
+                }
+              });
+              console.log("updateList:", updateList, "addList:", addList);
+              if (addList.length) {
+                let currentAddList = this.tableData.filter(
+                  (item) => item._checked && item.__flag === "add"
+                );
+                if (currentAddList.length === addList.length) {
+                  let index = 0;
+                  const localKeys = [
+                    "__id",
+                    "__parent_row",
+                    "rowKey",
+                    "_buttons",
+                    "__unfold",
+                    "__indent",
+                    "__update_col",
+                  ];
+                  this.tableData = this.tableData.map((item) => {
+                    if (item._checked && item.__flag === "add") {
+                      localKeys.forEach((key) => {
+                        addList[index][key] = item[key];
+                      });
+                      item = addList[index];
+                      index++;
+                    }
+                    item.__button_auth = this.setButtonAuth(
+                      this.v2data?.rowButton,
+                      item
+                    );
+                    return item;
+                  });
+                }
+              }
+              checkedRows.forEach(row => {
+                row._checked = false;
+              });
+            }
+            this.optimisticUpdate();
+            if (this.fieldEditorParams?.row && this.fieldEditorParams?.column) {
+              this.buildFieldEditorParams(
+                this.fieldEditorParams?.row,
+                this.fieldEditorParams?.column
+              );
+            }
+          } else {
+            this.oldTableData = _oldTableData;
+            this.tableData = _tableData;
+            this.recordManager = _recordManager;
+            Message({
+              showClose: true,
+              message: res.resultMessage || "保存失败!",
+              type: "error",
+            });
+          }
+        })
+        .catch((err) => {
+          console.log("err:", err);
+          this.oldTableData = _oldTableData;
+          this.tableData = _tableData;
+          this.recordManager = _recordManager;
+          this.onHandler = false;
+        })
+        .finally(() => {
+          setTimeout(() => {
+            this.onHandler = false;
+          }, 200);
+        });
+    },
     /**
      *
      * @param {*} index 插入到第几条数据
@@ -4893,6 +5091,7 @@ export default {
           rowKey: __id,
           __id,
           __flag: "add",
+          _checked: false,
           __parent_row: cloneDeep(parentRow),
         };
         // 冗余字段auto complete特性

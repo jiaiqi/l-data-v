@@ -184,6 +184,7 @@ export function useDataProcessor(context) {
           rowKey: __id,
           __id,
           __flag: null,
+          _checked: false,
           ...res.data[i],
         }
         if (unfoldIds && unfoldIds?.includes(res.data[i].id)) {
@@ -264,6 +265,7 @@ export function useDataProcessor(context) {
               rowKey: __id,
               __id,
               __flag: null,
+              _checked: false,
               ...child,
               __indent,
               __parent_row: cloneDeep(row),
@@ -323,6 +325,7 @@ export function useDataProcessor(context) {
             rowKey: __id,
             __id,
             __flag: null,
+            _checked: false,
             ...item,
             __indent,
             __parent_row: cloneDeep(row),

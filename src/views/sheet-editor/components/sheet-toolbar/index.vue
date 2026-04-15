@@ -213,6 +213,21 @@
           </span>
         </el-button>
 
+        <!-- 保存所选按钮 -->
+        <el-button
+          class="icon-button"
+          size="mini"
+          type="success"
+          @click="emit('save-checked-data')"
+          :disabled="!checkedReqData || checkedReqData.length == 0"
+          v-if="!['add', 'addchildlist'].includes(childListType)"
+          v-loading="onHandler"
+          title="保存勾选的行"
+        >
+          <i class="i-ic-baseline-save-alt"></i>
+          <span class="text-xs ml-1">保存所选</span>
+        </el-button>
+
         <!-- 保存列宽按钮 -->
         <el-button
           class="icon-button"
@@ -374,6 +389,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  checkedReqData: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 // 定义 emits
@@ -385,6 +404,7 @@ const emit = defineEmits([
   "grid-button-click",
   "refresh-data",
   "save-data",
+  "save-checked-data",
   "save-column-width",
   "toggle-super-admin",
   "toggle-show-all-fields",
