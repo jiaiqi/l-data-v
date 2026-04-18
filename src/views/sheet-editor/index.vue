@@ -3381,6 +3381,7 @@ export default {
           title: "",
           width: 40,
           fixed: "left",
+          operationColumn: true,
           renderBodyCell: function ({ row }, h) {
             const oldItem = self.oldTableData?.find(
               (d) => d.__id && d.__id === row.__id
@@ -4029,7 +4030,7 @@ export default {
           fixedCol = columns
             .filter(
               (item, index) =>
-                index !== 0 &&
+                !item.operationColumn &&
                 !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
                   item.key
                 )
@@ -4039,7 +4040,7 @@ export default {
         } else {
           fixedCol = columns.find((item, index) => {
             return (
-              index !== 0 &&
+              !item.operationColumn &&
               !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
                 item.key
               )
