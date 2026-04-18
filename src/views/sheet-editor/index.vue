@@ -38,7 +38,6 @@
       :is-admin="isAdmin"
       :v2data="v2data"
       :checked-req-data="checkedReqData"
-      :show-partial-save.sync="showPartialSave"
       @batch-insert-rows="batchInsertRows"
       @list-type-change="listTypeChange"
       @column-source-change="onColumnSourceChange"
@@ -351,7 +350,7 @@ export default {
       currentRowIndex: -1,
       onHandler: false,
       disabled: false,
-      showPartialSave: false, // 部分保存开关
+      showPartialSave: true, // 部分保存开关
       initData: null,
       mainData: null,
       mainService: "",
@@ -1278,7 +1277,9 @@ export default {
       },
     },
     showPartialSave() {
-      this.buildColumns();
+      this.$nextTick(() => {
+        this.buildColumns();
+      });
     },
     showFieldEditor(newVal, oldVal) {
       if (newVal === true) {

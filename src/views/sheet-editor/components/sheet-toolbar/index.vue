@@ -281,16 +281,6 @@
             showAllFields ? "全部" : "默认"
           }}</span>
         </el-button>
-
-        <!-- 部分保存开关 -->
-        <el-switch
-          v-model="partialSaveLocal"
-          @change="handlePartialSaveChange"
-          active-text="部分保存"
-          inactive-text="部分保存"
-          v-if="!['add', 'addchildlist'].includes(childListType)"
-        >
-        </el-switch>
       </div>
     </div>
   </div>
@@ -403,16 +393,11 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
-  showPartialSave: {
-    type: Boolean,
-    default: false,
-  },
 });
 
 // 定义 emits
 const emit = defineEmits([
   "update:insertRowNumber",
-  "update:showPartialSave",
   "batch-insert-rows",
   "list-type-change",
   "column-source-change",
@@ -427,16 +412,6 @@ const emit = defineEmits([
 
 // 响应式数据
 const showGridButton = ref(false);
-const partialSaveLocal = ref(props.showPartialSave);
-
-const handlePartialSaveChange = (val) => {
-  emit('update:showPartialSave', val);
-};
-
-// 监听 props 变化
-watch(() => props.showPartialSave, (newVal) => {
-  partialSaveLocal.value = newVal;
-});
 
 const showRightSection = computed(() => {
   return env !== "yanxue";
