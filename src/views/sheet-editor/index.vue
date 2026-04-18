@@ -38,6 +38,7 @@
       :is-admin="isAdmin"
       :v2data="v2data"
       :checked-req-data="checkedReqData"
+      :show-partial-save.sync="showPartialSave"
       @batch-insert-rows="batchInsertRows"
       @list-type-change="listTypeChange"
       @column-source-change="onColumnSourceChange"
@@ -350,6 +351,7 @@ export default {
       currentRowIndex: -1,
       onHandler: false,
       disabled: false,
+      showPartialSave: false, // 部分保存开关
       initData: null,
       mainData: null,
       mainService: "",
@@ -1274,6 +1276,9 @@ export default {
           this.calcReqData = this.buildReqParams();
         }
       },
+    },
+    showPartialSave() {
+      this.buildColumns();
     },
     showFieldEditor(newVal, oldVal) {
       if (newVal === true) {
@@ -3357,6 +3362,19 @@ export default {
       const startRowIndex = this.startRowIndex;
       let columns = [
         {
+          field: "index",
+          key: "index",
+          operationColumn: true,
+          title: "#",
+          width: 50,
+          fixed: "left",
+          renderBodyCell: function ({ rowIndex, row }) {
+            return startRowIndex + rowIndex + 1;
+          },
+        },
+      ];
+      if (this.showPartialSave) {
+        columns.push({
           field: "_checked",
           key: "_checked",
           title: "",
@@ -3382,19 +3400,8 @@ export default {
               },
             });
           },
-        },
-        {
-          field: "index",
-          key: "index",
-          operationColumn: true,
-          title: "#",
-          width: 50,
-          fixed: "left",
-          renderBodyCell: function ({ rowIndex, row }) {
-            return startRowIndex + rowIndex + 1;
-          },
-        },
-      ];
+        });
+      }
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
         // let minWidth = (window.innerWidth + 50) / this.allFields.length;
         // if (this.childListType === "add") {
