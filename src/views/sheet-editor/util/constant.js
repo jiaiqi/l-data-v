@@ -11,4 +11,10 @@ export const ignoreKeys = [
   "__update_col",
   "listType",
   "_checked",
+  "column_name",
+  "adapt_main_srv",
+  "childListType",
+  "broadCastName",
+  "mainService",
+  "referenced_column_name"
 ];

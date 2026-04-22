@@ -289,16 +289,32 @@ export default {
     if (this.$route.params?.mainService) {
       this.mainService = this.$route.params?.mainService;
     }
-    if (this.$route.params?.childListType) {
-      // 子表类型 add|update|detail
-      this.childListType = this.$route.params?.childListType;
+    if (this.$route.params?.childListType || this.$route.query?.childListType) {
+      // 子表类型 add|update|detail|detaillist|addchildlist|updatechildlist
+      this.childListType = this.$route.params?.childListType || this.$route.query?.childListType;
+      // if (this.childListType === "detaillist" || this.childListType === "detail") {
+      //   this.disabled = true;
+      // }
       // if (this.childListType === 'add' && this.childListCfg?.data_source_cfg?.select_srv) {
       //   // 初始数据配置
       //   await this.getInitData(this.childListCfg?.data_source_cfg)
       // }
+      if (this.$route.query?.adapt_main_srv || this.$route.query?.column_name || this.$route.query?.referenced_column_name) {
+        this.childListCfg = this.childListCfg || {};
+        this.childListCfg.foreign_key = this.childListCfg.foreign_key || {};
+        if (this.$route.query?.adapt_main_srv) {
+          this.childListCfg.foreign_key.adapt_main_srv = this.$route.query?.adapt_main_srv;
+        }
+        if (this.$route.query?.column_name) {
+          this.childListCfg.foreign_key.column_name = this.$route.query?.column_name;
+        }
+        if (this.$route.query?.referenced_column_name) {
+          this.childListCfg.foreign_key.referenced_column_name = this.$route.query?.referenced_column_name;
+        }
+      }
       this.$nextTick(() => {
         broadcastChannel = new BroadcastChannel(
-          this.$route.params?.broadCastName
+          this.$route.params?.broadCastName || this.$route.query?.broadCastName
         );
         broadcastChannel.addEventListener("message", this.bcOn);
         this.watchPageHeight();
@@ -1846,6 +1862,12 @@ export default {
               "initCond",
               "colSrv", // 用来查找显示的列的服务
               "listType",
+              "column_name",
+              "adapt_main_srv",
+              "childListType",
+              "broadCastName",
+              "mainService",
+              "referenced_column_name",
             ].includes(key)
           ) {
             defaultConditions.push({
@@ -2487,8 +2509,8 @@ export default {
     },
     autoSave() {
       this.stopAutoSave();
-      if (["add", "addchildlist"].includes(this.childListType)) {
-        // add子表不自动保存
+      if (["add", "addchildlist", "updatechildlist"].includes(this.childListType)) {
+        // add子表和updatechildlist不自动保存，数据跟随主表单一起提交
         return;
       }
       const reqData = this.buildReqParams();
@@ -3227,7 +3249,7 @@ export default {
         if (v2Data === false) {
           return;
         }
-        if (this.childListType === "add") return (this.loading = false); //新增时不查子表数据
+        if (["add", "addchildlist"].includes(this.childListType)) return (this.loading = false);
         this.buildInitCond();
         this.loading = false;
         // if (refresh) {
@@ -4069,7 +4091,7 @@ export default {
           }
           return item;
         });
-        if (this.childListType === "add" && !this.disabled && Array.isArray(this.rowButton) && this.rowButton?.length) {
+        if (["add", "addchildlist"].includes(this.childListType) && !this.disabled && Array.isArray(this.rowButton) && this.rowButton?.length) {
           columns.push({
             field: "_handler",
             key: "_handler",
@@ -5570,7 +5592,7 @@ export default {
 
         this.recordManager = new RecordManager();
 
-        if (!this.disabled && this.tableData?.length === 0 && insertNewRows) {
+        if (!this.disabled && this.tableData?.length === 0 && insertNewRows && this.childListType !== "detaillist") {
           this.insert2Rows(0);
         }
       }

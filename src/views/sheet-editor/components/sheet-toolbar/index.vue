@@ -45,7 +45,7 @@
         <el-radio-button label="treelist" size="mini">树型列表</el-radio-button>
       </el-radio-group>
       <!-- 普通列表时显示占位，保持布局对称 -->
-      <div v-else class="h-8 w-[180px]"></div>
+      <!-- <div v-else class="h-8 w-[180px]"></div> -->
     </div>
 
     <!-- 右侧：操作按钮区域 -->
@@ -492,6 +492,7 @@ const toggleGridButton = () => {
 .sheet-toolbar {
   box-sizing: border-box;
   font-size: 12px;
+  overflow-x: auto;
 }
 
 /* 统一按钮样式 */
