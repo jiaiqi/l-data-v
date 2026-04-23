@@ -299,17 +299,17 @@ export default {
       //   // 初始数据配置
       //   await this.getInitData(this.childListCfg?.data_source_cfg)
       // }
-      if (this.$route.query?.adapt_main_srv || this.$route.query?.column_name || this.$route.query?.referenced_column_name) {
+      if (this.$route.query?._fk_main_srv || this.$route.query?._fk_col || this.$route.query?._fk_ref_col) {
         this.childListCfg = this.childListCfg || {};
         this.childListCfg.foreign_key = this.childListCfg.foreign_key || {};
-        if (this.$route.query?.adapt_main_srv) {
-          this.childListCfg.foreign_key.adapt_main_srv = this.$route.query?.adapt_main_srv;
+        if (this.$route.query?._fk_main_srv) {  
+          this.childListCfg.foreign_key.adapt_main_srv = this.$route.query?._fk_main_srv;
         }
-        if (this.$route.query?.column_name) {
-          this.childListCfg.foreign_key.column_name = this.$route.query?.column_name;
+        if (this.$route.query?._fk_col) {
+          this.childListCfg.foreign_key.column_name = this.$route.query?._fk_col;
         }
-        if (this.$route.query?.referenced_column_name) {
-          this.childListCfg.foreign_key.referenced_column_name = this.$route.query?.referenced_column_name;
+        if (this.$route.query?._fk_ref_col) {
+          this.childListCfg.foreign_key.referenced_column_name = this.$route.query?._fk_ref_col;
         }
       }
       this.$nextTick(() => {
@@ -1862,12 +1862,13 @@ export default {
               "initCond",
               "colSrv", // 用来查找显示的列的服务
               "listType",
-              "column_name",
               "adapt_main_srv",
               "childListType",
               "broadCastName",
               "mainService",
-              "referenced_column_name",
+              "_fk_col",
+              "_fk_ref_col",
+              "_fk_main_srv",
             ].includes(key)
           ) {
             defaultConditions.push({

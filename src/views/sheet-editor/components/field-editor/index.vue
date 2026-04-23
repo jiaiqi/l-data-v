@@ -42,6 +42,7 @@
       :detailButton="detailButton"
       v-model="modelValue"
       @change="onFinderChange"
+      @select="onFinderChange"
       @focus="onfocus = true"
       @blur="onfocus = false"
       @input="onInput"
