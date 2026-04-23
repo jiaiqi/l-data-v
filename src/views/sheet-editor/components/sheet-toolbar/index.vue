@@ -493,6 +493,7 @@ const toggleGridButton = () => {
   box-sizing: border-box;
   font-size: 12px;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* 统一按钮样式 */
