@@ -25,45 +25,31 @@
       @button-click="handleButtonClick"
     />
 
-    <el-dialog
+    <fk-action-dialog
       :title="addDialogTitle"
       :visible.sync="addDialogVisible"
-      width="90%"
-      top="5vh"
-      append-to-body
-      :close-on-click-modal="false"
-      @close="handleAddDialogClose"
       custom-class="fk-edit-dialog"
-    >
-      <iframe
-        v-if="addDialogVisible"
-        ref="addIframe"
-        :src="addIframeUrl"
-        frameborder="0"
-        style="width: 100%; height: 70vh; border: none"
-        @load="handleIframeLoad"
-      ></iframe>
-    </el-dialog>
+      :url="addIframeUrl"
+      @iframe-load="handleIframeLoad"
+      @form-ready="handleFormReady"
+      @add-success="handleAddSuccess"
+      @update-success="handleUpdateSuccess"
+      @close-dialog="handleDialogClose"
+      @unknown-message="handleUnknownMessage"
+    />
 
-    <el-dialog
+    <fk-action-dialog
       :title="editDialogTitle"
       :visible.sync="editDialogVisible"
-      width="90%"
-      top="5vh"
-      append-to-body
-      :close-on-click-modal="false"
-      @close="handleEditDialogClose"
       custom-class="fk-edit-dialog"
-    >
-      <iframe
-        v-if="editDialogVisible"
-        ref="editIframe"
-        :src="editIframeUrl"
-        frameborder="0"
-        style="width: 100%; height: 70vh; border: none"
-        @load="handleIframeLoad"
-      ></iframe>
-    </el-dialog>
+      :url="editIframeUrl"
+      @iframe-load="handleIframeLoad"
+      @form-ready="handleFormReady"
+      @add-success="handleAddSuccess"
+      @update-success="handleUpdateSuccess"
+      @close-dialog="handleDialogClose"
+      @unknown-message="handleUnknownMessage"
+    />
   </div>
 </template>
 
@@ -72,6 +58,7 @@ import addIcon from "@/assets/img/add.png";
 import editIcon from "@/assets/img/edit.png";
 import { ActionButtonGroup } from "../action-button";
 import FkOptionPicker from "./fk-option-picker.vue";
+import FkActionDialog from "./fk-action-dialog.vue";
 import {
   loadFkOptions,
   resolveFkOptionConfig,
@@ -81,7 +68,8 @@ export default {
   name: "FkEditSelect",
   components: {
     ActionButtonGroup,
-    FkOptionPicker
+    FkOptionPicker,
+    FkActionDialog
   },
   props: {
     app: {
@@ -264,12 +252,6 @@ export default {
       },
     },
   },
-  mounted() {
-    window.addEventListener("message", this.handleIframeMessage);
-  },
-  beforeDestroy() {
-    window.removeEventListener("message", this.handleIframeMessage);
-  },
   methods: {
     getOptionListV2() {
       return resolveFkOptionConfig(this.fieldInfo, this.row);
@@ -285,7 +267,7 @@ export default {
           app: this.app,
           srvInfo: this.srvInfo,
           keyword: val,
-          // Existing value hydration must be exact; fuzzy search can hydrate the wrong row.
+          // 已有值回显必须精确匹配，模糊查询可能取到相似值的第一条。
           searchRuleType: "eq",
           pageNo: 1,
           rownumber: 1,
@@ -333,8 +315,8 @@ export default {
     handleDropdownVisibleChange(value) {
       this.dropdownVisible = value;
       if (!value) {
-        // For required-selection FK fields, typed text is only a search keyword.
-        // Restore the last confirmed label when the dropdown closes without selection.
+        // 必须选择的 FK 字段中，输入内容只作为搜索词。
+        // 下拉关闭但没有选择时，恢复为上一次确认的显示值。
         this.inputValue = this.selectItem?.label || "";
       }
     },
@@ -416,115 +398,67 @@ export default {
       }
     },
     handleIframeLoad(event) {
-      console.log("iframe loaded");
-      
       const target = event.target;
-      let iframe = null;
-      if (target === this.$refs.addIframe) {
-        iframe = this.$refs.addIframe;
-      } else if (target === this.$refs.editIframe) {
-        iframe = this.$refs.editIframe;
-      }
-      
-      if (iframe && iframe.contentDocument) {
-        const style = iframe.contentDocument.createElement('style');
-        style.textContent = '.el-card { overflow-y: auto; }';
-        iframe.contentDocument.head.appendChild(style);
+      const iframe = target;
+      try {
+        if (iframe && iframe.contentDocument) {
+          const style = iframe.contentDocument.createElement('style');
+          style.textContent = '.el-card { overflow-y: auto; }';
+          iframe.contentDocument.head.appendChild(style);
+        }
+      } catch (error) {
+        // iframe 跨域或未完全加载时无法访问 contentDocument，不影响表单主流程。
       }
     },
-    handleIframeMessage(event) {
-      console.info("收到 iframe 消息:", event.data);
-
-      const addIframeWindow = this.$refs.addIframe?.contentWindow;
-      const editIframeWindow = this.$refs.editIframe?.contentWindow;
-
-      if (event.source !== addIframeWindow && event.source !== editIframeWindow) {
+    handleFormReady(data) {
+      this.$emit("form-ready", data);
+    },
+    handleAddSuccess(data) {
+      this.$message.success("添加成功");
+      this.addDialogVisible = false;
+      if (!data) {
         return;
       }
-
-      if (!event.data || typeof event.data !== "object") {
+      const addedId = data.id || data.effectData?.id;
+      if (addedId) {
+        this.$emit("add-success", {
+          ...data,
+          addedId: addedId
+        });
+        // 新增表单只返回关键数据时，需要重新按 id 拉取完整选项用于回填显示值。
+        this.loadLabelByValue(addedId).then(() => {
+          if (this.selectItem) {
+            this.$emit("select", this.selectItem);
+            this.$emit("input", addedId);
+          }
+        });
+      }
+    },
+    handleUpdateSuccess(data) {
+      this.$message.success("更新成功");
+      this.editDialogVisible = false;
+      if (!data) {
         return;
       }
-
-      const { type, data } = event.data;
-
-      switch (type) {
-        case "FORM_READY":
-          console.log("表单已准备好", data);
-          this.$emit("form-ready", data);
-          break;
-          
-        case "ADD_SUCCESS":
-          this.$message.success("添加成功");
-          this.addDialogVisible = false;
-
-          if (data) {
-            // 获取新增记录的ID
-            const addedId = data.id || data.effectData?.id;
-
-            if (addedId) {
-              // 1. 触发 add-success 事件
-              this.$emit("add-success", {
-                ...data,
-                addedId: addedId
-              });
-
-              // 2. 重新加载完整的记录信息（包括显示标签等）
-              this.loadLabelByValue(addedId).then(() => {
-                // 加载完成后
-                if (this.selectItem) {
-                  // 触发 select 事件，传递完整的选项数据
-                  this.$emit("select", this.selectItem);
-                  // 触发 input 事件，确保父组件更新值
-                  this.$emit("input", addedId);
-                }
-              });
-            }
-          }
-          break;
-          
-        case "UPDATE_SUCCESS":
-          this.$message.success("更新成功");
-          this.editDialogVisible = false;
-
-          if (data) {
-            // 获取更新记录的ID（通常和外键值相同）
-            const updatedId = data.id || data.effectData?.id || this.modelValue;
-
-            // 1. 触发 edit-success 事件，传递完整的更新数据
-            this.$emit("edit-success", {
-              ...data,
-              updatedId: updatedId
-            });
-
-            // 2. 重新加载完整的记录信息以确保数据一致性
-            this.reloadLabelByValue(updatedId).then(() => {
-              // 加载完成后
-              if (this.selectItem) {
-                // 触发 select 事件，传递更新后的数据
-                this.$emit("select", this.selectItem);
-                // 触发 input 事件，确保父组件更新值
-                this.$emit("input", updatedId);
-              }
-            });
-          }
-          break;
-          
-        case "CLOSE_DIALOG":
-          this.addDialogVisible = false;
-          this.editDialogVisible = false;
-          break;
-          
-        default:
-          console.log("收到未知消息类型:", type, data);
-          break;
-      }
+      const updatedId = data.id || data.effectData?.id || this.modelValue;
+      this.$emit("edit-success", {
+        ...data,
+        updatedId: updatedId
+      });
+      // 编辑成功后重新读取选项，确保显示值与服务端最新数据一致。
+      this.reloadLabelByValue(updatedId).then(() => {
+        if (this.selectItem) {
+          this.$emit("select", this.selectItem);
+          this.$emit("input", updatedId);
+        }
+      });
     },
-    handleAddDialogClose() {
-      console.log("添加弹窗关闭");
+    handleDialogClose() {
+      this.addDialogVisible = false;
+      this.editDialogVisible = false;
     },
-    handleEditDialogClose() {
-      console.log("编辑弹窗关闭");
+    handleUnknownMessage(data) {
+      console.log("收到未知消息类型:", data);
     },
     async reloadLabelByValue(val) {
       if (!val || !this.srvInfo) {
@@ -537,7 +471,7 @@ export default {
           app: this.app,
           srvInfo: this.srvInfo,
           keyword: val,
-          // Existing value hydration must be exact; fuzzy search can hydrate the wrong row.
+          // 已有值回显必须精确匹配，模糊查询可能取到相似值的第一条。
           searchRuleType: "eq",
           pageNo: 1,
           rownumber: 1,

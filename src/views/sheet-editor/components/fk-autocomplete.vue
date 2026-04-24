@@ -230,43 +230,27 @@
       </div>
     </el-dialog>
 
-    <el-dialog
+    <fk-action-dialog
       :title="addDialogTitle"
       :visible.sync="addDialogVisible"
-      width="90%"
-      top="5vh"
-      append-to-body
-      :close-on-click-modal="false"
       custom-class="fk-action-dialog"
-    >
-      <iframe
-        v-if="addDialogVisible"
-        :key="addIframeKey"
-        ref="addIframe"
-        :src="addIframeUrl"
-        frameborder="0"
-        style="width: 100%; height: 70vh; border: none"
-      ></iframe>
-    </el-dialog>
+      :url="addIframeUrl"
+      :iframe-key="addIframeKey"
+      @add-success="handleActionAddSuccess"
+      @update-success="handleActionUpdateSuccess"
+      @close-dialog="handleActionCloseDialog"
+    />
 
-    <el-dialog
+    <fk-action-dialog
       :title="editDialogTitle"
       :visible.sync="editDialogVisible"
-      width="90%"
-      top="5vh"
-      append-to-body
-      :close-on-click-modal="false"
       custom-class="fk-action-dialog"
-    >
-      <iframe
-        v-if="editDialogVisible"
-        :key="editIframeKey"
-        ref="editIframe"
-        :src="editIframeUrl"
-        frameborder="0"
-        style="width: 100%; height: 70vh; border: none"
-      ></iframe>
-    </el-dialog>
+      :url="editIframeUrl"
+      :iframe-key="editIframeKey"
+      @add-success="handleActionAddSuccess"
+      @update-success="handleActionUpdateSuccess"
+      @close-dialog="handleActionCloseDialog"
+    />
   </div>
 </template>
 
@@ -279,6 +263,7 @@ import fkSelect from "./fk-select/fk-select.vue";
 import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
 import FkOptionPicker from "./fk-select/fk-option-picker.vue";
+import FkActionDialog from "./fk-select/fk-action-dialog.vue";
 import { isFk } from "@/utils/sheetUtils";
 import addIcon from "@/assets/img/add.png";
 import editIcon from "@/assets/img/edit.png";
@@ -296,6 +281,7 @@ export default {
     fkOnlyEdit,
     fkEditSelect,
     FkOptionPicker,
+    FkActionDialog,
     ActionButtonGroup,
   },
   data() {
@@ -600,10 +586,8 @@ export default {
       positionFixed: true,
       preventOverflow: true,
     };
-    window.addEventListener("message", this.handleIframeMessage);
   },
   beforeDestroy() {
-    window.removeEventListener("message", this.handleIframeMessage);
     if (this.tableSearchTimer) {
       clearTimeout(this.tableSearchTimer);
     }
@@ -690,45 +674,35 @@ export default {
         this.editRecordId = res.data.data[0].id;
       }
     },
-    handleIframeMessage(event) {
-      if (!event.data || typeof event.data !== "object") {
-        return;
+    handleActionAddSuccess(data) {
+      this.$message.success("添加成功");
+      this.addDialogVisible = false;
+      if (data) {
+        const addedId = data.id || data.effectData?.id;
+        const addedData = data.effectData || data;
+        if (addedId) {
+          this.handleAddResult(addedData, addedId);
+        } else {
+          this.$emit("add-success", data);
+        }
       }
-      const { type, data } = event.data;
-      switch (type) {
-        case "ADD_SUCCESS":
-          this.$message.success("添加成功");
-          this.addDialogVisible = false;
-          if (data) {
-            const addedId = data.id || data.effectData?.id;
-            const addedData = data.effectData || data;
-            if (addedId) {
-              this.handleAddResult(addedData, addedId);
-            } else {
-              this.$emit("add-success", data);
-            }
-          }
-          break;
-        case "UPDATE_SUCCESS":
-          this.$message.success("更新成功");
-          this.editDialogVisible = false;
-          if (data) {
-            const updatedData = data.effectData || data;
-            const updatedId = updatedData.id || data.id || this.editRecordId;
-            if (updatedId) {
-              this.handleEditResult(updatedData, updatedId);
-            } else {
-              this.$emit("edit-success", data);
-            }
-          }
-          break;
-        case "CLOSE_DIALOG":
-          this.addDialogVisible = false;
-          this.editDialogVisible = false;
-          break;
-        default:
-          break;
+    },
+    handleActionUpdateSuccess(data) {
+      this.$message.success("更新成功");
+      this.editDialogVisible = false;
+      if (data) {
+        const updatedData = data.effectData || data;
+        const updatedId = updatedData.id || data.id || this.editRecordId;
+        if (updatedId) {
+          this.handleEditResult(updatedData, updatedId);
+        } else {
+          this.$emit("edit-success", data);
+        }
       }
+    },
+    handleActionCloseDialog() {
+      this.addDialogVisible = false;
+      this.editDialogVisible = false;
     },
     handleAddResult(addedData, addedId) {
       const dependField = this.column?.redundant?.dependField;

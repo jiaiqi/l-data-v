@@ -309,8 +309,8 @@ export default {
     },
     emitDeferredInput(value, source = "input") {
       if (this.focused) {
-        // While focused, the typed text is only a search keyword. Parent updates are
-        // deferred until blur so grid cells are not rewritten on every keystroke.
+        // 聚焦期间输入内容只作为搜索关键词，先不更新父组件。
+        // 等失焦后再统一提交，避免表格单元格在每次按键时被改写。
         this.pendingInputValue = value || "";
         this.$emit("search-change", this.pendingInputValue);
         return;
@@ -334,8 +334,8 @@ export default {
     },
     handleBlur() {
       this.focused = false;
-      // Row double-click causes the input to blur before the table select event.
-      // Delay the commit so a real selection can cancel the pending search text.
+      // 双击表格行时输入框会先触发 blur，再触发行选择事件。
+      // 延迟提交可让真正的选择事件有机会取消待提交的搜索词。
       setTimeout(() => {
         this.flushDeferredInput();
         this.$emit("blur");
@@ -373,7 +373,7 @@ export default {
       const selected = this.formatOption(row);
       this.innerValue = selected?.label || selected?.value || "";
       this.dropdownVisible = false;
-      // A confirmed option selection wins over the temporary search keyword.
+      // 已确认的选项选择优先于临时搜索词，避免把搜索词误提交给父组件。
       this.pendingInputValue = null;
       this.$emit("input-change", this.innerValue, { source: "select" });
       this.$emit("input", this.innerValue);
@@ -383,7 +383,7 @@ export default {
     handleAutocompleteSelect(item) {
       const selected = this.formatOption(item);
       this.innerValue = selected?.label || selected?.value || "";
-      // A confirmed option selection wins over the temporary search keyword.
+      // 已确认的选项选择优先于临时搜索词，避免把搜索词误提交给父组件。
       this.pendingInputValue = null;
       this.$emit("input-change", this.innerValue, { source: "select" });
       this.$emit("input", this.innerValue);

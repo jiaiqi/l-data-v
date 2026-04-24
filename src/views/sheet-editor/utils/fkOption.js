@@ -127,8 +127,8 @@ export async function loadServiceColumns({
   if (serviceColumnsCache.has(cacheKey)) {
     return cloneDeep(serviceColumnsCache.get(cacheKey));
   }
-  // Column metadata is stable for the same app/service/useType during one editor session.
-  // Cache it to avoid refetching srvsys_service_columnex_v2_select on every focus.
+  // 同一个编辑会话中，相同 app/service/useType 的字段列配置基本稳定。
+  // 这里做内存缓存，避免每次聚焦都重新查询 srvsys_service_columnex_v2_select。
   const req = {
     serviceName: "srvsys_service_columnex_v2_select",
     colNames: ["*"],
