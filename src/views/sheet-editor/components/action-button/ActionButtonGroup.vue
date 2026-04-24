@@ -1,5 +1,9 @@
 <template>
-  <div class="action-button-group" v-if="buttons && buttons.length > 0">
+  <div
+    class="action-button-group"
+    v-show="visible"
+    v-if="buttons && buttons.length > 0"
+  >
     <ActionButton
       v-for="(button, index) in buttons"
       :key="button.key || index"
@@ -26,6 +30,10 @@ export default {
     buttons: {
       type: Array,
       default: () => []
+    },
+    visible: {
+      type: Boolean,
+      default: true
     }
   },
   emits: ['button-click'],

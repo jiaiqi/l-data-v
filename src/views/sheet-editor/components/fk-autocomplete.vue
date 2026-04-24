@@ -120,25 +120,71 @@
     </div>
     <div
       v-else-if="hasActionSrvCfg && !setDisabled"
-      class="flex items-center w-full"
+      class="flex items-center w-full h-full autocomplete-with-action"
     >
-      <el-autocomplete
-        append-to-body
-        clearable
-        ref="inputRef"
-        @focus="onFocus"
-        class="inline-input flex-1"
-        v-model="modelValue"
-        :value-key="redundant.refedCol"
-        :fetch-suggestions="querySearch"
-        @clear="onFilterClear"
-        placeholder="请输入"
-        @select="handleSelect"
-        style="padding: 0; overflow: hidden;"
+      <el-popover
+        v-model="tableDropdownVisible"
+        class="flex-1"
+        placement="bottom-start"
+        trigger="focus"
+        width="720"
+        popper-class="fk-table-dropdown-popper"
+        @show="syncDropdownTableLayout"
       >
-      </el-autocomplete>
+        <div class="fk-table-dropdown" @mousedown.stop>
+          <el-table
+            ref="dropdownTable"
+            :data="tableData"
+            v-loading="tableloading"
+            size="mini"
+            border
+            height="260"
+            empty-text="暂无数据"
+            @row-dblclick="onDBClick"
+          >
+            <el-table-column
+              v-for="tableColumn in tableDisplayColumns"
+              :key="tableColumn.columns"
+              :prop="tableColumn.columns"
+              :label="tableColumn.label"
+              :fixed="tableColumn.columns === srvInfo.key_disp_col ? 'left' : false"
+              :min-width="tableColumn.list_min_width || 120"
+              show-overflow-tooltip
+            >
+            </el-table-column>
+          </el-table>
+          <div class="fk-table-dropdown__footer">
+            <span class="fk-table-dropdown__tip">双击列表进行选择</span>
+            <el-pagination
+              small
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+              :page-sizes="[5, 10, 20, 30]"
+              :page-size="rownumber"
+              :total="total"
+              :current-page="pageNo"
+              layout="total, sizes, prev, pager, next"
+            >
+            </el-pagination>
+          </div>
+        </div>
+        <el-input
+          slot="reference"
+          clearable
+          ref="inputRef"
+          class="inline-input flex-1"
+          v-model="modelValue"
+          placeholder="请输入"
+          style="padding: 0; overflow: hidden;"
+          @focus="openTableDropdown"
+          @input="onDropdownInput"
+          @clear="onDropdownClear"
+        >
+        </el-input>
+      </el-popover>
       <action-button-group
         v-if="actionButtons.length > 0"
+        :visible="showActionButtonGroup"
         :buttons="actionButtons"
       />
     </div>
@@ -146,21 +192,66 @@
       v-else-if="!setDisabled"
       class="flex items-center justify-between w-full"
     >
-      <el-autocomplete
-        append-to-body
-        clearable
-        ref="inputRef"
-        @focus="onFocus"
-        class="inline-input"
-        v-model="modelValue"
-        :value-key="redundant.refedCol"
-        :fetch-suggestions="querySearch"
-        @clear="onFilterClear"
-        placeholder="请输入"
-        @select="handleSelect"
-        style="padding: 0; overflow: hidden;"
+      <el-popover
+        v-model="tableDropdownVisible"
+        class="flex-1"
+        placement="bottom-start"
+        trigger="click"
+        width="720"
+        popper-class="fk-table-dropdown-popper"
+        @show="syncDropdownTableLayout"
       >
-      </el-autocomplete>
+        <div class="fk-table-dropdown" @mousedown.stop>
+          <el-table
+            ref="dropdownTable"
+            :data="tableData"
+            v-loading="tableloading"
+            size="mini"
+            border
+            height="260"
+            empty-text="暂无数据"
+            @row-dblclick="onDBClick"
+          >
+            <el-table-column
+              v-for="tableColumn in tableDisplayColumns"
+              :key="tableColumn.columns"
+              :prop="tableColumn.columns"
+              :label="tableColumn.label"
+              :fixed="tableColumn.columns === srvInfo.key_disp_col ? 'left' : false"
+              :min-width="tableColumn.list_min_width || 120"
+              show-overflow-tooltip
+            >
+            </el-table-column>
+          </el-table>
+          <div class="fk-table-dropdown__footer">
+            <span class="fk-table-dropdown__tip">双击列表进行选择</span>
+            <el-pagination
+              small
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+              :page-sizes="[5, 10, 20, 30]"
+              :page-size="rownumber"
+              :total="total"
+              :current-page="pageNo"
+              layout="total, sizes, prev, pager, next"
+            >
+            </el-pagination>
+          </div>
+        </div>
+        <el-input
+          slot="reference"
+          clearable
+          ref="inputRef"
+          class="inline-input flex-1"
+          v-model="modelValue"
+          placeholder="请输入"
+          style="padding: 0; overflow: hidden;"
+          @focus="openTableDropdown"
+          @input="onDropdownInput"
+          @clear="onDropdownClear"
+        >
+        </el-input>
+      </el-popover>
       <i
         class="el-icon-arrow-right cursor-pointer text-#C0C4CC"
         :class="{ 'cursor-not-allowed': setDisabled }"
@@ -197,10 +288,11 @@
           <el-table-column
             :prop="column.columns"
             :label="column.label"
+            :fixed="column.columns === srvInfo.key_disp_col ? 'left' : false"
             width="180"
             show-overflow-tooltip
             border
-            v-for="column in tableColumns"
+            v-for="column in tableDisplayColumns"
             :key="column.columns"
           >
           </el-table-column>
@@ -289,6 +381,7 @@ export default {
       allOptions: [],
       options: [],
       dialogVisible: false,
+      tableDropdownVisible: false,
       tableColumns: [],
       tableData: [],
       pageNo: 1,
@@ -296,6 +389,7 @@ export default {
       total: 0,
       tableloading: false,
       filterText: "",
+      tableSearchTimer: null,
       modelValue: "",
       popperOptions: null,
       addDialogVisible: false,
@@ -397,6 +491,22 @@ export default {
     },
     hasActionSrvCfg() {
       return this.showActionAddBtn || this.showActionEditBtn;
+    },
+    showActionButtonGroup() {
+      return this.actionButtons.length > 0 && !this.tableDropdownVisible;
+    },
+    tableDisplayColumns() {
+      const columns = Array.isArray(this.tableColumns) ? [...this.tableColumns] : [];
+      const keyDispCol = this.srvInfo?.key_disp_col;
+      if (!keyDispCol) {
+        return columns;
+      }
+      const index = columns.findIndex((item) => item.columns === keyDispCol);
+      if (index <= 0) {
+        return columns;
+      }
+      const [keyColumn] = columns.splice(index, 1);
+      return [keyColumn, ...columns];
     },
     addDialogTitle() {
       return this.addSrvCfg?.title || "新增";
@@ -557,6 +667,9 @@ export default {
   },
   beforeDestroy() {
     window.removeEventListener("message", this.handleIframeMessage);
+    if (this.tableSearchTimer) {
+      clearTimeout(this.tableSearchTimer);
+    }
   },
   methods: {
     onInput(val) {
@@ -787,6 +900,49 @@ export default {
       this.$emit("select", null);
       this.remoteMethod();
     },
+    openTableDropdown() {
+      if (this.setDisabled) {
+        return;
+      }
+      this.onFocus();
+      this.tableDropdownVisible = true;
+      this.pageNo = 1;
+      this.rownumber = this.rownumber || 5;
+      this.filterText = this.modelValue || "";
+      if (!this.tableColumns?.length) {
+        this.getFkColumns();
+      }
+      this.getTableData();
+      this.syncDropdownTableLayout();
+    },
+    onDropdownInput(value) {
+      this.filterText = value || "";
+      this.tableDropdownVisible = true;
+      this.pageNo = 1;
+      if (this.tableSearchTimer) {
+        clearTimeout(this.tableSearchTimer);
+      }
+      this.tableSearchTimer = setTimeout(() => {
+        this.getTableData();
+      }, 250);
+    },
+    onDropdownClear() {
+      this.modelValue = "";
+      this.filterText = "";
+      this.pageNo = 1;
+      this.tableDropdownVisible = true;
+      this.$emit("input", "");
+      this.$emit("select", null);
+      this.getTableData();
+    },
+    syncDropdownTableLayout() {
+      this.$nextTick(() => {
+        this.$refs.dropdownTable?.doLayout?.();
+        setTimeout(() => {
+          this.$refs.dropdownTable?.doLayout?.();
+        }, 80);
+      });
+    },
     onFilterInput(value) {
       this.modelValue = value;
       this.remoteMethod(value);
@@ -896,23 +1052,21 @@ export default {
       }
       this.$emit("input", this.modelValue);
     },
-    toFilter(query) {
-      this.pageNo = 1;
-      this.total = 0;
-
-      let queryString = "";
-      if (query && typeof query === "string") {
-        queryString = query;
+    formatFkOption(item) {
+      if (!item) {
+        return item;
       }
-
-      let option = JSON.parse(JSON.stringify(this.srvInfo));
-      let relation_condition = {
+      const option = this.srvInfo || {};
+      item.label = item[option.key_disp_col];
+      item.value = item[option.refed_col];
+      return item;
+    },
+    buildTableOption(queryString = "") {
+      const option = JSON.parse(JSON.stringify(this.srvInfo || {}));
+      const relation_condition = {
         relation: "OR",
         data: [],
       };
-      if (!option.key_disp_col && !option.refed_col) {
-        return;
-      }
       if (option.key_disp_col && queryString) {
         relation_condition.data.push({
           colName: option.key_disp_col,
@@ -927,25 +1081,16 @@ export default {
           ruleType: "[like]",
         });
       }
-      option.relation_condition = relation_condition;
-      getFkOptions(
-        { ...this.column, option_list_v2: option },
-        this.row,
-        this.app,
-        this.pageNo,
-        this.rownumber
-      ).then((res) => {
-        if (res?.data?.length) {
-          this.tableData = res.data.map((item) => {
-            item.label = item[option.key_disp_col];
-            item.value = item[option.refed_col];
-            return item;
-          });
-          this.total = res?.page?.total;
-        } else {
-          this.options = [];
-        }
-      });
+      if (relation_condition.data.length) {
+        option.relation_condition = relation_condition;
+      }
+      return option;
+    },
+    toFilter(query) {
+      this.pageNo = 1;
+      this.total = 0;
+      this.filterText = typeof query === "string" ? query : "";
+      this.getTableData();
     },
     handleSizeChange(val) {
       this.rownumber = val;
@@ -957,9 +1102,13 @@ export default {
       this.getTableData();
     },
     onDBClick(row, column, cell, event) {
-      this.$emit("select", cloneDeep(row));
+      const selected = this.formatFkOption(cloneDeep(row));
+      this.modelValue = selected?.label || selected?.value || "";
+      this.$emit("input", this.modelValue);
+      this.$emit("select", selected);
       this.options = JSON.parse(JSON.stringify(this.tableData));
       this.dialogVisible = false;
+      this.tableDropdownVisible = false;
       this.filterText = "";
       if (this.$refs?.inputRef?.activated) {
         this.$nextTick(() => {
@@ -967,7 +1116,7 @@ export default {
         });
       }
     },
-    getFkColumns() {
+    async getFkColumns(useType = "selectlist") {
       const req = {
         serviceName: "srvsys_service_columnex_v2_select",
         colNames: ["*"],
@@ -977,7 +1126,7 @@ export default {
             value: this.srvInfo.serviceName,
             ruleType: "eq",
           },
-          { colName: "use_type", value: "selectlist", ruleType: "eq" },
+          { colName: "use_type", value: useType, ruleType: "eq" },
         ],
         order: [{ colName: "seq", orderType: "asc" }],
       };
@@ -987,13 +1136,15 @@ export default {
         sessionStorage.getItem("current_app");
       if (app) {
         const url = `/${app}/select/srvsys_service_columnex_v2_select?colsel_v2=${this.srvInfo.serviceName}`;
-        this.$http.post(url, req).then((res) => {
-          if (res?.data?.data?.srv_cols?.length) {
-            this.tableColumns = res.data.data.srv_cols.filter(
-              (item) => item.columns && item.in_list === 1
-            );
-          }
-        });
+        const res = await $http.post(url, req);
+        const cols = res?.data?.data?.srv_cols || [];
+        this.tableColumns = cols.filter(
+          (item) => item.columns && item.in_list === 1
+        );
+        this.syncDropdownTableLayout();
+        if (!this.tableColumns.length && useType === "selectlist") {
+          await this.getFkColumns("list");
+        }
       }
     },
     getTableData() {
@@ -1001,7 +1152,7 @@ export default {
       setTimeout(() => {
         this.tableloading = false;
       }, 5000);
-      const srvInfo = JSON.parse(JSON.stringify(this.srvInfo));
+      const srvInfo = this.buildTableOption(this.filterText);
       getFkOptions(
         { ...this.column, option_list_v2: srvInfo },
         this.row,
@@ -1011,13 +1162,14 @@ export default {
       ).then((res) => {
         if (res?.data?.length) {
           this.tableData = res.data.map((item) => {
-            return item;
+            return this.formatFkOption(item);
           });
           this.total = res?.page?.total;
         } else {
           this.tableData = [];
         }
         this.tableloading = false;
+        this.syncDropdownTableLayout();
       });
     },
     openDialog() {
@@ -1162,6 +1314,36 @@ export default {
   min-width: 200px !important;
 }
 
+.fk-table-dropdown-popper {
+  padding: 8px;
+}
+
+.fk-table-dropdown {
+  width: 100%;
+
+  .el-table {
+    font-size: 12px;
+  }
+
+  .el-table__row {
+    cursor: pointer;
+  }
+}
+
+.fk-table-dropdown__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.fk-table-dropdown__tip {
+  flex-shrink: 0;
+  color: #909399;
+  font-size: 12px;
+}
+
 .text-gray {
   font-size: 12px;
 }
@@ -1175,6 +1357,16 @@ export default {
 }
 
 .autocomplete-box {
+  height: 100%;
+ .autocomplete-with-action{
+    &> span{
+      height: 100%;
+      .el-input__inner{
+        border: none;
+        padding-left: 5px;
+      }
+    }
+ }
   .el-cascader-node .el-icon-arrow-right {
     color: #ccc;
   }
