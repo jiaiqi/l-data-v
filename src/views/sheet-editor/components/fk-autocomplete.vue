@@ -27,7 +27,7 @@
       @select="onSelect"
       @focus="onFocus"
     ></fk-only-edit>
-
+<!-- 
     <fk-edit-select
       v-else-if="isEditSelect && !setDisabled"
       :app="app"
@@ -44,7 +44,7 @@
       @open-edit-dialog="onOpenEditDialog"
       @add-success="onAddSuccess"
       @edit-success="onEditSuccess"
-    ></fk-edit-select>
+    ></fk-edit-select> -->
 
     <fk-select
       v-else-if="srvInfo && srvInfo.refed_col && isFk && !setDisabled"

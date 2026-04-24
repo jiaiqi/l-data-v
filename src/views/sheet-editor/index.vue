@@ -2463,19 +2463,9 @@ export default {
     },
     handleFkAddSuccess(data, row, column) {
       console.log("sheet-editor 收到 fk-add-success:", data, row, column);
-      // 刷新当前列表以获取最新数据
-      this.isFetched = false;
-      this.getList().then(() => {
-        this.isFetched = true;
-      });
     },
     handleFkEditSuccess(data, row, column) {
       console.log("sheet-editor 收到 fk-edit-success:", data, row, column);
-      // 刷新当前列表以获取最新数据
-      this.isFetched = false;
-      this.getList().then(() => {
-        this.isFetched = true;
-      });
     },
     clearFieldEditorParams() {
       this.fieldEditorParams = null;
