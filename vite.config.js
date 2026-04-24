@@ -9,6 +9,14 @@ import viteCompression from 'vite-plugin-compression';
 // https://vitejs.dev/config/
 export default defineConfig({
   base: "/dataview/",
+  server: {
+    proxy: {
+      '/vpages/': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
     vue2(),
     UnoCSS(),
