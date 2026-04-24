@@ -119,6 +119,30 @@
       </el-popover>
     </div>
     <div
+      v-else-if="hasActionSrvCfg && !setDisabled"
+      class="flex items-center w-full"
+    >
+      <el-autocomplete
+        append-to-body
+        clearable
+        ref="inputRef"
+        @focus="onFocus"
+        class="inline-input flex-1"
+        v-model="modelValue"
+        :value-key="redundant.refedCol"
+        :fetch-suggestions="querySearch"
+        @clear="onFilterClear"
+        placeholder="请输入"
+        @select="handleSelect"
+        style="padding: 0; overflow: hidden;"
+      >
+      </el-autocomplete>
+      <action-button-group
+        v-if="actionButtons.length > 0"
+        :buttons="actionButtons"
+      />
+    </div>
+    <div
       v-else-if="!setDisabled"
       class="flex items-center justify-between w-full"
     >
@@ -199,6 +223,44 @@
         </div>
       </div>
     </el-dialog>
+
+    <el-dialog
+      :title="addDialogTitle"
+      :visible.sync="addDialogVisible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      :close-on-click-modal="false"
+      custom-class="fk-action-dialog"
+    >
+      <iframe
+        v-if="addDialogVisible"
+        :key="addIframeKey"
+        ref="addIframe"
+        :src="addIframeUrl"
+        frameborder="0"
+        style="width: 100%; height: 70vh; border: none"
+      ></iframe>
+    </el-dialog>
+
+    <el-dialog
+      :title="editDialogTitle"
+      :visible.sync="editDialogVisible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      :close-on-click-modal="false"
+      custom-class="fk-action-dialog"
+    >
+      <iframe
+        v-if="editDialogVisible"
+        :key="editIframeKey"
+        ref="editIframe"
+        :src="editIframeUrl"
+        frameborder="0"
+        style="width: 100%; height: 70vh; border: none"
+      ></iframe>
+    </el-dialog>
   </div>
 </template>
 
@@ -211,12 +273,16 @@ import fkSelect from "./fk-select/fk-select.vue";
 import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
 import { isFk } from "@/utils/sheetUtils";
+import addIcon from "@/assets/img/add.png";
+import editIcon from "@/assets/img/edit.png";
+import { ActionButtonGroup } from "./action-button";
 
 export default {
   components: {
     fkSelect,
     fkOnlyEdit,
     fkEditSelect,
+    ActionButtonGroup,
   },
   data() {
     return {
@@ -232,6 +298,11 @@ export default {
       filterText: "",
       modelValue: "",
       popperOptions: null,
+      addDialogVisible: false,
+      editDialogVisible: false,
+      addIframeKey: 0,
+      editIframeKey: 0,
+      editRecordId: null,
       props: {
         emitPath: false,
         checkStrictly: true,
@@ -315,6 +386,87 @@ export default {
     addSrvCfg() {
       return this.srvInfo?.add_srv_cfg;
     },
+    updateSrvCfg() {
+      return this.srvInfo?.update_srv_cfg;
+    },
+    showActionAddBtn() {
+      return !this.modelValue && this.addSrvCfg?.srv && this.addSrvCfg?.permission !== false;
+    },
+    showActionEditBtn() {
+      return !!this.modelValue && this.updateSrvCfg?.srv && this.updateSrvCfg?.permission !== false;
+    },
+    hasActionSrvCfg() {
+      return this.showActionAddBtn || this.showActionEditBtn;
+    },
+    addDialogTitle() {
+      return this.addSrvCfg?.title || "新增";
+    },
+    editDialogTitle() {
+      return this.updateSrvCfg?.title || "编辑";
+    },
+    actionButtons() {
+      const buttons = [];
+      if (this.showActionAddBtn) {
+        buttons.push({
+          key: 'add',
+          icon: addIcon,
+          text: '新增',
+          title: '新增',
+          className: 'btn-add',
+          handler: this.handleAddDialog
+        });
+      }
+      if (this.showActionEditBtn) {
+        buttons.push({
+          key: 'edit',
+          icon: editIcon,
+          text: '编辑',
+          title: '编辑',
+          className: 'btn-edit',
+          handler: this.handleEditDialog
+        });
+      }
+      return buttons;
+    },
+    addIframeUrl() {
+      if (!this.addSrvCfg?.srv) {
+        return "";
+      }
+      const serviceName = this.addSrvCfg.srv;
+      let url = `/vpages/#/add/${serviceName}`;
+      const params = [];
+      if (this.srvInfo?.refed_col && this.row) {
+        const operate_params = {
+          data: [
+            {
+              [this.srvInfo.refed_col]: this.row[this.srvInfo.refed_col],
+            },
+          ],
+        };
+        params.push(`operate_params=${JSON.stringify(operate_params)}`);
+      }
+      if (this.addSrvCfg?.app || this.app) {
+        params.push(`srvApp=${encodeURIComponent(this.addSrvCfg?.app || this.app)}`);
+      }
+      if (params.length > 0) {
+        url += `?${params.join("&")}`;
+      }
+      return url;
+    },
+    editIframeUrl() {
+      if (!this.updateSrvCfg?.srv || !this.modelValue) {
+        return "";
+      }
+      let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.editRecordId}`;
+      const params = [];
+      if (this.updateSrvCfg?.app || this.app) {
+        params.push(`srvApp=${encodeURIComponent(this.updateSrvCfg?.app || this.app)}`);
+      }
+      if (params.length > 0) {
+        url += `?${params.join("&")}`;
+      }
+      return url;
+    },
     isEditSelect() {
       if (this.row?.__inFilterForm === true) {
         return false;
@@ -341,6 +493,7 @@ export default {
       handler(newValue, oldValue) {
         if (newValue !== this.modelValue) {
           this.modelValue = newValue;
+          this.editRecordId = null;
           if (
             (this.row?.__flag === "add" || this.row?.__flag === "update") &&
             newValue &&
@@ -400,6 +553,10 @@ export default {
       positionFixed: true,
       preventOverflow: true,
     };
+    window.addEventListener("message", this.handleIframeMessage);
+  },
+  beforeDestroy() {
+    window.removeEventListener("message", this.handleIframeMessage);
   },
   methods: {
     onInput(val) {
@@ -424,6 +581,154 @@ export default {
     onEditSuccess(data) {
       console.log("fk-autocomplete 收到 edit-success:", data);
       this.$emit("edit-success", data);
+    },
+    handleAddDialog() {
+      if (this.setDisabled) {
+        return;
+      }
+      if (this.addSrvCfg?.srv) {
+        this.addIframeKey += 1;
+        this.addDialogVisible = true;
+      }
+    },
+    handleEditDialog() {
+      if (this.setDisabled) {
+        return;
+      }
+      if (this.updateSrvCfg?.srv && this.modelValue) {
+        if (!this.editRecordId) {
+          this.fetchEditRecordId().then(() => {
+            if (this.editRecordId) {
+              this.editIframeKey += 1;
+              this.editDialogVisible = true;
+            }
+          });
+        } else {
+          this.editIframeKey += 1;
+          this.editDialogVisible = true;
+        }
+      }
+    },
+    async fetchEditRecordId() {
+      const fkValue = this.row?.[this.column?.redundant?.dependField];
+      if (!fkValue || !this.srvInfo?.refed_col) {
+        return;
+      }
+      const req = {
+        serviceName: this.srvInfo.serviceName,
+        colNames: ["*"],
+        condition: [
+          {
+            colName: this.srvInfo.refed_col,
+            ruleType: "eq",
+            value: fkValue,
+          },
+        ],
+        page: {
+          pageNo: 1,
+          rownumber: 1,
+        },
+      };
+      let appName =
+        this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app");
+      if (!req.serviceName || !appName) {
+        return;
+      }
+      const url = `/${appName}/select/${this.srvInfo.serviceName}`;
+      const res = await $http.post(url, req);
+      if (res.data.state === "SUCCESS" && res.data.data?.length) {
+        this.editRecordId = res.data.data[0].id;
+      }
+    },
+    handleIframeMessage(event) {
+      if (!event.data || typeof event.data !== "object") {
+        return;
+      }
+      const { type, data } = event.data;
+      switch (type) {
+        case "ADD_SUCCESS":
+          this.$message.success("添加成功");
+          this.addDialogVisible = false;
+          if (data) {
+            const addedId = data.id || data.effectData?.id;
+            const addedData = data.effectData || data;
+            if (addedId) {
+              this.handleAddResult(addedData, addedId);
+            } else {
+              this.$emit("add-success", data);
+            }
+          }
+          break;
+        case "UPDATE_SUCCESS":
+          this.$message.success("更新成功");
+          this.editDialogVisible = false;
+          if (data) {
+            const updatedData = data.effectData || data;
+            const updatedId = updatedData.id || data.id || this.editRecordId;
+            if (updatedId) {
+              this.handleEditResult(updatedData, updatedId);
+            } else {
+              this.$emit("edit-success", data);
+            }
+          }
+          break;
+        case "CLOSE_DIALOG":
+          this.addDialogVisible = false;
+          this.editDialogVisible = false;
+          break;
+        default:
+          break;
+      }
+    },
+    handleAddResult(addedData, addedId) {
+      const dependField = this.column?.redundant?.dependField;
+      const refedCol = this.srvInfo?.refed_col;
+      const keyDispCol = this.srvInfo?.key_disp_col;
+      if (!dependField || !refedCol) {
+        this.$emit("add-success", { ...addedData, addedId });
+        return;
+      }
+      const fkValue = addedData[refedCol] || addedData.id;
+      const resultItem = {
+        label: addedData[keyDispCol] || addedData[refedCol] || addedId,
+        value: fkValue,
+        option: addedData,
+        rawData: addedData,
+        ...addedData,
+      };
+      this.modelValue = resultItem.label;
+      this.$emit("input", resultItem.label, this.row, this.column);
+      this.$emit("select", cloneDeep(resultItem));
+      this.$emit("add-success", { ...addedData, addedId });
+    },
+    handleEditResult(updatedData, updatedId) {
+      const dependField = this.column?.redundant?.dependField;
+      const refedCol = this.srvInfo?.refed_col;
+      const keyDispCol = this.srvInfo?.key_disp_col;
+      if (!dependField || !refedCol) {
+        this.$emit("edit-success", { ...updatedData, updatedId });
+        return;
+      }
+      if (this.row) {
+        const oldFkData = this.row[`_${dependField}_data`] || {};
+        const fkFieldValue = oldFkData[refedCol] || this.row[dependField];
+        if (updatedData[refedCol] === fkFieldValue || String(updatedData[refedCol]) === String(fkFieldValue)) {
+          this.$set(this.row, `_${dependField}_data`, cloneDeep(updatedData));
+          const displayValue = updatedData[keyDispCol] || updatedData[refedCol] || this.modelValue;
+          this.modelValue = displayValue;
+          this.$emit("input", displayValue, this.row, this.column);
+          const resultItem = {
+            label: displayValue,
+            value: fkFieldValue,
+            option: updatedData,
+            rawData: updatedData,
+            ...updatedData,
+          };
+          this.$emit("select", cloneDeep(resultItem));
+        }
+      }
+      this.editRecordId = null;
+      this.$emit("edit-success", { ...updatedData, updatedId });
     },
     showFinder() {
       this.$refs.inputRef?.focus();
@@ -836,6 +1141,16 @@ export default {
 </script>
 
 <style lang="scss">
+.fk-action-dialog {
+  .el-dialog__body {
+    padding: 0 20px 20px;
+    iframe {
+      width: 100%;
+      height: 100%;
+    }
+  }
+}
+
 .cursor-pointer {
   font-size: 14px;
 }

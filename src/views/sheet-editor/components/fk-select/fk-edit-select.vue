@@ -189,9 +189,6 @@ export default {
       }
       const serviceName = this.addSrvCfg.srv;
       let url = `/vpages/#/add/${serviceName}`;
-      if(process.env.NODE_ENV === 'development'){
-        url = `http://localhost:8080/vpages/#/add/${serviceName}`;
-      }
       const params = [];
       
       if (this.srvInfo?.refed_col && this.row) {
@@ -221,10 +218,6 @@ export default {
       }
       // 正确的 update 路由格式：/update/{service_name}/{id}
       let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.selectItem.id}`;
-      if(process.env.NODE_ENV === 'development'){
-        url = `http://localhost:8080/vpages/#/update/${this.updateSrvCfg.srv}/${this.selectItem.id}`;
-      }
-      
       const params = [];
       
       if (this.updateSrvCfg?.app || this.app) {
