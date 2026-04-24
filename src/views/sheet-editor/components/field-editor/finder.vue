@@ -199,9 +199,6 @@ export default {
       }
       return getFieldType(this.column);
     },
-    isFk() {
-      return isFk(this.column);
-    },
     modelValue() {
       let value = this.value;
       return value;
