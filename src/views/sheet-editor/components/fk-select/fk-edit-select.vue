@@ -68,12 +68,14 @@
 </template>
 
 <script>
-import { cloneDeep } from "lodash-es";
-import { getFkOptions } from "@/service/api";
 import addIcon from "@/assets/img/add.png";
 import editIcon from "@/assets/img/edit.png";
 import { ActionButtonGroup } from "../action-button";
 import FkOptionPicker from "./fk-option-picker.vue";
+import {
+  loadFkOptions,
+  resolveFkOptionConfig,
+} from "../../utils/fkOption";
 
 export default {
   name: "FkEditSelect",
@@ -270,139 +272,54 @@ export default {
   },
   methods: {
     getOptionListV2() {
-      const optionListV3 = this.fieldInfo?.option_list_v3;
-      const data = this.row;
-      let result = null;
-
-      if (optionListV3?.length) {
-        if (optionListV3.find((item) => !item.conds)) {
-          result = optionListV3.find((item) => !item.conds);
-        } else {
-          result = optionListV3.find(
-            (item) =>
-              !item.conds?.length ||
-              item.conds?.every(
-                (cond) =>
-                  data?.[cond.case_col] &&
-                  cond.case_val?.includes?.(data?.[cond.case_col])
-              )
-          );
-        }
-      } else if (this.fieldInfo?.option_list_v2) {
-        result = this.fieldInfo.option_list_v2;
-      }
-
-      return cloneDeep(result);
+      return resolveFkOptionConfig(this.fieldInfo, this.row);
     },
     async loadLabelByValue(val) {
       if (!val || !this.srvInfo) {
         return Promise.resolve();
       }
-      
-      return new Promise((resolve, reject) => {
-        getFkOptions(
-          { ...this.column, option_list_v2: this.srvInfo },
-          this.row,
-          this.app,
-          1,
-          1,
-          {
-            mainData: this.$route?.query || {},
-          }
-        ).then((res) => {
-          if (res?.data?.length) {
-            const item = res.data[0];
-            
-            const labelValue = item[this.labelKey] || 
-                             item[this.srvInfo?.key_disp_col] || 
-                             item.label || 
-                             val;
-            
-            const idValue = item[this.valueKey] || 
-                           item[this.srvInfo?.refed_col] || 
-                           item.value || 
-                           val;
-            
-            this.inputValue = labelValue;
-            
-            const optionItem = {
-              label: labelValue,
-              value: idValue,
-              ...item,
-            };
-            
-            // 检查是否已存在相同的选项
-            const existingIndex = this.allOptions.findIndex(opt => opt.value === idValue);
-            if (existingIndex >= 0) {
-              this.allOptions.splice(existingIndex, 1, optionItem);
-            } else {
-              this.allOptions.push(optionItem);
-            }
-            
-            this.selectItem = optionItem;
-            resolve(optionItem);
-          } else {
-            // 如果API没有返回数据，尝试使用传入的值作为显示值
-            this.inputValue = val;
-            resolve();
-          }
-        }).catch((e) => {
-          console.error("loadLabelByValue error:", e);
-          // 失败时使用传入的值作为显示值
-          this.inputValue = val;
-          reject(e);
+      try {
+        const res = await loadFkOptions({
+          column: this.column,
+          row: this.row,
+          app: this.app,
+          srvInfo: this.srvInfo,
+          keyword: val,
+          // Existing value hydration must be exact; fuzzy search can hydrate the wrong row.
+          searchRuleType: "eq",
+          pageNo: 1,
+          rownumber: 1,
+          mainData: this.$route?.query || {},
         });
-      });
+        if (res?.data?.length) {
+          const optionItem = res.data[0];
+          this.inputValue = optionItem.label || val;
+          this.upsertOption(optionItem);
+          this.selectItem = optionItem;
+          return optionItem;
+        }
+        this.inputValue = val;
+      } catch (e) {
+        console.error("loadLabelByValue error:", e);
+        this.inputValue = val;
+        throw e;
+      }
     },
     querySearch(queryString, cb) {
       if (!this.srvInfo) {
         cb([]);
         return;
       }
-
-      const option = cloneDeep(this.srvInfo);
-      let relation_condition = {
-        relation: "OR",
-        data: [],
-      };
-
-      if (queryString) {
-        if (option.key_disp_col) {
-          relation_condition.data.push({
-            colName: option.key_disp_col,
-            value: queryString,
-            ruleType: "[like]",
-          });
-        }
-        if (option.refed_col) {
-          relation_condition.data.push({
-            colName: option.refed_col,
-            value: queryString,
-            ruleType: "[like]",
-          });
-        }
-      }
-
-      option.relation_condition = relation_condition;
-
-      getFkOptions(
-        { ...this.column, option_list_v2: option },
-        this.row,
-        this.app,
-        null,
-        null,
-        {
-          mainData: this.$route?.query || {},
-        }
-      ).then((res) => {
-        if (res?.data?.length && option?.refed_col) {
-          const results = res.data.map((item) => {
-            return {
-              label: item[option.key_disp_col],
-              value: item[option.refed_col],
-              ...item,
-            };
-          });
+      loadFkOptions({
+        column: this.column,
+        row: this.row,
+        app: this.app,
+        srvInfo: this.srvInfo,
+        keyword: queryString,
+        mainData: this.$route?.query || {},
+      }).then((res) => {
+        if (res?.data?.length && this.srvInfo?.refed_col) {
+          const results = res.data;
           this.allOptions.push(...results);
           cb(results);
         } else {
@@ -416,6 +333,8 @@ export default {
     handleDropdownVisibleChange(value) {
       this.dropdownVisible = value;
       if (!value) {
+        // For required-selection FK fields, typed text is only a search keyword.
+        // Restore the last confirmed label when the dropdown closes without selection.
         this.inputValue = this.selectItem?.label || "";
       }
     },
@@ -434,6 +353,16 @@ export default {
         rawData: item,
       });
       this.selectItem = item;
+    },
+    upsertOption(optionItem) {
+      const existingIndex = this.allOptions.findIndex(
+        (opt) => opt.value === optionItem.value
+      );
+      if (existingIndex >= 0) {
+        this.allOptions.splice(existingIndex, 1, optionItem);
+      } else {
+        this.allOptions.push(optionItem);
+      }
     },
     handleBlur() {
       const selectedLabel = this.selectItem?.label || "";
@@ -601,58 +530,32 @@ export default {
       if (!val || !this.srvInfo) {
         return Promise.resolve();
       }
-      
-      return new Promise((resolve, reject) => {
-        getFkOptions(
-          { ...this.column, option_list_v2: this.srvInfo },
-          this.row,
-          this.app,
-          1,
-          1,
-          {
-            mainData: this.$route?.query || {},
-          }
-        ).then((res) => {
-          if (res?.data?.length) {
-            const item = res.data[0];
-            
-            const labelValue = item[this.labelKey] || 
-                             item[this.srvInfo?.key_disp_col] || 
-                             item.label || 
-                             val;
-            
-            const idValue = item[this.valueKey] || 
-                           item[this.srvInfo?.refed_col] || 
-                           item.value || 
-                           val;
-            
-            // 更新 selectItem（保留原有数据，只更新标签）
-            const optionItem = {
-              ...(this.selectItem || {}),
-              label: labelValue,
-              value: idValue,
-              ...item
-            };
-            
-            this.selectItem = optionItem;
-            
-            // 检查是否已存在相同的选项
-            const existingIndex = this.allOptions.findIndex(opt => opt.value === idValue);
-            if (existingIndex >= 0) {
-              this.allOptions.splice(existingIndex, 1, optionItem);
-            } else {
-              this.allOptions.push(optionItem);
-            }
-            
-            resolve(optionItem);
-          } else {
-            resolve();
-          }
-        }).catch((e) => {
-          console.error("reloadLabelByValue error:", e);
-          reject(e);
+      try {
+        const res = await loadFkOptions({
+          column: this.column,
+          row: this.row,
+          app: this.app,
+          srvInfo: this.srvInfo,
+          keyword: val,
+          // Existing value hydration must be exact; fuzzy search can hydrate the wrong row.
+          searchRuleType: "eq",
+          pageNo: 1,
+          rownumber: 1,
+          mainData: this.$route?.query || {},
         });
-      });
+        if (res?.data?.length) {
+          const optionItem = {
+            ...(this.selectItem || {}),
+            ...res.data[0],
+          };
+          this.selectItem = optionItem;
+          this.upsertOption(optionItem);
+          return optionItem;
+        }
+      } catch (e) {
+        console.error("reloadLabelByValue error:", e);
+        throw e;
+      }
     },
   },
 };

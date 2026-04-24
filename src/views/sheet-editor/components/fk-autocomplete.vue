@@ -283,6 +283,12 @@ import { isFk } from "@/utils/sheetUtils";
 import addIcon from "@/assets/img/add.png";
 import editIcon from "@/assets/img/edit.png";
 import { ActionButtonGroup } from "./action-button";
+import {
+  buildFkOptionConfig,
+  loadFkOptions,
+  loadServiceColumns,
+  normalizeFkOption,
+} from "../utils/fkOption";
 
 export default {
   components: {
@@ -1008,38 +1014,10 @@ export default {
       this.$emit("input", this.modelValue);
     },
     formatFkOption(item) {
-      if (!item) {
-        return item;
-      }
-      const option = this.srvInfo || {};
-      item.label = item[option.key_disp_col];
-      item.value = item[option.refed_col];
-      return item;
+      return normalizeFkOption(item, this.srvInfo || {});
     },
     buildTableOption(queryString = "") {
-      const option = JSON.parse(JSON.stringify(this.srvInfo || {}));
-      const relation_condition = {
-        relation: "OR",
-        data: [],
-      };
-      if (option.key_disp_col && queryString) {
-        relation_condition.data.push({
-          colName: option.key_disp_col,
-          value: queryString,
-          ruleType: "[like]",
-        });
-      }
-      if (option.refed_col && queryString) {
-        relation_condition.data.push({
-          colName: option.refed_col,
-          value: queryString,
-          ruleType: "[like]",
-        });
-      }
-      if (relation_condition.data.length) {
-        option.relation_condition = relation_condition;
-      }
-      return option;
+      return buildFkOptionConfig(this.srvInfo || {}, queryString);
     },
     toFilter(query) {
       this.pageNo = 1;
@@ -1072,30 +1050,16 @@ export default {
       }
     },
     async getFkColumns(useType = "selectlist") {
-      const req = {
-        serviceName: "srvsys_service_columnex_v2_select",
-        colNames: ["*"],
-        condition: [
-          {
-            colName: "service_name",
-            value: this.srvInfo.serviceName,
-            ruleType: "eq",
-          },
-          { colName: "use_type", value: useType, ruleType: "eq" },
-        ],
-        order: [{ colName: "seq", orderType: "asc" }],
-      };
       const app =
         this.srvInfo.srv_app ||
         this.app ||
         sessionStorage.getItem("current_app");
       if (app) {
-        const url = `/${app}/select/srvsys_service_columnex_v2_select?colsel_v2=${this.srvInfo.serviceName}`;
-        const res = await $http.post(url, req);
-        const cols = res?.data?.data?.srv_cols || [];
-        this.tableColumns = cols.filter(
-          (item) => item.columns && item.in_list === 1
-        );
+        this.tableColumns = await loadServiceColumns({
+          app,
+          serviceName: this.srvInfo.serviceName,
+          useType,
+        });
         this.syncDropdownTableLayout();
         if (!this.tableColumns.length && useType === "selectlist") {
           await this.getFkColumns("list");
@@ -1107,18 +1071,17 @@ export default {
       setTimeout(() => {
         this.tableloading = false;
       }, 5000);
-      const srvInfo = this.buildTableOption(this.filterText);
-      getFkOptions(
-        { ...this.column, option_list_v2: srvInfo },
-        this.row,
-        this.app,
-        this.pageNo,
-        this.rownumber
-      ).then((res) => {
+      loadFkOptions({
+        column: this.column,
+        row: this.row,
+        app: this.app,
+        srvInfo: this.srvInfo,
+        keyword: this.filterText,
+        pageNo: this.pageNo,
+        rownumber: this.rownumber,
+      }).then((res) => {
         if (res?.data?.length) {
-          this.tableData = res.data.map((item) => {
-            return this.formatFkOption(item);
-          });
+          this.tableData = res.data;
           this.total = res?.page?.total;
         } else {
           this.tableData = [];

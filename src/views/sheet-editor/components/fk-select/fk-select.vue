@@ -31,8 +31,10 @@
 </template>
 
 <script>
-import { cloneDeep } from "lodash-es";
-import { getFkOptions } from "@/service/api";
+import {
+  loadFkOptions,
+  resolveFkOptionConfig,
+} from "../../utils/fkOption";
 
 export default {
   name: "FkSelect",
@@ -105,29 +107,7 @@ export default {
   },
   methods: {
     getOptionListV2() {
-      const optionListV3 = this.fieldInfo?.option_list_v3;
-      const data = this.row;
-      let result = null;
-
-      if (optionListV3?.length) {
-        if (optionListV3.find((item) => !item.conds)) {
-          result = optionListV3.find((item) => !item.conds);
-        } else {
-          result = optionListV3.find(
-            (item) =>
-              !item.conds?.length ||
-              item.conds?.every(
-                (cond) =>
-                  data?.[cond.case_col] &&
-                  cond.case_val?.includes?.(data?.[cond.case_col])
-              )
-          );
-        }
-      } else if (this.fieldInfo?.option_list_v2) {
-        result = this.fieldInfo.option_list_v2;
-      }
-
-      return cloneDeep(result);
+      return resolveFkOptionConfig(this.fieldInfo, this.row);
     },
     handleClick() {
       if (!this.setDisabled) {
@@ -155,59 +135,26 @@ export default {
         return Promise.resolve([]);
       }
 
-      let queryString = query || "";
+      const queryString = query === "$firstRowData" ? "" : query || "";
       if (!this.options?.length) {
         this.loading = true;
       }
 
-      const option = cloneDeep(this.srvInfo);
-      let relation_condition = {
-        relation: "OR",
-        data: [],
-      };
-
-      if (!option?.key_disp_col && !option?.refed_col) {
+      if (!this.srvInfo?.key_disp_col && !this.srvInfo?.refed_col) {
         this.loading = false;
         return Promise.resolve([]);
       }
 
-      if (queryString && queryString !== "$firstRowData") {
-        if (option.key_disp_col) {
-          relation_condition.data.push({
-            colName: option.key_disp_col,
-            value: queryString,
-            ruleType: "[like]",
-          });
-        }
-        if (option.refed_col) {
-          relation_condition.data.push({
-            colName: option.refed_col,
-            value: queryString,
-            ruleType: "[like]",
-          });
-        }
-      }
-
-      option.relation_condition = relation_condition;
-
-      return getFkOptions(
-        { ...this.column, option_list_v2: option },
-        this.row,
-        this.app,
-        null,
-        null,
-        {
-          mainData: this.$route?.query || {},
-        }
-      ).then((res) => {
-        if (res?.data?.length && option?.refed_col) {
-          this.options = res.data.map((item) => {
-            return {
-              label: item[option.key_disp_col],
-              value: item[option.refed_col],
-              ...item,
-            };
-          });
+      return loadFkOptions({
+        column: this.column,
+        row: this.row,
+        app: this.app,
+        srvInfo: this.srvInfo,
+        keyword: queryString,
+        mainData: this.$route?.query || {},
+      }).then((res) => {
+        if (res?.data?.length && this.srvInfo?.refed_col) {
+          this.options = res.data;
           this.allOptions.push(...this.options);
         } else {
           this.options = [];

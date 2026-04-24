@@ -87,8 +87,12 @@
 
 <script>
 import { cloneDeep } from "lodash-es";
-import { $http } from "@/common/http";
-import { getFkOptions } from "@/service/api";
+import {
+  buildFkOptionConfig,
+  loadFkOptions,
+  loadServiceColumns,
+  normalizeFkOption,
+} from "../../utils/fkOption";
 
 export default {
   name: "FkOptionPicker",
@@ -226,39 +230,10 @@ export default {
   },
   methods: {
     formatOption(item) {
-      if (!item) {
-        return item;
-      }
-      const option = cloneDeep(item);
-      option.label =
-        option[this.keyDispCol] || option.label || option[this.refedCol];
-      option.value = option[this.refedCol] || option.value;
-      return option;
+      return normalizeFkOption(item, this.srvInfo || {});
     },
     buildOption(queryString = "") {
-      const option = cloneDeep(this.srvInfo || {});
-      const relationCondition = {
-        relation: "OR",
-        data: [],
-      };
-      if (queryString && option.key_disp_col) {
-        relationCondition.data.push({
-          colName: option.key_disp_col,
-          value: queryString,
-          ruleType: "[like]",
-        });
-      }
-      if (queryString && option.refed_col) {
-        relationCondition.data.push({
-          colName: option.refed_col,
-          value: queryString,
-          ruleType: "[like]",
-        });
-      }
-      if (relationCondition.data.length) {
-        option.relation_condition = relationCondition;
-      }
-      return option;
+      return buildFkOptionConfig(this.srvInfo || {}, queryString);
     },
     async loadColumns(useType = "selectlist") {
       if (!this.srvInfo?.serviceName) {
@@ -271,25 +246,11 @@ export default {
       if (!app) {
         return;
       }
-      const req = {
-        serviceName: "srvsys_service_columnex_v2_select",
-        colNames: ["*"],
-        condition: [
-          {
-            colName: "service_name",
-            value: this.srvInfo.serviceName,
-            ruleType: "eq",
-          },
-          { colName: "use_type", value: useType, ruleType: "eq" },
-        ],
-        order: [{ colName: "seq", orderType: "asc" }],
-      };
-      const url = `/${app}/select/srvsys_service_columnex_v2_select?colsel_v2=${this.srvInfo.serviceName}`;
-      const res = await $http.post(url, req);
-      const cols = res?.data?.data?.srv_cols || [];
-      this.tableColumns = cols.filter(
-        (item) => item.columns && item.in_list === 1
-      );
+      this.tableColumns = await loadServiceColumns({
+        app,
+        serviceName: this.srvInfo.serviceName,
+        useType,
+      });
       this.syncTableLayout();
       if (!this.tableColumns.length && useType === "selectlist") {
         await this.loadColumns("list");
@@ -300,20 +261,19 @@ export default {
         return Promise.resolve([]);
       }
       this.loading = true;
-      const option = this.buildOption(this.innerValue);
-      return getFkOptions(
-        { ...this.column, option_list_v2: option },
-        this.row,
-        this.app,
-        this.pageNo,
-        this.pageSize,
-        {
-          mainData: this.$route?.query || {},
-        }
-      )
+      return loadFkOptions({
+        column: this.column,
+        row: this.row,
+        app: this.app,
+        srvInfo: this.srvInfo,
+        keyword: this.innerValue,
+        pageNo: this.pageNo,
+        rownumber: this.pageSize,
+        mainData: this.$route?.query || {},
+      })
         .then((res) => {
           if (res?.data?.length) {
-            this.tableData = res.data.map((item) => this.formatOption(item));
+            this.tableData = res.data;
             this.options = cloneDeep(this.tableData);
             this.total = res?.page?.total || this.tableData.length;
           } else {
@@ -349,7 +309,10 @@ export default {
     },
     emitDeferredInput(value, source = "input") {
       if (this.focused) {
+        // While focused, the typed text is only a search keyword. Parent updates are
+        // deferred until blur so grid cells are not rewritten on every keystroke.
         this.pendingInputValue = value || "";
+        this.$emit("search-change", this.pendingInputValue);
         return;
       }
       this.$emit("input-change", value || "", { source });
@@ -365,11 +328,14 @@ export default {
       this.pendingInputValue = null;
       this.$emit("input-change", value, { source: "input" });
       if (this.allowFreeInput) {
+        this.$emit("free-input-commit", value);
         this.$emit("input", value);
       }
     },
     handleBlur() {
       this.focused = false;
+      // Row double-click causes the input to blur before the table select event.
+      // Delay the commit so a real selection can cancel the pending search text.
       setTimeout(() => {
         this.flushDeferredInput();
         this.$emit("blur");
@@ -395,7 +361,8 @@ export default {
       this.innerValue = "";
       this.pageNo = 1;
       this.pendingInputValue = "";
-      this.$emit("clear");
+      this.$emit("search-change", "");
+      this.$emit("clear", { source: "clear" });
       this.$emit("select", null);
       if (this.uiMode === "table") {
         this.dropdownVisible = true;
@@ -406,17 +373,21 @@ export default {
       const selected = this.formatOption(row);
       this.innerValue = selected?.label || selected?.value || "";
       this.dropdownVisible = false;
+      // A confirmed option selection wins over the temporary search keyword.
       this.pendingInputValue = null;
       this.$emit("input-change", this.innerValue, { source: "select" });
       this.$emit("input", this.innerValue);
+      this.$emit("option-select", cloneDeep(selected));
       this.$emit("select", cloneDeep(selected));
     },
     handleAutocompleteSelect(item) {
       const selected = this.formatOption(item);
       this.innerValue = selected?.label || selected?.value || "";
+      // A confirmed option selection wins over the temporary search keyword.
       this.pendingInputValue = null;
       this.$emit("input-change", this.innerValue, { source: "select" });
       this.$emit("input", this.innerValue);
+      this.$emit("option-select", cloneDeep(selected));
       this.$emit("select", cloneDeep(selected));
     },
     handleSizeChange(value) {
@@ -444,20 +415,15 @@ export default {
         callback([]);
         return;
       }
-      const option = this.buildOption(queryString);
-      getFkOptions(
-        { ...this.column, option_list_v2: option },
-        this.row,
-        this.app,
-        null,
-        null,
-        {
-          mainData: this.$route?.query || {},
-        }
-      ).then((res) => {
-        const results = res?.data?.length
-          ? res.data.map((item) => this.formatOption(item))
-          : [];
+      loadFkOptions({
+        column: this.column,
+        row: this.row,
+        app: this.app,
+        srvInfo: this.srvInfo,
+        keyword: queryString,
+        mainData: this.$route?.query || {},
+      }).then((res) => {
+        const results = res?.data || [];
         this.options = results;
         callback(results);
       });
