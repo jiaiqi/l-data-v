@@ -1,26 +1,26 @@
 <template>
   <div class="fk-edit-select-wrapper">
-    <el-autocomplete
-      ref="autocompleteRef"
-      v-model="inputValue"
-      :fetch-suggestions="querySearch"
+    <fk-option-picker
+      :app="app"
+      :column="column"
+      :row="row"
+      :srv-info="srvInfo"
+      :input-value="inputValue"
       :placeholder="placeholder"
       :disabled="setDisabled"
-      clearable
-      @select="handleSelect"
-      @blur="handleBlur"
+      :ui-mode="pickerUiMode"
+      :allow-free-input="false"
+      class="fk-edit-select-picker"
+      @input-change="handleInputChange"
+      @select="handlePickerSelect"
       @focus="handleFocus"
+      @blur="handleBlur"
       @clear="handleClear"
-      style="width: 100%"
-    >
-      <template slot-scope="{ item }">
-        <div class="fk-option-item">
-          {{ item.label }}
-        </div>
-      </template>
-    </el-autocomplete>
+      @dropdown-visible-change="handleDropdownVisibleChange"
+    />
     <action-button-group
       v-if="actionButtons.length > 0"
+      :visible="showActionButtonGroup"
       :buttons="actionButtons"
       @button-click="handleButtonClick"
     />
@@ -73,11 +73,13 @@ import { getFkOptions } from "@/service/api";
 import addIcon from "@/assets/img/add.png";
 import editIcon from "@/assets/img/edit.png";
 import { ActionButtonGroup } from "../action-button";
+import FkOptionPicker from "./fk-option-picker.vue";
 
 export default {
   name: "FkEditSelect",
   components: {
-    ActionButtonGroup
+    ActionButtonGroup,
+    FkOptionPicker
   },
   props: {
     app: {
@@ -95,6 +97,10 @@ export default {
     row: Object,
     defaultOptions: Array,
     disabled: Boolean,
+    uiMode: {
+      type: String,
+      default: "table",
+    },
   },
   data() {
     return {
@@ -104,6 +110,7 @@ export default {
       inputValue: "",
       addDialogVisible: false,
       editDialogVisible: false,
+      dropdownVisible: false,
       addIcon,
       editIcon,
     };
@@ -118,7 +125,15 @@ export default {
       }
     },
     placeholder() {
-      return this.fieldInfo?.placeholder || "请输入或选择";
+      if (this.fieldInfo?.placeholder) {
+        return this.fieldInfo.placeholder;
+      }
+      return this.pickerUiMode === "table"
+        ? "输入关键词搜索，双击选择已有数据"
+        : "输入关键词搜索，请从结果中选择";
+    },
+    pickerUiMode() {
+      return this.uiMode || this.srvInfo?.ui_mode || this.srvInfo?.picker_ui_mode || "table";
     },
     srvInfo() {
       return this.getOptionListV2();
@@ -170,6 +185,9 @@ export default {
       }
       
       return buttons;
+    },
+    showActionButtonGroup() {
+      return this.actionButtons.length > 0 && !this.dropdownVisible;
     },
     addSrvCfg() {
       return this.srvInfo?.add_srv_cfg;
@@ -392,6 +410,22 @@ export default {
         }
       });
     },
+    handleInputChange(value) {
+      this.inputValue = value || "";
+    },
+    handleDropdownVisibleChange(value) {
+      this.dropdownVisible = value;
+      if (!value) {
+        this.inputValue = this.selectItem?.label || "";
+      }
+    },
+    handlePickerSelect(item) {
+      if (!item) {
+        this.handleClear();
+        return;
+      }
+      this.handleSelect(item);
+    },
     handleSelect(item) {
       this.inputValue = item[this.labelKey] || item.label;
       this.$emit("input", item[this.valueKey]);
@@ -402,34 +436,19 @@ export default {
       this.selectItem = item;
     },
     handleBlur() {
-      const queryString = this.inputValue;
-      if (!queryString) {
+      const selectedLabel = this.selectItem?.label || "";
+      if (!this.inputValue || this.inputValue === selectedLabel) {
         return;
       }
-
-      const matchedOption = this.options.find(
-        (item) =>
-          item[this.valueKey] == queryString ||
-          item[this.labelKey] == queryString
-      );
-
-      if (matchedOption) {
-        this.inputValue = matchedOption[this.labelKey];
-        this.$emit("input", matchedOption[this.valueKey]);
-        this.$emit("select", {
-          value: matchedOption[this.valueKey],
-          rawData: matchedOption,
-        });
-      } else {
-        this.$message.warning("请选择已有选项或点击右侧按钮添加新选项");
-        this.inputValue = "";
-      }
+      this.$message.warning("请从搜索结果中选择一条数据，输入内容仅用于搜索");
+      this.inputValue = selectedLabel;
     },
     handleFocus() {
       this.$emit("focus");
     },
     handleClear() {
       this.inputValue = "";
+      this.selectItem = null;
       this.$emit("input", null);
       this.$emit("select", { value: null, rawData: null });
     },
@@ -656,7 +675,7 @@ export default {
   display: flex;
   align-items: center;
   width: 100%;
-
+  height: 100%;
   .fk-option-item {
     padding: 4px 0;
   }

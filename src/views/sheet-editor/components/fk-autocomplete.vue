@@ -122,66 +122,23 @@
       v-else-if="hasActionSrvCfg && !setDisabled"
       class="flex items-center w-full h-full autocomplete-with-action"
     >
-      <el-popover
-        v-model="tableDropdownVisible"
+      <fk-option-picker
         class="flex-1"
-        placement="bottom-start"
-        trigger="focus"
-        width="720"
-        popper-class="fk-table-dropdown-popper"
-        @show="syncDropdownTableLayout"
-      >
-        <div class="fk-table-dropdown" @mousedown.stop>
-          <el-table
-            ref="dropdownTable"
-            :data="tableData"
-            v-loading="tableloading"
-            size="mini"
-            border
-            height="260"
-            empty-text="暂无数据"
-            @row-dblclick="onDBClick"
-          >
-            <el-table-column
-              v-for="tableColumn in tableDisplayColumns"
-              :key="tableColumn.columns"
-              :prop="tableColumn.columns"
-              :label="tableColumn.label"
-              :fixed="tableColumn.columns === srvInfo.key_disp_col ? 'left' : false"
-              :min-width="tableColumn.list_min_width || 120"
-              show-overflow-tooltip
-            >
-            </el-table-column>
-          </el-table>
-          <div class="fk-table-dropdown__footer">
-            <span class="fk-table-dropdown__tip">双击列表进行选择</span>
-            <el-pagination
-              small
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-              :page-sizes="[5, 10, 20, 30]"
-              :page-size="rownumber"
-              :total="total"
-              :current-page="pageNo"
-              layout="total, sizes, prev, pager, next"
-            >
-            </el-pagination>
-          </div>
-        </div>
-        <el-input
-          slot="reference"
-          clearable
-          ref="inputRef"
-          class="inline-input flex-1"
-          v-model="modelValue"
-          placeholder="请输入"
-          style="padding: 0; overflow: hidden;"
-          @focus="openTableDropdown"
-          @input="onDropdownInput"
-          @clear="onDropdownClear"
-        >
-        </el-input>
-      </el-popover>
+        :app="app"
+        :column="column"
+        :row="row"
+        :srv-info="srvInfo"
+        :input-value="modelValue"
+        :disabled="setDisabled"
+        :ui-mode="pickerUiMode"
+        :allow-free-input="true"
+        :placeholder="pickerPlaceholder"
+        @focus="onFocus"
+        @input-change="onPickerInputChange"
+        @select="onPickerSelect"
+        @clear="onPickerClear"
+        @dropdown-visible-change="onPickerDropdownVisibleChange"
+      />
       <action-button-group
         v-if="actionButtons.length > 0"
         :visible="showActionButtonGroup"
@@ -192,66 +149,23 @@
       v-else-if="!setDisabled"
       class="flex items-center justify-between w-full"
     >
-      <el-popover
-        v-model="tableDropdownVisible"
+      <fk-option-picker
         class="flex-1"
-        placement="bottom-start"
-        trigger="click"
-        width="720"
-        popper-class="fk-table-dropdown-popper"
-        @show="syncDropdownTableLayout"
-      >
-        <div class="fk-table-dropdown" @mousedown.stop>
-          <el-table
-            ref="dropdownTable"
-            :data="tableData"
-            v-loading="tableloading"
-            size="mini"
-            border
-            height="260"
-            empty-text="暂无数据"
-            @row-dblclick="onDBClick"
-          >
-            <el-table-column
-              v-for="tableColumn in tableDisplayColumns"
-              :key="tableColumn.columns"
-              :prop="tableColumn.columns"
-              :label="tableColumn.label"
-              :fixed="tableColumn.columns === srvInfo.key_disp_col ? 'left' : false"
-              :min-width="tableColumn.list_min_width || 120"
-              show-overflow-tooltip
-            >
-            </el-table-column>
-          </el-table>
-          <div class="fk-table-dropdown__footer">
-            <span class="fk-table-dropdown__tip">双击列表进行选择</span>
-            <el-pagination
-              small
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-              :page-sizes="[5, 10, 20, 30]"
-              :page-size="rownumber"
-              :total="total"
-              :current-page="pageNo"
-              layout="total, sizes, prev, pager, next"
-            >
-            </el-pagination>
-          </div>
-        </div>
-        <el-input
-          slot="reference"
-          clearable
-          ref="inputRef"
-          class="inline-input flex-1"
-          v-model="modelValue"
-          placeholder="请输入"
-          style="padding: 0; overflow: hidden;"
-          @focus="openTableDropdown"
-          @input="onDropdownInput"
-          @clear="onDropdownClear"
-        >
-        </el-input>
-      </el-popover>
+        :app="app"
+        :column="column"
+        :row="row"
+        :srv-info="srvInfo"
+        :input-value="modelValue"
+        :disabled="setDisabled"
+        :ui-mode="pickerUiMode"
+        :allow-free-input="true"
+        :placeholder="pickerPlaceholder"
+        @focus="onFocus"
+        @input-change="onPickerInputChange"
+        @select="onPickerSelect"
+        @clear="onPickerClear"
+        @dropdown-visible-change="onPickerDropdownVisibleChange"
+      />
       <i
         class="el-icon-arrow-right cursor-pointer text-#C0C4CC"
         :class="{ 'cursor-not-allowed': setDisabled }"
@@ -364,6 +278,7 @@ import { renderStr } from "../../../common/common";
 import fkSelect from "./fk-select/fk-select.vue";
 import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
+import FkOptionPicker from "./fk-select/fk-option-picker.vue";
 import { isFk } from "@/utils/sheetUtils";
 import addIcon from "@/assets/img/add.png";
 import editIcon from "@/assets/img/edit.png";
@@ -374,6 +289,7 @@ export default {
     fkSelect,
     fkOnlyEdit,
     fkEditSelect,
+    FkOptionPicker,
     ActionButtonGroup,
   },
   data() {
@@ -436,6 +352,10 @@ export default {
     defaultConditionsMap: Object,
     detailButton: Object,
     defaultOptions: Array,
+    uiMode: {
+      type: String,
+      default: "table",
+    },
   },
   computed: {
     isFk() {
@@ -491,6 +411,17 @@ export default {
     },
     hasActionSrvCfg() {
       return this.showActionAddBtn || this.showActionEditBtn;
+    },
+    pickerUiMode() {
+      return this.uiMode || this.srvInfo?.ui_mode || this.srvInfo?.picker_ui_mode || "table";
+    },
+    pickerPlaceholder() {
+      if (this.column?.placeholder) {
+        return this.column.placeholder;
+      }
+      // return this.pickerUiMode === "table"
+      //   ? "可直接输入，或搜索后双击选择"
+      //   : "可直接输入，或搜索后选择";
     },
     showActionButtonGroup() {
       return this.actionButtons.length > 0 && !this.tableDropdownVisible;
@@ -899,6 +830,30 @@ export default {
       this.$emit("input", "");
       this.$emit("select", null);
       this.remoteMethod();
+    },
+    onPickerInputChange(value, meta = {}) {
+      this.modelValue = value || "";
+      if (meta.source === "input") {
+        this.$emit("input", this.modelValue);
+      }
+    },
+    onPickerSelect(item) {
+      if (!item) {
+        this.onPickerClear();
+        return;
+      }
+      const selected = cloneDeep(item);
+      this.modelValue = selected?.label || selected?.value || "";
+      this.$emit("input", this.modelValue);
+      this.$emit("select", selected);
+    },
+    onPickerClear() {
+      this.modelValue = "";
+      this.$emit("input", "");
+      this.$emit("select", null);
+    },
+    onPickerDropdownVisibleChange(value) {
+      this.tableDropdownVisible = value;
     },
     openTableDropdown() {
       if (this.setDisabled) {

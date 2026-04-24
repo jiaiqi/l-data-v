@@ -229,7 +229,7 @@ export default {
 <style lang="scss" scoped>
 .fk-selector-container {
   width: 100%;
-
+  height: 100%;
   .fk-text {
     width: 100%;
     min-height: 32px;
