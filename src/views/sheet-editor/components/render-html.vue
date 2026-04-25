@@ -5,9 +5,10 @@
       'is-rich-text': useEditor,
       'link-to-detail': linkToDetail,
       'disabled-wrap': allowWrap !== true,
+      'is-flow': isFlow,
     }"
     :style="setStyle"
-    :title="getTextFromHtml(html)"
+    :title="isFlow ? '' : getTextFromHtml(html)"
     v-loading="loadingFold"
     @dblclick="showRichEditor"
   >
@@ -24,7 +25,8 @@
         class="prefix-icon cursor-initial"
         v-else-if="column.isFirstCol"
       ></div>
-      <div v-if="isFks && selected">
+      <flow-cell v-if="isFlow" :value="html" :column="column"></flow-cell>
+      <div v-else-if="isFks && selected">
         <el-tag
           style="margin-right: 4px; margin-bottom: 2px"
           size="mini"
@@ -165,11 +167,12 @@ import "@wangeditor/editor/dist/css/style.css";
 import cloneDeep from "lodash/cloneDeep";
 import { isFk, isFkAutoComplete, getFieldType } from "@/utils/sheetUtils";
 import { getTextFromHtml } from "../util/common";
+import FlowCell from "./flow-cell.vue";
 // 展示富文本 Note RichText类型
 export default {
-  components: { Editor, Toolbar },
+  components: { Editor, Toolbar, FlowCell },
   props: {
-    html: [String, Number],
+    html: [String, Number, Array],
     oldValue: [String, Number],
     editable: Boolean,
     disabled: Boolean,
@@ -272,6 +275,9 @@ export default {
     },
     isFks() {
       return ["fks", "fkjson", "fkjsons"].includes(this.colType);
+    },
+    isFlow() {
+      return this.colType === "flow" || this.column?.bx_col_type === "flow";
     },
     linkToDetail() {
       return (
@@ -758,6 +764,22 @@ export default {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+  }
+  &.is-flow {
+    min-height: 68px;
+    max-height: none;
+    height: auto;
+    align-items: center;
+
+    &.disabled-wrap {
+      height: 68px;
+      white-space: normal;
+
+      .flex.w-full {
+        overflow: visible;
+        white-space: normal;
+      }
     }
   }
   .text {
