@@ -1,5 +1,6 @@
 <template>
   <div v-loading="loading" class="fk-selector-container">
+    <!-- 自行输入 -->
     <fk-only-edit
       v-if="isOnlyEdit && !setDisabled"
       :app="app"
@@ -13,7 +14,7 @@
       @select="onSelect"
       @focus="onFocus"
     ></fk-only-edit>
-
+    <!-- 编辑选择 -->
     <fk-edit-select
       v-else-if="isEditSelect && !setDisabled"
       :app="app"
@@ -29,7 +30,7 @@
       @open-add-dialog="onOpenAddDialog"
       @open-edit-dialog="onOpenEditDialog"
     ></fk-edit-select>
-
+    <!-- 普通FK -->
     <fk-select
       v-else-if="srvInfo && srvInfo.refed_col && !setDisabled"
       :app="app"
