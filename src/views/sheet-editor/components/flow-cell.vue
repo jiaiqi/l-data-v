@@ -18,7 +18,7 @@
           :class="`is-${step.status}`"
           :style="{ '--flow-ratio': step.progressRatio }"
         >
-          <i v-if="step.ratio === 100" class="el-icon-check"></i>
+          <i v-if="showDoneIcon(step)" class="el-icon-check"></i>
           <span v-else class="flow-cell__ratio cell--ratio">{{ step.ratio }}%</span>
         </div>
         <div class="flow-cell__name">{{ step.name || step.no || "-" }}</div>
@@ -39,7 +39,7 @@
         </div>
         <div class="flow-cell__track flow-cell__track--detail">
           <div
-            v-for="(step, index) in steps"
+            v-for="(step, index) in detailSteps"
             :key="getStepKey(step, index, 'detail')"
             class="flow-cell__step flow-cell__step--detail"
             :title="stepTitle(step)"
@@ -54,7 +54,7 @@
               :class="`is-${step.status}`"
               :style="{ '--flow-ratio': step.progressRatio }"
             >
-              <i v-if="step.ratio === 100" class="el-icon-check"></i>
+              <i v-if="showDoneIcon(step)" class="el-icon-check"></i>
               <span v-else class="flow-cell__ratio">{{ step.ratio }}%</span>
             </div>
             <div class="flow-cell__name flow-cell__name--detail">
@@ -92,7 +92,21 @@ export default {
   data() {
     return {
       detailVisible: false,
+      detailAnimatedRatios: {},
+      detailAnimationFrame: null,
     };
+  },
+  watch: {
+    detailVisible(visible) {
+      if (visible) {
+        this.$nextTick(this.startDetailAnimation);
+      } else {
+        this.stopDetailAnimation();
+      }
+    },
+  },
+  beforeDestroy() {
+    this.stopDetailAnimation();
   },
   computed: {
     detailTitle() {
@@ -122,6 +136,20 @@ export default {
           };
         })
         .sort((a, b) => this.sortValue(a.seq) - this.sortValue(b.seq));
+    },
+    detailSteps() {
+      return this.steps.map((step, index) => {
+        const key = this.getStepKey(step, index, "detail");
+        const ratio = Math.round(this.detailAnimatedRatios[key] || 0);
+
+        return {
+          ...step,
+          actualRatio: step.ratio,
+          ratio,
+          progressRatio: this.getProgressRatio(ratio),
+          status: this.resolveStatus(ratio),
+        };
+      });
     },
   },
   methods: {
@@ -188,12 +216,17 @@ export default {
       return "zero";
     },
     stepTitle(step) {
+      const ratio = step.actualRatio ?? step.ratio;
       const texts = [
         step.name ? `名称：${step.name}` : "",
         step.no ? `编号：${step.no}` : "",
-        `进度：${step.ratio}%`,
+        `进度：${ratio}%`,
       ];
       return texts.filter(Boolean).join("\n");
+    },
+    showDoneIcon(step) {
+      const actualRatio = step.actualRatio ?? step.ratio;
+      return actualRatio === 100 && step.ratio >= 100;
     },
     getStepKey(step, index, prefix = "cell") {
       return `${prefix}-${step.no || `${step.seq}-${index}`}`;
@@ -202,6 +235,60 @@ export default {
       if (this.steps.length) {
         this.detailVisible = true;
       }
+    },
+    startDetailAnimation() {
+      this.stopDetailAnimation();
+      this.detailAnimatedRatios = {};
+
+      const targets = this.steps.map((step, index) => ({
+        key: this.getStepKey(step, index, "detail"),
+        ratio: step.ratio,
+      }));
+      if (!targets.length) {
+        return;
+      }
+
+      const startTime = performance.now();
+      const duration = 1150;
+      const stagger = 70;
+
+      targets.forEach((item) => {
+        this.$set(this.detailAnimatedRatios, item.key, 0);
+      });
+
+      const animate = (time) => {
+        let finished = true;
+
+        targets.forEach((item, index) => {
+          const progress = Math.max(
+            0,
+            Math.min(1, (time - startTime - index * stagger) / duration)
+          );
+          const eased = this.easeOutCubic(progress);
+          this.$set(this.detailAnimatedRatios, item.key, item.ratio * eased);
+
+          if (progress < 1) {
+            finished = false;
+          }
+        });
+
+        if (!finished) {
+          this.detailAnimationFrame = requestAnimationFrame(animate);
+        } else {
+          this.detailAnimationFrame = null;
+        }
+      };
+
+      this.detailAnimationFrame = requestAnimationFrame(animate);
+    },
+    stopDetailAnimation() {
+      if (this.detailAnimationFrame) {
+        cancelAnimationFrame(this.detailAnimationFrame);
+        this.detailAnimationFrame = null;
+      }
+    },
+    easeOutCubic(progress) {
+      return 1 - Math.pow(1 - progress, 3);
     },
   },
 };
