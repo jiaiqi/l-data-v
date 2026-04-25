@@ -3284,14 +3284,16 @@ export default {
             this.filterState[item.columns] !== null &&
             !this.filterState[item.columns]
           ) {
+            const value = this.resolveInitExprValue(item.init_expr, item);
             let obj = {
               colName: item.columns,
               ruleType: "in",
+              value,
             };
-            if (item.init_expr?.indexOf("'") === 0) {
-              obj.value = item.init_expr.replaceAll("'", "");
+            if (Array.isArray(obj.value)) {
+              obj.value = obj.value.join(",");
             }
-            if (obj.value) {
+            if (this.hasInitExprValue(obj.value)) {
               arr.push(obj);
             }
           }
@@ -3395,9 +3397,13 @@ export default {
         if (v2Data === false) {
           return;
         }
-        if (["add", "addchildlist"].includes(this.childListType)) return (this.loading = false);
-        this.buildInitCond();
-        this.loading = false;
+        if (["add", "addchildlist"].includes(this.childListType)) {
+          // for (let i = 0; i < 5; i++) {
+          //   this.insert2Rows(0);
+          // }
+          this.loading = false;
+          return Promise.resolve();
+        }
         // if (refresh) {
         //   setTimeout(() => {
         //     this.isFetched = false;
@@ -5712,8 +5718,15 @@ export default {
 
         this.recordManager = new RecordManager();
 
-        if (!this.disabled && this.tableData?.length === 0 && insertNewRows && this.childListType !== "detaillist") {
-          this.insert2Rows(0);
+        if (!this.disabled && this.tableData?.length === 0 && insertNewRows && !['detaillist', 'updatechildlist'].includes(this.childListType)) {
+          if (this.childListType === 'addchildlist') {
+            // addchildlist 默认插入 5 条空数据
+            for (let i = 0; i < 5; i++) {
+              this.insert2Rows(0);
+            }
+          } else {
+            this.insert2Rows(0);
+          }
         }
       }
     },
@@ -5851,6 +5864,14 @@ export default {
             return item;
           });
         }
+        this.initExprCols = this.v2data.srv_cols.reduce((pre, cur) => {
+          if (cur.init_expr) {
+            pre.push(cur);
+          }
+          return pre;
+        }, []);
+        // 列配置中的 init_expr 同时承担列表默认过滤条件，需要在字段配置最终确定后重建。
+        this.buildInitCond();
 
         const allColsMap = {
           updateCols: this.updateCols,

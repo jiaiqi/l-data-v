@@ -1,19 +1,13 @@
 <template>
   <div class="flex items-center autocomplete-box">
-    <div
-      v-if="
-        column &&
-        linkToDetail &&
-        column.redundant_options &&
-        (column.redundant_options.autocompleteInput === true ||
-          column.subtype === 'autocomplete')
-      "
-      class="flex-1 text-left"
-      :class="{ 'cursor-pointer text-blue': linkToDetail }"
-      @click="toDetail"
-    >
-      {{ modelValue }}
-    </div>
+    <fk-detail-link
+      v-if="showDetailLink"
+      :app="app"
+      :srv-info="srvInfo"
+      :row="row"
+      :detail-button="detailButton"
+      :value="modelValue"
+    ></fk-detail-link>
     <fk-only-edit
       v-else-if="isOnlyEdit && !setDisabled"
       :app="app"
@@ -60,64 +54,18 @@
       @focus="onFocus"
     ></fk-select>
 
-    <div
+    <fk-tree-picker
       v-else-if="isTree && !setDisabled"
-      style="width: 100%"
-    >
-      <el-popover
-        placement="bottom-center"
-        ref="treePopover"
-        trigger="click"
-        @show="onPopoverShow"
-        :popper-options="popperOptions"
-      >
-        <div
-          slot="reference"
-          v-if="modelValue && !setDisabled"
-          class="cursor-pointer"
-        >
-          <span>
-            {{ modelLabel || modelValue || "" }}
-          </span>
-        </div>
-        <div
-          slot="reference"
-          class="text-gray cursor-pointer"
-          v-else-if="!setDisabled"
-        >
-          请选择
-        </div>
-        <el-input
-          placeholder="输入关键字进行过滤"
-          clearable
-          v-model="modelValue"
-          @focus="onFocus"
-          @input="onFilterInput"
-          @clear="onFilterClear"
-          style="max-width: 300px; margin-bottom: 5px; height: 30px"
-        >
-        </el-input>
-        <el-cascader-panel
-          :props="props"
-          :is-border="false"
-          :options="options"
-          @change="onSelectChange"
-          :emitPath="false"
-          checkStrictly
-          style="max-width: 1200px;overflow-x: auto;"
-        >
-          <template
-            slot-scope="{ node, data }"
-            v-if="props.checkStrictly !== false"
-          >
-            <span
-              :title="node.label"
-              @click.stop="clickNode(node, data)"
-            >{{ node.label }}</span>
-          </template>
-        </el-cascader-panel>
-      </el-popover>
-    </div>
+      :app="app"
+      :column="column"
+      :row="row"
+      :srv-info="srvInfo"
+      :value="modelValue"
+      :disabled="setDisabled"
+      @focus="onFocus"
+      @input="onTreeInput"
+      @select="onTreeSelect"
+    ></fk-tree-picker>
     <div
       v-else-if="hasActionSrvCfg && !setDisabled"
       class="flex items-center w-full h-full autocomplete-with-action"
@@ -257,13 +205,14 @@
 <script>
 import { $http } from "../../../common/http.js";
 import { cloneDeep } from "lodash-es";
-import { getFkOptions, onSelect } from "../../../service/api";
 import { renderStr } from "../../../common/common";
 import fkSelect from "./fk-select/fk-select.vue";
 import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
 import FkOptionPicker from "./fk-select/fk-option-picker.vue";
 import FkActionDialog from "./fk-select/fk-action-dialog.vue";
+import FkTreePicker from "./fk-select/fk-tree-picker.vue";
+import FkDetailLink from "./fk-select/fk-detail-link.vue";
 import { isFk } from "@/utils/sheetUtils";
 import addIcon from "@/assets/img/add.png";
 import editIcon from "@/assets/img/edit.png";
@@ -282,11 +231,12 @@ export default {
     fkEditSelect,
     FkOptionPicker,
     FkActionDialog,
+    FkTreePicker,
+    FkDetailLink,
     ActionButtonGroup,
   },
   data() {
     return {
-      allOptions: [],
       options: [],
       dialogVisible: false,
       tableDropdownVisible: false,
@@ -299,25 +249,11 @@ export default {
       filterText: "",
       tableSearchTimer: null,
       modelValue: "",
-      popperOptions: null,
       addDialogVisible: false,
       editDialogVisible: false,
       addIframeKey: 0,
       editIframeKey: 0,
       editRecordId: null,
-      props: {
-        emitPath: false,
-        checkStrictly: true,
-        value: "value",
-        label: "label",
-        lazy: true,
-        leaf: "leaf",
-        lazyLoad: (node, resolve) => {
-          this.loadTree(node).then((res) => {
-            resolve(res);
-          });
-        },
-      },
     };
   },
   props: {
@@ -358,18 +294,14 @@ export default {
         this?.column?.linkToDetail === true && this.detailButton?.permission
       );
     },
-    srvApp() {
-      return this.srvInfo?.srv_app || this.app;
-    },
-    currentModel() {
-      if (this.modelValue) {
-        return this.allOptions.find((item) => item.value === this.modelValue);
-      }
-    },
-    modelLabel() {
-      if (this.currentModel) {
-        return this.currentModel.label;
-      }
+    showDetailLink() {
+      return (
+        this.column &&
+        this.linkToDetail &&
+        this.column.redundant_options &&
+        (this.column.redundant_options.autocompleteInput === true ||
+          this.column.subtype === "autocomplete")
+      );
     },
     isTree() {
       return this.srvInfo?.is_tree && this.srvInfo?.parent_col ? true : false;
@@ -468,7 +400,7 @@ export default {
       const serviceName = this.addSrvCfg.srv;
       let url = `/vpages/#/add/${serviceName}`;
       const params = [];
-      if (this.srvInfo?.refed_col && this.row) {
+      if (this.srvInfo?.refed_col && this.row && this.row[this.srvInfo.refed_col]) {
         const operate_params = {
           data: [
             {
@@ -578,14 +510,6 @@ export default {
         this.row[`_${this.column?.redundant?.dependField}_init_val`]
       );
     }
-  },
-  mounted() {
-    this.popperOptions = {
-      boundariesElement: document.querySelector("body"),
-      gpuAcceleration: true,
-      positionFixed: true,
-      preventOverflow: true,
-    };
   },
   beforeDestroy() {
     if (this.tableSearchTimer) {
@@ -757,59 +681,18 @@ export default {
     showFinder() {
       this.$refs.inputRef?.focus();
     },
-    clickNode(node, data) {
-      if (this.props.checkStrictly === false) {
-        if (data.is_leaf !== "是") {
-          return;
-        }
-      }
-      console.log(node, data, "clickNode");
-      let val = node.value;
-      let currentValue = this.allOptions.find(
-        (item) => item[this.srvInfo.refed_col] === val
-      );
-      if (currentValue) {
-        this.$emit("select", currentValue);
-        this.modelValue = currentValue.label;
-      }
+    onTreeInput(value) {
+      this.modelValue = value || "";
       this.$emit("input", this.modelValue);
-      this.$nextTick(() => {
-        this.$refs.treePopover?.doClose?.();
-      });
     },
-    toDetail() {
-      if (this.linkToDetail) {
-        let address = `/vpages/#/detail/${this.srvInfo.serviceName}/${this.row.id}?srvApp=${this.app}`;
-        let tab_title = this.detailButton.service_view_name;
-        let disp_col = this.detailButton._disp_col;
-        let disp_value = this.row[disp_col];
-        tab_title = tab_title.replace("查询", "");
-        if (disp_value != null && disp_value != undefined && disp_value != "") {
-          tab_title = disp_value + "(" + tab_title + "详情)";
-        } else {
-          tab_title = tab_title + "详情";
-        }
-        let page = {
-          title: tab_title,
-          url: address,
-          icon: "",
-          app: this.app,
-        };
-        if (window.top.tab) {
-          window.top.tab.addTab(page);
-        } else {
-          const page = window.open(address);
-          setTimeout(() => {
-            page.document.title = tab_title;
-          }, 500);
-        }
+    onTreeSelect(item) {
+      if (!item) {
+        this.modelValue = "";
+        this.$emit("select", null);
+        return;
       }
-    },
-    onFilterClear() {
-      this.modelValue = "";
-      this.$emit("input", "");
-      this.$emit("select", null);
-      this.remoteMethod();
+      this.modelValue = item.label || item.value || "";
+      this.$emit("select", item);
     },
     onPickerInputChange(value, meta = {}) {
       this.modelValue = value || "";
@@ -877,115 +760,6 @@ export default {
           this.$refs.dropdownTable?.doLayout?.();
         }, 80);
       });
-    },
-    onFilterInput(value) {
-      this.modelValue = value;
-      this.remoteMethod(value);
-    },
-    onPopoverShow() {
-      this.modelValue = this.value;
-      this.remoteMethod(this.modelValue);
-    },
-    async loadTree(node) {
-      if (node?.value) {
-        const option = this.srvInfo;
-        const condition = [
-          {
-            colName: this.srvInfo.parent_col,
-            ruleType: "eq",
-            value: node.value,
-          },
-        ];
-        const res = await onSelect(
-          this.srvInfo.serviceName,
-          this.srvApp,
-          condition,
-          {
-            rownumber: 100,
-            pageNo: 1,
-          }
-        );
-        if (res?.data) {
-          const result = res.data.map((item) => {
-            item.label = item[option.key_disp_col];
-            item.value = item[option.refed_col];
-            item.leaf = item.is_leaf === "是";
-            return item;
-          });
-          this.allOptions.push(...result);
-          return result;
-        } else return [];
-      }
-    },
-    remoteMethod(query) {
-      let queryString = this.modelValue;
-      if (query && typeof query === "string") {
-        queryString = query;
-      }
-      if (!this.options?.length) {
-        this.loading = true;
-        setTimeout(() => {
-          this.loading = false;
-        }, 5000);
-      }
-      let option = JSON.parse(JSON.stringify(this.srvInfo));
-      let relation_condition = {
-        relation: "OR",
-        data: [],
-      };
-      if (!option.key_disp_col && !option.refed_col) {
-        return;
-      }
-      if (option.key_disp_col && queryString) {
-        relation_condition.data.push({
-          colName: option.key_disp_col,
-          value: queryString,
-          ruleType: "[like]",
-        });
-      }
-      if (option.refed_col && queryString) {
-        relation_condition.data.push({
-          colName: option.refed_col,
-          value: queryString,
-          ruleType: "[like]",
-        });
-      }
-      option.relation_condition = relation_condition;
-      return new Promise((resolve) => {
-        getFkOptions(
-          { ...this.column, option_list_v2: option },
-          this.row,
-          this.app
-        ).then((res) => {
-          if (res?.data?.length) {
-            this.options = res.data.map((item) => {
-              item.label = item[option.key_disp_col];
-              item.value = item[option.refed_col];
-              item.leaf = item.is_leaf === "是";
-              return item;
-            });
-            this.allOptions.push(...this.options);
-            resolve(this.options);
-          } else {
-            this.options = [];
-          }
-          this.loading = false;
-        });
-      });
-    },
-    onSelectChange(val) {
-      if (Array.isArray(val) && val?.length) {
-        val = val[0];
-      }
-      this.$refs?.treePopover?.doClose();
-      let currentValue = this.allOptions.find(
-        (item) => item[this.srvInfo.refed_col] === val
-      );
-      if (currentValue) {
-        this.$emit("select", currentValue);
-        this.modelValue = currentValue.label;
-      }
-      this.$emit("input", this.modelValue);
     },
     formatFkOption(item) {
       return normalizeFkOption(item, this.srvInfo || {});

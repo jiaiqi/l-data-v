@@ -57,7 +57,7 @@ import { ActionButtonGroup } from "../action-button";
 export default {
   name: "TrigActEditor",
   components: {
-    ActionButtonGroup
+    ActionButtonGroup,
   },
   directives: {
     clickoutside: {
@@ -120,17 +120,21 @@ export default {
       return this.trigAct?.sel_srv || null;
     },
     hasAddSrv() {
-      return !!this.addSrvConfig?.srv &&this.addSrvConfig?.permission!==false;
+      return (
+        !!this.addSrvConfig?.srv && this.addSrvConfig?.permission !== false
+      );
     },
     hasSelSrv() {
-      return !!this.selSrvConfig?.srv &&this.selSrvConfig?.permission!==false;
+      return (
+        !!this.selSrvConfig?.srv && this.selSrvConfig?.permission !== false
+      );
     },
     displayValue() {
       return this.value ?? "";
     },
     actionButtons() {
       const buttons = [];
-      
+
       if (this.hasAddSrv) {
         buttons.push({
           key: "add",
@@ -141,7 +145,7 @@ export default {
           handler: this.openAddDialog,
         });
       }
-      
+
       if (this.hasSelSrv) {
         buttons.push({
           key: "history",
@@ -152,7 +156,7 @@ export default {
           handler: this.openHistoryDialog,
         });
       }
-      
+
       return buttons;
     },
     historyDialogTitle() {
@@ -185,16 +189,18 @@ export default {
       if (this.fkConfig) {
         const refedCol = this.fkConfig.referenced_column_name;
         const currentCol = this.fkConfig.column_name;
-        const operate_params = {
-          data: [
-            {
-              [refedCol]: this.row[currentCol],
-            },
-          ],
-        };
-        url += `?operate_params=${JSON.stringify(operate_params)}`;
-        if(this.app){
-          url+=`&srvApp=${this.app}`
+        if (this.row[currentCol]) {
+          const operate_params = {
+            data: [
+              {
+                [refedCol]: this.row[currentCol],
+              },
+            ],
+          };
+          url += `?operate_params=${JSON.stringify(operate_params)}`;
+        }
+        if (this.app) {
+          url += `&srvApp=${this.app}`;
         }
       }
       return url;
