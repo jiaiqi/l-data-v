@@ -60,6 +60,8 @@ import { ActionButtonGroup } from "../action-button";
 import FkOptionPicker from "./fk-option-picker.vue";
 import FkActionDialog from "./fk-action-dialog.vue";
 import {
+  hasFkValue,
+  loadFkOptionByValue,
   loadFkOptions,
   resolveFkOptionConfig,
 } from "../../utils/fkOption";
@@ -257,24 +259,19 @@ export default {
       return resolveFkOptionConfig(this.fieldInfo, this.row);
     },
     async loadLabelByValue(val) {
-      if (!val || !this.srvInfo) {
+      if (!hasFkValue(val) || !this.srvInfo) {
         return Promise.resolve();
       }
       try {
-        const res = await loadFkOptions({
+        const optionItem = await loadFkOptionByValue({
           column: this.column,
           row: this.row,
           app: this.app,
           srvInfo: this.srvInfo,
-          keyword: val,
-          // 已有值回显必须精确匹配，模糊查询可能取到相似值的第一条。
-          searchRuleType: "eq",
-          pageNo: 1,
-          rownumber: 1,
+          value: val,
           mainData: this.$route?.query || {},
         });
-        if (res?.data?.length) {
-          const optionItem = res.data[0];
+        if (optionItem) {
           this.inputValue = optionItem.label || val;
           this.upsertOption(optionItem);
           this.selectItem = optionItem;
@@ -461,30 +458,26 @@ export default {
       console.log("收到未知消息类型:", data);
     },
     async reloadLabelByValue(val) {
-      if (!val || !this.srvInfo) {
+      if (!hasFkValue(val) || !this.srvInfo) {
         return Promise.resolve();
       }
       try {
-        const res = await loadFkOptions({
+        const optionItem = await loadFkOptionByValue({
           column: this.column,
           row: this.row,
           app: this.app,
           srvInfo: this.srvInfo,
-          keyword: val,
-          // 已有值回显必须精确匹配，模糊查询可能取到相似值的第一条。
-          searchRuleType: "eq",
-          pageNo: 1,
-          rownumber: 1,
+          value: val,
           mainData: this.$route?.query || {},
         });
-        if (res?.data?.length) {
-          const optionItem = {
+        if (optionItem) {
+          const mergedOption = {
             ...(this.selectItem || {}),
-            ...res.data[0],
+            ...optionItem,
           };
-          this.selectItem = optionItem;
-          this.upsertOption(optionItem);
-          return optionItem;
+          this.selectItem = mergedOption;
+          this.upsertOption(mergedOption);
+          return mergedOption;
         }
       } catch (e) {
         console.error("reloadLabelByValue error:", e);

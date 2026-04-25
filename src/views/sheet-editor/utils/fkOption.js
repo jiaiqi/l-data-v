@@ -4,6 +4,14 @@ import { getFkOptions } from "@/service/api";
 
 const serviceColumnsCache = new Map();
 
+export function hasFkValue(value) {
+  return value !== undefined && value !== null && value !== "";
+}
+
+function firstAvailableValue(...values) {
+  return values.find((value) => hasFkValue(value));
+}
+
 export function resolveFkOptionConfig(fieldInfo = {}, row = {}) {
   const optionListV3 = fieldInfo?.option_list_v3;
   let result = null;
@@ -38,14 +46,14 @@ export function buildFkSearchRelation(
     relation: "OR",
     data: [],
   };
-  if (keyword && srvInfo.key_disp_col) {
+  if (hasFkValue(keyword) && srvInfo.key_disp_col) {
     relationCondition.data.push({
       colName: srvInfo.key_disp_col,
       value: keyword,
       ruleType,
     });
   }
-  if (keyword && srvInfo.refed_col) {
+  if (hasFkValue(keyword) && srvInfo.refed_col) {
     relationCondition.data.push({
       colName: srvInfo.refed_col,
       value: keyword,
@@ -77,14 +85,44 @@ export function normalizeFkOption(row = {}, srvInfo = {}) {
     return row;
   }
   const rawData = cloneDeep(row);
-  const label = rawData[srvInfo.key_disp_col] || rawData.label || rawData[srvInfo.refed_col];
-  const value = rawData[srvInfo.refed_col] || rawData.value;
+  const label = firstAvailableValue(
+    rawData[srvInfo.key_disp_col],
+    rawData.label,
+    rawData[srvInfo.refed_col]
+  );
+  const value = firstAvailableValue(rawData[srvInfo.refed_col], rawData.value);
   return {
     ...rawData,
     label,
     value,
     rawData,
   };
+}
+
+export async function loadFkOptionByValue({
+  column,
+  row,
+  app,
+  srvInfo,
+  value,
+  mainData = {},
+}) {
+  if (!hasFkValue(value) || !srvInfo?.refed_col) {
+    return null;
+  }
+  // 已有 FK 值回显必须精确匹配，不能复用模糊搜索的第一条结果。
+  const res = await loadFkOptions({
+    column,
+    row,
+    app,
+    srvInfo,
+    keyword: value,
+    searchRuleType: "eq",
+    pageNo: 1,
+    rownumber: 1,
+    mainData,
+  });
+  return res?.data?.[0] || null;
 }
 
 export async function loadFkOptions({

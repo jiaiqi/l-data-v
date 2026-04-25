@@ -19,7 +19,11 @@
 
 <script>
 import FkOptionPicker from "./fk-option-picker.vue";
-import { loadFkOptions, resolveFkOptionConfig } from "../../utils/fkOption";
+import {
+  hasFkValue,
+  loadFkOptionByValue,
+  resolveFkOptionConfig,
+} from "../../utils/fkOption";
 
 export default {
   name: "FkSelect",
@@ -89,7 +93,7 @@ export default {
     value: {
       immediate: true,
       handler(newValue) {
-        if (newValue !== undefined && newValue !== null && newValue !== "") {
+        if (hasFkValue(newValue)) {
           this.inputValue = this.selectItem?.label || newValue;
           this.loadLabelByValue(newValue);
         } else {
@@ -109,9 +113,7 @@ export default {
     initDefaultSelected() {
       if (
         !this.defaultOptions?.length ||
-        this.value === undefined ||
-        this.value === null ||
-        this.value === ""
+        !hasFkValue(this.value)
       ) {
         return;
       }
@@ -151,22 +153,18 @@ export default {
       };
     },
     async loadLabelByValue(val) {
-      if (val === undefined || val === null || val === "" || !this.srvInfo) {
+      if (!hasFkValue(val) || !this.srvInfo) {
         return Promise.resolve();
       }
       try {
-        const res = await loadFkOptions({
+        const optionItem = await loadFkOptionByValue({
           column: this.column,
           row: this.row,
           app: this.app,
           srvInfo: this.srvInfo,
-          keyword: val,
-          searchRuleType: "eq",
-          pageNo: 1,
-          rownumber: 1,
+          value: val,
           mainData: this.$route?.query || {},
         });
-        const optionItem = res?.data?.[0];
         if (optionItem) {
           // 只按当前值做精确回显，避免把模糊搜索的第一条结果当成已选值。
           this.selectItem = this.formatSelectedItem(optionItem);

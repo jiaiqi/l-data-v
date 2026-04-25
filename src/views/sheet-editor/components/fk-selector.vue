@@ -56,10 +56,14 @@
 </template>
 
 <script>
-import { cloneDeep } from "lodash-es";
 import fkSelect from "./fk-select/fk-select.vue";
 import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
+import {
+  hasFkValue,
+  loadFkOptionByValue,
+  resolveFkOptionConfig,
+} from "../utils/fkOption";
 
 export default {
   name: "FkSelector",
@@ -142,76 +146,51 @@ export default {
     value: {
       immediate: true,
       handler(newValue) {
-        if (newValue && !this.isOnlyEdit && !this.isEditSelect) {
-          this.loadLabelByValue(newValue);
+        if (!hasFkValue(newValue)) {
+          this.displayLabel = null;
+          return;
+        }
+        if (this.setDisabled && this.srvInfo?.refed_col) {
+          this.loadDisabledDisplayLabel(newValue);
+        } else {
+          // 编辑态的回显由具体子选择器负责，避免父子组件重复请求同一条 FK 数据。
+          this.displayLabel = null;
         }
       },
     },
   },
   methods: {
     getOptionListV2() {
-      const optionListV3 = this.fieldInfo?.option_list_v3;
-      const data = this.row;
-      let result = null;
-
-      if (optionListV3?.length) {
-        if (optionListV3.find((item) => !item.conds)) {
-          result = optionListV3.find((item) => !item.conds);
-        } else {
-          result = optionListV3.find(
-            (item) =>
-              !item.conds?.length ||
-              item.conds?.every(
-                (cond) =>
-                  data?.[cond.case_col] &&
-                  cond.case_val?.includes?.(data?.[cond.case_col])
-              )
-          );
-        }
-      } else if (this.fieldInfo?.option_list_v2) {
-        result = this.fieldInfo.option_list_v2;
-      }
-
-      return cloneDeep(result);
+      return resolveFkOptionConfig(this.fieldInfo, this.row);
     },
-    async loadLabelByValue(val) {
-      if (!val || !this.srvInfo) {
+    async loadDisabledDisplayLabel(val) {
+      if (!hasFkValue(val) || !this.srvInfo) {
         return;
       }
-      const option = cloneDeep(this.srvInfo);
-      const condition = [
-        {
-          colName: option.refed_col,
-          value: val,
-          ruleType: "eq",
-        },
-      ];
-
       try {
-        const { onSelect } = await import("../../../service/api");
-        const res = await onSelect(
-          option.serviceName,
-          option.srv_app || this.app,
-          condition,
-          {
-            rownumber: 1,
-            pageNo: 1,
-          }
-        );
-
-        if (res?.data?.length) {
-          const item = res.data[0];
-          this.displayLabel = item[option.key_disp_col] || val;
-        }
+        const optionItem = await loadFkOptionByValue({
+          column: this.column,
+          row: this.row,
+          app: this.app,
+          srvInfo: this.srvInfo,
+          value: val,
+          mainData: this.$route?.query || {},
+        });
+        this.displayLabel = optionItem?.label || val;
       } catch (e) {
-        console.error("loadLabelByValue error:", e);
+        console.error("loadDisabledDisplayLabel error:", e);
+        this.displayLabel = val;
       }
     },
     onInput(val) {
       this.$emit("input", val);
     },
     onSelect(data) {
-      this.displayLabel = data?.rawData?.label || data?.value;
+      this.displayLabel =
+        data?.rawData?.label ||
+        data?.label ||
+        data?.displayValue ||
+        data?.value;
       this.$emit("select", data);
     },
     onFocus() {
