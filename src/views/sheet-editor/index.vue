@@ -200,7 +200,7 @@ import {
   onDelete,
 } from "../../service/api";
 import { $http } from "../../common/http";
-import { processStrings, appendNumber } from "../../common/common";
+import { processStrings, appendNumber, renderStr } from "../../common/common";
 import { buildSrvCols, isFkAutoComplete, isFk } from "../../utils/sheetUtils";
 import {
   extractAndFormatDatesOrTimestamps,
@@ -1421,7 +1421,7 @@ export default {
               serviceName += `,${this.v2data?.service_name}`;
             }
             arr.push({
-              serviceName: "srvsys_service_columns_query_update",
+              serviceName: "srvsys_service_columns_update",
               data: [{ list_min_width: this.columnWidthMap[key].width }],
               condition: [
                 { colName: "columns", value: key, ruleType: "eq" },
@@ -2466,6 +2466,161 @@ export default {
     },
     handleFkEditSuccess(data, row, column) {
       console.log("sheet-editor 收到 fk-edit-success:", data, row, column);
+    },
+    hasInitExprValue(value) {
+      return value !== null && value !== undefined && value !== "";
+    },
+    resolveInitExprValue(initExpr, field = {}) {
+      let expr = initExpr;
+      let val = null;
+      if (!expr) {
+        return val;
+      }
+      expr = expr.replace(/\'|\"/g, "");
+      if (
+        expr.indexOf("'") == -1 &&
+        expr.lastIndexOf("'") === expr.length - 1
+      ) {
+        // 变量
+        val = eval(expr);
+      } else {
+        val = expr;
+      }
+      const colType = field?.col_type;
+      // 日期
+      if (
+        val === "new Date()" ||
+        (typeof val === "string" && val.indexOf("new Da") > -1)
+      ) {
+        // 兼容单词书写错误的情况
+        val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
+        if (colType === "Date") {
+          val = dayjs(val).format("YYYY-MM-DD");
+        }
+      }
+      if (
+        ["Integer", "Float", "Money", "int", "Int"].includes(colType) ||
+        colType?.includes("decimal")
+      ) {
+        // 数字类型 初始值处理
+        val = Number(val);
+      }
+      if (typeof val === "string" && val?.includes("top.user.")) {
+        let key = val.split("top.user.");
+        key = key.length > 1 ? key[1] : "";
+        if (key) {
+          let userInfo = sessionStorage.getItem("current_login_user");
+          if (userInfo) {
+            userInfo = JSON.parse(userInfo);
+          }
+          val = userInfo?.[key];
+        }
+      }
+      return val;
+    },
+    resolveInitConditionValue(value, row = {}) {
+      if (typeof value === "string" && value) {
+        if (value.indexOf("data.") !== -1) {
+          const colName = value.slice(value.indexOf("data.") + 5);
+          return row[colName];
+        }
+        if (value.indexOf("top.user.") !== -1) {
+          const colName = value.slice(value.indexOf("top.user.") + 9);
+          const loginUser = JSON.parse(
+            sessionStorage.getItem("current_login_user") || "{}"
+          );
+          return loginUser[colName];
+        }
+        if (
+          value.indexOf("'") === 0 &&
+          value.lastIndexOf("'") === value.length - 1
+        ) {
+          return value.replace(/\'/gi, "");
+        }
+      } else if (typeof value === "object" && value?.value_type) {
+        if (value.value_type === "constant") {
+          return value.value;
+        }
+        if (value.value_type === "mainData" && value.value_key) {
+          return (this.mainData || {})[value.value_key];
+        }
+        if (value.value_key) {
+          return row[value.value_key];
+        }
+      }
+      return value;
+    },
+    buildFkInitConditions(optionCfg = {}, row = {}, initValue) {
+      const conditions = [];
+      const configConditions = optionCfg.conditions || optionCfg.condition || [];
+      configConditions.forEach((item) => {
+        const value = this.resolveInitConditionValue(item.value, row);
+        if (this.hasInitExprValue(value)) {
+          conditions.push({
+            colName: item.colName,
+            ruleType: item.ruleType || "eq",
+            value,
+          });
+        }
+      });
+      conditions.push({
+        colName: optionCfg.refed_col,
+        ruleType: "eq",
+        value: initValue,
+      });
+      return conditions;
+    },
+    async applyFkInitExprValue(row, initInfo) {
+      const { field, fkColumn, optionCfg, initValue } = initInfo || {};
+      if (
+        !row ||
+        !field?.columns ||
+        !fkColumn ||
+        !optionCfg?.serviceName ||
+        !optionCfg?.refed_col ||
+        !this.hasInitExprValue(initValue)
+      ) {
+        return;
+      }
+      try {
+        const appName = renderStr(
+          optionCfg.srv_app ||
+          this.srvApp ||
+          sessionStorage.getItem("current_app"),
+          { data: row }
+        );
+        if (!appName) {
+          return;
+        }
+        const res = await onSelect(
+          optionCfg.serviceName,
+          appName,
+          this.buildFkInitConditions(optionCfg, row, initValue),
+          {
+            rownumber: 1,
+            pageNo: 1,
+          }
+        );
+        const rawData = res?.data?.[0];
+        if (!rawData) {
+          return;
+        }
+        const rowIndex = this.tableData.findIndex(
+          (item) => item.rowKey === row.rowKey
+        );
+        if (rowIndex < 0) {
+          return;
+        }
+        const fkValue = rawData[optionCfg.refed_col] ?? initValue;
+        // 新增行创建时主动消费 FK init_expr，避免等单元格聚焦后才由编辑器回填。
+        this.$set(row, fkColumn, fkValue);
+        this.$set(row, `_${fkColumn}_data`, rawData);
+        this.$set(row, "_rawData", rawData);
+        this.$set(this.tableData, rowIndex, row);
+        this.handlerRedundant(rawData, fkColumn, row.rowKey, rowIndex);
+      } catch (error) {
+        console.error("applyFkInitExprValue error:", error);
+      }
     },
     clearFieldEditorParams() {
       this.fieldEditorParams = null;
@@ -5128,6 +5283,7 @@ export default {
           }
           return res;
         }, {});
+        const pendingFkInitValues = [];
 
         this.allFields.forEach((field) => {
           if (field.editable || field.canAdd || this.isSuperAdmin) {
@@ -5153,51 +5309,16 @@ export default {
             }
             if (init_expr) {
               // 初始值
-              let val = null;
-              if (init_expr) {
-                init_expr = init_expr.replace(/\'|\"/g, "");
-                if (
-                  init_expr.indexOf("'") == -1 &&
-                  init_expr.lastIndexOf("'") === init_expr.length - 1
-                ) {
-                  // 变量
-                  val = eval(init_expr);
-                } else {
-                  val = init_expr;
-                }
-                const colType = field?.col_type;
-                // 日期
-                if (val === "new Date()" || val?.indexOf("new Da") > -1) {
-                  // 兼容单词书写错误的情况
-                  val = dayjs(new Date()).format("YYYY-MM-DD HH:mm:ss");
-                  if (colType === "Date") {
-                    val = dayjs(val).format("YYYY-MM-DD");
-                  }
-                }
-                if (
-                  ["Integer", "Float", "Money", "int", "Int"].includes(
-                    colType
-                  ) ||
-                  colType?.includes("decimal")
-                ) {
-                  // 数字类型 初始值处理
-                  val = Number(val);
-                }
-                if (typeof val === "string" && val?.includes("top.user.")) {
-                  let key = val.split("top.user.");
-                  key = key.length > 1 ? key[1] : "";
-                  if (key) {
-                    let userInfo = sessionStorage.getItem("current_login_user");
-                    if (userInfo) {
-                      userInfo = JSON.parse(userInfo);
-                    }
-                    val = userInfo?.[key];
-                  }
-                }
-              }
+              const val = this.resolveInitExprValue(init_expr, field);
               if (fk_init_expr) {
                 dataItem[`_${fk_column}_init_val`] = val;
                 field[`_${fk_column}_init_val`] = val;
+                pendingFkInitValues.push({
+                  field,
+                  fkColumn: fk_column,
+                  optionCfg: fkCols[field.redundant?.dependField],
+                  initValue: val,
+                });
               } else {
                 dataItem[field.columns] = val;
               }
@@ -5213,9 +5334,14 @@ export default {
             }
           }
         });
+        pendingFkInitValues.forEach((item) => {
+          if (this.hasInitExprValue(item.initValue)) {
+            dataItem[item.fkColumn] = item.initValue;
+          }
+        });
         if (this.defaultConditions?.length) {
           this.defaultConditions.forEach((item) => {
-            if (!dataItem[item.colName]) {
+            if (!this.hasInitExprValue(dataItem[item.colName])) {
               dataItem[item.colName] = item.value;
             }
           });
@@ -5227,6 +5353,9 @@ export default {
         }
 
         this.tableData.splice(index, 0, dataItem);
+        pendingFkInitValues.forEach((item) => {
+          this.applyFkInitExprValue(dataItem, item);
+        });
         // let autocompleteKeys = Object.keys(dataItem).filter(key => key && key.includes('_init_val'))
         // if (Array.isArray(autocompleteKeys) && autocompleteKeys.length) {
         //   // 给autocomplete字段设置初始值
