@@ -43,4 +43,13 @@ vpages/
 .cursor
 .codeartsdoer
 
-Agent.md
+# OpenClaw 记忆文件
+MEMORY.md
+memory/
+AGENTS.md
+SOUL.md
+USER.md
+TOOLS.md
+HEARTBEAT.md
+IDENTITY.md
+.openclaw/
