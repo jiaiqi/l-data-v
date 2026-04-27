@@ -227,7 +227,7 @@ export default {
         return "";
       }
       // 正确的 update 路由格式：/update/{service_name}/{id}
-      let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.selectItem.id}`;
+      let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.selectItem && this.selectItem.id}`;
       const params = [];
       
       if (this.updateSrvCfg?.app || this.app) {
