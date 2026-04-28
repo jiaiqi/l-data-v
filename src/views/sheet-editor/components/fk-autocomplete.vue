@@ -219,6 +219,7 @@ import editIcon from "@/assets/img/edit.png";
 import { ActionButtonGroup } from "./action-button";
 import {
   buildFkOptionConfig,
+  hasFkValue,
   loadFkOptions,
   loadServiceColumns,
   normalizeFkOption,
@@ -297,6 +298,7 @@ export default {
     showDetailLink() {
       return (
         this.column &&
+        this.hasFkFieldValue &&
         this.linkToDetail &&
         this.column.redundant_options &&
         (this.column.redundant_options.autocompleteInput === true ||
@@ -321,6 +323,40 @@ export default {
     srvInfo() {
       return this.column?.redundant_options;
     },
+    dependField() {
+      return (
+        this.column?.redundant?.dependField ||
+        this.srvInfo?._target_column ||
+        null
+      );
+    },
+    fkFieldValue() {
+      if (!this.row || !this.dependField) {
+        return null;
+      }
+      return this.row[this.dependField];
+    },
+    hasFkFieldValue() {
+      return hasFkValue(this.fkFieldValue);
+    },
+    addDefaultDisplayField() {
+      return (
+        this.srvInfo?.key_disp_col ||
+        this.column?.redundant?.refedCol ||
+        this.column?.columns ||
+        null
+      );
+    },
+    addDefaultData() {
+      const data = {};
+      if (this.srvInfo?.refed_col && this.hasFkFieldValue) {
+        data[this.srvInfo.refed_col] = this.fkFieldValue;
+      }
+      if (this.addDefaultDisplayField && hasFkValue(this.modelValue)) {
+        data[this.addDefaultDisplayField] = this.modelValue;
+      }
+      return data;
+    },
     addSrvCfg() {
       return this.srvInfo?.add_srv_cfg;
     },
@@ -328,10 +364,10 @@ export default {
       return this.srvInfo?.update_srv_cfg;
     },
     showActionAddBtn() {
-      return !this.modelValue && this.addSrvCfg?.srv && this.addSrvCfg?.permission !== false;
+      return !this.hasFkFieldValue && this.addSrvCfg?.srv && this.addSrvCfg?.permission !== false;
     },
     showActionEditBtn() {
-      return !!this.modelValue && this.updateSrvCfg?.srv && this.updateSrvCfg?.permission !== false;
+      return this.hasFkFieldValue && this.updateSrvCfg?.srv && this.updateSrvCfg?.permission !== false;
     },
     hasActionSrvCfg() {
       return this.showActionAddBtn || this.showActionEditBtn;
@@ -400,13 +436,9 @@ export default {
       const serviceName = this.addSrvCfg.srv;
       let url = `/vpages/#/add/${serviceName}`;
       const params = [];
-      if (this.srvInfo?.refed_col && this.row && this.row[this.srvInfo.refed_col]) {
+      if (Object.keys(this.addDefaultData).length) {
         const operate_params = {
-          data: [
-            {
-              [this.srvInfo.refed_col]: this.row[this.srvInfo.refed_col],
-            },
-          ],
+          data: [this.addDefaultData],
         };
         params.push(`operate_params=${JSON.stringify(operate_params)}`);
       }
@@ -419,7 +451,7 @@ export default {
       return url;
     },
     editIframeUrl() {
-      if (!this.updateSrvCfg?.srv || !this.modelValue) {
+      if (!this.updateSrvCfg?.srv || !this.hasFkFieldValue) {
         return "";
       }
       let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.editRecordId}`;
@@ -553,7 +585,7 @@ export default {
       if (this.setDisabled) {
         return;
       }
-      if (this.updateSrvCfg?.srv && this.modelValue) {
+      if (this.updateSrvCfg?.srv && this.hasFkFieldValue) {
         if (!this.editRecordId) {
           this.fetchEditRecordId().then(() => {
             if (this.editRecordId) {
@@ -568,8 +600,8 @@ export default {
       }
     },
     async fetchEditRecordId() {
-      const fkValue = this.row?.[this.column?.redundant?.dependField];
-      if (!fkValue || !this.srvInfo?.refed_col) {
+      const fkValue = this.fkFieldValue;
+      if (!hasFkValue(fkValue) || !this.srvInfo?.refed_col) {
         return;
       }
       const req = {
