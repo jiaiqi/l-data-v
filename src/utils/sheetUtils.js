@@ -253,6 +253,15 @@ const buildSrvCols = (cols, allColsMap = {}, childListType, colSrv, serviceName,
         attachRedundantOptionRefs(col, dependField, addColsMap, updateColsMap, fkCols);
       }
 
+      // flow字段本质上也是依赖外键的冗余展示字段，需要复用外键的新增/编辑配置
+      if (
+        (col.col_type === "flow" || col.bx_col_type === "flow") &&
+        dependField &&
+        fkCols[dependField]
+      ) {
+        attachRedundantOptionRefs(col, dependField, addColsMap, updateColsMap, fkCols, { flowInput: true });
+      }
+
       // 处理字符串类型的冗余显示列，让其具备fk字段效果
       if (col?.col_type === "String" && col?.redundant?.dependField) {
         const key_disp_col = fkCols[col.redundant.dependField]?.key_disp_col;
@@ -401,6 +410,8 @@ export function getFieldType(column) {
   // 特殊处理某些复合类型
   if (["fks", "fkjson", "fkjsons"].includes(column?.col_type)) {
     result = column.col_type
+  } else if (column?.col_type === 'flow' || column?.bx_col_type === 'flow') {
+    result = 'flow'
   } else if (isFk(column)) {
     result = 'fk'
   } else if (isFkAutoComplete(column)) {

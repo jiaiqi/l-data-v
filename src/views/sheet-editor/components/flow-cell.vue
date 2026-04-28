@@ -1,5 +1,9 @@
 <template>
-  <div class="flow-cell" @dblclick.stop.prevent="openDetail">
+  <div
+    class="flow-cell"
+    :class="{ 'flow-cell--actions': showActionButtonGroup }"
+    @dblclick.stop.prevent="openDetail"
+  >
     <span v-if="!steps.length" class="flow-cell__empty">暂无流程</span>
     <div v-else class="flow-cell__track">
       <div
@@ -23,6 +27,18 @@
         </div>
         <div class="flow-cell__name">{{ step.name || step.no || "-" }}</div>
       </div>
+    </div>
+
+    <div
+      v-if="showActionButtonGroup"
+      class="flow-cell__action-wrap"
+      @click.stop
+      @dblclick.stop
+    >
+      <action-button-group
+        :visible="true"
+        :buttons="actionButtons"
+      />
     </div>
 
     <el-dialog
@@ -65,10 +81,40 @@
         </div>
       </div>
     </el-dialog>
+
+    <fk-action-dialog
+      :title="addDialogTitle"
+      :visible.sync="addDialogVisible"
+      custom-class="flow-action-dialog"
+      :url="addIframeUrl"
+      :iframe-key="addIframeKey"
+      @add-success="handleActionAddSuccess"
+      @update-success="handleActionUpdateSuccess"
+      @close-dialog="handleActionCloseDialog"
+    />
+
+    <fk-action-dialog
+      :title="editDialogTitle"
+      :visible.sync="editDialogVisible"
+      custom-class="flow-action-dialog"
+      :url="editIframeUrl"
+      :iframe-key="editIframeKey"
+      @add-success="handleActionAddSuccess"
+      @update-success="handleActionUpdateSuccess"
+      @close-dialog="handleActionCloseDialog"
+    />
   </div>
 </template>
 
 <script>
+import { cloneDeep } from "lodash-es";
+import { $http } from "@/common/http";
+import addIcon from "@/assets/img/add.png";
+import editIcon from "@/assets/img/edit.png";
+import { ActionButtonGroup } from "./action-button";
+import FkActionDialog from "./fk-select/fk-action-dialog.vue";
+import { hasFkValue } from "../utils/fkOption";
+
 const DEFAULT_FIELD_MAP = {
   // 后端未配置映射时，按当前 flow 字段约定兜底取值。
   seq_col: "seq",
@@ -79,14 +125,34 @@ const DEFAULT_FIELD_MAP = {
 
 export default {
   name: "FlowCell",
+  components: {
+    ActionButtonGroup,
+    FkActionDialog,
+  },
   props: {
     value: {
-      type: [String, Array],
+      type: [String, Array, Object],
       default: "",
     },
     column: {
       type: Object,
       default: () => ({}),
+    },
+    row: {
+      type: Object,
+      default: () => ({}),
+    },
+    app: {
+      type: String,
+      default: "",
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+    showActions: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
@@ -94,6 +160,11 @@ export default {
       detailVisible: false,
       detailAnimatedRatios: {},
       detailAnimationFrame: null,
+      addDialogVisible: false,
+      editDialogVisible: false,
+      addIframeKey: 0,
+      editIframeKey: 0,
+      editRecordId: null,
     };
   },
   watch: {
@@ -111,6 +182,129 @@ export default {
   computed: {
     detailTitle() {
       return this.column?.label || this.column?.columns || "流程";
+    },
+    srvInfo() {
+      return this.column?.redundant_options || this.column?.option_list_v2 || {};
+    },
+    dependField() {
+      return (
+        this.column?.redundant?.dependField ||
+        this.srvInfo?._target_column ||
+        null
+      );
+    },
+    fkFieldValue() {
+      if (!this.row || !this.dependField) {
+        return null;
+      }
+      return this.row[this.dependField];
+    },
+    hasFkFieldValue() {
+      return hasFkValue(this.fkFieldValue);
+    },
+    addSrvCfg() {
+      return this.srvInfo?.add_srv_cfg;
+    },
+    updateSrvCfg() {
+      return this.srvInfo?.update_srv_cfg;
+    },
+    showActionAddBtn() {
+      return (
+        !this.disabled &&
+        !this.hasFkFieldValue &&
+        this.addSrvCfg?.srv &&
+        this.addSrvCfg?.permission !== false
+      );
+    },
+    showActionEditBtn() {
+      return (
+        !this.disabled &&
+        this.hasFkFieldValue &&
+        this.updateSrvCfg?.srv &&
+        this.updateSrvCfg?.permission !== false
+      );
+    },
+    actionButtons() {
+      const buttons = [];
+      if (this.showActionAddBtn) {
+        buttons.push({
+          key: "add",
+          icon: addIcon,
+          text: "新增",
+          title: "新增",
+          className: "btn-add",
+          handler: this.handleAddDialog,
+        });
+      }
+      if (this.showActionEditBtn) {
+        buttons.push({
+          key: "edit",
+          icon: editIcon,
+          text: "编辑",
+          title: "编辑",
+          className: "btn-edit",
+          handler: this.handleEditDialog,
+        });
+      }
+      return buttons;
+    },
+    showActionButtonGroup() {
+      return this.showActions && this.actionButtons.length > 0;
+    },
+    addDialogTitle() {
+      return this.addSrvCfg?.title || "新增";
+    },
+    editDialogTitle() {
+      return this.updateSrvCfg?.title || "编辑";
+    },
+    flowValueField() {
+      return (
+        this.column?.redundant?.refedCol ||
+        this.srvInfo?.key_disp_col ||
+        this.column?.columns ||
+        null
+      );
+    },
+    addDefaultData() {
+      const data = {};
+      if (this.srvInfo?.refed_col && this.hasFkFieldValue) {
+        data[this.srvInfo.refed_col] = this.fkFieldValue;
+      }
+      if (this.flowValueField && hasFkValue(this.value)) {
+        data[this.flowValueField] = this.value;
+      }
+      return data;
+    },
+    addIframeUrl() {
+      if (!this.addSrvCfg?.srv) {
+        return "";
+      }
+      let url = `/vpages/#/add/${this.addSrvCfg.srv}`;
+      const params = [];
+      if (Object.keys(this.addDefaultData).length) {
+        params.push(`operate_params=${JSON.stringify({ data: [this.addDefaultData] })}`);
+      }
+      if (this.addSrvCfg?.app || this.app) {
+        params.push(`srvApp=${encodeURIComponent(this.addSrvCfg?.app || this.app)}`);
+      }
+      if (params.length) {
+        url += `?${params.join("&")}`;
+      }
+      return url;
+    },
+    editIframeUrl() {
+      if (!this.updateSrvCfg?.srv || !this.hasFkFieldValue) {
+        return "";
+      }
+      let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.editRecordId}`;
+      const params = [];
+      if (this.updateSrvCfg?.app || this.app) {
+        params.push(`srvApp=${encodeURIComponent(this.updateSrvCfg?.app || this.app)}`);
+      }
+      if (params.length) {
+        url += `?${params.join("&")}`;
+      }
+      return url;
     },
     fieldMap() {
       return {
@@ -153,6 +347,134 @@ export default {
     },
   },
   methods: {
+    handleAddDialog() {
+      if (this.disabled || !this.addSrvCfg?.srv) {
+        return;
+      }
+      this.addIframeKey += 1;
+      this.addDialogVisible = true;
+    },
+    handleEditDialog() {
+      if (this.disabled || !this.updateSrvCfg?.srv || !this.hasFkFieldValue) {
+        return;
+      }
+      if (this.editRecordId) {
+        this.editIframeKey += 1;
+        this.editDialogVisible = true;
+        return;
+      }
+      this.fetchEditRecordId().then(() => {
+        if (this.editRecordId) {
+          this.editIframeKey += 1;
+          this.editDialogVisible = true;
+        }
+      });
+    },
+    async fetchEditRecordId() {
+      const fkValue = this.fkFieldValue;
+      if (!hasFkValue(fkValue) || !this.srvInfo?.refed_col) {
+        return;
+      }
+      const req = {
+        serviceName: this.srvInfo.serviceName,
+        colNames: ["*"],
+        condition: [
+          {
+            colName: this.srvInfo.refed_col,
+            ruleType: "eq",
+            value: fkValue,
+          },
+        ],
+        page: {
+          pageNo: 1,
+          rownumber: 1,
+        },
+      };
+      const appName =
+        this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app");
+      if (!req.serviceName || !appName) {
+        return;
+      }
+      const res = await $http.post(`/${appName}/select/${req.serviceName}`, req);
+      if (res.data.state === "SUCCESS" && res.data.data?.length) {
+        this.editRecordId = res.data.data[0].id;
+      }
+    },
+    handleActionAddSuccess(data) {
+      this.$message.success("添加成功");
+      this.addDialogVisible = false;
+      const actionData = this.resolveActionData(data);
+      this.syncRowFromActionData(actionData);
+      this.$emit("add-success", {
+        ...actionData,
+        addedId: actionData.id || data?.id || data?.effectData?.id,
+      });
+    },
+    handleActionUpdateSuccess(data) {
+      this.$message.success("更新成功");
+      this.editDialogVisible = false;
+      const actionData = this.resolveActionData(data);
+      this.syncRowFromActionData(actionData);
+      this.editRecordId = null;
+      this.$emit("edit-success", {
+        ...actionData,
+        updatedId: actionData.id || data?.id || data?.effectData?.id,
+      });
+    },
+    handleActionCloseDialog() {
+      this.addDialogVisible = false;
+      this.editDialogVisible = false;
+    },
+    resolveActionData(data) {
+      if (!data) {
+        return {};
+      }
+      if (Array.isArray(data?.effectData)) {
+        return data.effectData[0] || {};
+      }
+      return data.effectData || data;
+    },
+    syncRowFromActionData(actionData = {}) {
+      if (!this.row || !Object.keys(actionData).length) {
+        return;
+      }
+      const changedFields = [];
+      const dependField = this.dependField;
+      const refedCol = this.srvInfo?.refed_col;
+      const fkValue = hasFkValue(actionData[refedCol])
+        ? actionData[refedCol]
+        : actionData.id;
+
+      if (dependField && hasFkValue(fkValue)) {
+        this.$set(this.row, dependField, fkValue);
+        this.$set(this.row, `_${dependField}_data`, cloneDeep(actionData));
+        this.$set(this.row, "_rawData", cloneDeep(actionData));
+        changedFields.push(dependField);
+      }
+
+      const flowField = this.column?.columns;
+      if (
+        flowField &&
+        this.flowValueField &&
+        Object.prototype.hasOwnProperty.call(actionData, this.flowValueField)
+      ) {
+        this.$set(this.row, flowField, actionData[this.flowValueField]);
+        changedFields.push(flowField);
+      }
+
+      this.markRowChanged(changedFields);
+    },
+    markRowChanged(fields = []) {
+      if (!this.row || this.row.__flag !== "add" || !fields.length) {
+        return;
+      }
+      if (!this.row.__update_col) {
+        this.$set(this.row, "__update_col", {});
+      }
+      fields.filter(Boolean).forEach((field) => {
+        this.$set(this.row.__update_col, field, true);
+      });
+    },
     parseJsonLike(value) {
       if (!value) {
         return {};
@@ -296,10 +618,23 @@ export default {
 
 <style lang="scss" scoped>
 .flow-cell {
+  position: relative;
   width: 100%;
   min-width: 0;
   overflow: hidden;
   padding: 2px 0 1px;
+}
+
+.flow-cell--actions {
+  overflow: visible;
+}
+
+.flow-cell__action-wrap {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  z-index: 10;
+  transform: translateY(-50%);
 }
 
 .flow-cell__empty {
@@ -527,6 +862,18 @@ export default {
 .flow-detail-dialog {
   .el-dialog__body {
     padding: 16px 22px 22px;
+  }
+}
+
+.flow-action-dialog {
+  .el-dialog__body {
+    padding: 0 20px 20px;
+    min-height: 70vh;
+
+    iframe {
+      width: 100%;
+      height: 100%;
+    }
   }
 }
 </style>

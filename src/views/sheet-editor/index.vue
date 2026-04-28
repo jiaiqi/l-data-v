@@ -459,8 +459,11 @@ export default {
 
 
               if (column.edit) {
-                const colType = column?.__field_info?.col_type;
-                if (!colType) {
+                const fieldInfo = column?.__field_info;
+                const colType = fieldInfo?.col_type;
+                const isFlowField =
+                  colType === "flow" || fieldInfo?.bx_col_type === "flow";
+                if (!colType && !isFlowField) {
                   return;
                 }
                 const currentCellSelection =
@@ -476,6 +479,7 @@ export default {
                     (["Date", "DateTime"].includes(colType) ||
                     ["fks", "fkjson", "fkjsons"].includes(colType) ||
                     ["Enum", "Dict", "Set"].includes(colType) ||
+                    isFlowField ||
                     isFkAutoComplete(column?.__field_info) ||
                     isFk(column?.__field_info) ||
                     column?.__field_info?.trig_act)
@@ -497,8 +501,11 @@ export default {
             dblclick: (event) => {
               // 双击单元格
               console.log("cell dblclick::", row, column, rowIndex, event);
-              const colType = column?.__field_info?.col_type;
-              if (!colType) return;
+              const fieldInfo = column?.__field_info;
+              const colType = fieldInfo?.col_type;
+              const isFlowField =
+                colType === "flow" || fieldInfo?.bx_col_type === "flow";
+              if (!colType && !isFlowField) return;
               // const currentCellEl =
               //   this.$refs.tableRef?.$refs?.cellSelectionRef?.currentCellEl;
               // console.log({ ...currentCellEl });
@@ -539,6 +546,11 @@ export default {
                   // });
                   return false;
                 } else if (["Date", "DateTime"].includes(colType)) {
+                  event.stopPropagation();
+                  this.$nextTick(() => {
+                    this.$refs["tableRef"].stopEditingCell();
+                  });
+                } else if (isFlowField) {
                   event.stopPropagation();
                   this.$nextTick(() => {
                     this.$refs["tableRef"].stopEditingCell();

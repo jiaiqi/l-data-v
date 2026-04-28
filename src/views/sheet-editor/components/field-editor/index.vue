@@ -67,6 +67,18 @@
       @blur="$emit('blur')"
     >
     </trig-act-editor>
+    <flow-cell
+      v-else-if="editorType === 'flow'"
+      class="field-flow-cell"
+      :value="row[fieldInfo.columns]"
+      :row="row"
+      :column="fieldInfo"
+      :app="app"
+      :disabled="setDisabled"
+      :show-actions="true"
+      @add-success="onAddSuccess"
+      @edit-success="onEditSuccess"
+    ></flow-cell>
   </div>
 
   <el-dialog
@@ -179,6 +191,7 @@ import {
   getFieldType,
 } from "@/utils/sheetUtils.js";
 import Finder from "./finder.vue";
+import FlowCell from "../flow-cell.vue";
 const RichTextEditor = () => import("./rich-text.vue");
 const OptionSelect = () => import("./option-select.vue");
 const TrigActEditor = () => import("./trig-act-editor.vue");
@@ -206,7 +219,7 @@ const TrigActEditor = () => import("./trig-act-editor.vue");
  */
 const props = defineProps({
   value: {
-    type: [String, Number],
+    type: [String, Number, Array, Object],
     default: "",
     validator: (value) => value !== undefined,
   },
@@ -369,6 +382,12 @@ const editorType = computed(() => {
     // 富文本类型判断
     if (isRichText(fieldInfo.value)) {
       return "RichText";
+    }
+    if (
+      fieldInfo.value?.col_type === "flow" ||
+      fieldInfo.value?.bx_col_type === "flow"
+    ) {
+      return "flow";
     }
     // 外键自动完成类型判断
     if (isFkAutoComplete(fieldInfo.value)) {
@@ -865,6 +884,11 @@ defineExpose({
 
   .finder {
     width: 100%;
+  }
+
+  .field-flow-cell {
+    width: 100%;
+    height: 100%;
   }
 
   ::v-deep .el-date-editor {

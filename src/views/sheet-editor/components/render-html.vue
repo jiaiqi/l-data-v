@@ -25,7 +25,14 @@
         class="prefix-icon cursor-initial"
         v-else-if="column.isFirstCol"
       ></div>
-      <flow-cell v-if="isFlow" :value="html" :column="column"></flow-cell>
+      <flow-cell
+        v-if="isFlow"
+        :value="html"
+        :row="row"
+        :column="column"
+        :app="app"
+        :disabled="disabled || !editable"
+      ></flow-cell>
       <div v-else-if="isFks && selected">
         <el-tag
           style="margin-right: 4px; margin-bottom: 2px"
