@@ -226,6 +226,7 @@ export default {
       if (!this.updateSrvCfg?.srv || !this.modelValue) {
         return "";
       }
+      if(!this.selectItem?.id) return ""; // 未选择数据，不生成编辑路由
       // 正确的 update 路由格式：/update/{service_name}/{id}
       let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.selectItem.id}`;
       const params = [];
