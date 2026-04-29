@@ -3257,6 +3257,15 @@ export default {
     async emitListData() {
       await new Promise((resolve) => setTimeout(resolve, 50));
       await this.$nextTick();
+
+      if (this.childListType === "updatechildlist") {
+        // 编辑子表要区分已存在行和新增行，避免未编辑的已有行被重复提交。
+        const result = this.buildUpdateChildListEmitData();
+        console.warn("emitListData", result);
+        this.bcEmit("getData", result);
+        return;
+      }
+
       let data = cloneDeep(this.tableData);
       if (this.childListType?.includes("add")) {
         data = data.filter((item) =>
@@ -3290,6 +3299,121 @@ export default {
       ];
       console.warn("emitListData", reuslt);
       this.bcEmit("getData", reuslt);
+    },
+    getChildListDependKeys() {
+      const foreignKey = this.childListCfg?.foreign_key || {};
+      if (!foreignKey.referenced_column_name || !foreignKey.column_name) {
+        return [];
+      }
+      return [
+        {
+          type: "column",
+          depend_key: foreignKey.referenced_column_name,
+          add_col: foreignKey.column_name,
+        },
+      ];
+    },
+    normalizeChildListAddData(row = {}) {
+      const addObj = cloneDeep(row);
+      // 新增行只有产生过真实编辑时才提交，空白插入行保留在前端即可。
+      if (row.__update_col && Object.keys(row.__update_col).length) {
+        const keys = Object.keys(row.__update_col);
+        if (keys.every((key) => [undefined, null, ""].includes(row[key]))) {
+          return null;
+        }
+      } else {
+        return null;
+      }
+
+      // 子表新增数据仍需要带上父表传入的默认条件或外键条件。
+      if (this.defaultConditions?.length) {
+        this.defaultConditions.forEach((item) => {
+          if (item.value && !addObj[item.colName]) {
+            addObj[item.colName] = item.value;
+          }
+        });
+      } else if (this.fkCondition?.colName) {
+        addObj[this.fkCondition.colName] = this.fkCondition.value;
+      }
+
+      Object.keys(addObj).forEach((key) => {
+        if (ignoreKeys.includes(key) || key.indexOf("_") === 0) {
+          delete addObj[key];
+          return;
+        }
+        if (
+          addObj[key] === "" ||
+          addObj[key] === undefined ||
+          addObj[key] === null
+        ) {
+          delete addObj[key];
+        }
+      });
+
+      return Object.keys(addObj).some(
+        (key) =>
+          addObj[key] !== undefined &&
+          addObj[key] !== null &&
+          addObj[key] !== ""
+      )
+        ? addObj
+        : null;
+    },
+    buildUpdateChildListEmitData() {
+      const result = [];
+      const addDatas = [];
+      const dependKeys = this.getChildListDependKeys();
+
+      this.tableData.forEach((row) => {
+        const oldItem = this.oldTableData?.find(
+          (item) => item.__id && item.__id === row.__id
+        );
+
+        if (row.__flag === "add") {
+          const addObj = this.normalizeChildListAddData(row);
+          if (addObj) {
+            addDatas.push(addObj);
+          }
+          return;
+        }
+
+        if (!row.id || !this.updateButton?.service_name || !oldItem) {
+          return;
+        }
+
+        // 已有行只和加载时的快照比对，未变化的行不会进入提交请求。
+        const updateObj = this.processUpdateData(
+          row,
+          oldItem,
+          this.updateColsMap
+        );
+        if (Object.keys(updateObj).length) {
+          const updateRequest = {
+            serviceName: this.updateButton.service_name,
+            condition: [{ colName: "id", ruleType: "eq", value: row.id }],
+          };
+          if (dependKeys.length) {
+            updateRequest.depend_keys = dependKeys;
+          }
+          updateRequest.data = [updateObj];
+          result.push(updateRequest);
+        }
+      });
+
+      if (addDatas.length && this.addButton?.service_name) {
+        // 多条新增行合并成一个 add 请求，和已有行 update 请求分开提交。
+        const addRequest = {
+          serviceName: this.addButton.service_name,
+          condition: [],
+        };
+        if (dependKeys.length) {
+          addRequest.depend_keys = dependKeys;
+        }
+        addRequest.data = addDatas;
+        result.push(addRequest);
+      }
+
+      return result;
     },
     fold() {
       // 收起
