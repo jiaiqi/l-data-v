@@ -178,15 +178,15 @@ export default {
       if (this.placeholder) {
         return this.placeholder;
       }
-      const searchColumns = [
-        this.srvInfo?.key_disp_col,
-        this.srvInfo?.refed_col,
-      ].filter(Boolean);
-      const uniqueColumns = Array.from(new Set(searchColumns));
-      if (uniqueColumns.length) {
-        // return `输入${uniqueColumns.join(" / ")}模糊搜索`;
-        return `输入关键词进行搜索`;
-      }
+      // const searchColumns = [
+      //   this.srvInfo?.key_disp_col,
+      //   this.srvInfo?.refed_col,
+      // ].filter(Boolean);
+      // const uniqueColumns = Array.from(new Set(searchColumns));
+      // if (uniqueColumns.length) {
+      //   // return `输入${uniqueColumns.join(" / ")}模糊搜索`;
+      //   return `输入关键词进行搜索`;
+      // }
       // if (this.allowFreeInput) {
       //   return this.uiMode === "table"
       //     ? "可直接输入，或搜索后双击选择"

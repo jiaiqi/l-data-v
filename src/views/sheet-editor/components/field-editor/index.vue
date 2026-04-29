@@ -888,6 +888,10 @@ defineExpose({
       border: none;
     }
 
+    .flow-cell__picker .el-input__inner{
+      border: 1px solid #dcdfe6;
+    }
+
     .el-input__prefix {
       display: flex;
       align-items: center;

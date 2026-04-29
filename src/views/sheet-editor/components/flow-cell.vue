@@ -332,15 +332,15 @@ export default {
       );
     },
     pickerPlaceholder() {
-      const searchColumns = [
-        this.srvInfo?.key_disp_col,
-        this.srvInfo?.refed_col,
-      ].filter(Boolean);
-      const uniqueColumns = Array.from(new Set(searchColumns));
-      if (uniqueColumns.length) {
-        return `输入${uniqueColumns.join(" / ")}模糊搜索`;
-      }
-      return "输入关键词模糊搜索";
+      // const searchColumns = [
+      //   this.srvInfo?.key_disp_col,
+      //   this.srvInfo?.refed_col,
+      // ].filter(Boolean);
+      // const uniqueColumns = Array.from(new Set(searchColumns));
+      // if (uniqueColumns.length) {
+      //   return `输入${uniqueColumns.join(" / ")}模糊搜索`;
+      // }
+      return "输入关键词进行搜索";
     },
     pickerDisplayValue() {
       if (this.plainDisplayValue) {
@@ -813,9 +813,11 @@ export default {
   width: 100%;
   .flow-cell__picker {
     width: 100%;
-    height: 48px;
-    .el-input__inner {
-      border: 1px solid #dcdfe6;
+    height: 30px;
+    ::v-deep .el-input {
+      .el-input__inner {
+        border: 1px solid #dcdfe6;
+      }
     }
   }
 }
