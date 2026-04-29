@@ -3733,43 +3733,62 @@ export default {
           key: "index",
           operationColumn: true,
           title: "#",
-          width: 50,
+          width: this.showPartialSave ? 72 : 50,
           fixed: "left",
-          renderBodyCell: function ({ rowIndex, row }) {
-            return startRowIndex + rowIndex + 1;
-          },
-        },
-      ];
-      if (this.showPartialSave) {
-        columns.push({
-          field: "_checked",
-          key: "_checked",
-          title: "",
-          width: 40,
-          fixed: "left",
-          operationColumn: true,
-          renderBodyCell: function ({ row }, h) {
+          renderBodyCell: function ({ rowIndex, row }, h) {
+            const indexText = startRowIndex + rowIndex + 1;
+            if (!self.showPartialSave) {
+              return indexText;
+            }
             const oldItem = self.oldTableData?.find(
               (d) => d.__id && d.__id === row.__id
             );
-            const hasChange = row.__flag === 'add' || row.__flag === 'update' ||
-              (oldItem && Object.keys(self.processUpdateData(row, oldItem, self.updateColsMap)).length > 0);
-            return h("el-checkbox", {
-              props: {
-                value: row._checked === true,
-                disabled: !hasChange,
+            const hasChange =
+              row.__flag === "add" ||
+              row.__flag === "update" ||
+              (oldItem &&
+                Object.keys(
+                  self.processUpdateData(row, oldItem, self.updateColsMap)
+                ).length > 0);
+            return h(
+              "div",
+              {
+                class: "sheet-row-index-cell",
               },
-              on: {
-                input: function (val) {
-                  if (hasChange) {
-                    self.$set(row, "_checked", val);
-                  }
-                },
-              },
-            });
+              [
+                h("el-checkbox", {
+                  props: {
+                    value: row._checked === true,
+                    disabled: !hasChange,
+                  },
+                  nativeOn: {
+                    mousedown: function (event) {
+                      event.stopPropagation();
+                    },
+                    click: function (event) {
+                      event.stopPropagation();
+                    },
+                  },
+                  on: {
+                    input: function (val) {
+                      if (hasChange) {
+                        self.$set(row, "_checked", val);
+                      }
+                    },
+                  },
+                }),
+                h(
+                  "span",
+                  {
+                    class: "sheet-row-index-cell__number",
+                  },
+                  indexText
+                ),
+              ]
+            );
           },
-        });
-      }
+        },
+      ];
       if (Array.isArray(this.allFields) && this.allFields.length > 0) {
         // let minWidth = (window.innerWidth + 50) / this.allFields.length;
         // if (this.childListType === "add") {
@@ -6186,6 +6205,25 @@ export default {
   // .table-body-cell__update_border {
   //   border: 1px solid #2087cc !important;
   // }
+  .sheet-row-index-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .sheet-row-index-cell__number {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .sheet-row-index-cell .el-checkbox {
+    margin-right: 0;
+  }
+
   .ve-table-body-td {
     padding: 2px 8px !important;
   }
