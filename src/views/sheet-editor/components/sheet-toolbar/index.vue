@@ -494,8 +494,12 @@ const toggleGridButton = () => {
   font-size: 12px;
   overflow-x: auto;
   overflow-y: hidden;
+  scrollbar-width: none;
 }
-
+.sheet-toolbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
 /* 统一按钮样式 */
 .icon-button {
   padding: 5px 8px;

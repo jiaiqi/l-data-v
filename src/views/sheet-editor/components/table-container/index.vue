@@ -15,7 +15,7 @@
       <ve-table
         ref="tableRef"
         style="word-break: break-word; width: 100vw"
-        max-height="calc(100vh - 80px)"
+        max-height="calc(100vh - 100px)"
         fixed-header
         :scroll-width="0"
         border-y
@@ -77,7 +77,7 @@ export default {
 .custom-style {
   .ve-table-container {
     min-height: 80px;
-    height: calc(100vh - 80px) !important;
+    // height: calc(100vh - 100px) !important;
     overflow: auto;
   }
 

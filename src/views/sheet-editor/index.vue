@@ -63,7 +63,7 @@
         v-if="disabled"
         ref="tableRef"
         style="word-break: break-word; width: 100vw; height: 100%"
-        max-height="calc(100vh - 40px)"
+        max-height="calc(100vh - 80px)"
         fixed-header
       />
       <div
@@ -73,7 +73,7 @@
         <ve-table
           ref="tableRef"
           style="word-break: break-word;"
-          max-height="calc(100vh - 80px)"
+          max-height="calc(100% - 80px)"
           fixed-header
           :scroll-width="0"
           border-y
@@ -796,6 +796,7 @@ export default {
                    let key = Object.keys(sourceSelectionData[0]).find(
                 (e) => e !== "rowKey"
               );
+                
                 this.tableData.forEach((item,tIndex) => {
                   for (let index = targetSelectionRangeIndexes.startRowIndex; index <= targetSelectionRangeIndexes.endRowIndex; index++) {
                     if(tIndex >-1 &&tIndex===index){
@@ -805,6 +806,7 @@ export default {
                     }
                   }
                 });
+                
                 if (sourceData) {
                   this.$nextTick(() => {
                     this.triggerEditCell(
@@ -6131,9 +6133,10 @@ export default {
 }
 
 .custom-style {
+  height: 100%;
   .ve-table-container {
     min-height: 80px;
-    max-height: calc(100vh - 80px) !important;
+    max-height: calc(100vh - 100px) !important;
     overflow: auto;
   }
 
