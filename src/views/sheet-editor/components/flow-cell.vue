@@ -1,10 +1,16 @@
 <template>
   <div
     class="flow-cell"
-    :class="{ 'flow-cell--actions': showActionButtonGroup }"
+    :class="{
+      'flow-cell--actions': showActionButtonGroup,
+      'flow-cell--picker-open': pickerVisible,
+    }"
     @dblclick.stop.prevent="openDetail"
   >
-    <span v-if="!steps.length" class="flow-cell__empty">暂无流程</span>
+    <span v-if="plainDisplayValue" class="flow-cell__plain">{{
+      plainDisplayValue
+    }}</span>
+    <span v-else-if="!steps.length" class="flow-cell__empty">暂无流程</span>
     <div v-else class="flow-cell__track">
       <div
         v-for="(step, index) in steps"
@@ -23,7 +29,9 @@
           :style="{ '--flow-ratio': step.progressRatio }"
         >
           <i v-if="showDoneIcon(step)" class="el-icon-check"></i>
-          <span v-else class="flow-cell__ratio cell--ratio">{{ step.ratio }}%</span>
+          <span v-else class="flow-cell__ratio cell--ratio"
+            >{{ step.ratio }}%</span
+          >
         </div>
         <div class="flow-cell__name">{{ step.name || step.no || "-" }}</div>
       </div>
@@ -35,9 +43,31 @@
       @click.stop
       @dblclick.stop
     >
-      <action-button-group
-        :visible="true"
-        :buttons="actionButtons"
+      <action-button-group :visible="true" :buttons="actionButtons" />
+    </div>
+    <div
+      v-if="pickerVisible"
+      class="flow-cell__picker-panel"
+      @click.stop
+      @dblclick.stop
+    >
+      <fk-option-picker
+        ref="flowPicker"
+        class="flow-cell__picker"
+        :app="app"
+        :column="column"
+        :row="row"
+        :srv-info="srvInfo"
+        :input-value="pickerValue"
+        :disabled="disabled"
+        :ui-mode="pickerUiMode"
+        :allow-free-input="false"
+        :placeholder="pickerPlaceholder"
+        @focus="handlePickerFocus"
+        @blur="handlePickerBlur"
+        @select="handlePickerSelect"
+        @clear="handlePickerClear"
+        @dropdown-visible-change="handlePickerDropdownVisibleChange"
       />
     </div>
 
@@ -76,7 +106,7 @@
             <div class="flow-cell__name flow-cell__name--detail">
               {{ step.name || step.no || "-" }}
             </div>
-            <div class="flow-cell__no" v-if="step.no">{{ step.no }}</div>
+            <!-- <div class="flow-cell__no" v-if="step.no">{{ step.no }}</div> -->
           </div>
         </div>
       </div>
@@ -113,6 +143,7 @@ import addIcon from "@/assets/img/add.png";
 import editIcon from "@/assets/img/edit.png";
 import { ActionButtonGroup } from "./action-button";
 import FkActionDialog from "./fk-select/fk-action-dialog.vue";
+import FkOptionPicker from "./fk-select/fk-option-picker.vue";
 import { hasFkValue } from "../utils/fkOption";
 
 const DEFAULT_FIELD_MAP = {
@@ -128,6 +159,7 @@ export default {
   components: {
     ActionButtonGroup,
     FkActionDialog,
+    FkOptionPicker,
   },
   props: {
     value: {
@@ -154,6 +186,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    uiMode: {
+      type: String,
+      default: "",
+    },
   },
   data() {
     return {
@@ -165,9 +201,21 @@ export default {
       addIframeKey: 0,
       editIframeKey: 0,
       editRecordId: null,
+      pickerValue: "",
+      pickerFocused: false,
+      pickerVisible: false,
+      tableDropdownVisible: false,
     };
   },
   watch: {
+    pickerDisplayValue: {
+      immediate: true,
+      handler(value) {
+        if (!this.pickerFocused) {
+          this.pickerValue = value || "";
+        }
+      },
+    },
     detailVisible(visible) {
       if (visible) {
         this.$nextTick(this.startDetailAnimation);
@@ -184,7 +232,9 @@ export default {
       return this.column?.label || this.column?.columns || "流程";
     },
     srvInfo() {
-      return this.column?.redundant_options || this.column?.option_list_v2 || {};
+      return (
+        this.column?.redundant_options || this.column?.option_list_v2 || {}
+      );
     },
     dependField() {
       return (
@@ -224,6 +274,14 @@ export default {
         this.updateSrvCfg?.permission !== false
       );
     },
+    showDropdownBtn() {
+      return (
+        !this.disabled &&
+        !this.hasFkFieldValue &&
+        this.srvInfo &&
+        this.srvInfo.serviceName
+      );
+    },
     actionButtons() {
       const buttons = [];
       if (this.showActionAddBtn) {
@@ -234,6 +292,16 @@ export default {
           title: "新增",
           className: "btn-add",
           handler: this.handleAddDialog,
+        });
+      }
+      if (this.showDropdownBtn) {
+        buttons.push({
+          key: "select",
+          iconClass: "el-icon-arrow-down",
+          text: "选择",
+          title: "下拉选择",
+          className: "btn-select",
+          handler: this.handleDropdownSelect,
         });
       }
       if (this.showActionEditBtn) {
@@ -249,7 +317,57 @@ export default {
       return buttons;
     },
     showActionButtonGroup() {
-      return this.showActions && this.actionButtons.length > 0;
+      return (
+        this.showActions &&
+        this.actionButtons.length > 0 &&
+        !this.tableDropdownVisible
+      );
+    },
+    pickerUiMode() {
+      return (
+        this.uiMode ||
+        this.srvInfo?.ui_mode ||
+        this.srvInfo?.picker_ui_mode ||
+        "table"
+      );
+    },
+    pickerPlaceholder() {
+      const searchColumns = [
+        this.srvInfo?.key_disp_col,
+        this.srvInfo?.refed_col,
+      ].filter(Boolean);
+      const uniqueColumns = Array.from(new Set(searchColumns));
+      if (uniqueColumns.length) {
+        return `输入${uniqueColumns.join(" / ")}模糊搜索`;
+      }
+      return "输入关键词模糊搜索";
+    },
+    pickerDisplayValue() {
+      if (this.plainDisplayValue) {
+        return this.plainDisplayValue;
+      }
+      const rawData =
+        this.row?.[`_${this.dependField}_data`] || this.row?._rawData || {};
+      const displayCol = this.srvInfo?.key_disp_col || this.srvInfo?.refed_col;
+      if (displayCol && hasFkValue(rawData?.[displayCol])) {
+        return rawData[displayCol];
+      }
+      if (hasFkValue(rawData?.label)) {
+        return rawData.label;
+      }
+      if (this.hasFkFieldValue) {
+        return this.fkFieldValue;
+      }
+      return this.plainDisplayValue;
+    },
+    plainDisplayValue() {
+      if (!hasFkValue(this.value)) {
+        return "";
+      }
+      if (Array.isArray(this.value) || typeof this.value === "object") {
+        return "";
+      }
+      return this.parseFlowValue(this.value).length ? "" : String(this.value);
     },
     addDialogTitle() {
       return this.addSrvCfg?.title || "新增";
@@ -282,10 +400,14 @@ export default {
       let url = `/vpages/#/add/${this.addSrvCfg.srv}`;
       const params = [];
       if (Object.keys(this.addDefaultData).length) {
-        params.push(`operate_params=${JSON.stringify({ data: [this.addDefaultData] })}`);
+        params.push(
+          `operate_params=${JSON.stringify({ data: [this.addDefaultData] })}`
+        );
       }
       if (this.addSrvCfg?.app || this.app) {
-        params.push(`srvApp=${encodeURIComponent(this.addSrvCfg?.app || this.app)}`);
+        params.push(
+          `srvApp=${encodeURIComponent(this.addSrvCfg?.app || this.app)}`
+        );
       }
       if (params.length) {
         url += `?${params.join("&")}`;
@@ -299,7 +421,9 @@ export default {
       let url = `/vpages/#/update/${this.updateSrvCfg.srv}/${this.editRecordId}`;
       const params = [];
       if (this.updateSrvCfg?.app || this.app) {
-        params.push(`srvApp=${encodeURIComponent(this.updateSrvCfg?.app || this.app)}`);
+        params.push(
+          `srvApp=${encodeURIComponent(this.updateSrvCfg?.app || this.app)}`
+        );
       }
       if (params.length) {
         url += `?${params.join("&")}`;
@@ -347,6 +471,40 @@ export default {
     },
   },
   methods: {
+    handleDropdownSelect() {
+      if (!this.showDropdownBtn) {
+        return;
+      }
+      this.pickerVisible = true;
+      this.pickerValue = "";
+      this.$nextTick(() => {
+        this.$refs.flowPicker?.openDropdown?.();
+      });
+    },
+    handlePickerFocus() {
+      this.pickerFocused = true;
+      this.$emit("focus");
+    },
+    handlePickerBlur() {
+      this.pickerFocused = false;
+      this.$emit("blur");
+    },
+    handlePickerDropdownVisibleChange(value) {
+      this.tableDropdownVisible = value;
+    },
+    handlePickerClear() {
+      this.pickerValue = "";
+    },
+    handlePickerSelect(item) {
+      if (!item) {
+        return;
+      }
+      const selected = cloneDeep(item);
+      this.pickerValue = selected?.label || selected?.value || "";
+      this.pickerVisible = false;
+      this.tableDropdownVisible = false;
+      this.$emit("select", selected);
+    },
     handleAddDialog() {
       if (this.disabled || !this.addSrvCfg?.srv) {
         return;
@@ -391,11 +549,16 @@ export default {
         },
       };
       const appName =
-        this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app");
+        this.srvInfo?.srv_app ||
+        this.app ||
+        sessionStorage.getItem("current_app");
       if (!req.serviceName || !appName) {
         return;
       }
-      const res = await $http.post(`/${appName}/select/${req.serviceName}`, req);
+      const res = await $http.post(
+        `/${appName}/select/${req.serviceName}`,
+        req
+      );
       if (res.data.state === "SUCCESS" && res.data.data?.length) {
         this.editRecordId = res.data.data[0].id;
       }
@@ -554,7 +717,7 @@ export default {
       return `${prefix}-${step.no || `${step.seq}-${index}`}`;
     },
     openDetail() {
-      if (this.steps.length) {
+      if (!this.pickerVisible && this.steps.length) {
         this.detailVisible = true;
       }
     },
@@ -620,9 +783,14 @@ export default {
 .flow-cell {
   position: relative;
   width: 100%;
+  height: 100%;
   min-width: 0;
   overflow: hidden;
   padding: 2px 0 1px;
+}
+
+.flow-cell--picker-open {
+  overflow: visible;
 }
 
 .flow-cell--actions {
@@ -637,9 +805,35 @@ export default {
   transform: translateY(-50%);
 }
 
+.flow-cell__picker-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 18;
+  width: 100%;
+  .flow-cell__picker {
+    width: 100%;
+    height: 48px;
+    .el-input__inner {
+      border: 1px solid #dcdfe6;
+    }
+  }
+}
+
 .flow-cell__empty {
   color: #a8abb2;
   font-size: 12px;
+}
+
+.flow-cell__plain {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  color: #303133;
+  font-size: 12px;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .flow-cell__track {
@@ -655,8 +849,7 @@ export default {
 
 .flow-cell__track--detail {
   align-items: flex-start;
-  min-height: 164px;
-  padding: 20px 18px 24px;
+  padding: 16px 18px;
 }
 
 .flow-cell__track::-webkit-scrollbar {
@@ -732,8 +925,7 @@ export default {
   height: 34px;
   border: 2px solid transparent;
   border-radius: 50%;
-  background:
-    linear-gradient(#fff, #fff) padding-box,
+  background: linear-gradient(#fff, #fff) padding-box,
     conic-gradient(currentColor calc(var(--flow-ratio) * 1%), #eef2f7 0)
       border-box;
   box-shadow: inset 0 0 0 3px #fff;
@@ -743,7 +935,7 @@ export default {
   line-height: 1;
 }
 .cell--ratio {
-  transform: scale(.6);
+  transform: scale(0.8);
 }
 .flow-cell__node--detail {
   width: 60px;
@@ -754,39 +946,34 @@ export default {
 
 .flow-cell__node.is-zero {
   color: #667085;
-  background:
-    linear-gradient(#f8fafc, #f8fafc) padding-box,
+  background: linear-gradient(#f8fafc, #f8fafc) padding-box,
     conic-gradient(currentColor 1%, #e2e8f0 0) border-box;
 }
 
 .flow-cell__node.is-low {
   color: #d92d20;
-  background:
-    linear-gradient(#fef3f2, #fef3f2) padding-box,
+  background: linear-gradient(#fef3f2, #fef3f2) padding-box,
     conic-gradient(currentColor calc(var(--flow-ratio) * 1%), #fee4e2 0)
       border-box;
 }
 
 .flow-cell__node.is-middle {
   color: #b54708;
-  background:
-    linear-gradient(#fffaeb, #fffaeb) padding-box,
+  background: linear-gradient(#fffaeb, #fffaeb) padding-box,
     conic-gradient(currentColor calc(var(--flow-ratio) * 1%), #fedf89 0)
       border-box;
 }
 
 .flow-cell__node.is-upper {
   color: #1570ef;
-  background:
-    linear-gradient(#eff8ff, #eff8ff) padding-box,
+  background: linear-gradient(#eff8ff, #eff8ff) padding-box,
     conic-gradient(currentColor calc(var(--flow-ratio) * 1%), #d1e9ff 0)
       border-box;
 }
 
 .flow-cell__node.is-near {
   color: #12b76a;
-  background:
-    linear-gradient(#f6fef9, #f6fef9) padding-box,
+  background: linear-gradient(#f6fef9, #f6fef9) padding-box,
     conic-gradient(currentColor calc(var(--flow-ratio) * 1%), #d1fadf 0)
       border-box;
 }
@@ -794,9 +981,7 @@ export default {
 .flow-cell__node.is-done {
   border-color: #027a48;
   background: #039855;
-  box-shadow:
-    0 0 0 3px #d1fadf,
-    inset 0 0 0 3px rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 0 3px #d1fadf, inset 0 0 0 3px rgba(255, 255, 255, 0.22);
   color: #fff;
 }
 

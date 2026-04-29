@@ -76,6 +76,9 @@
       :app="app"
       :disabled="setDisabled"
       :show-actions="true"
+      @select="onFlowCellSelect"
+      @focus="$emit('focus')"
+      @blur="$emit('blur')"
       @add-success="onAddSuccess"
       @edit-success="onEditSuccess"
     ></flow-cell>
@@ -530,6 +533,26 @@ const onFinderChange = (item = null) => {
   if (["fks", "fkjson", "fkjsons"].includes(colType)) {
     emit("fks-change", item, props.row, props.column);
   }
+};
+
+/**
+ * 处理 flow 字段从下拉列表选中已有数据。
+ * 选中时按 fk-autocomplete 的语义链路回填背后 FK 与冗余字段。
+ * @param {Object|null} item - 选中的项目对象
+ */
+const onFlowCellSelect = (item = null) => {
+  if (!item) {
+    return;
+  }
+  const redundant = fieldInfo.value?.redundant || {};
+  const rawData = item?.rawData || item?.option || item || {};
+  modelValue.value =
+    rawData?.[redundant.refedCol] ||
+    item?.displayValue ||
+    item?.label ||
+    item?.value ||
+    null;
+  emit("fk-autocomplete-change", item, props.row, props.column);
 };
 
 /**

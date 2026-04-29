@@ -2376,22 +2376,32 @@ export default {
       }
       this.setCellSelection();
 
+      const firstFilledValue = (...values) =>
+        values.find((value) => value !== null && value !== undefined && value !== "");
+      const redundantRefedCol = column?.__field_info?.redundant?.refedCol;
       let defaultValue =
-        item?.displayValue ||
-        item?.label ||
-        item?.[column?.__field_info?.redundant?.refedCol] ||
-        null;
+        firstFilledValue(
+          item?.displayValue,
+          item?.label,
+          item?.[redundantRefedCol]
+        ) ?? null;
       if(item?.rawData){
-        defaultValue = item?.rawData?.[column?.__field_info?.redundant?.refedCol] || null;
+        defaultValue = firstFilledValue(item?.rawData?.[redundantRefedCol]) ?? null;
       }
       const obj = {
         rowKey: row.rowKey,
         colKey: column.field,
         defaultValue: defaultValue,
       };
+      const oldRow = this.oldTableData?.find(
+        (item) => item.__id && item.__id === row.__id
+      );
       this.$refs["tableRef"].startEditingCell(obj);
       this.$refs["tableRef"].stopEditingCell();
       this.$set(row, column.field, defaultValue);
+      if (!oldRow || defaultValue !== oldRow?.[column.field]) {
+        this.handleCalcDependedCols(column.field, row);
+      }
 
       // 对应的fk字段
       const rawData = item?.option  || item?.rawData || item || null;
@@ -2399,6 +2409,7 @@ export default {
       const rowIndex = this.tableData.findIndex(
         (item) => item.rowKey === row.rowKey
       );
+      const previousFkValue = fkColumn ? row[fkColumn] : undefined;
       if (this.isPlainFkInput(item)) {
         if (fkColumn) {
           row[fkColumn] = null;
@@ -2413,6 +2424,9 @@ export default {
             this.clearCellSelection();
           }
           this.handlerRedundant({}, fkColumn, row.rowKey, rowIndex);
+          if (previousFkValue !== row[fkColumn]) {
+            this.handleCalcDependedCols(fkColumn, row);
+          }
         }
         row["_rawData"] = null;
         this.$set(this.tableData, rowIndex, row);
@@ -2424,7 +2438,11 @@ export default {
         );
         if (fkColumnInfo) {
           let data = rawData || {};
-          row[fkColumn] = item?.value;
+          row[fkColumn] =
+            firstFilledValue(
+              item?.value,
+              rawData?.[column?.__field_info?.redundant_options?.refed_col]
+            ) ?? null;
           row[`_${fkColumn}_data`] = rawData;
           this.$set(row, fkColumnInfo.columns, row[fkColumn]);
 
@@ -2440,6 +2458,9 @@ export default {
           row["_rawData"] = rawData;
           this.$set(this.tableData, rowIndex, row);
           this.handlerRedundant(data, fkColumn, row.rowKey, rowIndex);
+          if (previousFkValue !== row[fkColumn]) {
+            this.handleCalcDependedCols(fkColumn, row);
+          }
         }
       }
     },
@@ -2832,6 +2853,39 @@ export default {
           }
         }
       }
+    },
+    handleCalcDependedCols(fieldName, row) {
+      if (!fieldName || !row) {
+        return;
+      }
+      const fieldInfo = this.allFields.find(
+        (item) => item.columns === fieldName
+      );
+      const triggerKey =
+        row.__flag === "add"
+          ? "__add_calc_trigger_col"
+          : "__update_calc_trigger_col";
+      const dependedKey =
+        row.__flag === "add"
+          ? "__add_calc_depended_cols"
+          : "__update_calc_depended_cols";
+      const dependedCols = new Set(
+        Array.isArray(fieldInfo?.[dependedKey]) ? fieldInfo[dependedKey] : []
+      );
+
+      this.allFields.forEach((item) => {
+        const triggerCols = item?.[triggerKey];
+        if (Array.isArray(triggerCols) && triggerCols.includes(fieldName)) {
+          dependedCols.add(item.columns);
+        }
+      });
+
+      dependedCols.forEach((key) => {
+        const calcCol = this.allFields.find((item) => item.columns === key);
+        if (calcCol?.redundant?.func) {
+          this.handleRedundantCalc(calcCol, row);
+        }
+      });
     },
     onGridButton(button) {
       //　列表头部按钮

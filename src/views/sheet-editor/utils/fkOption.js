@@ -46,19 +46,17 @@ export function buildFkSearchRelation(
     relation: "OR",
     data: [],
   };
-  if (hasFkValue(keyword) && srvInfo.key_disp_col) {
-    relationCondition.data.push({
-      colName: srvInfo.key_disp_col,
-      value: keyword,
-      ruleType,
-    });
-  }
-  if (hasFkValue(keyword) && srvInfo.refed_col) {
-    relationCondition.data.push({
-      colName: srvInfo.refed_col,
-      value: keyword,
-      ruleType,
-    });
+  if (hasFkValue(keyword)) {
+    [srvInfo.key_disp_col, srvInfo.refed_col]
+      .filter(Boolean)
+      .filter((colName, index, list) => list.indexOf(colName) === index)
+      .forEach((colName) => {
+        relationCondition.data.push({
+          colName,
+          value: keyword,
+          ruleType,
+        });
+      });
   }
   return relationCondition.data.length ? relationCondition : null;
 }
