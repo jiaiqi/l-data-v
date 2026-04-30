@@ -243,6 +243,11 @@
         class="data-table"
         @sort-change="handleSortChange"
       >
+        <el-table-column type="index" label="序号" width="80" fixed="left" >
+          <template #default="scope">
+            {{ (pageInfo.pageNo - 1) * pageInfo.rownumber + scope.$index + 1 }}
+          </template>
+        </el-table-column>
         <template v-for="(column, index) in tableTitle">
           <el-table-column
             :key="column.columns"
