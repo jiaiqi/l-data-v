@@ -406,6 +406,10 @@ export default {
       tableData: [],
       oldTableData: [], //源数据
       v2data: {}, //select v2
+      // 后端返回的原始 srv_cols 树结构。
+      // 只用于生成 ve-table 的 children 分组表头，字段权限、编辑、默认值、
+      // 冗余计算等业务逻辑仍走扁平后的 v2data.srv_cols，避免分组节点被当成字段处理。
+      headerSrvCols: [],
       allFields: [], //所有字段
       columns: [], //表头字段
       originalPage: {}, //原始分页信息（树形列表使用）
@@ -826,10 +830,11 @@ export default {
           console.log(selectionRangeIndexes);
           if (Array.isArray(data) && data?.length) {
             let isValid = true;
+            const flatColumns = this.flattenTableColumns(this.columns);
             for (let index = 0; index < data.length; index++) {
               const element = data[index];
               const realIndex = selectionRangeIndexes["startRowIndex"] + index;
-              this.columns.forEach((col) => {
+              flatColumns.forEach((col) => {
                 const oldVal = this.oldTableData[realIndex]?.[col.field];
                 const colType = col?.__field_info?.col_type;
                 if (!colType) return;
@@ -911,7 +916,7 @@ export default {
                   endRowIndex - startRowIndex >= 0 ||
                   endColIndex - startColIndex >= 0
                 ) {
-                  const columns = this.columns.filter(
+                  const columns = this.flattenTableColumns(this.columns).filter(
                     (item) =>
                       !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
                         item.field
@@ -962,7 +967,7 @@ export default {
         afterCut: ({ selectionRangeIndexes }) => {
           const { startRowIndex, endRowIndex, startColIndex, endColIndex } =
             selectionRangeIndexes;
-          const columns = this.columns.filter(
+          const columns = this.flattenTableColumns(this.columns).filter(
             (item) =>
               !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
                 item.field
@@ -1491,7 +1496,7 @@ export default {
             const startColIndex = selectionRangeIndexes.startColIndex;
             const endColIndex = selectionRangeIndexes.endColIndex;
             const rows = this.tableData.slice(startRowIndex, endRowIndex + 1);
-            const cols = this.columns
+            const cols = this.flattenTableColumns(this.columns)
               .slice(startColIndex, endColIndex + 1)
               .map((item) => item.field);
             console.log(rows, cols, ":::求和计数:::");
@@ -2130,6 +2135,7 @@ export default {
       let count = 0
       let numericCount = 0
       let numbers = []
+      const columns = this.flattenTableColumns(this.columns)
 
       // 遍历选中的所有行
       for (let i = startRowIndex; i <= endRowIndex; i++) {
@@ -2138,7 +2144,7 @@ export default {
 
         // 遍历选中的所有列
         for (let j = startColIndex; j <= endColIndex; j++) {
-          const column = this.columns[j]
+          const column = columns[j]
           if (!column || !column.field) continue
 
           const cellValue = row[column.field]
@@ -2208,14 +2214,22 @@ export default {
             this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
           );
           if (ress?.state === 'SUCCESS') {
-            const srv_cols = Array.isArray(ress?.data?.srv_cols) ? ress.data.srv_cols.map((item) => {
+            // 自定义列服务也可能返回 children 分组结构。
+            // 这里先递归修正每个节点的 in_list，再拆成：
+            // 1. headerSrvCols：保留树结构给表头分组；
+            // 2. v2data.srv_cols：扁平叶子字段给业务逻辑继续使用。
+            const srv_cols = Array.isArray(ress?.data?.srv_cols) ? this.mapSrvColsTree(ress.data.srv_cols, (item) => {
               // 对于自定义类型，使用in_list字段
               const inField = type === 'custom' ? 'in_list' : `in_${type}`;
               item.in_list = item[inField] === 1 ? 1 : item[inField];
               return item;
             }) : [];
             if (srv_cols?.length) {
-              this.v2data.srv_cols = srv_cols;
+              this.headerSrvCols = srv_cols;
+              this.v2data.srv_cols = this.flattenSrvCols(srv_cols);
+              if (type === 'custom') {
+                this.customCols = this.v2data.srv_cols;
+              }
             }
           }
         }
@@ -3636,7 +3650,7 @@ export default {
       sourceData
     ) {
       // 触发编辑事件
-      const columns = this.columns.filter(
+      const columns = this.flattenTableColumns(this.columns).filter(
         (item) =>
           !this.columnHiddenOption?.defaultHiddenColumnKeys?.includes(
             item.field
@@ -3724,9 +3738,202 @@ export default {
       }
       this.autoSave();
     },
+    /**
+     * 将后端返回的 srv_cols 树结构展开为叶子字段数组。
+     * 业务侧的大部分逻辑只认识真实字段，不认识表头分组节点，例如：
+     * init_expr 默认条件、字段权限、add/update 字段映射、冗余字段和新增行初始化。
+     * 因此这里会递归跳过只用于展示的分组节点，仅保留最终字段。
+     */
+    flattenSrvCols(srvCols = []) {
+      const result = [];
+      const walk = (cols = []) => {
+        cols.forEach((col) => {
+          if (Array.isArray(col.children) && col.children.length > 0) {
+            walk(col.children);
+          } else {
+            result.push(col);
+          }
+        });
+      };
+      walk(Array.isArray(srvCols) ? srvCols : []);
+      return result;
+    },
+    /**
+     * 递归遍历 srv_cols 树并对每个节点执行 mapper。
+     * 自定义列来源切换时需要按 add/update/list 来源改写 in_list，
+     * 但分组节点和子字段都可能存在 children，所以不能只 map 第一层。
+     */
+    mapSrvColsTree(srvCols = [], mapper = (item) => item) {
+      if (!Array.isArray(srvCols)) {
+        return [];
+      }
+      return srvCols.map((item) => {
+        const next = mapper({ ...item }) || { ...item };
+        if (Array.isArray(item.children) && item.children.length > 0) {
+          next.children = this.mapSrvColsTree(item.children, mapper);
+        }
+        return next;
+      });
+    },
+    /**
+     * 判断 srv_cols 是否包含分组节点。
+     * 没有 children 时保持原来的单层 columns 结构，避免普通列表多走一次分组包装。
+     */
+    hasMergedSrvCols(srvCols = []) {
+      return Array.isArray(srvCols) && srvCols.some((col) => {
+        return (
+          (Array.isArray(col.children) && col.children.length > 0) ||
+          this.hasMergedSrvCols(col.children)
+        );
+      });
+    },
+    /**
+     * 将 ve-table 的 columns 展开为叶子列。
+     * 表头分组后 this.columns 会包含 children，复制粘贴、选区统计、剪切、
+     * 触发编辑等逻辑仍然使用列索引定位真实单元格，所以这些场景需要先取叶子列。
+     */
+    flattenTableColumns(columns = []) {
+      const result = [];
+      const walk = (cols = []) => {
+        cols.forEach((col) => {
+          if (Array.isArray(col.children) && col.children.length > 0) {
+            walk(col.children);
+          } else {
+            result.push(col);
+          }
+        });
+      };
+      walk(Array.isArray(columns) ? columns : []);
+      return result;
+    },
+    /**
+     * ve-table 支持在分组列上设置 fixed。
+     * 只有当分组下所有叶子列都固定在同一侧时，父级分组才继承 fixed，
+     * 否则会出现父级固定但子级不一致的异常表头表现。
+     */
+    resolveGroupFixed(children = []) {
+      const fixedValues = children.map((child) => child.fixed).filter(Boolean);
+      if (!fixedValues.length || fixedValues.length !== children.length) {
+        return undefined;
+      }
+      const fixed = fixedValues[0];
+      return fixedValues.every((value) => value === fixed) ? fixed : undefined;
+    },
+    /**
+     * 根据原始 srv_cols 树，把已经构建好的字段列包装成 ve-table 分组列。
+     *
+     * 这里不重新创建字段列，因为字段列上已经挂载了 renderHeaderCell、
+     * renderBodyCell、edit、__field_info 等大量行为；只负责按 srv_cols.children
+     * 增加父级分组。这样能保留原有单元格渲染和编辑逻辑。
+     */
+    buildGroupedFieldColumns(srvCols = [], fieldColumns = []) {
+      // field/key 都建索引，兼容当前字段列 field 与 key 同名的使用方式。
+      const fieldColumnMap = fieldColumns.reduce((res, column) => {
+        if (column?.field) {
+          res[column.field] = column;
+        }
+        if (column?.key) {
+          res[column.key] = column;
+        }
+        return res;
+      }, {});
+      const usedKeys = new Set();
+
+      const buildColumn = (srvCol) => {
+        if (!srvCol) {
+          return null;
+        }
+        if (Array.isArray(srvCol.children) && srvCol.children.length > 0) {
+          // 分组节点本身不是数据字段，只递归收集它下面能展示的叶子列。
+          const children = srvCol.children
+            .map((child) => buildColumn(child))
+            .filter(Boolean);
+          if (!children.length) {
+            return null;
+          }
+          const groupColumn = {
+            title: srvCol.label || srvCol.columns,
+            key: srvCol.no || srvCol.columns || srvCol.label,
+            children,
+          };
+          const fixed = this.resolveGroupFixed(children);
+          if (fixed) {
+            groupColumn.fixed = fixed;
+          }
+          return groupColumn;
+        }
+        const column = fieldColumnMap[srvCol.columns];
+        if (column) {
+          // 记录已经被树结构消费的字段，后面用于补齐不在树中的字段。
+          usedKeys.add(column.field || column.key);
+          return column;
+        }
+        return null;
+      };
+
+      const groupedColumns = (Array.isArray(srvCols) ? srvCols : [])
+        .map((srvCol) => buildColumn(srvCol))
+        .filter(Boolean);
+      // buildSrvCols 可能会把 add/update 中存在但 list 树里没有的字段插入 allFields。
+      // 这些字段不能丢，统一追加在分组字段之后，保持原有可编辑字段的可见性。
+      const extraColumns = fieldColumns.filter((column) => {
+        const key = column.field || column.key;
+        return key && !usedKeys.has(key);
+      });
+      return groupedColumns.concat(extraColumns);
+    },
+    /**
+     * 将完整表格列中的“字段列区域”替换为分组后的字段列。
+     * 左侧行号列、右侧操作列等 operation columns 不属于 srv_cols，
+     * 必须保留在原位置；只有中间由 allFields 生成的字段列参与表头分组。
+     */
+    groupTableColumns(columns = [], fieldColumns = []) {
+      if (
+        !this.hasMergedSrvCols(this.headerSrvCols) ||
+        !Array.isArray(fieldColumns) ||
+        !fieldColumns.length
+      ) {
+        return columns;
+      }
+      const groupedFieldColumns = this.buildGroupedFieldColumns(
+        this.headerSrvCols,
+        fieldColumns
+      );
+      if (!groupedFieldColumns.length) {
+        return columns;
+      }
+      const fieldColumnKeys = fieldColumns.reduce((res, column) => {
+        if (column?.field) {
+          res.add(column.field);
+        }
+        if (column?.key) {
+          res.add(column.key);
+        }
+        return res;
+      }, new Set());
+      let inserted = false;
+      return columns.reduce((result, column) => {
+        const key = column.field || column.key;
+        if (fieldColumnKeys.has(key)) {
+          if (!inserted) {
+            // 遇到第一列字段时一次性插入完整分组结构，后续字段列跳过，
+            // 从而保持“左侧固定列 -> 分组字段列 -> 右侧操作列”的顺序。
+            result.push(...groupedFieldColumns);
+            inserted = true;
+          }
+          return result;
+        }
+        result.push(column);
+        return result;
+      }, []);
+    },
     buildColumns() {
       const self = this;
       const startRowIndex = this.startRowIndex;
+      // buildColumns 最终返回给 ve-table 使用，允许包含 children 分组。
+      // fieldColumns 单独保存一份扁平字段列，便于后面只替换字段区域，
+      // 不影响行号列、操作列等非 srv_cols 生成的列。
+      let fieldColumns = [];
       let columns = [
         {
           field: "index",
@@ -3798,8 +4005,9 @@ export default {
         //   minWidth = 200;
         // }
         let minWidth = 50;
-        columns = columns.concat(
-          this.allFields.filter(item => this.showAllFields || item._display).map((item, index) => {
+        // 先按原有逻辑构建真实字段列，保留每个字段的渲染、编辑、权限和字段元数据。
+        // 分组表头只在最后包装这些 leaf columns，不在这里改变字段列本身。
+        fieldColumns = this.allFields.filter(item => this.showAllFields || item._display).map((item, index) => {
             let width = undefined;
             const length = item?.label?.replace(
               /[^A-Za-z0-9\u4e00-\u9fa5+]/g,
@@ -4407,8 +4615,8 @@ export default {
               };
             }
             return columnObj;
-          })
-        );
+          });
+        columns = columns.concat(fieldColumns);
         // 设置固定列
         let fixedCol = Number(this.$route.query?.fixedCol);
         if (this.$route.query?.fixedCol) {
@@ -4569,7 +4777,9 @@ export default {
         return item;
       })
       // 返回所有处理后的列配置
-      return columns;
+      // 如果 headerSrvCols 中存在 children，这里会只替换字段列区域为分组列；
+      // 如果没有分组配置，则原样返回一维 columns。
+      return this.groupTableColumns(columns, fieldColumns);
     },
     handlerRedundant(rawData = {}, fkColumn, rowKey, rowIndex) {
       // 处理冗余
@@ -5955,10 +6165,13 @@ export default {
           true
         );
         if (res?.state === "SUCCESS") {
+          const srvCols = Array.isArray(res?.data?.srv_cols)
+            ? res.data.srv_cols
+            : [];
           if (use_type === "list") {
-            return res.data.srv_cols;
+            return srvCols;
           } else if (use_type) {
-            return res?.data?.srv_cols?.map((item) => {
+            return this.mapSrvColsTree(srvCols, (item) => {
               // 列表字段显示隐藏默认用的in_list控制 在使用自定义的服务来显示列时使用对应的use_type控制
               item.in_list =
                 item[`in_${use_type}`] === 1 ? 1 : item[`in_${use_type}`];
@@ -5980,6 +6193,13 @@ export default {
         force
       );
       if (res?.state === "SUCCESS") {
+        // 原始 srv_cols 可能已经是树形分组结构，先保留一份给 ve-table 表头使用。
+        this.headerSrvCols = Array.isArray(res?.data?.srv_cols)
+          ? res.data.srv_cols
+          : [];
+        // 下面的列表字段映射、默认条件、add/update 合并等流程沿用历史的一维字段数组。
+        // 所以这里把 v2data.srv_cols 规范成叶子字段，避免把分组节点当成字段列。
+        res.data.srv_cols = this.flattenSrvCols(this.headerSrvCols);
         this.listColsMap = res?.data?.srv_cols?.reduce((pre, cur) => {
           pre[cur.columns] = cur;
           return pre;
@@ -6052,9 +6272,12 @@ export default {
 
         if (this.colSrv && !normalService.includes(this.colSrv)) {
           const srv_cols = await this.getColsV2();
-          this.customCols = srv_cols || [];
+          // 当前页面使用自定义列服务时，表头分组也以自定义服务返回的字段树为准。
+          this.headerSrvCols = Array.isArray(srv_cols) ? srv_cols : [];
+          // customCols 参与 buildSrvCols 的字段合并，只保留真实字段。
+          this.customCols = this.flattenSrvCols(srv_cols);
           if (srv_cols?.length) {
-            this.v2data.srv_cols = srv_cols;
+            this.v2data.srv_cols = this.customCols;
           }
         }
 
