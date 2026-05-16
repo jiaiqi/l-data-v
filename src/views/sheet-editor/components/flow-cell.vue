@@ -336,7 +336,7 @@ export default {
       //   this.srvInfo?.key_disp_col,
       //   this.srvInfo?.refed_col,
       // ].filter(Boolean);
-      // const uniqueColumns = Array.from(new Set(searchColumns));
+      // const uniqueColumns = Array.from(new Set(searc hColumns));
       // if (uniqueColumns.length) {
       //   return `输入${uniqueColumns.join(" / ")}模糊搜索`;
       // }

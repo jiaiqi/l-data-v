@@ -6212,10 +6212,28 @@ export default {
           }
           return pre;
         }, []);
-
-        const editBtn = res.data?.rowButton?.find(
-          (item) => item.button_type === "edit"
+      const updateButtons = res.data?.rowButton?.filter(
+        (item) => item.button_type === "edit" 
+      );
+      let editBtn = null;
+      if(updateButtons.length > 1){
+        // 当有多个编辑按钮时，优先查找中文名称为"修改"或"编辑"的按钮
+        // 这种场景常见于自定义了多个编辑按钮（如：快速编辑、完整编辑等）
+        editBtn = updateButtons.find(
+          (item) => item.button_name === "修改" || item.button_name === "编辑"
         );
+        // 如果没有找到匹配的按钮，则使用第一个编辑按钮作为默认
+        if(!editBtn){
+          editBtn = updateButtons[0];
+        }
+      } else if(updateButtons.length === 1){
+        // 只有一个编辑按钮时，直接查找 button_type 为 "edit" 的按钮
+        editBtn = updateButtons[0];
+      }
+
+        // const editBtn = res.data?.rowButton?.find(
+        //   (item) => item.button_type === "edit"
+        // );
         const addBtn = res.data?.gridButton?.find(
           (item) => item.button_type === "add"
         );
