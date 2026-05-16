@@ -194,10 +194,11 @@ export default {
             data: [
               {
                 [refedCol]: this.row[currentCol],
+                [currentCol]: this.row[refedCol],
               },
             ],
           };
-          url += `?operate_params=${JSON.stringify(operate_params)}`;
+          url += `?operate_params=${encodeURIComponent(JSON.stringify(operate_params))}`;
         }
         if (this.app) {
           url += `&srvApp=${this.app}`;
