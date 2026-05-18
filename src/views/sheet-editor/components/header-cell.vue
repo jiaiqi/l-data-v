@@ -47,7 +47,9 @@
         <span class="required color-red m-r-2 font-bold">*</span>
       </el-tooltip>
       <el-tooltip effect="dark" :content="column.label">
-        <div class="label truncate">{{ column.label }}</div>
+        <div class="label" :class="{ truncate: labelLines.length <= 1 }">
+          <span v-for="(line, idx) in labelLines" :key="idx" class="label-line">{{ line }}</span>
+        </div>
       </el-tooltip>
     </div>
   </div>
@@ -56,7 +58,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import headerFilter from "./header-filter.vue"
-import { isFkAutoComplete, isFk } from '@/utils/sheetUtils.js'
+import { isFkAutoComplete, isFk, splitLabelByNewline } from '@/utils/sheetUtils.js'
 
 // Props 定义
 const props = defineProps({
@@ -126,6 +128,10 @@ const isForeignKeyField = computed(() => {
   return isFk(props.column)
 })
 
+const labelLines = computed(() => {
+  return splitLabelByNewline(props.column?.label || '')
+})
+
 // 方法定义
 const handleFilterChange = (val) => {
   console.log('Filter change:', val)
@@ -170,8 +176,12 @@ const handleCheckedChange = (e) => {
   // }
   // color: #fff;
   .label {
-    // max-width: 150px;
     font-size: 16px;
+  }
+
+  .label-line {
+    display: block;
+    line-height: 1.4;
   }
 
   .right-icon {

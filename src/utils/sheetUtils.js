@@ -424,5 +424,39 @@ export function getFieldType(column) {
   return result
 }
 
+/**
+ * 将 label 中的 \r\n 或 \n 换行符拆分为行数组。
+ * 后端返回的 label 中可能包含 \r\n（如 "尺寸公差\r\nDimensionalTolerance"），
+ * 需要在表头中以多行形式展示。
+ * @param {string} label - 原始 label 字符串
+ * @returns {string[]} 拆分后的行数组，无换行符时返回单元素数组
+ */
+export function splitLabelByNewline(label) {
+  if (!label || typeof label !== 'string') {
+    return [label || ''];
+  }
+  const normalized = label.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  return normalized.split('\n').filter((line) => line !== '');
+}
+
+/**
+ * 渲染带换行支持的表头标题。
+ * 用于 ve-table renderHeaderCell 中，将包含 \n 的 title 渲染为多行。
+ * @param {string} title - 表头标题
+ * @param {Function} h - Vue createElement 函数
+ * @returns {VNode} 渲染后的 VNode
+ */
+export function renderMultilineHeader(title, h) {
+  const lines = splitLabelByNewline(title);
+  if (lines.length <= 1) {
+    return title;
+  }
+  return h(
+    'div',
+    { class: 'multiline-header' },
+    lines.map((line) => h('span', { class: 'multiline-header-line' }, line))
+  );
+}
+
 // 导出所有函数
 export { buildSrvCols, isRichText, isFkAutoComplete, isFk };

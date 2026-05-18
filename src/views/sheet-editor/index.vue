@@ -3852,7 +3852,7 @@ export default {
             return null;
           }
           const groupColumn = {
-            title: srvCol.label || srvCol.columns,
+            title: (srvCol.label || srvCol.columns || '').replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\\r/g, '\n'),
             key: srvCol.no || srvCol.columns || srvCol.label,
             children,
           };
@@ -4017,7 +4017,7 @@ export default {
               width = parseFloat(item.list_min_width);
             }
             const columnObj = {
-              title: item.label,
+              title: (item.label || '').replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\\r/g, '\n'),
               field: item.columns,
               key: item.columns,
               width: width && width < minWidth ? minWidth : width,
@@ -6517,5 +6517,10 @@ export default {
   }
 }
 
+
+.ve-table-header-th {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 </style>
