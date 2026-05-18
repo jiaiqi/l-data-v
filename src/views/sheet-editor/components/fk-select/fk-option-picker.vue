@@ -348,6 +348,7 @@ export default {
       setTimeout(() => {
         this.flushDeferredInput();
         this.$emit("blur");
+        console.log("handleBlur");
       }, 120);
     },
     handleTableInput(value) {

@@ -82,6 +82,7 @@
         :allow-free-input="true"
         :placeholder="pickerPlaceholder"
         @focus="onFocus"
+        @blur="onBlur"
         @input-change="onPickerInputChange"
         @select="onPickerSelect"
         @clear="onPickerClear"
@@ -89,7 +90,7 @@
       />
       <action-button-group
         v-if="actionButtons.length > 0"
-        :visible="showActionButtonGroup"
+        :visible="showActionButtonGroup && isFocused!==false"
         :buttons="actionButtons"
       />
     </div>
@@ -238,6 +239,7 @@ export default {
   },
   data() {
     return {
+      isFocused: null,
       options: [],
       dialogVisible: false,
       tableDropdownVisible: false,
@@ -555,7 +557,12 @@ export default {
     onSelect(data) {
       this.$emit("select", data, this.row, this.column);
     },
+    onBlur() {
+      this.isFocused = false;
+      this.$emit("onblur");
+    },
     onFocus() {
+      this.isFocused = true;
       this.$emit("onfocus");
     },
     onOpenAddDialog(data) {

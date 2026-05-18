@@ -72,7 +72,7 @@
       >
         <ve-table
           ref="tableRef"
-          style="word-break: break-word;"
+          style="word-break: break-word;height: 100%;"
           max-height="calc(100% - 80px)"
           fixed-header
           :scroll-width="0"

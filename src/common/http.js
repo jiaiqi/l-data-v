@@ -10,9 +10,9 @@ const envList = {
   "park": "https://www.gxqcxkj.com/bxapi", // 延安园区
 }
 // export const env = import.meta.env.VITE_ENV || "saas"
-// export const env =  "saas"
+export const env =  "saas"
 // export const env =  "park"
-export const env =  "dev"
+// export const env =  "dev"
 let baseURL = window.backendIpAddr || envList[env]
 
 console.log("env:", import.meta.env.VITE_ENV)

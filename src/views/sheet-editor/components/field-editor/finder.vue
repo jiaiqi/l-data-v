@@ -10,6 +10,10 @@
     :mainformDatas="mainformDatas"
     :disabled="false"
     @on-selected="onPickerSelected"
+    @onfocus="onFocus"
+    @focus="onFocus"
+    @blur="onBlur"
+    @onblur="onBlur"
     v-if="field && ['fks', 'fkjson', 'fkjsons'].includes(colType)"
   ></table-picker>
   <fk-autocomplete
@@ -24,6 +28,8 @@
     @input="onInput"
     @onfocus="onFocus"
     @focus="onFocus"
+    @blur="onBlur"
+    @onblur="onBlur"
     @open-add-dialog="onOpenAddDialog"
     @open-edit-dialog="onOpenEditDialog"
     @add-success="onAddSuccess"
@@ -43,6 +49,8 @@
     @select="onFkSelect"
     @onfocus="onFocus"
     @focus="onFocus"
+    @blur="onBlur"
+    @onblur="onBlur"
     @multi-tab-option-select-change="onMultiTabOptionSelectChange"
     @open-add-dialog="onOpenAddDialog"
     @open-edit-dialog="onOpenEditDialog"
@@ -58,8 +66,10 @@
     :placeholder="placeholder"
     value-key="label"
     :clearable="false"
+    @onfocus="onFocus"
     @focus="onFocus"
-    @blur="$emit('blur')"
+    @blur="onBlur"
+    @onblur="onBlur"
     @select="handleSelect"
     v-else-if="['autocomplete', 'fk'].includes(editorType)"
   >
@@ -390,6 +400,9 @@ export default {
           }
         }
       });
+    },
+    onBlur() {
+      this.$emit('blur')
     },
     onFocus() {
       this.$emit("focus");

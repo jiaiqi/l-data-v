@@ -43,8 +43,8 @@
       v-model="modelValue"
       @change="onFinderChange"
       @select="onFinderChange"
-      @focus="onfocus = true"
-      @blur="onfocus = false"
+      @focus="onFocus"
+      @blur="onBlur"
       @input="onInput"
       @open-add-dialog="onOpenAddDialog"
       @open-edit-dialog="onOpenEditDialog"
@@ -475,6 +475,21 @@ const dateFormat = computed(() => {
 });
 
 // ==================== 方法定义 ====================
+/**
+ * 处理焦点获得事件
+ */
+const onFocus = () => {
+  console.log("onFocus");
+  onfocus.value = true;
+};
+
+/**
+ * 处理焦点失去事件
+ */
+const onBlur = () => {
+  console.log("onBlur");
+  onfocus.value = false;
+};
 
 /**
  * 处理枚举类型字段值变化
