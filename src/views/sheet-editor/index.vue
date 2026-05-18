@@ -3250,10 +3250,10 @@ export default {
           data.data.forEach((item) => {
             this.insert2Rows(this.tableData.length, null, item);
           });
-          if (this.disabled === true) {
+          // if (this.disabled === true) {
             console.log("emitListData::", this.tableData);
             this.emitListData();
-          }
+          // }
         }
       }
       if (data?.type === "colSrvChange" && data.colSrv) {
