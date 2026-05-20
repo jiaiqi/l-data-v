@@ -341,21 +341,30 @@ export default {
       const suffix = subtype || "file";
       return `${Date.now()}.${suffix}`;
     },
+    getPasteFiles(clipboardData) {
+      const files = [];
+      if (clipboardData.items?.length) {
+        Array.from(clipboardData.items).forEach((item) => {
+          const file = item.getAsFile && item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        });
+      }
+      if (!files.length && clipboardData.files?.length) {
+        files.push(...Array.from(clipboardData.files));
+      }
+      return files.map((file) => this.normalizePasteFile(file));
+    },
     handleUploadPaste(event) {
-      if (!this.dialogVisible || this.disabled) {
+      if (!this.dialogVisible || this.disabled || !this.isUploadHover) {
         return;
       }
-      if (event.target?.closest?.(".upload-focus-area") && !this.isUploadHover) {
+      const clipboardData = event.clipboardData || event.originalEvent?.clipboardData;
+      if (!clipboardData) {
         return;
       }
-      const items = event.clipboardData?.items;
-      if (!items?.length) {
-        return;
-      }
-      const files = Array.from(items)
-        .map((item) => item.getAsFile && item.getAsFile())
-        .filter(Boolean)
-        .map((file) => this.normalizePasteFile(file));
+      const files = this.getPasteFiles(clipboardData);
       if (!files.length) {
         return;
       }
@@ -382,43 +391,17 @@ export default {
     },
 
     listenPasteEvent() {
-      let _this = this;
       const pasteEvent = (event) => {
-        if (!this.dialogVisible) {
+        if (!this.dialogVisible || this.disabled || !this.isUploadHover) {
           return;
         }
-        if (event.clipboardData || event.originalEvent) {
-          let clipboardData =
-            event.clipboardData || event.originalEvent.clipboardData;
-          if (clipboardData.items) {
-            let items = clipboardData.items,
-              len = items.length,
-              blob = null;
-            //items.length比较有意思，初步判断是根据mime类型来的，即有几种mime类型，长度就是几（待验证）
-            //如果粘贴纯文本，那么len=1，如果粘贴网页图片，len=2, items[0].type = 'text/plain', items[1].type = 'image/*'
-            //如果使用截图工具粘贴图片，len=1, items[0].type = 'image/png'
-            //如果粘贴纯文本+HTML，len=2, items[0].type = 'text/plain', items[1].type = 'text/html'
-            //阻止默认行为即不让剪贴板内容在div中显示出来
-            event.preventDefault();
-            //在items里找粘贴的image,据上面分析,需要循环
-            for (let i = 0; i < len; i++) {
-              if (items[i].type.indexOf("image") !== -1) {
-                blob = items[i].getAsFile();
-              }
-            }
-            if (blob !== null) {
-              _this.submitPasteFile(_this.normalizePasteFile(blob));
-            }
-          }
-        }
+        this.handleUploadPaste(event);
       };
       document.addEventListener("paste", pasteEvent);
     },
   },
   mounted() {
-    if (this.isImage) {
-      this.listenPasteEvent();
-    }
+    this.listenPasteEvent();
   },
 };
 </script>
