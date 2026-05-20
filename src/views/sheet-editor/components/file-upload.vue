@@ -30,36 +30,50 @@
       @close="hideDialog"
     >
       <div id="imgbox" contenteditable="true"></div>
-      <el-upload
-        :disabled="disabled"
-        class="upload-demo"
-        :action="uploadAction"
-        :on-preview="handlePreview"
-        :on-remove="handleRemove"
-        :before-remove="beforeRemove"
-        :on-success="handleUploadSuccess"
-        :headers="uploadHeaders"
-        :data="uploadData"
-        :limit="limit"
-        :on-exceed="handleExceed"
-        :file-list="fileList"
-        :list-type="isImage ? 'picture-card' : 'text'"
-        ref="upload"
+      <div
+        class="upload-focus-area"
+        :class="{ 'is-disabled': disabled }"
+        tabindex="0"
+        @mouseenter="isUploadHover = true"
+        @mouseleave="isUploadHover = false"
+        @focus="isUploadHover = true"
+        @blur="isUploadHover = false"
+        @paste="handleUploadPaste"
       >
-        <!-- <div v-if="!disabled && isImage">
-          <i class="el-icon-upload"></i>
-          <div class="el-upload__text">
-            将文件拖到此处，或<em>点击上传</em>
-          </div>
-        </div> -->
-        <div size="small" type="primary" v-if="isImage && !disabled">
-          点击或粘贴上传
+        <div class="upload-paste-tip" v-if="isUploadHover && !disabled">
+          支持 Ctrl+V
         </div>
-        <el-button size="small" type="primary" v-else-if="!disabled"
-          >点击上传</el-button
+        <el-upload
+          :disabled="disabled"
+          class="upload-demo"
+          :action="uploadAction"
+          :on-preview="handlePreview"
+          :on-remove="handleRemove"
+          :before-remove="beforeRemove"
+          :on-success="handleUploadSuccess"
+          :headers="uploadHeaders"
+          :data="uploadData"
+          :limit="limit"
+          :on-exceed="handleExceed"
+          :file-list="fileList"
+          :list-type="isImage ? 'picture-card' : 'text'"
+          ref="upload"
         >
-        <div class="" v-else @click.prevent.stop="">没有编辑权限</div>
-      </el-upload>
+          <!-- <div v-if="!disabled && isImage">
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">
+              将文件拖到此处，或<em>点击上传</em>
+            </div>
+          </div> -->
+          <div size="small" type="primary" v-if="isImage && !disabled">
+            点击或粘贴上传
+          </div>
+          <el-button size="small" type="primary" v-else-if="!disabled"
+            >点击上传</el-button
+          >
+          <div class="" v-else @click.prevent.stop="">没有编辑权限</div>
+        </el-upload>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -149,6 +163,7 @@ export default {
     return {
       fileList: [],
       dialogVisible: false,
+      isUploadHover: false,
     };
   },
   created() {},
@@ -297,16 +312,55 @@ export default {
           });
         });
     },
-    uploadImgFromPaste(file, type, info) {
-      /**调用element的上传方法 需要把base64转换成file上传**/
-      let a = this.dataURLtoBlob(file);
-      let b = this.blobToFile(a, info);
+    submitPasteFile(file) {
       const upload = this.$refs.upload;
-      upload.handleStart(b);
+      if (!upload || !file) {
+        return;
+      }
+      upload.handleStart(file);
       setTimeout(() => {
         upload.submit();
         this.loading = true;
       });
+    },
+    uploadImgFromPaste(file, type, info) {
+      /**调用element的上传方法 需要把base64转换成file上传**/
+      let a = this.dataURLtoBlob(file);
+      let b = this.blobToFile(a, info);
+      this.submitPasteFile(b);
+    },
+    normalizePasteFile(file) {
+      const name = file?.name || this.getPasteFileNameByMime(file?.type);
+      if (file?.name === name && file.lastModified) {
+        return file;
+      }
+      return new File([file], name, {
+        type: file?.type || "",
+        lastModified: file?.lastModified || Date.now(),
+      });
+    },
+    getPasteFileNameByMime(mime) {
+      const subtype = mime?.split("/")?.[1]?.split(";")?.[0];
+      const suffix = subtype || "file";
+      return `${Date.now()}.${suffix}`;
+    },
+    handleUploadPaste(event) {
+      if (!this.dialogVisible || this.disabled || !this.isUploadHover) {
+        return;
+      }
+      const items = event.clipboardData?.items;
+      if (!items?.length) {
+        return;
+      }
+      const files = Array.from(items)
+        .map((item) => item.getAsFile && item.getAsFile())
+        .filter(Boolean)
+        .map((file) => this.normalizePasteFile(file));
+      if (!files.length) {
+        return;
+      }
+      event.preventDefault();
+      files.forEach((file) => this.submitPasteFile(file));
     },
     dataURLtoBlob(dataurl) {
       //将base64转换为blob
@@ -353,18 +407,7 @@ export default {
               }
             }
             if (blob !== null) {
-              let reader = new FileReader();
-              reader.onload = function (event) {
-                // event.target.result 即为图片的Base64编码字符串
-                let base64_str = event.target.result;
-                //可以在这里写上传逻辑 直接将base64编码的字符串上传（可以尝试传入blob对象，看看后台程序能否解析）
-                _this.uploadImgFromPaste(base64_str, "paste", {
-                  name: blob.name,
-                  type: blob.type,
-                  size: blob.size,
-                });
-              };
-              reader.readAsDataURL(blob);
+              _this.submitPasteFile(_this.normalizePasteFile(blob));
             }
           }
         }
@@ -420,6 +463,32 @@ export default {
       transform: scale(1.2);
     }
   }
+}
+
+.upload-focus-area {
+  position: relative;
+  border-radius: 8px;
+  outline: none;
+  transition: background-color 0.2s, box-shadow 0.2s;
+
+  &:not(.is-disabled):hover,
+  &:not(.is-disabled):focus {
+    background-color: rgba(64, 158, 255, 0.08);
+  }
+}
+
+.upload-paste-tip {
+  position: absolute;
+  top: -8px;
+  right: 8px;
+  z-index: 2;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--primary-color, #409eff);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  pointer-events: none;
 }
 
 .upload-demo {
