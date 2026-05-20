@@ -36,9 +36,6 @@
         tabindex="0"
         @mouseenter="isUploadHover = true"
         @mouseleave="isUploadHover = false"
-        @focus="isUploadHover = true"
-        @blur="isUploadHover = false"
-        @paste="handleUploadPaste"
       >
         <div class="upload-paste-tip" v-if="isUploadHover && !disabled">
           支持 Ctrl+V
@@ -345,7 +342,10 @@ export default {
       return `${Date.now()}.${suffix}`;
     },
     handleUploadPaste(event) {
-      if (!this.dialogVisible || this.disabled || !this.isUploadHover) {
+      if (!this.dialogVisible || this.disabled) {
+        return;
+      }
+      if (event.target?.closest?.(".upload-focus-area") && !this.isUploadHover) {
         return;
       }
       const items = event.clipboardData?.items;
@@ -471,8 +471,7 @@ export default {
   outline: none;
   transition: background-color 0.2s, box-shadow 0.2s;
 
-  &:not(.is-disabled):hover,
-  &:not(.is-disabled):focus {
+  &:not(.is-disabled):hover {
     background-color: rgba(64, 158, 255, 0.08);
   }
 }
