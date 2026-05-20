@@ -3295,6 +3295,8 @@ export default {
           Object.keys(item).forEach((key) => {
             if (ignoreKeys.includes(key) || key?.indexOf("_") === 0) {
               delete item[key];
+            }else if([null, "", undefined].includes(item[key])){
+              delete item[key];
             }
           });
         }
