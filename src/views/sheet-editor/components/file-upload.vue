@@ -183,9 +183,20 @@ export default {
       };
       const res = await $http.post(url, req);
       if (res?.data?.state === "SUCCESS") {
+        const currentFileList = this.fileList || [];
         this.fileList = res.data.data.map((item) => {
+          const matchedFile = currentFileList.find((file) => {
+            const response = file?.response || {};
+            return (
+              file?.fileurl === item.fileurl ||
+              response?.fileurl === item.fileurl ||
+              file?.name === item.src_name
+            );
+          });
           return {
             ...item,
+            uid: matchedFile?.uid || item.fileurl || item.id || item.src_name,
+            status: matchedFile?.status || "success",
             name: item.src_name,
             file_type: item.file_type,
             url: `${window.backendIpAddr}/file/download?filePath=${
