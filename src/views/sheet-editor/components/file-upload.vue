@@ -505,7 +505,7 @@ export default {
   .file-upload-cell__paste-tip {
     position: absolute;
     top: 2px;
-    right: 6px;
+    right: 32px;
     z-index: 100;
     padding: 2px 8px;
     border-radius: 999px;
