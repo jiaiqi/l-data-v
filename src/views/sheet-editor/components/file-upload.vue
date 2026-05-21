@@ -482,12 +482,13 @@ export default {
 .file-list {
   text-align: left;
   min-height: 30px;
+  height: 100%;
   position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
 
   &.file-upload-cell {
-    overflow: visible;
+    overflow: hidden;
     outline: none;
     border-radius: 6px;
 
