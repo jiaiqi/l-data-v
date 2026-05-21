@@ -1,5 +1,15 @@
 <template>
-  <div class="file-list" @dblclick.stop.capture="showDialog">
+  <div
+    class="file-list file-upload-cell"
+    :class="{ 'is-paste-hover': canCellPaste && isCellHover }"
+    tabindex="0"
+    @mouseenter="isCellHover = true"
+    @mouseleave="isCellHover = false"
+    @dblclick.stop.capture="showDialog"
+  >
+    <div class="file-upload-cell__paste-tip" v-if="canCellPaste && isCellHover">
+      支持 Ctrl+V
+    </div>
     <div class="edit-icon">
       <el-button size="mini" class="edit-btn" circle @click="showDialog"
         ><i class="el-icon-upload2"></i
@@ -23,6 +33,23 @@
     </div>
 
     <div class="file-no" v-else>{{ value || "" }}</div>
+
+    <el-upload
+      v-if="canCellPaste"
+      ref="cellUpload"
+      class="cell-hidden-upload"
+      :disabled="disabled"
+      :action="uploadAction"
+      :on-success="handleUploadSuccess"
+      :headers="uploadHeaders"
+      :data="uploadData"
+      :limit="limit"
+      :on-exceed="handleExceed"
+      :file-list="fileList"
+      :show-file-list="false"
+    >
+      <span></span>
+    </el-upload>
 
     <el-dialog
       title="文件上传"
@@ -54,7 +81,7 @@
           :on-exceed="handleExceed"
           :file-list="fileList"
           :list-type="isImage ? 'picture-card' : 'text'"
-          ref="upload"
+          ref="dialogUpload"
         >
           <!-- <div v-if="!disabled && isImage">
             <i class="el-icon-upload"></i>
@@ -128,6 +155,9 @@ export default {
     showFileList() {
       return this.setColumn?._obj_info || this.column?.col_type === "FileList";
     },
+    canCellPaste() {
+      return this.showFileList && !this.disabled;
+    },
     uploadAction() {
       return window.backendIpAddr + "/file/upload";
     },
@@ -164,6 +194,8 @@ export default {
       fileList: [],
       dialogVisible: false,
       isUploadHover: false,
+      isCellHover: false,
+      pasteEventHandler: null,
     };
   },
   watch: {
@@ -338,8 +370,8 @@ export default {
           });
         });
     },
-    submitPasteFile(file) {
-      const upload = this.$refs.upload;
+    submitPasteFile(file, uploadRef = "dialogUpload") {
+      const upload = this.$refs[uploadRef];
       if (!upload || !file) {
         return;
       }
@@ -356,7 +388,7 @@ export default {
       this.submitPasteFile(b);
     },
     normalizePasteFile(file) {
-      const name = file?.name || this.getPasteFileNameByMime(file?.type);
+      const name = this.getPasteFileName(file);
       if (file?.name === name && file.lastModified) {
         return file;
       }
@@ -365,10 +397,15 @@ export default {
         lastModified: file?.lastModified || Date.now(),
       });
     },
-    getPasteFileNameByMime(mime) {
-      const subtype = mime?.split("/")?.[1]?.split(";")?.[0];
-      const suffix = subtype || "file";
-      return `${Date.now()}.${suffix}`;
+    getPasteFileName(file) {
+      const rawName = file?.name || "";
+      const suffixFromName = rawName.includes(".") ? rawName.split(".").pop() : "";
+      if (rawName && suffixFromName) {
+        return rawName;
+      }
+      const suffixFromMime = file?.type?.split("/")?.[1]?.split(";")?.[0] || "file";
+      const suffix = suffixFromName || suffixFromMime;
+      return rawName ? `${rawName}.${suffix}` : `${Date.now()}.${suffix}`;
     },
     getPasteFiles(clipboardData) {
       const files = [];
@@ -385,10 +422,7 @@ export default {
       }
       return files.map((file) => this.normalizePasteFile(file));
     },
-    handleUploadPaste(event) {
-      if (!this.dialogVisible || this.disabled || !this.isUploadHover) {
-        return;
-      }
+    handleUploadPaste(event, uploadRef = "dialogUpload") {
       const clipboardData = event.clipboardData || event.originalEvent?.clipboardData;
       if (!clipboardData) {
         return;
@@ -398,7 +432,7 @@ export default {
         return;
       }
       event.preventDefault();
-      files.forEach((file) => this.submitPasteFile(file));
+      files.forEach((file) => this.submitPasteFile(file, uploadRef));
     },
     dataURLtoBlob(dataurl) {
       //将base64转换为blob
@@ -420,17 +454,26 @@ export default {
     },
 
     listenPasteEvent() {
-      const pasteEvent = (event) => {
-        if (!this.dialogVisible || this.disabled || !this.isUploadHover) {
+      this.pasteEventHandler = (event) => {
+        if (this.dialogVisible && !this.disabled && this.isUploadHover) {
+          this.handleUploadPaste(event, "dialogUpload");
           return;
         }
-        this.handleUploadPaste(event);
+        if (this.canCellPaste && this.isCellHover) {
+          this.handleUploadPaste(event, "cellUpload");
+        }
       };
-      document.addEventListener("paste", pasteEvent);
+      document.addEventListener("paste", this.pasteEventHandler);
     },
   },
   mounted() {
     this.listenPasteEvent();
+  },
+  beforeDestroy() {
+    if (this.pasteEventHandler) {
+      document.removeEventListener("paste", this.pasteEventHandler);
+      this.pasteEventHandler = null;
+    }
   },
 };
 </script>
@@ -443,6 +486,42 @@ export default {
   position: relative;
   display: flex;
   align-items: center;
+
+  &.file-upload-cell {
+    overflow: hidden;
+    outline: none;
+    border-radius: 6px;
+
+    &.is-paste-hover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 90;
+      border-radius: 6px;
+      background: rgba(64, 158, 255, 0.08);
+      pointer-events: none;
+    }
+  }
+
+  .file-upload-cell__paste-tip {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    z-index: 100;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--primary-color, #409eff);
+    color: #fff;
+    font-size: 11px;
+    line-height: 18px;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.28);
+  }
+
+  .cell-hidden-upload {
+    display: none;
+  }
+
   .edit-icon {
     position: absolute;
     // bottom: 10px;
