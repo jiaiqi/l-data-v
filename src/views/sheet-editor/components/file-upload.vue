@@ -5,7 +5,7 @@
         ><i class="el-icon-upload2"></i
       ></el-button>
     </div>
-    <div v-if="setColumn && setColumn._obj_info">
+    <div v-if="showFileList">
       <file-list
         :data="row"
         :field="setColumn"
@@ -125,6 +125,9 @@ export default {
     isImage() {
       return this.column?.col_type === "Image";
     },
+    showFileList() {
+      return this.setColumn?._obj_info || this.column?.col_type === "FileList";
+    },
     uploadAction() {
       return window.backendIpAddr + "/file/upload";
     },
@@ -163,7 +166,18 @@ export default {
       isUploadHover: false,
     };
   },
-  created() {},
+  watch: {
+    modelValue: {
+      immediate: true,
+      handler(val) {
+        if (this.showFileList && val) {
+          this.getFileList();
+        } else if (!val) {
+          this.fileList = [];
+        }
+      },
+    },
+  },
   methods: {
     hideDialog() {},
     showDialog() {
@@ -173,6 +187,10 @@ export default {
       this.dialogVisible = true;
     },
     async getFileList() {
+      if (!this.modelValue) {
+        this.fileList = [];
+        return [];
+      }
       const url = `/file/select/srvfile_attachment_select?srvfile_attachment_select`;
       const req = {
         serviceName: "srvfile_attachment_select",
@@ -205,7 +223,7 @@ export default {
             fileurl: item.fileurl,
           };
         });
-        if (this.fileList.length === 0) {
+        if (this.fileList.length === 0 && this.dialogVisible) {
           this.$emit("change", null);
         }
         return res.data.data;
