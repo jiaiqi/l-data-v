@@ -103,14 +103,6 @@
                     "
                     @change="valueChange($event, item)"
                   ></el-input>
-                  <!-- <el-input v-model.number="item.value" type="number"
-                    v-else-if="['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)"
-                    @change="valueChange($event, item)"></el-input> -->
-                  <!-- <el-input-number v-model="item.value" clearable label="描述文字"
-                    v-else-if="['Money', 'Float'].includes(item.col_type)"
-                    @change="valueChange($event, item)"></el-input-number>
-                  <el-input-number v-model="item.value" clearable v-else-if="['Int', 'Integer'].includes(item.col_type)"
-                    @change="valueChange($event, item)"></el-input-number> -->
                   <div
                     class="number-range-input"
                     v-else-if="
@@ -200,6 +192,15 @@
                   ></el-switch>
                 </div>
                 <div class="chart-control-item">
+                  <span class="control-label">数字单位：</span>
+                  <el-switch
+                    v-model="autoFormatNumber"
+                    active-text="自动"
+                    inactive-text="原始"
+                    @change="updateChart"
+                  ></el-switch>
+                </div>
+                <div class="chart-control-item">
                   <span class="control-label">单元格合并：</span>
                   <el-select
                     v-model="mergeMode"
@@ -273,6 +274,7 @@
           <el-table-column
             :prop="column.columns"
             :label="column.label"
+            :formatter="cellValueFormatter"
             min-width="180"
             v-for="column in setSrvCols"
             :key="column.columns"
@@ -333,8 +335,10 @@ export default {
       chartInstance: null, // echarts实例
       showLegend: true, // 是否显示图例
       showChartSettings: false, // 是否显示图表设置面板
+      autoFormatNumber: true, // 是否自动换算数字单位（万、亿）
       // 表格合并相关
       mergeMode: "first", // 合并模式：none-不合并，first-只合并首列，all-合并所有符合条件的列
+      spanCache: {}, // 表格单元格合并预计算缓存 { colName: [{ rowspan, colspan }] }
     };
   },
   computed: {
@@ -369,6 +373,7 @@ export default {
           return res;
         }, {});
       }
+      return {};
     },
     colsMap() {
       return this.listV2?.srv_cols.reduce((res, cur) => {
@@ -425,17 +430,9 @@ export default {
             }
           });
         }
-        // this.listV2?.srv_cols.filter((item) => {
-        //   let group = arr.find(
-        //     (g) => g.colName === item.columns || g.col_name === item.columns
-        //   );
-        //   if (group?.seq) {
-        //     item.seq = group.seq;
-        //   }
-        //   return !!group;
-        // });
         return srvCols.sort((a, b) => a.seq - b.seq);
       }
+      return [];
     },
   },
   methods: {
@@ -445,7 +442,7 @@ export default {
     toReqSetting() {
       const reqNo = this.config.default_srv_req_no;
       if (!reqNo) {
-        alert("请先配置默认请求");
+        this.$message.warning("请先配置默认请求");
         return;
       }
       const url = `/dataview/#/select-builder/${reqNo}`;
@@ -508,36 +505,6 @@ export default {
           this.downloadexport(res?.data?.data.uuid);
         }
       });
-      return;
-      if (!this.tableData?.length) {
-        alert("表格数据为空");
-        return;
-      } else {
-        let time = dayjs().format("-YYYYMMDDHHmmss");
-        let fileName = this.config.list_title + time + ".xlsx";
-        // 将预览表格中的数据导出为excel
-        let wb = XLSX.utils.table_to_book(this.$refs.elTable?.$el);
-        XLSX.writeFile(wb, `${fileName}.xlsx`);
-        /* 获取二进制字符串作为输出 */
-        // let wbout = XLSX.write(wb, {
-        //   bookType: "xlsx",
-        //   bookSST: true,
-        //   type: "array",
-        // });
-        // try {
-        //   FileSaver.saveAs(
-        //     //Blob 对象表示一个不可变、原始数据的类文件对象。
-        //     //Blob 表示的不一定是JavaScript原生格式的数据。
-        //     //File 接口基于Blob，继承了 blob 的功能并将其扩展使其支持用户系统上的文件。
-        //     //返回一个新创建的 Blob 对象，其内容由参数中给定的数组串联组成。
-        //     new Blob([wbout], { type: "application/octet-stream" }),
-        //     //设置导出文件名称
-        //     fileName
-        //   );
-        //   this.tableExportStatus = true;
-        // } catch (e) {}
-        // return wbout;
-      }
     },
     resetFilter() {
       this.filterCols = this.filterCols.map((item) => {
@@ -546,11 +513,6 @@ export default {
       });
     },
     valueChange(e, columnInfo) {
-      console.log(e, columnInfo);
-      console.log(this.filterModel);
-      // if (['Money', 'Float', 'Int', 'Integer'].includes(columnInfo?.col_type) && (!columnInfo.value1 || !columnInfo.value2) && ((columnInfo.value1 || columnInfo.value2))) {
-      //   return
-      // }
       this.getList();
     },
     clickRadio(e, key, index) {
@@ -560,18 +522,6 @@ export default {
 
         this.groupByCols[key].value = -1;
         this.$set(this.groupByCols[key], "value", -1);
-        // this.curGroup = this.curGroup.filter((item) => item.colName !== key);
-        // if (
-        //   Object.keys(this.groupByCols).every(
-        //     (key) =>
-        //       (typeof this.groupByCols[key]?.value === "number" &&
-        //         this.groupByCols[key]?.value > -1) ||
-        //       this.groupByCols[key]?.value !== "number"
-        //   )
-        // ) {
-        //   this.curGroup = [];
-        // }
-        // this.getList();
         this.changeGroup();
       }
     },
@@ -600,84 +550,64 @@ export default {
       this.curGroup = [...groupList, ...this.calcCols];
       this.getList();
     },
-    objectSpanMethod({ row, column, rowIndex, columnIndex }) {
-      // 不合并模式
-      if (this.mergeMode === "none") {
+    computeSpanMap() {
+      this.spanCache = {};
+      if (this.mergeMode === "none" || !this.tableData.length) {
         return;
       }
 
-      const colName = column.property;
-      // 只有group type是by的字段可以合并
-      const isMergeCol = this.groupCols.find(
-        (item) => item.colName === colName
-      );
+      const mergeCols = this.groupCols.map((item) => item.colName);
+      const firstMergeCol = mergeCols[0] || null;
 
-      // 只合并首列模式
-      if (this.mergeMode === "first") {
-        // 获取所有可合并列
-        const mergeCols = this.groupCols.map((item) => item.colName);
-        // 只处理首列
-        if (mergeCols.length > 0 && colName === mergeCols[0]) {
-          // 首列合并逻辑
+      this.tableData.forEach((row, rowIndex) => {
+        mergeCols.forEach((colName) => {
+          if (!this.spanCache[colName]) {
+            this.spanCache[colName] = [];
+          }
+
+          if (this.mergeMode === "first" && colName !== firstMergeCol) {
+            this.spanCache[colName][rowIndex] = { rowspan: 1, colspan: 1 };
+            return;
+          }
+
           const currentValue = row[colName];
           let rowspan = 1;
-          // 遍历之后的行，判断是否需要合并
+
           for (let i = rowIndex + 1; i < this.tableData.length; i++) {
-            const nextRow = this.tableData[i];
-            if (nextRow[colName] === currentValue) {
+            if (this.tableData[i][colName] === currentValue) {
               rowspan++;
             } else {
               break;
             }
           }
 
-          // 遍历之前的行 跟上一行的值一样 则和上一行合并 rowspan置为0
           for (let i = rowIndex - 1; i >= 0; i--) {
-            const previousRow = this.tableData[i];
-            if (previousRow[colName] === currentValue) {
+            if (this.tableData[i][colName] === currentValue) {
               rowspan = 0;
+              break;
             } else {
               break;
             }
           }
-          // 返回合并的行数和列数
-          return {
-            rowspan,
-            colspan: 1,
-          };
-        }
+
+          this.spanCache[colName][rowIndex] = { rowspan, colspan: 1 };
+        });
+      });
+    },
+
+    objectSpanMethod({ row, column, rowIndex }) {
+      if (this.mergeMode === "none") {
         return;
       }
 
-      // 合并所有符合条件的列模式
-      if (this.mergeMode === "all" && isMergeCol) {
-        const currentValue = row[colName];
-        let rowspan = 1;
-        // 遍历之后的行，判断是否需要合并
-        for (let i = rowIndex + 1; i < this.tableData.length; i++) {
-          const nextRow = this.tableData[i];
-          if (nextRow[colName] === currentValue) {
-            rowspan++;
-          } else {
-            break;
-          }
-        }
+      const colName = column.property;
+      const cache = this.spanCache[colName];
 
-        // 遍历之前的行 跟上一行的值一样 则和上一行合并 rowspan置为0
-        for (let i = rowIndex - 1; i >= 0; i--) {
-          const previousRow = this.tableData[i];
-          if (previousRow[colName] === currentValue) {
-            rowspan = 0;
-          } else {
-            break;
-          }
-        }
-        // 返回合并的行数和列数
-        return {
-          rowspan,
-          colspan: 1,
-        };
+      if (!cache || cache.length <= rowIndex) {
+        return;
       }
+
+      return cache[rowIndex];
     },
     handleSizeChange(val) {
       this.page.rownumber = val;
@@ -925,17 +855,6 @@ export default {
               }
             });
             this.srvCols = srvCols;
-            // this.srvCols = res.data?.data?.srv_cols.filter((item) => {
-            //   let groupItem = this.srvReqJson?.group.find(
-            //     (e) => item.columns === e.colName || item.columns === e.col_name
-            //   );
-            //   if (groupItem?.colName) {
-            //     if (groupItem.aliasName) {
-            //       // item.columns = groupItem.aliasName
-            //     }
-            //     return true;
-            //   }
-            // });
             if (this.config.filter_cols) {
               const filter_cols = this.config.filter_cols.split(",");
               this.filterCols = this.srvCols.filter((item) =>
@@ -997,27 +916,6 @@ export default {
           }
           return res;
         }, []);
-        // const condition = this.filterCols.filter(item => {
-        //   if (['Money', 'Float', 'Int', 'Integer'].includes(item.col_type)) {
-        //     if (!isNaN(Number(item.value1)) && !isNaN(Number(item.value2))) {
-        //       item.value = [item.value1, item.value2]
-        //     } else {
-        //       item.value = undefined
-        //     }
-        //   }
-        //   if (item.value !== undefined) {
-        //     const obj = { colName: item.columns, ruleType: 'like', value: null }
-        //     if (['Money', 'Float', 'Int', 'Integer', 'Date'].includes(item.col_type)) {
-        //       obj.ruleType = 'between'
-        //     }
-        //     // if (item.col_type === 'Date') {
-        //     //   obj.value = item.value.toString()
-        //     // } else {
-        //     obj.value = item.value
-        //     // }
-        //     return obj
-        //   }
-        // }).filter(item => item?.colName)
         req.condition = [...(req.condition || []), ...condition];
       }
       return req;
@@ -1077,9 +975,7 @@ export default {
       // 处理x轴数据
       const xAxisData = [
         ...new Set(
-          this.tableData.map(
-            (item) => item[xAxisField.colName] || item[xAxisField.aliasName]
-          )
+          this.tableData.map((item) => this.getFieldValue(item, xAxisField))
         ),
       ].sort();
 
@@ -1111,222 +1007,79 @@ export default {
       ];
 
       if (groupField) {
-        // 有第二个分组字段，按分组字段拆分数据为多个系列
         const groupValues = [
           ...new Set(
-            this.tableData.map(
-              (item) => item[groupField.colName] || item[groupField.aliasName]
-            )
+            this.tableData.map((item) => this.getFieldValue(item, groupField))
           ),
         ];
 
-        // 为每个分组创建一个系列
         seriesData = groupValues.map((groupVal, index) => {
-          // 筛选当前分组的数据
           const groupData = this.tableData.filter(
-            (item) =>
-              (item[groupField.colName] || item[groupField.aliasName]) ===
-              groupVal
+            (item) => this.getFieldValue(item, groupField) === groupVal
           );
 
-          // 准备当前系列的数据，确保与x轴数据顺序一致
           const seriesItemData = xAxisData.map((xVal) => {
             const dataItem = groupData.find(
-              (item) =>
-                (item[xAxisField.colName] || item[xAxisField.aliasName]) ===
-                xVal
+              (item) => this.getFieldValue(item, xAxisField) === xVal
             );
             const yAxisField = this.getMinSeqField(calcCols);
             return dataItem
-              ? parseFloat(
-                  dataItem[yAxisField.colName] || dataItem[yAxisField.aliasName]
-                ) || 0
+              ? parseFloat(this.getFieldValue(dataItem, yAxisField)) || 0
               : 0;
           });
 
-          const baseColor = colors[index % colors.length];
-
-          // 创建渐变色配置
-          const seriesConfig = {
+          return this.buildSeriesConfig({
             name: groupVal,
-            type: this.chartType,
             data: seriesItemData,
-            smooth: this.chartType === "line",
-            barMaxWidth: 50,
-            stack:
-              (this.isStacked && this.chartType === "bar") ||
-              (this.chartType === "line" && this.isArea)
-                ? "stackGroup"
-                : undefined,
-          };
-
-          // 柱状图渐变
-          if (this.chartType === "bar") {
-            seriesConfig.color = baseColor;
-            seriesConfig.itemStyle = {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: baseColor },
-                { offset: 1, color: baseColor + "80" },
-              ]),
-            };
-          }
-          // 折线图渐变
-          else if (this.chartType === "line") {
-            seriesConfig.lineStyle = {
-              color: baseColor,
-            };
-            seriesConfig.itemStyle = {
-              color: baseColor,
-            };
-            // 面积图渐变
-            if (this.isArea) {
-              seriesConfig.areaStyle = {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: baseColor + "80" },
-                  { offset: 1, color: baseColor + "20" },
-                ]),
-              };
-            }
-          }
-
-          return seriesConfig;
+            baseColor: colors[index % colors.length],
+          });
         });
       } else if (calcCols.length > 1) {
-        // 只有一个分组字段，但有多个聚合字段，按不同聚合字段分组
         seriesData = calcCols.map((yAxisField, index) => {
-          // 准备当前系列的数据，确保与x轴数据顺序一致
           const seriesItemData = xAxisData.map((xVal) => {
             const dataItem = this.tableData.find(
-              (item) =>
-                (item[xAxisField.colName] || item[xAxisField.aliasName]) ===
-                xVal
+              (item) => this.getFieldValue(item, xAxisField) === xVal
             );
             return dataItem
-              ? parseFloat(
-                  dataItem[yAxisField.colName] || dataItem[yAxisField.aliasName]
-                ) || 0
+              ? parseFloat(this.getFieldValue(dataItem, yAxisField)) || 0
               : 0;
           });
 
-          const baseColor = colors[index % colors.length];
-
-          // 创建渐变色配置
-          const seriesConfig = {
+          return this.buildSeriesConfig({
             name:
               yAxisField.aliasName ||
               this.colsMap?.[yAxisField.colName]?.label ||
               yAxisField.colName,
-            type: this.chartType,
             data: seriesItemData,
-            smooth: this.chartType === "line",
-            barMaxWidth: 50,
-            stack:
-              (this.isStacked && this.chartType === "bar") ||
-              (this.chartType === "line" && this.isArea)
-                ? "stackGroup"
-                : undefined,
-          };
-
-          // 柱状图渐变
-          if (this.chartType === "bar") {
-            seriesConfig.color = baseColor;
-            seriesConfig.itemStyle = {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: baseColor },
-                { offset: 1, color: baseColor + "80" },
-              ]),
-            };
-          }
-          // 折线图渐变
-          else if (this.chartType === "line") {
-            seriesConfig.lineStyle = {
-              color: baseColor,
-            };
-            seriesConfig.itemStyle = {
-              color: baseColor,
-            };
-            // 面积图渐变
-            if (this.isArea) {
-              seriesConfig.areaStyle = {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: baseColor + "80" },
-                  { offset: 1, color: baseColor + "20" },
-                ]),
-              };
-            }
-          }
-
-          return seriesConfig;
+            baseColor: colors[index % colors.length],
+          });
         });
       } else {
-        // 只有一个分组字段和一个聚合字段，使用单个系列
         const yAxisField = this.getMinSeqField(calcCols);
         if (!yAxisField) {
           return;
         }
 
-        // 准备数据，确保与x轴数据顺序一致
         const seriesItemData = xAxisData.map((xVal) => {
           const dataItem = this.tableData.find(
-            (item) =>
-              (item[xAxisField.colName] || item[xAxisField.aliasName]) === xVal
+            (item) => this.getFieldValue(item, xAxisField) === xVal
           );
           return dataItem
-            ? parseFloat(
-                dataItem[yAxisField.colName] || dataItem[yAxisField.aliasName]
-              ) || 0
+            ? parseFloat(this.getFieldValue(dataItem, yAxisField)) || 0
             : 0;
         });
 
-        const baseColor = "#5470c6";
-
-        // 创建渐变色配置
-        const seriesConfig = {
-          name:
-            yAxisField.aliasName ||
-            this.colsMap?.[yAxisField.colName]?.label ||
-            yAxisField.colName,
-          type: this.chartType,
-          data: seriesItemData,
-          smooth: this.chartType === "line",
-          barWidth: 50,
-          stack:
-            (this.isStacked && this.chartType === "bar") ||
-            (this.chartType === "line" && this.isArea)
-              ? "stackGroup"
-              : undefined,
-        };
-
-        // 柱状图渐变
-        if (this.chartType === "bar") {
-          seriesConfig.color = baseColor;
-          seriesConfig.itemStyle = {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: baseColor },
-              { offset: 1, color: baseColor + "80" },
-            ]),
-          };
-        }
-        // 折线图渐变
-        else if (this.chartType === "line") {
-          seriesConfig.lineStyle = {
-            color: baseColor,
-          };
-          seriesConfig.itemStyle = {
-            color: baseColor,
-          };
-          // 面积图渐变
-          if (this.isArea) {
-            seriesConfig.areaStyle = {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: baseColor + "80" },
-                { offset: 1, color: baseColor + "20" },
-              ]),
-            };
-          }
-        }
-
-        seriesData = [seriesConfig];
+        seriesData = [
+          this.buildSeriesConfig({
+            name:
+              yAxisField.aliasName ||
+              this.colsMap?.[yAxisField.colName]?.label ||
+              yAxisField.colName,
+            data: seriesItemData,
+            baseColor: "#5470c6",
+            isSingle: true,
+          }),
+        ];
       }
 
       // 设置图表配置
@@ -1409,11 +1162,11 @@ export default {
         },
         tooltip: {
           trigger: "axis",
-          formatter: function (params) {
+          formatter: (params) => {
             let result = params[0].name + "<br/>";
-            params.forEach(function (item) {
-              // 过滤掉数值为0或没有数值的项
+            params.forEach((item) => {
               const value = parseFloat(item.value);
+              // 过滤掉数值为0或没有数值的项
               if (!isNaN(value) && value !== 0) {
                 // 处理渐变色情况，获取原始颜色
                 let color = item.color;
@@ -1425,7 +1178,7 @@ export default {
                   '<span style="display:inline-block;margin-right:5px;border-radius:10px;width:10px;height:10px;background-color:' +
                   color +
                   '"></span>';
-                result += item.seriesName + ": " + value + "<br/>";
+                result += item.seriesName + ": " + (this.autoFormatNumber ? this.formatNumber(value) : value) + "<br/>";
               }
             });
             return result;
@@ -1456,10 +1209,86 @@ export default {
         },
         series: seriesData,
       };
-      console.log(option,'option');
-      
-
       this.chartInstance.setOption(option, { notMerge: true });
+    },
+
+    getFieldValue(item, field) {
+      // 兼容 colName 和 aliasName 两种字段名
+      return item[field.colName] || item[field.aliasName];
+    },
+
+    /**
+     * 数值格式化：自动换算单位，支持万、亿级显示
+     * @param {number} value 原始数值
+     * @returns {string|number} 格式化后的字符串（如 "213.78万"）或原始数字
+     */
+    formatNumber(value) {
+      if (Math.abs(value) >= 100000000) {
+        const num = value / 100000000;
+        return Number.isInteger(num) ? num + "亿" : num.toFixed(2) + "亿";
+      }
+      if (Math.abs(value) >= 10000) {
+        const num = value / 10000;
+        return Number.isInteger(num) ? num + "万" : num.toFixed(2) + "万";
+      }
+      return value;
+    },
+
+    /**
+     * 表格单元格格式化：仅对数值型字段（Money/Float/Int/Integer）应用单位换算
+     * @param {object} row 当前行数据
+     * @param {object} column 列配置，包含 col_type 信息
+     * @param {any} cellValue 单元格原始值
+     * @returns {any} 格式化后的值
+     */
+    cellValueFormatter(row, column, cellValue) {
+      // 优先使用 column 上直接挂载的 col_type，否则通过 colsMap 查找
+      const colType = column.col_type || this.colsMap?.[column.property]?.col_type;
+      if (["Money", "Float", "Int", "Integer"].includes(colType)) {
+        const num = parseFloat(cellValue);
+        if (!isNaN(num)) {
+          // 根据开关决定是否换算单位
+          return this.autoFormatNumber ? this.formatNumber(num) : num;
+        }
+      }
+      return cellValue;
+    },
+
+    buildSeriesConfig({ name, data, baseColor, isSingle = false }) {
+      const isStackedBar = this.isStacked && this.chartType === "bar";
+      const isAreaLine = this.chartType === "line" && this.isArea;
+
+      const config = {
+        name,
+        type: this.chartType,
+        data,
+        smooth: this.chartType === "line",
+        [isSingle ? "barWidth" : "barMaxWidth"]: 50,
+        stack: isStackedBar || isAreaLine ? "stackGroup" : undefined,
+      };
+
+      if (this.chartType === "bar") {
+        config.color = baseColor;
+        config.itemStyle = {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: baseColor },
+            { offset: 1, color: baseColor + "80" },
+          ]),
+        };
+      } else if (this.chartType === "line") {
+        config.lineStyle = { color: baseColor };
+        config.itemStyle = { color: baseColor };
+        if (this.isArea) {
+          config.areaStyle = {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: baseColor + "80" },
+              { offset: 1, color: baseColor + "20" },
+            ]),
+          };
+        }
+      }
+
+      return config;
     },
 
     // 获取seq最小的字段
@@ -1518,10 +1347,10 @@ export default {
         this.page = res.data.page;
         if (res.data.sum_row_data) {
           this.sum_row_data = res.data.sum_row_data;
-          this.tableData.push();
         } else {
           this.sum_row_data = null;
         }
+        this.computeSpanMap();
         // 更新图表
         this.$nextTick(() => {
           this.initChart();
