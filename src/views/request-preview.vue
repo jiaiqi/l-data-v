@@ -565,32 +565,40 @@ export default {
             this.spanCache[colName] = [];
           }
 
+          // 只合并首列模式下，非首列直接跳过
           if (this.mergeMode === "first" && colName !== firstMergeCol) {
             this.spanCache[colName][rowIndex] = { rowspan: 1, colspan: 1 };
             return;
           }
 
           const currentValue = row[colName];
-          let rowspan = 1;
-
-          for (let i = rowIndex + 1; i < this.tableData.length; i++) {
-            if (this.tableData[i][colName] === currentValue) {
-              rowspan++;
+          // 向前找连续相同值的起始位置
+          let startIndex = rowIndex;
+          while (startIndex > 0) {
+            if (this.tableData[startIndex - 1][colName] === currentValue) {
+              startIndex--;
+            } else {
+              break;
+            }
+          }
+          // 向后找连续相同值的结束位置
+          let endIndex = rowIndex;
+          while (endIndex < this.tableData.length - 1) {
+            if (this.tableData[endIndex + 1][colName] === currentValue) {
+              endIndex++;
             } else {
               break;
             }
           }
 
-          for (let i = rowIndex - 1; i >= 0; i--) {
-            if (this.tableData[i][colName] === currentValue) {
-              rowspan = 0;
-              break;
-            } else {
-              break;
-            }
+          const blockSize = endIndex - startIndex + 1;
+          // 区间内每行都直接标记好 rowspan，避免重复扫描
+          for (let i = startIndex; i <= endIndex; i++) {
+            this.spanCache[colName][i] = {
+              rowspan: i === startIndex ? blockSize : 0,
+              colspan: 1,
+            };
           }
-
-          this.spanCache[colName][rowIndex] = { rowspan, colspan: 1 };
         });
       });
     },
@@ -641,14 +649,10 @@ export default {
                 srv_req_no: config.default_srv_req_no,
                 filter_cols: config.filter_cols,
               };
-              // this.config = JSON.parse(config.default_srv_req_json)
+              // 优先使用 default_srv_req_json（已规范化的标准格式）
               this.srvReqJson = JSON.parse(config.default_srv_req_json);
             } catch (error) {}
           }
-
-          try {
-            this.srvReqJson = JSON.parse(this.config?.srv_req_json);
-          } catch (error) {}
           if (this.srvReqJson?.serviceName) {
             // this.page = this.srvReqJson.page
             this.getListV2(this.srvReqJson?.serviceName).then(() => {
@@ -882,15 +886,31 @@ export default {
     buildListReq() {
       const req = JSON.parse(JSON.stringify(this.srvReqJson));
       req.page = this.page || req.page;
-      delete req.group;
+      // 将 condition 规范化为标准格式（colName / ruleType / value）
+      req.condition = (req.condition || []).map((item) => ({
+        colName: item.colName || item.col_name,
+        ruleType: item.ruleType || item.rule_type,
+        value: item.value,
+      }));
+      // 将 group 规范化为标准格式（colName / type / seq / aliasName）
+      req.group = (req.group || []).map((item) => ({
+        colName: item.colName || item.col_name,
+        type: item.type || item.type_stat,
+        seq: item.seq,
+        aliasName: item.aliasName || item.alias_name,
+      }));
+      // 将 order 规范化为标准格式（colName / orderType）
+      req.order = (req.order || []).map((item) => ({
+        colName: item.colName || item.col_name,
+        orderType: item.orderType || item.order_type,
+      }));
       if (Array.isArray(this.curGroup) && this.curGroup.length > 0) {
         req.group = this.curGroup;
       } else if (this.calcCols?.length) {
         req.group = [...this.calcCols];
-        // req.group = [...this.groupCols, ...this.calcCols]
       }
       if (Array.isArray(this.filterCols)) {
-        const condition = this.filterCols.reduce((res, item) => {
+        const filterCondition = this.filterCols.reduce((res, item) => {
           const obj = { colName: item.columns, ruleType: "like", value: null };
           if (["Money", "Float", "Int", "Integer"].includes(item.col_type)) {
             if (item.value1) {
@@ -916,7 +936,7 @@ export default {
           }
           return res;
         }, []);
-        req.condition = [...(req.condition || []), ...condition];
+        req.condition = [...(req.condition || []), ...filterCondition];
       }
       return req;
     },
