@@ -456,136 +456,326 @@ export default {
         between: "在两者之间",
       };
       const reqDatas = [];
-      Object.keys(serviceNames).forEach((type) => {
-        if (type === "column") return;
-        let localData = [...this.endData[type]];
-        if (type == "group") {
-          localData = [...localData, ...this.endData["aggregation"]];
-        }
-        if (this.srv_call_no) {
-          reqDatas.unshift({
-            serviceName: `${serviceNames[type]}_delete`,
-            depend_keys: [
-              {
-                type: "column",
-                add_col: type === "group" ? "srv_req_no" : "srv_call_no",
-                depend_key: type === "group" ? "srv_req_no" : "srv_call_no",
-              },
-            ],
-            condition: [
-              {
-                colName: type === "group" ? "srv_req_no" : "srv_call_no",
-                ruleType: "eq",
-                value: this.srv_call_no,
-              },
-              // {
-              //   colName: "id",
-              //   ruleType: "in",
-              //   value: originData.map((item) => item.id).toString(),
-              // },
-            ],
-          });
-        }
-        // let originData = this.childData[type];
-        // if (Array.isArray(originData) && originData.length > 0) {
 
-        // }
-        if (Array.isArray(localData) && localData.length > 0) {
+      if (!this.srv_call_no) {
+        Object.keys(serviceNames).forEach((type) => {
+          if (type === "column") return;
+          let localData = [...this.endData[type]];
+          if (type == "group") {
+            localData = [...localData, ...this.endData["aggregation"]];
+          }
+          if (Array.isArray(localData) && localData.length > 0) {
+            reqDatas.push({
+              serviceName: `${serviceNames[type]}_add`,
+              depend_keys: [
+                {
+                  type: "column",
+                  add_col: type === "group" ? "srv_req_no" : "srv_call_no",
+                  depend_key: type === "group" ? "srv_req_no" : "srv_call_no",
+                },
+              ],
+              data: localData.map((item, index) => {
+                let res = null;
+                switch (type) {
+                  case "order":
+                    res = {
+                      order_seq: index * 100,
+                      col_name: item.colName,
+                      order_type: item.orderType,
+                      row_order_json: JSON.stringify(item),
+                      srv_call_no: this.srv_call_no,
+                    };
+                    break;
+                  case "condition":
+                    res = {
+                      col_name: item.colName,
+                      rule_type: ruleTypeMap[item.ruleType] || "近似于",
+                      val_type: "常量",
+                      const: item.value,
+                      row_cond_json: JSON.stringify(item),
+                      srv_call_no: this.srv_call_no,
+                    };
+                    break;
+                  case "group":
+                    res = {
+                      col_name: item.colName,
+                      type_stat: item.type,
+                      seq: item.seq || index * 100,
+                      alias_name: item.aliasName,
+                      row_json: JSON.stringify(item),
+                      srv_req_no: this.srv_call_no,
+                    };
+                    break;
+                }
+                return res;
+              }),
+            });
+          }
+        });
+        if (this.checkedColumns.length === this.allColum.list.length) {
           reqDatas.push({
-            serviceName: `${serviceNames[type]}_add`,
+            serviceName: `${serviceNames.column}_add`,
             depend_keys: [
               {
                 type: "column",
-                add_col: type === "group" ? "srv_req_no" : "srv_call_no",
-                depend_key: type === "group" ? "srv_req_no" : "srv_call_no",
+                add_col: "srv_call_no",
+                depend_key: "srv_call_no",
               },
             ],
-            data: localData.map((item, index) => {
-              let res = null;
-              switch (type) {
-                case "order":
-                  res = {
-                    order_seq: index * 100,
-                    col_name: item.colName,
-                    order_type: item.orderType,
-                    srv_call_no: this.srv_call_no,
-                  };
-                  break;
-                case "condition":
-                  res = {
-                    col_name: item.colName,
-                    rule_type: ruleTypeMap[item.ruleType] || "like",
-                    val_type: "常量",
-                    const: item.value,
-                    srv_call_no: this.srv_call_no,
-                  };
-                  break;
-                case "group":
-                  res = {
-                    col_name: item.colName,
-                    type_stat: item.type,
-                    alias_name: item.aliasName,
-                    srv_req_no: this.srv_call_no,
-                  };
-                  break;
-              }
-              return res;
-            }),
+            data: [
+              {
+                col_srv: "*",
+                srv_call_no: this.srv_call_no,
+              },
+            ],
+          });
+        } else {
+          reqDatas.push({
+            serviceName: `${serviceNames.column}_add`,
+            depend_keys: [
+              {
+                type: "column",
+                add_col: "srv_call_no",
+                depend_key: "srv_call_no",
+              },
+            ],
+            data: this.checkedColumns.map((item) => ({
+              srv_call_no: this.srv_call_no,
+              col_srv: item,
+            })),
           });
         }
+        return reqDatas;
+      }
+
+      // 编辑模式：增量更新
+      // order
+      const originOrders = this.childData.order || [];
+      const localOrders = this.endData.order || [];
+      const orderDeleted = originOrders.filter(
+        (o) => !localOrders.find((l) => l.colName === o.col_name)
+      );
+      const orderAdded = localOrders.filter(
+        (l) => !originOrders.find((o) => o.col_name === l.colName)
+      );
+      const orderUpdated = localOrders.filter((l) => {
+        const o = originOrders.find((o) => o.col_name === l.colName);
+        if (!o) return false;
+        return o.order_type !== l.orderType;
       });
-      // 请求字段
-      // 先删掉所有的
-      // if (
-      //   Array.isArray(this.childData.column) &&
-      //   this.childData.column.length > 0
-      // ) {
-      if (this.srv_call_no) {
-        reqDatas.unshift({
-          serviceName: `${serviceNames.column}_delete`,
-          depend_keys: [
-            {
-              type: "column",
-              add_col: "srv_call_no",
-              depend_key: "srv_call_no",
-            },
-          ],
+
+      if (orderDeleted.length > 0) {
+        reqDatas.push({
+          serviceName: `${serviceNames.order}_delete`,
           condition: [
             {
-              colName: "srv_call_no",
-              ruleType: "eq",
-              value: this.srv_call_no,
+              colName: "id",
+              ruleType: "in",
+              value: orderDeleted.map((item) => item.id).toString(),
             },
-            // {
-            //   colName: "id",
-            //   ruleType: "in",
-            //   value: this.childData.column.map((item) => item.id).toString(),
-            // },
           ],
         });
       }
-
-      // }
-      if (this.checkedColumns.length === this.allColum.list.length) {
-        // if (!this.childData.column.find((item) => item.col_srv == "*")) {
+      if (orderAdded.length > 0) {
         reqDatas.push({
-          serviceName: `${serviceNames.column}_add`,
+          serviceName: `${serviceNames.order}_add`,
           depend_keys: [
             {
               type: "column",
               add_col: "srv_call_no",
               depend_key: "srv_call_no",
             },
+          ],
+          data: orderAdded.map((item, index) => ({
+            order_seq: index * 100,
+            col_name: item.colName,
+            order_type: item.orderType,
+            row_order_json: JSON.stringify(item),
+            srv_call_no: this.srv_call_no,
+          })),
+        });
+      }
+      orderUpdated.forEach((item) => {
+        const origin = originOrders.find((o) => o.col_name === item.colName);
+        if (!origin) return;
+        reqDatas.push({
+          serviceName: `${serviceNames.order}_update`,
+          condition: [
+            { colName: "id", ruleType: "eq", value: origin.id },
           ],
           data: [
             {
-              col_srv: "*",
-              srv_call_no: this.srv_call_no,
+              order_type: item.orderType,
+              row_order_json: JSON.stringify(item),
             },
           ],
         });
-        // }
-      } else {
+      });
+
+      // condition
+      const originConds = this.childData.condition || [];
+      const localConds = this.endData.condition || [];
+      const condDeleted = originConds.filter(
+        (o) => !localConds.find((l) => l.colName === o.col_name)
+      );
+      const condAdded = localConds.filter(
+        (l) => !originConds.find((o) => o.col_name === l.colName)
+      );
+      const condUpdated = localConds.filter((l) => {
+        const o = originConds.find((o) => o.col_name === l.colName);
+        if (!o) return false;
+        return (
+          o.rule_type !== (ruleTypeMap[l.ruleType] || "近似于") ||
+          o.const !== l.value
+        );
+      });
+
+      if (condDeleted.length > 0) {
+        reqDatas.push({
+          serviceName: `${serviceNames.condition}_delete`,
+          condition: [
+            {
+              colName: "id",
+              ruleType: "in",
+              value: condDeleted.map((item) => item.id).toString(),
+            },
+          ],
+        });
+      }
+      if (condAdded.length > 0) {
+        reqDatas.push({
+          serviceName: `${serviceNames.condition}_add`,
+          depend_keys: [
+            {
+              type: "column",
+              add_col: "srv_call_no",
+              depend_key: "srv_call_no",
+            },
+          ],
+          data: condAdded.map((item) => ({
+            col_name: item.colName,
+            rule_type: ruleTypeMap[item.ruleType] || "近似于",
+            val_type: "常量",
+            const: item.value,
+            row_cond_json: JSON.stringify(item),
+            srv_call_no: this.srv_call_no,
+          })),
+        });
+      }
+      condUpdated.forEach((item) => {
+        const origin = originConds.find((o) => o.col_name === item.colName);
+        if (!origin) return;
+        reqDatas.push({
+          serviceName: `${serviceNames.condition}_update`,
+          condition: [
+            { colName: "id", ruleType: "eq", value: origin.id },
+          ],
+          data: [
+            {
+              rule_type: ruleTypeMap[item.ruleType] || "近似于",
+              const: item.value,
+              row_cond_json: JSON.stringify(item),
+            },
+          ],
+        });
+      });
+
+      // group + aggregation（同一张表，用 col_name + type_stat 复合键）
+      const originGroups = this.childData.group || [];
+      const localGroups = [
+        ...this.endData.group.map((g) => ({ ...g, _statType: "group" })),
+        ...this.endData.aggregation.map((a) => ({ ...a, _statType: "aggregation" })),
+      ];
+
+      const groupDeleted = originGroups.filter(
+        (o) => !localGroups.find((l) => l.colName === o.col_name && l.type === o.type_stat)
+      );
+      const groupAdded = localGroups.filter(
+        (l) => !originGroups.find((o) => o.col_name === l.colName && o.type_stat === l.type)
+      );
+      const groupUpdated = localGroups.filter((l) => {
+        const o = originGroups.find(
+          (o) => o.col_name === l.colName && o.type_stat === l.type
+        );
+        if (!o) return false;
+        return o.alias_name !== l.aliasName;
+      });
+
+      if (groupDeleted.length > 0) {
+        reqDatas.push({
+          serviceName: `${serviceNames.group}_delete`,
+          condition: [
+            {
+              colName: "id",
+              ruleType: "in",
+              value: groupDeleted.map((item) => item.id).toString(),
+            },
+          ],
+        });
+      }
+      if (groupAdded.length > 0) {
+        reqDatas.push({
+          serviceName: `${serviceNames.group}_add`,
+          depend_keys: [
+            {
+              type: "column",
+              add_col: "srv_req_no",
+              depend_key: "srv_req_no",
+            },
+          ],
+          data: groupAdded.map((item, index) => ({
+            col_name: item.colName,
+            type_stat: item.type,
+            seq: item.seq || index * 100,
+            alias_name: item.aliasName,
+            row_json: JSON.stringify(item),
+            srv_req_no: this.srv_call_no,
+          })),
+        });
+      }
+      groupUpdated.forEach((item) => {
+        const origin = originGroups.find(
+          (o) => o.col_name === item.colName && o.type_stat === item.type
+        );
+        if (!origin) return;
+        reqDatas.push({
+          serviceName: `${serviceNames.group}_update`,
+          condition: [
+            { colName: "id", ruleType: "eq", value: origin.id },
+          ],
+          data: [
+            {
+              alias_name: item.aliasName,
+              row_json: JSON.stringify(item),
+            },
+          ],
+        });
+      });
+
+      // column
+      const originCols = this.childData.column || [];
+      const currentColSrvs = this.checkedColumns;
+      const originColSrvs = originCols.map((item) => item.col_srv);
+      const colDeleted = originCols.filter(
+        (o) => !currentColSrvs.includes(o.col_srv)
+      );
+      const colAdded = currentColSrvs.filter(
+        (c) => !originColSrvs.includes(c)
+      );
+
+      if (colDeleted.length > 0) {
+        reqDatas.push({
+          serviceName: `${serviceNames.column}_delete`,
+          condition: [
+            {
+              colName: "id",
+              ruleType: "in",
+              value: colDeleted.map((item) => item.id).toString(),
+            },
+          ],
+        });
+      }
+      if (colAdded.length > 0) {
         reqDatas.push({
           serviceName: `${serviceNames.column}_add`,
           depend_keys: [
@@ -595,14 +785,13 @@ export default {
               depend_key: "srv_call_no",
             },
           ],
-          data: this.checkedColumns.map((item) => {
-            return {
-              srv_call_no: this.srv_call_no,
-              col_srv: item,
-            };
-          }),
+          data: colAdded.map((item) => ({
+            srv_call_no: this.srv_call_no,
+            col_srv: item,
+          })),
         });
       }
+
       return reqDatas;
     },
     buildSaveData() {
@@ -1150,10 +1339,10 @@ export default {
               const groupJson = JSON.parse(reqConfig.group_json);
               if (Array.isArray(groupJson)) {
                 initData[2] = groupJson.map((item) => {
-                  if (!item.alias_name) {
+                  if (!item.alias_name && !item.aliasName) {
                     item.aliasName = "";
                   } else {
-                    item.aliasName = item.alias_name;
+                    item.aliasName = item.alias_name || item.aliasName;
                   }
                   return item;
                 });
@@ -1260,15 +1449,20 @@ export default {
                 if (column.columns == groupItem.colName) {
                   if (aggregationTypes.includes(groupItem.type)) {
                     column._aggregation = groupItem;
-                    if (!groupItem.alias_name) {
+                    if (!groupItem.alias_name && !groupItem.aliasName) {
                       groupItem.aliasName = "";
                     } else {
-                      groupItem.aliasName = item.alias_name;
+                      groupItem.aliasName = groupItem.alias_name || groupItem.aliasName;
                     }
                     _aggregation.push(groupItem);
                     endData.aggregation.push(column);
                   } else if (groupTypes.includes(groupItem.type)) {
                     column._group = groupItem;
+                    if (!groupItem.alias_name && !groupItem.aliasName) {
+                      groupItem.aliasName = "";
+                    } else {
+                      groupItem.aliasName = groupItem.alias_name || groupItem.aliasName;
+                    }
                     _group.push(groupItem);
                     endData.group.push(column);
                   }
@@ -1297,6 +1491,8 @@ export default {
           this.endData.group = _group;
           this.endData.aggregation = _aggregation;
           this.endData.order = _order;
+
+          await this.fetchChildDatas();
         }
       }
     },
