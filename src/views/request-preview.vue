@@ -1162,6 +1162,7 @@ export default {
 
           // 柱状图渐变
           if (this.chartType === "bar") {
+            seriesConfig.color = baseColor;
             seriesConfig.itemStyle = {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: baseColor },
@@ -1228,6 +1229,7 @@ export default {
 
           // 柱状图渐变
           if (this.chartType === "bar") {
+            seriesConfig.color = baseColor;
             seriesConfig.itemStyle = {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: baseColor },
@@ -1297,6 +1299,7 @@ export default {
 
         // 柱状图渐变
         if (this.chartType === "bar") {
+          seriesConfig.color = baseColor;
           seriesConfig.itemStyle = {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: baseColor },
@@ -1329,6 +1332,29 @@ export default {
       // 设置图表配置
       const yAxisField = this.getMinSeqField(calcCols);
 
+      // 若所有系列的 name 均为数字，则按从小到大排序
+      if (
+        seriesData.length > 1 &&
+        seriesData.every(
+          (item) => item.name !== "" && item.name !== null && item.name !== undefined && !isNaN(Number(item.name))
+        )
+      ) {
+        seriesData.sort((a, b) => Number(a.name) - Number(b.name));
+      }
+
+      // 强制将 series.name 转为字符串，避免数字类型导致 legend 联动失效（图例显示为灰色）
+      seriesData.forEach((item) => {
+        item.name = String(item.name);
+      });
+
+      // 当系列数量 >= 3 且为柱状图时，默认启用堆叠
+      if (seriesData.length >= 3 && this.chartType === "bar" && !this.isStacked) {
+        this.isStacked = true;
+        seriesData.forEach((item) => {
+          item.stack = "stackGroup";
+        });
+      }
+
       // 计算堆叠图的最大值
       let maxValue = 0;
       const isStackedChart =
@@ -1347,7 +1373,7 @@ export default {
           }
         }
       }
-
+      seriesData = seriesData.filter(item => ![null, undefined,""].includes(item.name))
       const option = {
         // title: {
         //   text: this.config.list_title || "",
@@ -1430,6 +1456,8 @@ export default {
         },
         series: seriesData,
       };
+      console.log(option,'option');
+      
 
       this.chartInstance.setOption(option, { notMerge: true });
     },
