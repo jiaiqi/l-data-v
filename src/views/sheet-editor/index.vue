@@ -443,6 +443,16 @@ export default {
         },
         bodyCellEvents: ({ row, column, rowIndex }) => {
           return {
+              contextmenu: (event) => {
+              console.log("bodyCellEvents::", row, rowIndex, event);
+              if(column?.key === "index"){
+                // 索引列不显示右键菜单 防止引起bug
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+              }
+              return false;
+            },
             mouseenter: (event) => {
               // 处理单元格选择统计
               this.handleCellSelection()
@@ -1469,9 +1479,10 @@ export default {
           selectionRangeKeys,
           selectionRangeIndexes,
         }) => {
-          // if(selectionRangeKeys?.startColKey ==='_handler_btn' || selectionRangeKeys?.startColKey ==='_handler_btn'){
-          //   return false
-          // }
+            debugger
+          if (selectionRangeKeys?.startColKey === "index") {
+            return false;
+          }
           console.log("---contextmenu body beforeShow--");
           console.log("isWholeColSelection::", isWholeRowSelection);
           console.log("selectionRangeKeys::", selectionRangeKeys);
@@ -3977,6 +3988,10 @@ export default {
                     click: function (event) {
                       event.stopPropagation();
                     },
+                    contextmenu: function (event) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    },
                   },
                   on: {
                     input: function (val) {
@@ -3990,6 +4005,12 @@ export default {
                   "span",
                   {
                     class: "sheet-row-index-cell__number",
+                    on: {
+                      contextmenu: function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      },
+                    },
                   },
                   indexText
                 ),
