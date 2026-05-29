@@ -5923,43 +5923,32 @@ export default {
         );
         console.timeEnd("请求时长：");
         if (res?.state === "SUCCESS") {
-          let tableData = cloneDeep(this.tableData);
-          let __indent = 40;
-          if (row.__indent === 0 || row.__indent > 0) {
-            __indent = row.__indent + 40;
-          }
+          const __indent = row.__indent === 0 || row.__indent > 0 ? row.__indent + 40 : 40;
 
-          let resData = res.data.map((item) => {
+          const resData = res.data.map((item) => {
             const __id = uniqueId("table_item_");
             item.__button_auth = this.setButtonAuth(
               this.v2data?.rowButton,
               item
             );
-
-            let dataItem = {
+            const dataItem = {
               rowKey: __id,
               __id,
               __flag: null,
               ...item,
               __indent,
-              // 给每一行子数据存储它的父数据
               __parent_row: cloneDeep(row),
             };
             return dataItem;
           });
-          tableData[rowIndex].__children = cloneDeep(resData);
-          // this.$set(row, "__children", cloneDeep(resData));
-          tableData.splice(rowIndex + 1, 0, ...cloneDeep(resData));
-          this.tableData = cloneDeep(tableData);
-          let oldTableData = this.oldTableData;
 
-          const oldRowDataIndex = oldTableData.findIndex(
-            (item) => item.__id && item.__id === row.__id
-          );
-          oldTableData.splice(oldRowDataIndex + 1, 0, ...cloneDeep(resData));
-          this.oldTableData = cloneDeep(oldTableData);
+          const curIdx = this.tableData.findIndex((item) => item.__id === row.__id);
+          this.tableData[curIdx].__children = cloneDeep(resData);
+          this.tableData.splice(curIdx + 1, 0, ...cloneDeep(resData));
 
-          this.$set(this.tableData[rowIndex], "__unfold", load);
+          const oldIdx = this.oldTableData.findIndex((item) => item.__id === row.__id);
+          this.oldTableData.splice(oldIdx + 1, 0, ...cloneDeep(resData));
+
           this.$nextTick(() => {
             console.timeEnd("渲染时长：");
             callback?.(true);
