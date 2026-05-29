@@ -1,11 +1,21 @@
 <template>
-  <div class="file-list" @dblclick.stop.capture="showDialog">
+  <div
+    class="file-list file-upload-cell"
+    :class="{ 'is-paste-hover': canCellPaste && isCellHover }"
+    tabindex="0"
+    @mouseenter="isCellHover = true"
+    @mouseleave="isCellHover = false"
+    @dblclick.stop.capture="showDialog"
+  >
+    <div class="file-upload-cell__paste-tip" v-if="canCellPaste && isCellHover">
+      支持 Ctrl+V
+    </div>
     <div class="edit-icon">
       <el-button size="mini" class="edit-btn" circle @click="showDialog"
         ><i class="el-icon-upload2"></i
       ></el-button>
     </div>
-    <div v-if="setColumn && setColumn._obj_info">
+    <div v-if="showFileList">
       <file-list
         :data="row"
         :field="setColumn"
@@ -24,42 +34,70 @@
 
     <div class="file-no" v-else>{{ value || "" }}</div>
 
+    <el-upload
+      v-if="canCellPaste"
+      ref="cellUpload"
+      class="cell-hidden-upload"
+      :disabled="disabled"
+      :action="uploadAction"
+      :on-success="handleUploadSuccess"
+      :headers="uploadHeaders"
+      :data="uploadData"
+      :limit="limit"
+      :on-exceed="handleExceed"
+      :file-list="fileList"
+      :show-file-list="false"
+    >
+      <span></span>
+    </el-upload>
+
     <el-dialog
       title="文件上传"
       :visible.sync="dialogVisible"
       @close="hideDialog"
     >
       <div id="imgbox" contenteditable="true"></div>
-      <el-upload
-        :disabled="disabled"
-        class="upload-demo"
-        :action="uploadAction"
-        :on-preview="handlePreview"
-        :on-remove="handleRemove"
-        :before-remove="beforeRemove"
-        :on-success="handleUploadSuccess"
-        :headers="uploadHeaders"
-        :data="uploadData"
-        :limit="limit"
-        :on-exceed="handleExceed"
-        :file-list="fileList"
-        :list-type="isImage ? 'picture-card' : 'text'"
-        ref="upload"
+      <div
+        class="upload-focus-area"
+        :class="{ 'is-disabled': disabled }"
+        tabindex="0"
+        @mouseenter="isUploadHover = true"
+        @mouseleave="isUploadHover = false"
       >
-        <!-- <div v-if="!disabled && isImage">
-          <i class="el-icon-upload"></i>
-          <div class="el-upload__text">
-            将文件拖到此处，或<em>点击上传</em>
-          </div>
-        </div> -->
-        <div size="small" type="primary" v-if="isImage && !disabled">
-          点击或粘贴上传
+        <div class="upload-paste-tip" v-if="isUploadHover && !disabled">
+          支持 Ctrl+V
         </div>
-        <el-button size="small" type="primary" v-else-if="!disabled"
-          >点击上传</el-button
+        <el-upload
+          :disabled="disabled"
+          class="upload-demo"
+          :action="uploadAction"
+          :on-preview="handlePreview"
+          :on-remove="handleRemove"
+          :before-remove="beforeRemove"
+          :on-success="handleUploadSuccess"
+          :headers="uploadHeaders"
+          :data="uploadData"
+          :limit="limit"
+          :on-exceed="handleExceed"
+          :file-list="fileList"
+          :list-type="isImage ? 'picture-card' : 'text'"
+          ref="dialogUpload"
         >
-        <div class="" v-else @click.prevent.stop="">没有编辑权限</div>
-      </el-upload>
+          <!-- <div v-if="!disabled && isImage">
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">
+              将文件拖到此处，或<em>点击上传</em>
+            </div>
+          </div> -->
+          <div size="small" type="primary" v-if="isImage && !disabled">
+            点击或粘贴上传
+          </div>
+          <el-button size="small" type="primary" v-else-if="!disabled"
+            >点击上传</el-button
+          >
+          <div class="" v-else @click.prevent.stop="">没有编辑权限</div>
+        </el-upload>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -114,6 +152,12 @@ export default {
     isImage() {
       return this.column?.col_type === "Image";
     },
+    showFileList() {
+      return this.setColumn?._obj_info || this.column?.col_type === "FileList";
+    },
+    canCellPaste() {
+      return this.showFileList && !this.disabled;
+    },
     uploadAction() {
       return window.backendIpAddr + "/file/upload";
     },
@@ -149,9 +193,23 @@ export default {
     return {
       fileList: [],
       dialogVisible: false,
+      isUploadHover: false,
+      isCellHover: false,
+      pasteEventHandler: null,
     };
   },
-  created() {},
+  watch: {
+    modelValue: {
+      immediate: true,
+      handler(val) {
+        if (this.showFileList && val) {
+          this.getFileList();
+        } else if (!val) {
+          this.fileList = [];
+        }
+      },
+    },
+  },
   methods: {
     hideDialog() {},
     showDialog() {
@@ -161,6 +219,10 @@ export default {
       this.dialogVisible = true;
     },
     async getFileList() {
+      if (!this.modelValue) {
+        this.fileList = [];
+        return [];
+      }
       const url = `/file/select/srvfile_attachment_select?srvfile_attachment_select`;
       const req = {
         serviceName: "srvfile_attachment_select",
@@ -171,9 +233,20 @@ export default {
       };
       const res = await $http.post(url, req);
       if (res?.data?.state === "SUCCESS") {
+        const currentFileList = this.fileList || [];
         this.fileList = res.data.data.map((item) => {
+          const matchedFile = currentFileList.find((file) => {
+            const response = file?.response || {};
+            return (
+              file?.fileurl === item.fileurl ||
+              response?.fileurl === item.fileurl ||
+              file?.name === item.src_name
+            );
+          });
           return {
             ...item,
+            uid: matchedFile?.uid || item.fileurl || item.id || item.src_name,
+            status: matchedFile?.status || "success",
             name: item.src_name,
             file_type: item.file_type,
             url: `${window.backendIpAddr}/file/download?filePath=${
@@ -182,7 +255,7 @@ export default {
             fileurl: item.fileurl,
           };
         });
-        if (this.fileList.length === 0) {
+        if (this.fileList.length === 0 && this.dialogVisible) {
           this.$emit("change", null);
         }
         return res.data.data;
@@ -297,16 +370,69 @@ export default {
           });
         });
     },
-    uploadImgFromPaste(file, type, info) {
-      /**调用element的上传方法 需要把base64转换成file上传**/
-      let a = this.dataURLtoBlob(file);
-      let b = this.blobToFile(a, info);
-      const upload = this.$refs.upload;
-      upload.handleStart(b);
+    submitPasteFile(file, uploadRef = "dialogUpload") {
+      const upload = this.$refs[uploadRef];
+      if (!upload || !file) {
+        return;
+      }
+      upload.handleStart(file);
       setTimeout(() => {
         upload.submit();
         this.loading = true;
       });
+    },
+    uploadImgFromPaste(file, type, info) {
+      /**调用element的上传方法 需要把base64转换成file上传**/
+      let a = this.dataURLtoBlob(file);
+      let b = this.blobToFile(a, info);
+      this.submitPasteFile(b);
+    },
+    normalizePasteFile(file) {
+      const name = this.getPasteFileName(file);
+      if (file?.name === name && file.lastModified) {
+        return file;
+      }
+      return new File([file], name, {
+        type: file?.type || "",
+        lastModified: file?.lastModified || Date.now(),
+      });
+    },
+    getPasteFileName(file) {
+      const rawName = file?.name || "";
+      const suffixFromName = rawName.includes(".") ? rawName.split(".").pop() : "";
+      if (rawName && suffixFromName) {
+        return rawName;
+      }
+      const suffixFromMime = file?.type?.split("/")?.[1]?.split(";")?.[0] || "file";
+      const suffix = suffixFromName || suffixFromMime;
+      return rawName ? `${rawName}.${suffix}` : `${Date.now()}.${suffix}`;
+    },
+    getPasteFiles(clipboardData) {
+      const files = [];
+      if (clipboardData.items?.length) {
+        Array.from(clipboardData.items).forEach((item) => {
+          const file = item.getAsFile && item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        });
+      }
+      if (!files.length && clipboardData.files?.length) {
+        files.push(...Array.from(clipboardData.files));
+      }
+      return files.map((file) => this.normalizePasteFile(file));
+    },
+    handleUploadPaste(event, uploadRef = "dialogUpload") {
+      const clipboardData = event.clipboardData || event.originalEvent?.clipboardData;
+      if (!clipboardData) {
+        return;
+      }
+      const files = this.getPasteFiles(clipboardData);
+      if (!files.length) {
+        return;
+      }
+      event.preventDefault();
+      files.forEach((file) => this.submitPasteFile(file, uploadRef));
     },
     dataURLtoBlob(dataurl) {
       //将base64转换为blob
@@ -328,53 +454,25 @@ export default {
     },
 
     listenPasteEvent() {
-      let _this = this;
-      const pasteEvent = (event) => {
-        if (!this.dialogVisible) {
+      this.pasteEventHandler = (event) => {
+        if (this.dialogVisible && !this.disabled && this.isUploadHover) {
+          this.handleUploadPaste(event, "dialogUpload");
           return;
         }
-        if (event.clipboardData || event.originalEvent) {
-          let clipboardData =
-            event.clipboardData || event.originalEvent.clipboardData;
-          if (clipboardData.items) {
-            let items = clipboardData.items,
-              len = items.length,
-              blob = null;
-            //items.length比较有意思，初步判断是根据mime类型来的，即有几种mime类型，长度就是几（待验证）
-            //如果粘贴纯文本，那么len=1，如果粘贴网页图片，len=2, items[0].type = 'text/plain', items[1].type = 'image/*'
-            //如果使用截图工具粘贴图片，len=1, items[0].type = 'image/png'
-            //如果粘贴纯文本+HTML，len=2, items[0].type = 'text/plain', items[1].type = 'text/html'
-            //阻止默认行为即不让剪贴板内容在div中显示出来
-            event.preventDefault();
-            //在items里找粘贴的image,据上面分析,需要循环
-            for (let i = 0; i < len; i++) {
-              if (items[i].type.indexOf("image") !== -1) {
-                blob = items[i].getAsFile();
-              }
-            }
-            if (blob !== null) {
-              let reader = new FileReader();
-              reader.onload = function (event) {
-                // event.target.result 即为图片的Base64编码字符串
-                let base64_str = event.target.result;
-                //可以在这里写上传逻辑 直接将base64编码的字符串上传（可以尝试传入blob对象，看看后台程序能否解析）
-                _this.uploadImgFromPaste(base64_str, "paste", {
-                  name: blob.name,
-                  type: blob.type,
-                  size: blob.size,
-                });
-              };
-              reader.readAsDataURL(blob);
-            }
-          }
+        if (this.canCellPaste && this.isCellHover) {
+          this.handleUploadPaste(event, "cellUpload");
         }
       };
-      document.addEventListener("paste", pasteEvent);
+      document.addEventListener("paste", this.pasteEventHandler);
     },
   },
   mounted() {
-    if (this.isImage) {
-      this.listenPasteEvent();
+    this.listenPasteEvent();
+  },
+  beforeDestroy() {
+    if (this.pasteEventHandler) {
+      document.removeEventListener("paste", this.pasteEventHandler);
+      this.pasteEventHandler = null;
     }
   },
 };
@@ -388,6 +486,42 @@ export default {
   position: relative;
   display: flex;
   align-items: center;
+
+  &.file-upload-cell {
+    overflow: hidden;
+    outline: none;
+    border-radius: 6px;
+
+    &.is-paste-hover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 90;
+      border-radius: 6px;
+      background: rgba(64, 158, 255, 0.08);
+      pointer-events: none;
+    }
+  }
+
+  .file-upload-cell__paste-tip {
+    position: absolute;
+    top: 2px;
+    right: 32px;
+    z-index: 100;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--primary-color, #409eff);
+    color: #fff;
+    font-size: 11px;
+    line-height: 18px;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(64, 158, 255, 0.28);
+  }
+
+  .cell-hidden-upload {
+    display: none;
+  }
+
   .edit-icon {
     position: absolute;
     // bottom: 10px;
@@ -420,6 +554,31 @@ export default {
       transform: scale(1.2);
     }
   }
+}
+
+.upload-focus-area {
+  position: relative;
+  border-radius: 8px;
+  outline: none;
+  transition: background-color 0.2s, box-shadow 0.2s;
+
+  &:not(.is-disabled):hover {
+    background-color: rgba(64, 158, 255, 0.08);
+  }
+}
+
+.upload-paste-tip {
+  position: absolute;
+  top: -8px;
+  right: 8px;
+  z-index: 2;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--primary-color, #409eff);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  pointer-events: none;
 }
 
 .upload-demo {

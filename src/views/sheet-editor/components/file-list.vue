@@ -25,8 +25,8 @@
         </span>
       </div>
     </template>
-    <template v-else-if="data && field && field.column && data[field.column]">
-      {{ data[field.column] }}
+    <template v-else-if="fallbackValue">
+      {{ fallbackValue }}
     </template>
     <template v-else> </template>
     <!-- <viewer v-show="false" :images="imageList" ref="viewer">
@@ -88,25 +88,49 @@ export default {
     imageList() {
       return this.getFileList?.filter((item) => item.isImage === true);
     },
+    fallbackValue() {
+      const fieldName = this.field?.columns || this.field?.column;
+      if (fieldName && this.data && this.data[fieldName]) {
+        return this.data[fieldName];
+      }
+      return "";
+    },
     getFileList() {
+      if (Array.isArray(this.fileList) && this.fileList.length) {
+        return this.fileList.map((item) => ({
+          ...item,
+          name: item.src_name || item.name || "--",
+          file_type: item.file_type || (item.src_name || item.name || "").split(".").pop(),
+          isImage: this.isImage(item),
+        }));
+      }
       if (
         this.field?._obj_info?.a_save_b_obj_col &&
         this.data[this.field._obj_info.a_save_b_obj_col]
       ) {
-        let objStr = this.data[this.field._obj_info.a_save_b_obj_col];
-        return JSON.parse(objStr).map((item) => {
-          const fileUrl = this.serviceApi().downloadFile + item.fileurl;
-          return {
-            ...item,
-            file_type: item.file_type || item.src_name.split(".").pop(),
-            name: item.src_name,
-            url: fileUrl,
-            isImage: this.isImage(item),
-          };
-        });
-      } else if (Array.isArray(this.fileList) && this.fileList.length) {
-        return this.fileList;
+        const objStr = this.data[this.field._obj_info.a_save_b_obj_col];
+        try {
+          const list = JSON.parse(objStr);
+          if (!Array.isArray(list)) {
+            return [];
+          }
+          return list.map((item) => {
+            const fileUrl = this.serviceApi().downloadFile + item.fileurl;
+            const srcName = item.src_name || item.name || "";
+            return {
+              ...item,
+              file_type: item.file_type || srcName.split(".").pop(),
+              name: srcName,
+              url: fileUrl,
+              isImage: this.isImage(item),
+            };
+          });
+        } catch (error) {
+          console.warn("????????", error, objStr);
+          return [];
+        }
       }
+      return [];
     },
   },
   methods: {
@@ -131,16 +155,16 @@ export default {
         });
       }
     },
-    isImage(item) {
-      let fileType = item.file_type || item.src_name.split(".").pop();
+    isImage(item = {}) {
+      let fileType = item.file_type || (item.src_name || item.name || "").split(".").pop();
       if (fileType) {
         fileType = fileType.toLowerCase();
       }
       const imgTypes = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "svg"];
       return imgTypes.includes(fileType);
     },
-    isPDF(item) {
-      let fileType = item.file_type || item.src_name.split(".").pop();
+    isPDF(item = {}) {
+      let fileType = item.file_type || (item.src_name || item.name || "").split(".").pop();
       if (fileType) {
         fileType = fileType.toLowerCase().trim();
       }
