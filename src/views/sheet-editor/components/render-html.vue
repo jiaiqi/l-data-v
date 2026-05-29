@@ -9,7 +9,6 @@
     }"
     :style="setStyle"
     :title="isFlow ? '' : getTextFromHtml(html)"
-    v-loading="loadingFold"
     @dblclick="showRichEditor"
   >
     <div class="flex w-full">
@@ -18,7 +17,8 @@
         v-if="showUnfold && column.isFirstCol"
         @click="changeFold"
       >
-        <div class="fold-icon el-icon-minus" v-if="unfold === true"></div>
+        <i class="el-icon-loading prefix-icon__loading" v-if="loadingFold"></i>
+        <div class="fold-icon el-icon-minus" v-else-if="unfold === true"></div>
         <div class="unfold-icon el-icon-plus" v-else></div>
       </div>
       <div
@@ -207,9 +207,11 @@ export default {
     row: {
       deep: true,
       immediate: true,
-      handler(newVal) {
+      handler(newVal, oldVal) {
         this.unfold = newVal?.__unfold ? true : false;
-        this.loadingFold = false;
+        if (newVal !== oldVal) {
+          this.loadingFold = false;
+        }
       },
     },
     html: {
@@ -310,8 +312,13 @@ export default {
       return ["Note", "RichText", "snote"].includes(this.column.col_type);
     },
     showUnfold() {
-      // 显示展开收起图标
-      return this.listType === "treelist" && this.row?.is_leaf === "否";
+      return this.listType === "treelist"
+        && this.row?.is_leaf !== undefined
+        && this.row?.is_leaf !== null
+        && this.row?.is_leaf !== true
+        && this.row?.is_leaf !== "是"
+        && this.row?.is_leaf !== "yes"
+        && this.row?.is_leaf !== 1;
     },
     editorConfig() {
       return {
@@ -690,6 +697,9 @@ export default {
       }
     },
     changeFold() {
+      if (this.loadingFold) {
+        return;
+      }
       this.loadingFold = true;
       console.time("展开折叠操作完成");
       this.$emit("unfold", !this.unfold, (res) => {
@@ -747,6 +757,15 @@ export default {
   &.cursor-initial {
     cursor: initial;
   }
+}
+
+.prefix-icon__loading {
+  animation: prefix-icon-spin 1s linear infinite;
+}
+
+@keyframes prefix-icon-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .render-html {

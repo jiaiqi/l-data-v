@@ -5829,7 +5829,6 @@ export default {
         return tableData;
       }
       // tableData = cloneDeep(tableData);
-      let loadingInstance = Loading.service({ fullscreen: true });
       const res = await onSelect(
         this.serviceName,
         this.srvApp,
@@ -5853,12 +5852,11 @@ export default {
                 : "list",
         }
       );
-      loadingInstance.close();
       if (res?.state === "SUCCESS") {
         for (let index = 0; index < tableData.length; index++) {
           const row = tableData[index];
           if (row?.__children) {
-            break;
+            continue;
           }
           let children = res.data.filter(
             (e) => e[this.treeInfo.pidCol] === row[this.treeInfo.idCol]
@@ -5900,8 +5898,6 @@ export default {
       this.$set(this.tableData[rowIndex], "__unfold", load);
 
       if (load) {
-        // 加载当前数据的子数据
-        let loadingInstance = Loading.service({ fullscreen: true });
         console.time("渲染时长：");
         console.time("请求时长：");
         const res = await onSelect(
@@ -5964,31 +5960,24 @@ export default {
           this.oldTableData = cloneDeep(oldTableData);
 
           this.$set(this.tableData[rowIndex], "__unfold", load);
-          loadingInstance.close();
           this.$nextTick(() => {
             console.timeEnd("渲染时长：");
             callback?.(true);
           });
           return resData;
         } else {
-          // this.$set(this.tableData[rowIndex], "__unfold", load);
-          loadingInstance.close();
           callback?.(false);
         }
       } else {
-        // 隐藏当前数据的子数据
-        this.tableData = this.tableData.filter((item) => {
-          if (item.path) {
-            return (
-              item[this.treeInfo["idCol"]] === row[this.treeInfo["idCol"]] ||
-              !item.path.includes(row[this.treeInfo["idCol"]])
-            );
-          } else {
-            return (
-              item[this.treeInfo["pidCol"]] !== row[this.treeInfo["idCol"]]
-            );
-          }
-        });
+        const childIds = new Set(
+          (row.__children || []).map((child) => child.__id)
+        );
+        this.tableData = this.tableData.filter(
+          (item) => !childIds.has(item.__id)
+        );
+        this.oldTableData = this.oldTableData.filter(
+          (item) => !childIds.has(item.__id)
+        );
         callback();
       }
     },
