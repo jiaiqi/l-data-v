@@ -279,6 +279,109 @@
             v-for="column in setSrvCols"
             :key="column.columns"
           >
+            <template #header v-if="isGroupColumn(column)">
+              <el-popover
+                placement="bottom-start"
+                :width="240"
+                trigger="click"
+                popper-class="group-col-filter-popover"
+                :value="getGroupFilter(column).open"
+                @input="(val) => (getGroupFilter(column).open = val)"
+                @show="onGroupFilterShow(column)"
+                @hide="onGroupFilterHide(column)"
+              >
+                <div class="group-col-filter">
+                  <div class="group-col-filter__search">
+                    <el-input
+                      v-model="getGroupFilter(column).keyword"
+                      size="mini"
+                      placeholder="搜索选项"
+                      clearable
+                      :prefix-icon="undefined"
+                    >
+                      <i
+                        slot="prefix"
+                        class="el-input__icon el-icon-search"
+                      ></i>
+                    </el-input>
+                  </div>
+                  <div class="group-col-filter__actions">
+                    <el-checkbox
+                      :indeterminate="
+                        getGroupFilter(column).selected.length > 0 &&
+                        getGroupFilter(column).selected.length < getFilteredValues(column).length &&
+                        getGroupFilter(column).selected.length < getGroupFilter(column).values.length
+                      "
+                      :value="
+                        getFilteredValues(column).length > 0 &&
+                        getGroupFilter(column).values.length > 0 &&
+                        getGroupFilter(column).selected.length === getFilteredValues(column).length
+                      "
+                      @change="(val) => toggleAllGroupFilter(column, val)"
+                    >
+                      全选
+                    </el-checkbox>
+                    <el-button
+                      type="text"
+                      size="mini"
+                      @click="resetGroupFilter(column)"
+                    >
+                      重置
+                    </el-button>
+                  </div>
+                  <div class="group-col-filter__list" v-loading="getGroupFilter(column).loading">
+                    <el-checkbox-group v-model="getGroupFilter(column).selected">
+                      <el-checkbox
+                        v-for="opt in getFilteredValues(column)"
+                        :key="String(opt)"
+                        :label="opt"
+                        class="group-col-filter__item"
+                      >
+                        {{ opt === '' || opt === null || opt === undefined ? '(空)' : opt }}
+                      </el-checkbox>
+                    </el-checkbox-group>
+                    <div
+                      v-if="!getGroupFilter(column).loading && getFilteredValues(column).length === 0 && getGroupFilter(column).values.length > 0"
+                      class="group-col-filter__empty"
+                    >
+                      无匹配项
+                    </div>
+                    <div
+                      v-if="!getGroupFilter(column).loading && getGroupFilter(column).values.length === 0"
+                      class="group-col-filter__empty"
+                    >
+                      暂无数据
+                    </div>
+                  </div>
+                  <div class="group-col-filter__footer">
+                    <el-button
+                      size="mini"
+                      @click="cancelGroupFilter(column)"
+                    >
+                      取消
+                    </el-button>
+                    <el-button
+                      type="primary"
+                      size="mini"
+                      @click="confirmGroupFilter(column)"
+                    >
+                      确认
+                    </el-button>
+                  </div>
+                </div>
+                <div slot="reference" class="group-col-header">
+                  <span>{{ column.label }}</span>
+                  <i
+                    class="el-icon-arrow-down group-col-header__icon"
+                    :class="{
+                      'is-active':
+                        getGroupFilter(column).selected.length > 0 &&
+                        getGroupFilter(column).selected.length < getGroupFilter(column).values.length
+                    }"
+                  ></i>
+                </div>
+              </el-popover>
+            </template>
           </el-table-column>
         </el-table>
       </el-main>
@@ -339,6 +442,10 @@ export default {
       // 表格合并相关
       mergeMode: "first", // 合并模式：none-不合并，first-只合并首列，all-合并所有符合条件的列
       spanCache: {}, // 表格单元格合并预计算缓存 { colName: [{ rowspan, colspan }] }
+      // 分组列表头下拉筛选：{ [colName]: { open, selected, values, allValues } }
+      groupColFilter: {},
+      // 分组列可选项请求的加载状态，避免重复打
+      groupColOptionsLoading: false,
     };
   },
   computed: {
@@ -436,6 +543,208 @@ export default {
     },
   },
   methods: {
+    /**
+     * 判断当前列是否在 groupCols 中（只有当 groupCols.length > 1 时才显示筛选图标）
+     */
+    isGroupColumn(column) {
+      if (!column || !Array.isArray(this.groupCols) || this.groupCols.length <= 1) {
+        return false;
+      }
+      // 兼容 colName 和 aliasName 两种列名
+      return this.groupCols.some(
+        (gc) => gc.colName === column.columns || gc.aliasName === column.columns
+      );
+    },
+    /**
+     * 获取某分组列的下拉筛选状态（懒初始化）
+     */
+    getGroupFilter(column) {
+      if (!this.groupColFilter[column.columns]) {
+        this.$set(this.groupColFilter, column.columns, {
+          open: false,
+          values: [],
+          selected: [],
+          loading: false,
+          keyword: "",
+        });
+      }
+      return this.groupColFilter[column.columns];
+    },
+    /**
+     * 根据 keyword 模糊过滤可选值
+     * 匹配规则：包含 keyword 子串（不区分大小写）
+     */
+    getFilteredValues(column) {
+      const filter = this.getGroupFilter(column);
+      const keyword = (filter.keyword || "").trim().toLowerCase();
+      if (!keyword) return filter.values || [];
+      return (filter.values || []).filter((v) => {
+        if (v === "" || v === null || v === undefined) {
+          return "空".includes(keyword) || "(空)".includes(keyword);
+        }
+        return String(v).toLowerCase().includes(keyword);
+      });
+    },
+    /**
+     * 弹出筛选面板时，独立发请求拉取该 by 字段在当前过滤条件下的所有去重值
+     * 下拉选项的取值范围与 tableData 解耦，筛选之后依然能展示全量
+     */
+    async onGroupFilterShow(column) {
+      const filter = this.getGroupFilter(column);
+      // 找到该列对应的 groupCol 配置（用 aliasName/columns 匹配）
+      const gc = (this.groupCols || []).find(
+        (g) => g.aliasName === column.columns || g.colName === column.columns
+      );
+      if (!gc) return;
+
+      // 记录基线，用于 hide 时比对
+      filter._baseline = filter.selected.slice();
+      // 每次打开清空搜索关键字
+      filter.keyword = "";
+      // 标记为加载中（UI 上无 loading，但避免重复点击）
+      filter.loading = true;
+      try {
+        const values = await this.fetchGroupColOptions(gc);
+        filter.values = values;
+        // 保留用户已选但仍在新值中的项；若无任何命中，视为全选默认态
+        const kept = filter.selected.filter((v) => values.includes(v));
+        filter.selected = kept.length > 0 ? kept : values.slice();
+      } catch (e) {
+        // 拉取失败时退化为空，避免 UI 卡死
+        filter.values = [];
+      } finally {
+        filter.loading = false;
+      }
+    },
+    /**
+     * 独立请求：根据当前 srvReqJson 的过滤条件 + group 只保留这一个 by 字段，
+     * 让后端返回该字段下的所有去重值
+     */
+    async fetchGroupColOptions(gc) {
+      if (!this.srvReqJson?.serviceName) return [];
+      // 拉取可选项时不要把 groupColFilter 自身作为 condition，避免"自己筛自己"
+      const baseReq = this.buildListReq({ skipGroupColFilter: true });
+      const req = {
+        ...baseReq,
+        // 只保留当前 by 字段
+        group: [
+          {
+            colName: gc.colName,
+            type: gc.type || "by",
+            seq: gc.seq ?? 0,
+            aliasName: gc.aliasName,
+          },
+        ],
+        // 拉选项时只取当前字段，并给一个较大的 rownumber 覆盖完所有值
+        page: { pageNo: 1, rownumber: 1000 },
+        colNames: [gc.aliasName || gc.colName],
+      };
+      const url = `/${this.srvReqJson.mapp}/select/${this.srvReqJson.serviceName}`;
+      const res = await $http.post(url, req);
+      if (res?.data?.state !== "SUCCESS") return [];
+      const rows = Array.isArray(res.data.data) ? res.data.data : [];
+      // groupby 后返回字段名是 aliasName
+      const key = gc.aliasName || gc.colName;
+      const set = new Set();
+      rows.forEach((row) => {
+        const v = row[key];
+        if (v !== undefined && v !== null) set.add(v);
+        else set.add("");
+      });
+      return Array.from(set);
+    },
+    /**
+     * 全选/取消全选
+     * 作用域是"当前可见的过滤后列表"，而不是 values 全集
+     */
+    toggleAllGroupFilter(column, val) {
+      const filter = this.getGroupFilter(column);
+      const visible = this.getFilteredValues(column);
+      if (val) {
+        // 全选：合并 visible + 已选中的（保留 keyword 之外、用户主动选过的项）
+        const merged = Array.from(new Set([...filter.selected, ...visible]));
+        filter.selected = merged;
+      } else {
+        // 取消全选：只移除当前可见的项
+        const visibleSet = new Set(visible);
+        filter.selected = filter.selected.filter((v) => !visibleSet.has(v));
+      }
+    },
+    /**
+     * 重置：全部勾选 + 清空搜索关键字
+     */
+    resetGroupFilter(column) {
+      const filter = this.getGroupFilter(column);
+      filter.selected = filter.values.slice();
+      filter.keyword = "";
+    },
+    /**
+     * 确认：把当前 selected 与"可见项"求交集后提交为新的筛选条件
+     * 解决"搜索后只剩 1 个却没生效"的 bug：
+     *   selected 可能保留着旧的全集（搜索时 el-checkbox-group 不会自动剔除不可见项），
+     *   此时 visible 与 selected 的差集即为"搜索意图"——视为变更
+     */
+    confirmGroupFilter(column) {
+      const filter = this.getGroupFilter(column);
+      const visible = this.getFilteredValues(column);
+      const visibleSet = new Set(visible);
+      // 实际生效值 = selected 与 visible 的交集
+      // （selected 中不可见的项视为"被搜索过滤掉"）
+      const effective = filter.selected.filter((v) => visibleSet.has(v));
+      const baseline = filter._baseline || [];
+      const changed =
+        baseline.length !== effective.length ||
+        baseline.some((v, i) => v !== effective[i]);
+      // 同步回 selected
+      filter.selected = effective;
+      filter.open = false;
+      if (changed) {
+        this.applyGroupFilter();
+      }
+    },
+    /**
+     * 取消：把 selected 恢复到 _baseline，关闭弹层，不触发任何请求
+     */
+    cancelGroupFilter(column) {
+      const filter = this.getGroupFilter(column);
+      if (filter._baseline) {
+        filter.selected = filter._baseline.slice();
+      }
+      filter.keyword = "";
+      filter.open = false;
+    },
+    /**
+     * 弹层从其他途径关闭（点外面 / ESC）：回滚到 baseline
+     */
+    onGroupFilterHide(column) {
+      const filter = this.getGroupFilter(column);
+      if (!filter) return;
+      // 若已由确认/取消显式关闭，open 已经是 false，直接跳过
+      if (!filter.open) return;
+      // 兜底：当作取消处理
+      if (filter._baseline) {
+        filter.selected = filter._baseline.slice();
+      }
+      filter.keyword = "";
+      filter.open = false;
+    },
+    /**
+     * 选中值变化时，触发后端重新查询
+     * 条件变化后必须从第 1 页开始拉取
+     */
+    applyGroupFilter() {
+      if (this.page) {
+        this.page.pageNo = 1;
+      }
+      this.getList();
+    },
+    /**
+     * 兼容旧调用：数据刷新后无需主动同步可选值（采用独立请求后，values 始终是最新的）
+     * 保留方法占位，避免外部调用报错
+     */
+    refreshGroupColFilters() {
+      // noop
+    },
     /**
      * 跳转请求定义详情页
      */
@@ -805,6 +1114,7 @@ export default {
             return res;
           }, {});
         this.groupByColsVal = {};
+        this.groupColFilter = {};
         for (const key in this.groupByCols) {
           this.groupByColsVal[key] = null;
           const groupItem = this.groupByCols[key];
@@ -883,7 +1193,8 @@ export default {
         }
       }
     },
-    buildListReq() {
+    buildListReq(options = {}) {
+      const { skipGroupColFilter = false } = options;
       const req = JSON.parse(JSON.stringify(this.srvReqJson));
       req.page = this.page || req.page;
       // 将 condition 规范化为标准格式（colName / ruleType / value）
@@ -937,6 +1248,51 @@ export default {
           return res;
         }, []);
         req.condition = [...(req.condition || []), ...filterCondition];
+      }
+      // 注入分组列下拉筛选条件（仅对 groupCols.length > 1 时有意义）
+      if (
+        !skipGroupColFilter &&
+        Array.isArray(this.groupCols) &&
+        this.groupCols.length > 1
+      ) {
+        const groupFilterConditions = [];
+        this.groupCols.forEach((gc) => {
+          const filter = this.groupColFilter[gc.aliasName || gc.colName];
+          if (!filter) return;
+          if (
+            !Array.isArray(filter.selected) ||
+            filter.selected.length === 0 ||
+            filter.selected.length === filter.values.length
+          ) {
+            return; // 未配置筛选或全选态，不加条件
+          }
+          const values = filter.selected
+            .filter((v) => v !== "" && v !== null && v !== undefined)
+            .map((v) => v);
+          const hasEmpty = filter.selected.some(
+            (v) => v === "" || v === null || v === undefined
+          );
+          if (values.length === 1 && !hasEmpty) {
+            groupFilterConditions.push({
+              colName: gc.colName,
+              ruleType: "eq",
+              value: values[0],
+            });
+          } else if (values.length > 1) {
+            groupFilterConditions.push({
+              colName: gc.colName,
+              ruleType: "in",
+              value: values.join(","),
+            });
+          }
+          // 仅选了空值时不下发条件，保持原样
+        });
+        if (groupFilterConditions.length) {
+          req.condition = [
+            ...(req.condition || []),
+            ...groupFilterConditions,
+          ];
+        }
       }
       return req;
     },
@@ -1370,6 +1726,7 @@ export default {
         } else {
           this.sum_row_data = null;
         }
+        this.refreshGroupColFilters();
         this.computeSpanMap();
         // 更新图表
         this.$nextTick(() => {
@@ -1392,6 +1749,79 @@ export default {
   },
 };
 </script>
+
+<style lang="scss" scoped>
+.group-col-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+
+  &__icon {
+    font-size: 12px;
+    color: #909399;
+    transition: transform 0.2s, color 0.2s;
+
+    &.is-active {
+      color: #409eff;
+    }
+  }
+}
+
+.group-col-filter {
+  &__search {
+    margin-bottom: 8px;
+
+    ::v-deep .el-input__inner {
+      padding-left: 30px;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ebeef5;
+    margin-bottom: 6px;
+  }
+
+  &__list {
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  &__item {
+    display: flex;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 4px;
+  }
+
+  &__empty {
+    color: #909399;
+    font-size: 12px;
+    text-align: center;
+    padding: 16px 0;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #ebeef5;
+    margin-top: 6px;
+  }
+}
+</style>
+
+<style lang="scss">
+.group-col-filter-popover {
+  padding: 8px 12px !important;
+}
+</style>
 
 <style lang="scss" scoped>
 .page-wrap {
