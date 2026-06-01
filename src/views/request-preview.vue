@@ -1572,6 +1572,25 @@ export default {
             xAxisField.aliasName ||
             this.colsMap?.[xAxisField.colName]?.label ||
             xAxisField.colName,
+          axisLabel: {
+            interval: 0,
+            // 标签过长时换行展示，避免被自动隐藏
+            formatter: (value) => {
+              if (value == null) return "";
+              const str = String(value);
+              const maxLen = 8;
+              if (str.length <= maxLen) return str;
+              // 优先在常见分隔符处断行
+              const breakChars = ["（", "(", " "];
+              for (const ch of breakChars) {
+                const idx = str.indexOf(ch);
+                if (idx > 0 && idx <= maxLen + 2) {
+                  return str.slice(0, idx + 1) + "\n" + this.wrapText(str.slice(idx + 1), maxLen);
+                }
+              }
+              return this.wrapText(str, maxLen);
+            },
+          },
         },
         yAxis: {
           type: "value",
@@ -1608,6 +1627,33 @@ export default {
         return Number.isInteger(num) ? num + "万" : num.toFixed(2) + "万";
       }
       return value;
+    },
+    /**
+     * 将字符串按 maxLen 宽度换行（字符宽度近似计算，中文算 1 宽度，英文算 0.5）
+     * @param {string} text
+     * @param {number} maxLen
+     * @returns {string} 用 \n 拼接的多行
+     */
+    wrapText(text, maxLen = 8) {
+      if (!text) return "";
+      if (text.length <= maxLen) return text;
+      const lines = [];
+      let line = "";
+      let width = 0;
+      for (const ch of text) {
+        // 中文 / 全角按 1 计，英文 / 数字按 0.5 计
+        const w = ch.charCodeAt(0) > 127 ? 1 : 0.5;
+        if (width + w > maxLen && line) {
+          lines.push(line);
+          line = ch;
+          width = w;
+        } else {
+          line += ch;
+          width += w;
+        }
+      }
+      if (line) lines.push(line);
+      return lines.join("\n");
     },
 
     /**
