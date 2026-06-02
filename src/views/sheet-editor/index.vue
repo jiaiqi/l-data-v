@@ -49,6 +49,7 @@
       @save-column-width="saveColumnWidth"
       @toggle-super-admin="toggleSuperAdmin"
       @toggle-show-all-fields="toggleShowAllFields"
+      @global-search-change="onGlobalSearchChange"
     />
     <div
       class="flex-1 list-container"
@@ -391,6 +392,8 @@ export default {
       sortState: [],
       filterState: {},
       normalService: [],
+      // 工具栏全局模糊搜索关键字
+      globalSearchKeyword: "",
       listColsMap: {},
       listCols: [],
       addColsMap: {},
@@ -2207,6 +2210,17 @@ export default {
       this.showAllFields = !this.showAllFields;
       // 切换后重新构建列
       this.columns = this.buildColumns();
+    },
+    /**
+     * 工具栏全局模糊搜索：更新关键字并重新查询后端
+     * 由所有 col_type=String / bx_col_type=string 的列一起做 like 匹配
+     */
+    onGlobalSearchChange(keyword) {
+      this.globalSearchKeyword = keyword || "";
+      if (this.page) {
+        this.page.pageNo = 1;
+      }
+      this.getList();
     },
     async onColumnSourceChange(type) {
       if (type === this.colSourceType) return;
@@ -6071,8 +6085,41 @@ export default {
           }
           return item;
         });
+        // 构造工具栏全局模糊搜索的 relation_condition（多字段 OR 模糊匹配）
+        // 字段范围：v2data.srv_cols 中 col_type=String / bx_col_type=string
+        let relationCondition = null;
+        if (this.globalSearchKeyword && this.globalSearchKeyword.trim()) {
+          const keyword = this.globalSearchKeyword.trim();
+          const stringCols = (this.v2data?.srv_cols || []).filter(
+            (col) =>
+              col &&
+              (col.col_type === "String" || col.bx_col_type === "string")
+          );
+          // 同一字段避免重复下发（与 condition 已有的列名去重）
+          const existsSet = new Set(condition.map((c) => c.colName));
+          const data = [];
+          const seen = new Set();
+          stringCols.forEach((col) => {
+            const colName = col.columns || col.colName;
+            if (!colName || existsSet.has(colName) || seen.has(colName)) {
+              return;
+            }
+            seen.add(colName);
+            data.push({
+              colName,
+              ruleType: "like",
+              value: keyword,
+            });
+          });
+          if (data.length) {
+            relationCondition = {
+              relation: "OR",
+              data,
+            };
+          }
+        }
         const isTreeMode = this.isTree && this.listType === "treelist";
-        
+
         const res = await onSelect(this.serviceName, this.srvApp, condition, {
           rownumber: isTreeMode ? 999999 : this.page.rownumber,
           pageNo: isTreeMode ? 1 : this.page.pageNo,
@@ -6081,6 +6128,7 @@ export default {
           isTree: isTreeMode,
           pidCol: this.treeInfo?.pidCol,
           forceUseTTD: this.$route?.query?.topTreeData,
+          relation_condition: relationCondition,
         });
         this.loading = false;
         this.isFetched = true;

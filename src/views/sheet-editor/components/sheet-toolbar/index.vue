@@ -3,33 +3,50 @@
     class="sheet-toolbar flex items-center justify-between px-4 py-2 w-full bg-white border-b border-gray-200 shadow-sm"
     v-if="!disabled"
   >
-    <!-- 左侧：添加行区域 -->
-    <div
-      class="toolbar-left flex items-center gap-2 flex-shrink-0 min-w-[250px]"
-      v-if="addButton && addButton.service_name"
-    >
-      <div class="text-sm text-gray-700 whitespace-nowrap">添加</div>
-      <el-input-number
-        size="mini"
-        :value="insertRowNumber"
-        style="width: 70px"
-        @input="emit('update:insertRowNumber', $event)"
-        controls-position="right"
-      />
-      <div class="text-sm text-gray-700 whitespace-nowrap">行</div>
-      <el-button
-        class="icon-button"
-        title="添加(ctrl + 加号键)"
-        size="mini"
-        type="primary"
-        @click="emit('batch-insert-rows')"
-        :disabled="insertRowNumber === 0"
+    <!-- 左侧：模糊搜索 + 添加行区域 -->
+    <div class="toolbar-left flex items-center gap-3 flex-shrink-0">
+ 
+      <div
+        class="flex items-center gap-2"
+        v-if="addButton && addButton.service_name"
       >
-        <i class="i-ic-baseline-add"></i>
-      </el-button>
-    </div>
-    <div class="toolbar-left flex-shrink-0 min-w-[250px] h-8" v-else>
-      <!-- 没有添加权限时的占位，保持布局稳定 -->
+        <div class="text-sm text-gray-700 whitespace-nowrap">添加</div>
+        <el-input-number
+          size="mini"
+          :value="insertRowNumber"
+          style="width: 70px"
+          @input="emit('update:insertRowNumber', $event)"
+          controls-position="right"
+        />
+        <div class="text-sm text-gray-700 whitespace-nowrap">行</div>
+        <el-button
+          class="icon-button"
+          title="添加(ctrl + 加号键)"
+          size="mini"
+          type="primary"
+          @click="emit('batch-insert-rows')"
+          :disabled="insertRowNumber === 0"
+        >
+          <i class="i-ic-baseline-add"></i>
+        </el-button>
+      </div>
+
+      <div class="toolbar-search" v-if="!childListType">
+        <el-input
+          v-model="globalKeyword"
+          size="mini"
+          placeholder="输入关键词搜索"
+          clearable
+          style="width: 240px"
+          @input="handleSearchInput"
+          @clear="handleSearchClear"
+        >
+          <i
+            slot="prefix"
+            class="el-input__icon el-icon-search"
+          ></i>
+        </el-input>
+      </div>
     </div>
 
     <!-- 中间：列表类型切换 -->
@@ -287,7 +304,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { ElMessage } from "element-ui";
 import { env, baseURL } from "@/common/http";
 
@@ -408,10 +425,37 @@ const emit = defineEmits([
   "save-column-width",
   "toggle-super-admin",
   "toggle-show-all-fields",
+  "global-search-change",
 ]);
 
 // 响应式数据
 const showGridButton = ref(false);
+// 全局模糊搜索
+const globalKeyword = ref("");
+let searchTimer = null;
+
+const handleSearchInput = (val) => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+  }
+  searchTimer = setTimeout(() => {
+    emit("global-search-change", val || "");
+  }, 300);
+};
+
+const handleSearchClear = () => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+  }
+  globalKeyword.value = "";
+  emit("global-search-change", "");
+};
+
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+  }
+});
 
 const showRightSection = computed(() => {
   return env !== "yanxue";
@@ -495,6 +539,9 @@ const toggleGridButton = () => {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
+}
+.toolbar-search ::v-deep .el-input .el-input__inner {
+    padding-left: 30px;
 }
 .sheet-toolbar::-webkit-scrollbar {
   width: 0;
