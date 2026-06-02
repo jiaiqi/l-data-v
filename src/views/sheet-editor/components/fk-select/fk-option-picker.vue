@@ -212,6 +212,21 @@ export default {
       const [keyColumn] = columns.splice(index, 1);
       return [keyColumn, ...columns];
     },
+    /**
+     * 从 tableColumns 中提取所有字符串类型字段，作为模糊搜索的额外列
+     * 匹配规则：col_type === "String" 或 bx_col_type === "string"
+     */
+    stringSearchCols() {
+      if (!Array.isArray(this.tableColumns)) return [];
+      return this.tableColumns
+        .filter(
+          (col) =>
+            col &&
+            (col.col_type === "String" || col.bx_col_type === "string")
+        )
+        .map((col) => col.columns)
+        .filter(Boolean);
+    },
   },
   watch: {
     inputValue: {
@@ -279,6 +294,7 @@ export default {
         pageNo: this.pageNo,
         rownumber: this.pageSize,
         mainData: this.$route?.query || {},
+        searchCols: this.stringSearchCols,
       })
         .then((res) => {
           if (res?.data?.length) {
@@ -432,6 +448,7 @@ export default {
         srvInfo: this.srvInfo,
         keyword: queryString,
         mainData: this.$route?.query || {},
+        searchCols: this.stringSearchCols,
       }).then((res) => {
         const results = res?.data || [];
         this.options = results;

@@ -40,23 +40,29 @@ export function resolveFkOptionConfig(fieldInfo = {}, row = {}) {
 export function buildFkSearchRelation(
   srvInfo = {},
   keyword = "",
-  ruleType = "[like]"
+  ruleType = "[like]",
+  extraSearchCols = []
 ) {
   const relationCondition = {
     relation: "OR",
     data: [],
   };
   if (hasFkValue(keyword)) {
-    [srvInfo.key_disp_col, srvInfo.refed_col]
-      .filter(Boolean)
-      .filter((colName, index, list) => list.indexOf(colName) === index)
-      .forEach((colName) => {
-        relationCondition.data.push({
-          colName,
-          value: keyword,
-          ruleType,
-        });
+    // 默认使用 key_disp_col 和 refed_col
+    const defaultCols = [srvInfo.key_disp_col, srvInfo.refed_col].filter(
+      Boolean
+    );
+    // 外部传入的额外搜索列
+    const extraCols = Array.isArray(extraSearchCols) ? extraSearchCols : [];
+    // 合并 + 去重
+    const allCols = Array.from(new Set([...defaultCols, ...extraCols]));
+    allCols.forEach((colName) => {
+      relationCondition.data.push({
+        colName,
+        value: keyword,
+        ruleType,
       });
+    });
   }
   return relationCondition.data.length ? relationCondition : null;
 }
@@ -64,13 +70,15 @@ export function buildFkSearchRelation(
 export function buildFkOptionConfig(
   srvInfo = {},
   keyword = "",
-  searchRuleType = "[like]"
+  searchRuleType = "[like]",
+  searchCols = []
 ) {
   const option = cloneDeep(srvInfo || {});
   const relationCondition = buildFkSearchRelation(
     option,
     keyword,
-    searchRuleType
+    searchRuleType,
+    searchCols
   );
   if (relationCondition) {
     option.relation_condition = relationCondition;
@@ -104,6 +112,7 @@ export async function loadFkOptionByValue({
   srvInfo,
   value,
   mainData = {},
+  searchCols = [],
 }) {
   if (!hasFkValue(value) || !srvInfo?.refed_col) {
     return null;
@@ -119,6 +128,7 @@ export async function loadFkOptionByValue({
     pageNo: 1,
     rownumber: 1,
     mainData,
+    searchCols,
   });
   return res?.data?.[0] || null;
 }
@@ -133,8 +143,14 @@ export async function loadFkOptions({
   pageNo,
   rownumber,
   mainData = {},
+  searchCols = [],
 }) {
-  const option = buildFkOptionConfig(srvInfo, keyword, searchRuleType);
+  const option = buildFkOptionConfig(
+    srvInfo,
+    keyword,
+    searchRuleType,
+    searchCols
+  );
   const res = await getFkOptions(
     { ...column, option_list_v2: option },
     row,
