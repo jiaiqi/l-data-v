@@ -263,6 +263,10 @@ export default {
     broadcastChannel = null;
     this.removeDocumentEventListener();
     this.stopAutoSave();
+    if (this.emitListDataTimer) {
+      clearTimeout(this.emitListDataTimer);
+      this.emitListDataTimer = null;
+    }
     this.clearColumnsCache();
     this.oldTableData = [];
     this.tableData = [];
@@ -360,6 +364,7 @@ export default {
       showFieldEditor: false,
       autoSaveInterval: null,
       autoSaveTimeout: 0,
+      emitListDataTimer: null,
       showDropMenu: false,
       dLeft: 0,
       dTop: 0,
@@ -1243,10 +1248,6 @@ export default {
           //   }
           // }
           this.recordManager?.push(cloneDeep(this.tableData));
-          if (this.childListType) {
-            // 子表数据更新 通知主表
-            this.emitListData(this.tableData);
-          }
           this.autoSave();
         },
       },
@@ -1274,7 +1275,7 @@ export default {
   },
   watch: {
     tableData: {
-      deep: false,
+      deep: true,
       handler(newValue, oldValue) {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         this.calcReqData = this.buildReqParams();
@@ -1282,6 +1283,10 @@ export default {
           currentSelection?.selectionRangeIndexes?.startRowIndex;
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
+        }
+        if (this.childListType) {
+          // 子表数据变化统一在这里通知主表，覆盖拖拽填充等非单元格 change 事件。
+          this.scheduleEmitListData();
         }
       },
     },
@@ -3170,7 +3175,6 @@ export default {
           });
           if (this.disabled === true) {
             console.log("emitListData::", this.tableData);
-            this.emitListData();
           }
         }
       }
@@ -3187,6 +3191,15 @@ export default {
         };
         broadcastChannel.postMessage(JSON.stringify(msg));
       }
+    },
+    scheduleEmitListData() {
+      if (this.emitListDataTimer) {
+        clearTimeout(this.emitListDataTimer);
+      }
+      this.emitListDataTimer = setTimeout(() => {
+        this.emitListDataTimer = null;
+        this.emitListData();
+      }, 50);
     },
     async emitListData() {
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -4264,7 +4277,6 @@ export default {
                     self.tableData = self.tableData.filter(
                       (item, index) => index !== rowIndex
                     );
-                    self.emitListData();
                     // self.tableData = self.tableData.splice(rowIndex,1);
                   },
                 },
