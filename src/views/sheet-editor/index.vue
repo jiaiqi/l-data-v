@@ -262,6 +262,7 @@ export default {
   beforeDestroy() {
     broadcastChannel?.close();
     broadcastChannel = null;
+    clearTimeout(this.editingCellEmitTimer);
     this.removeDocumentEventListener();
     this.stopAutoSave();
     this.clearColumnsCache();
@@ -361,6 +362,7 @@ export default {
       showFieldEditor: false,
       autoSaveInterval: null,
       autoSaveTimeout: 0,
+      editingCellEmitTimer: null,
       showDropMenu: false,
       dLeft: 0,
       dTop: 0,
@@ -2769,10 +2771,42 @@ export default {
     initDocumentEventListener() {
       this.removeDocumentEventListener();
       document.addEventListener("keydown", this.bindKeydownListener);
+      document.addEventListener("input", this.handleEditingCellInput, true);
     },
     // 移除document事件监听
     removeDocumentEventListener() {
       document.removeEventListener("keydown", this.bindKeydownListener);
+      document.removeEventListener("input", this.handleEditingCellInput, true);
+    },
+    handleEditingCellInput(event) {
+      if (!this.childListType) {
+        return;
+      }
+      const target = event?.target;
+      if (!target?.classList?.contains("ve-table-edit-input")) {
+        return;
+      }
+      const tableEl = this.$refs?.tableRef?.$el;
+      if (!tableEl || !tableEl.contains(target)) {
+        return;
+      }
+      clearTimeout(this.editingCellEmitTimer);
+      this.editingCellEmitTimer = setTimeout(() => {
+        this.emitListDataWithEditingCell();
+      }, 200);
+    },
+    emitListDataWithEditingCell() {
+      const editingCell = this.$refs?.tableRef?.editingCell;
+      const { row, column } = editingCell || {};
+      if (!row || !column?.field) {
+        this.emitListData();
+        return;
+      }
+      this.emitListData({
+        rowKey: row.rowKey,
+        field: column.field,
+        value: row[column.field],
+      });
     },
     bindKeydownListener(e = {}) {
       // 绑定快捷键
@@ -3303,19 +3337,20 @@ export default {
         this.emitListData();
       }
     },
-    async emitListData() {
+    async emitListData(editingCellValue) {
       await new Promise((resolve) => setTimeout(resolve, 50));
       await this.$nextTick();
 
+      let data = this.getChildListEmitTableData(editingCellValue);
+
       if (this.childListType === "updatechildlist") {
         // 编辑子表要区分已存在行和新增行，避免未编辑的已有行被重复提交。
-        const result = this.buildUpdateChildListEmitData();
+        const result = this.buildUpdateChildListEmitData(data);
         console.warn("emitListData", result);
         this.bcEmit("getData", result);
         return;
       }
 
-      let data = cloneDeep(this.tableData);
       if (this.childListType?.includes("add")) {
         data = data.filter((item) =>
           Object.keys(item).some(
@@ -3350,6 +3385,21 @@ export default {
       ];
       console.warn("emitListData", reuslt);
       this.bcEmit("getData", reuslt);
+    },
+    getChildListEmitTableData(editingCellValue) {
+      const data = cloneDeep(this.tableData);
+      if (!editingCellValue?.rowKey || !editingCellValue?.field) {
+        return data;
+      }
+      const row = data.find((item) => item.rowKey === editingCellValue.rowKey);
+      if (row) {
+        row[editingCellValue.field] = editingCellValue.value;
+        if (row.__flag === "add") {
+          row.__update_col = row.__update_col || {};
+          row.__update_col[editingCellValue.field] = true;
+        }
+      }
+      return data;
     },
     getChildListDependKeys() {
       const foreignKey = this.childListCfg?.foreign_key || {};
@@ -3410,12 +3460,12 @@ export default {
         ? addObj
         : null;
     },
-    buildUpdateChildListEmitData() {
+    buildUpdateChildListEmitData(tableData = this.tableData) {
       const result = [];
       const addDatas = [];
       const dependKeys = this.getChildListDependKeys();
 
-      this.tableData.forEach((row) => {
+      tableData.forEach((row) => {
         const oldItem = this.oldTableData?.find(
           (item) => item.__id && item.__id === row.__id
         );
