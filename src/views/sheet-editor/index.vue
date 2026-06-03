@@ -23,6 +23,7 @@
       :child-list-type="childListType"
       :grid-button="gridButton"
       :calc-req-data="calcReqData"
+      :has-editing-cell-change="editingCellHasChange"
       :calc-column-width-req="calcColumnWidthReq"
       :auto-save-timeout="autoSaveTimeout"
       :on-handler="onHandler"
@@ -363,6 +364,7 @@ export default {
       autoSaveInterval: null,
       autoSaveTimeout: 0,
       editingCellEmitTimer: null,
+      editingCellHasChange: false,
       showDropMenu: false,
       dLeft: 0,
       dTop: 0,
@@ -2771,17 +2773,14 @@ export default {
     initDocumentEventListener() {
       this.removeDocumentEventListener();
       document.addEventListener("keydown", this.bindKeydownListener);
-      document.addEventListener("input", this.handleEditingCellInput, true);
+      document.addEventListener("input", this.handleEditingCellInput);
     },
     // 移除document事件监听
     removeDocumentEventListener() {
       document.removeEventListener("keydown", this.bindKeydownListener);
-      document.removeEventListener("input", this.handleEditingCellInput, true);
+      document.removeEventListener("input", this.handleEditingCellInput);
     },
     handleEditingCellInput(event) {
-      if (!this.childListType) {
-        return;
-      }
       const target = event?.target;
       if (!target?.classList?.contains("ve-table-edit-input")) {
         return;
@@ -2790,7 +2789,11 @@ export default {
       if (!tableEl || !tableEl.contains(target)) {
         return;
       }
+      this.editingCellHasChange = this.hasEditingCellValueChange();
       clearTimeout(this.editingCellEmitTimer);
+      if (!this.childListType) {
+        return;
+      }
       this.editingCellEmitTimer = setTimeout(() => {
         this.emitListDataWithEditingCell();
       }, 200);
@@ -2807,6 +2810,55 @@ export default {
         field: column.field,
         value: row[column.field],
       });
+    },
+    getEditingCellValueChange() {
+      const editingCell = this.$refs?.tableRef?.editingCell;
+      const { row, column } = editingCell || {};
+      if (!row?.rowKey || !column?.field) {
+        return null;
+      }
+      const rowIndex = this.tableData.findIndex(
+        (item) => item.rowKey === row.rowKey
+      );
+      if (rowIndex < 0) {
+        return null;
+      }
+      const currentRow = this.tableData[rowIndex];
+      const value = row[column.field];
+      if (currentRow[column.field] === value) {
+        return null;
+      }
+      return {
+        rowIndex,
+        row: currentRow,
+        field: column.field,
+        value,
+      };
+    },
+    hasEditingCellValueChange() {
+      return Boolean(this.getEditingCellValueChange());
+    },
+    flushEditingCellValueBeforeSave() {
+      const change = this.getEditingCellValueChange();
+      if (!change) {
+        return false;
+      }
+      const { rowIndex, row, field, value } = change;
+      this.$set(row, field, value);
+      if (row.__flag === "add") {
+        row.__update_col = row.__update_col || {};
+        this.$set(row.__update_col, field, true);
+      } else if (!row.__flag) {
+        const oldRow = this.oldTableData?.find(
+          (item) => item.__id && item.__id === row.__id
+        );
+        if (oldRow && oldRow[field] !== value) {
+          this.$set(row, "__flag", "update");
+        }
+      }
+      this.$set(this.tableData, rowIndex, row);
+      this.editingCellHasChange = false;
+      return true;
     },
     bindKeydownListener(e = {}) {
       // 绑定快捷键
@@ -5379,6 +5431,7 @@ export default {
         await this.refreshV2();
       }
       this.stopAutoSave();
+      this.flushEditingCellValueBeforeSave();
 
       const reqData = this.buildReqParams();
       if (!reqData?.length) {
