@@ -54,7 +54,7 @@
       @focus="onFocus"
     ></fk-select>
 
-    <fk-tree-picker
+    <!-- <fk-tree-picker
       v-else-if="isTree && !setDisabled"
       :app="app"
       :column="column"
@@ -65,7 +65,24 @@
       @focus="onFocus"
       @input="onTreeInput"
       @select="onTreeSelect"
-    ></fk-tree-picker>
+    ></fk-tree-picker> -->
+    <fk-option-picker
+      v-else-if="isTree && !setDisabled"
+      :app="app"
+      :column="column"
+      :row="row"
+      :srv-info="srvInfo"
+      :input-value="modelValue"
+      :disabled="setDisabled"
+      :ui-mode="pickerUiMode"
+      :allow-free-input="true"
+      :placeholder="pickerPlaceholder"
+      @focus="onFocus"
+      @input-change="onPickerInputChange"
+      @select="onPickerSelect"
+      @clear="onPickerClear"
+      @dropdown-visible-change="onPickerDropdownVisibleChange"
+    />
     <div
       v-else-if="hasActionSrvCfg && !setDisabled"
       class="flex items-center w-full h-full autocomplete-with-action"
@@ -212,7 +229,6 @@ import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
 import FkOptionPicker from "./fk-select/fk-option-picker.vue";
 import FkActionDialog from "./fk-select/fk-action-dialog.vue";
-import FkTreePicker from "./fk-select/fk-tree-picker.vue";
 import FkDetailLink from "./fk-select/fk-detail-link.vue";
 import { isFk } from "@/utils/sheetUtils";
 import addIcon from "@/assets/img/add.png";
@@ -233,7 +249,6 @@ export default {
     fkEditSelect,
     FkOptionPicker,
     FkActionDialog,
-    FkTreePicker,
     FkDetailLink,
     ActionButtonGroup,
   },
