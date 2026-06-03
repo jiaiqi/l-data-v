@@ -780,6 +780,7 @@ export default {
                       }
                     });
                     this.triggerEditCell(targetSelectionRangeIndexes);
+                    this.emitListDataOnChildListChange();
                     return false;
                   }
                 }
@@ -801,6 +802,7 @@ export default {
                   }
                 });
                 this.triggerEditCell(targetSelectionRangeIndexes);
+                this.emitListDataOnChildListChange();
                 return false;
               }
             } else if (sourceSelectionData?.length > 0) {
@@ -830,6 +832,7 @@ export default {
                       targetSelectionRangeIndexes,
                       sourceData
                     );
+                    this.emitListDataOnChildListChange();
                   });
                 }
               }
@@ -3293,6 +3296,11 @@ export default {
           data,
         };
         broadcastChannel.postMessage(JSON.stringify(msg));
+      }
+    },
+    emitListDataOnChildListChange() {
+      if (this.childListType) {
+        this.emitListData();
       }
     },
     async emitListData() {
