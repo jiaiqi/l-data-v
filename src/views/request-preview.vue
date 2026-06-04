@@ -442,6 +442,7 @@ export default {
       // 表格合并相关
       mergeMode: "first", // 合并模式：none-不合并，first-只合并首列，all-合并所有符合条件的列
       spanCache: {}, // 表格单元格合并预计算缓存 { colName: [{ rowspan, colspan }] }
+      spanVersion: 0, // 合并缓存版本号，变化时强制 el-table 重新调用 span-method
       // 分组列表头下拉筛选：{ [colName]: { open, selected, values, allValues } }
       groupColFilter: {},
       // 分组列可选项请求的加载状态，避免重复打
@@ -861,58 +862,115 @@ export default {
     },
     computeSpanMap() {
       this.spanCache = {};
+      this.spanVersion++; // 触发 el-table 重新调用 span-method
       if (this.mergeMode === "none" || !this.tableData.length) {
         return;
       }
 
-      const mergeCols = this.groupCols.map((item) => item.colName);
+      // 取分组列的"表格显示列名"（aliasName 优先），与 column.property 匹配
+      // 按 seq 排序，保证与表格列的展示顺序一致（祖先块判断依赖列顺序）
+      const sortedGroupCols = [...this.groupCols].sort(
+        (a, b) => (a.seq ?? 0) - (b.seq ?? 0)
+      );
+      const mergeCols = sortedGroupCols.map(
+        (item) => item.aliasName || item.colName
+      );
       const firstMergeCol = mergeCols[0] || null;
+      const lastIndex = this.tableData.length - 1;
 
-      this.tableData.forEach((row, rowIndex) => {
-        mergeCols.forEach((colName) => {
-          if (!this.spanCache[colName]) {
-            this.spanCache[colName] = [];
-          }
+      // 初始化缓存
+      mergeCols.forEach((colName) => {
+        this.spanCache[colName] = new Array(this.tableData.length).fill({
+          rowspan: 1,
+          colspan: 1,
+        });
+      });
 
-          // 只合并首列模式下，非首列直接跳过
-          if (this.mergeMode === "first" && colName !== firstMergeCol) {
-            this.spanCache[colName][rowIndex] = { rowspan: 1, colspan: 1 };
-            return;
-          }
+      if (this.mergeMode === "first") {
+        // 仅合并首列：复用 all 模式对首列的处理
+        this.computeColSpans(
+          firstMergeCol,
+          0,
+          lastIndex,
+          mergeCols
+        );
+      } else if (this.mergeMode === "all") {
+        // 按列顺序依次合并：每列的可合并作用域是"前序所有列的祖先块相同"
+        mergeCols.forEach((colName, colIdx) => {
+          this.computeColSpans(colName, 0, lastIndex, mergeCols, colIdx);
+        });
+      }
+    },
+    /**
+     * 在 [start, end] 范围内，对 colName 找出连续相同值并写入 spanCache
+     * "all" 模式下，仅当前面所有列在两行的祖先块起点一致时，本列才能合并
+     * @param {string} colName 当前列的展示列名（aliasName 优先）
+     * @param {number} start 起始行（含）
+     * @param {number} end 结束行（含）
+     * @param {string[]} mergeCols 全部参与合并的列名（按表格顺序）
+     * @param {number} [colIdx] 当前列在 mergeCols 中的下标，缺省视为首列
+     */
+    computeColSpans(colName, start, end, mergeCols, colIdx) {
+      if (start > end) return;
+      const col = (this.groupCols || []).find(
+        (g) => (g.aliasName || g.colName) === colName
+      );
+      if (!col) return;
+      // 表格中实际数据键名：aliasName 优先
+      const actualKey = col.aliasName || col.colName;
+      // 前面列的键（用于判断祖先块）
+      const prevKeys =
+        typeof colIdx === "number"
+          ? mergeCols.slice(0, colIdx).map((cn) => {
+              const c = (this.groupCols || []).find(
+                (g) => (g.aliasName || g.colName) === cn
+              );
+              return c ? c.aliasName || c.colName : cn;
+            })
+          : [];
 
-          const currentValue = row[colName];
-          // 向前找连续相同值的起始位置
-          let startIndex = rowIndex;
-          while (startIndex > 0) {
-            if (this.tableData[startIndex - 1][colName] === currentValue) {
-              startIndex--;
-            } else {
-              break;
-            }
-          }
-          // 向后找连续相同值的结束位置
-          let endIndex = rowIndex;
-          while (endIndex < this.tableData.length - 1) {
-            if (this.tableData[endIndex + 1][colName] === currentValue) {
-              endIndex++;
-            } else {
-              break;
-            }
-          }
+      // 找 idx 所在合并块的起点（rowspan > 0 的行）
+      const findBlockStart = (cache, idx) => {
+        let s = idx;
+        while (s > 0 && cache[s - 1] && cache[s - 1].rowspan === 0) s--;
+        return s;
+      };
+      // 判断第 i 行与第 j 行是否属于"同一祖先块"
+      // 即前面所有列在 i 和 j 行所在的合并块起点相同
+      const sameAncestorBlock = (i, j) => {
+        for (const k of prevKeys) {
+          const cache = this.spanCache[k];
+          if (!cache) continue;
+          const startI = findBlockStart(cache, i);
+          const startJ = findBlockStart(cache, j);
+          if (startI !== startJ) return false;
+        }
+        return true;
+      };
 
-          const blockSize = endIndex - startIndex + 1;
-          // 区间内每行都直接标记好 rowspan，避免重复扫描
-          for (let i = startIndex; i <= endIndex; i++) {
-            this.spanCache[colName][i] = {
-              rowspan: i === startIndex ? blockSize : 0,
+      let blockStart = start;
+      for (let i = start; i <= end; i++) {
+        const curVal = this.tableData[i][actualKey];
+        const nextVal =
+          i < end ? this.tableData[i + 1][actualKey] : Symbol("__END__");
+        // 与下一行断开合并的条件：值不同，或祖先块不同
+        if (nextVal !== curVal || !sameAncestorBlock(i, i + 1)) {
+          const blockSize = i - blockStart + 1;
+          for (let k = blockStart; k <= i; k++) {
+            this.spanCache[colName][k] = {
+              rowspan: k === blockStart ? blockSize : 0,
               colspan: 1,
             };
           }
-        });
-      });
+          blockStart = i + 1;
+        }
+      }
     },
 
     objectSpanMethod({ row, column, rowIndex }) {
+      // 读取 spanVersion 以建立响应式依赖，spanCache 重建后能自动重算
+      // eslint-disable-next-line no-unused-vars
+      const _v = this.spanVersion;
       if (this.mergeMode === "none") {
         return;
       }
@@ -1256,6 +1314,7 @@ export default {
         this.groupCols.length > 1
       ) {
         const groupFilterConditions = [];
+        const orRelationGroups = [];
         this.groupCols.forEach((gc) => {
           const filter = this.groupColFilter[gc.aliasName || gc.colName];
           if (!filter) return;
@@ -1279,10 +1338,14 @@ export default {
               value: values[0],
             });
           } else if (values.length > 1) {
-            groupFilterConditions.push({
-              colName: gc.colName,
-              ruleType: "in",
-              value: values.join(","),
+            // 使用 relation_condition OR 方式替代 condition in
+            orRelationGroups.push({
+              relation: "OR",
+              data: values.map((v) => ({
+                colName: gc.colName,
+                ruleType: "eq",
+                value: v,
+              })),
             });
           }
           // 仅选了空值时不下发条件，保持原样
@@ -1292,6 +1355,20 @@ export default {
             ...(req.condition || []),
             ...groupFilterConditions,
           ];
+        }
+        if (orRelationGroups.length > 0) {
+          const orCondition =
+            orRelationGroups.length === 1
+              ? orRelationGroups[0]
+              : { relation: "AND", data: orRelationGroups };
+          if (req.relation_condition && Object.keys(req.relation_condition).length > 0) {
+            req.relation_condition = {
+              relation: "AND",
+              data: [req.relation_condition, orCondition],
+            };
+          } else {
+            req.relation_condition = orCondition;
+          }
         }
       }
       return req;
@@ -1779,6 +1856,21 @@ export default {
           this.initChart();
         });
       }
+    },
+  },
+  watch: {
+    // 切换合并模式时立即重算并强制 el-table 重新布局
+    mergeMode() {
+      if (!this.tableData || !this.tableData.length) return;
+      this.computeSpanMap();
+      // 重新赋值 tableData（数组引用变）以强制 el-table 重新调用 span-method
+      this.tableData = [...this.tableData];
+      this.$nextTick(() => {
+        // 进一步兜底：doLayout 触发布局重算
+        if (this.$refs.elTable) {
+          this.$refs.elTable.doLayout();
+        }
+      });
     },
   },
   mounted() {
