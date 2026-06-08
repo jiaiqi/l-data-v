@@ -2047,6 +2047,111 @@ export default {
       this._columnsCache = null;
       this._lastColumnsKey = null;
     },
+    getOperateServiceNameByTable(tableName, operateType = "update") {
+      if (!tableName || !operateType) {
+        return "";
+      }
+      return tableName.replace(/^bx/, "srv").concat(`_${operateType}`);
+    },
+    buildAliasServiceColMap(listCols = [], serviceCols = [], operateType = "update") {
+      if (!Array.isArray(listCols) || !Array.isArray(serviceCols)) {
+        return {};
+      }
+      const serviceColMap = serviceCols.reduce((pre, cur) => {
+        const keys = [cur.columns, cur.table_column].filter(Boolean);
+        keys.forEach((key) => {
+          if (!pre[key]) {
+            pre[key] = cur;
+          }
+        });
+        return pre;
+      }, {});
+
+      return listCols.reduce((pre, listCol) => {
+        const realColumn = listCol.table_column || listCol.columns;
+        const serviceCol = serviceColMap[realColumn] || serviceColMap[listCol.columns];
+        if (!serviceCol) {
+          return pre;
+        }
+        pre[listCol.columns] = {
+          ...listCol,
+          ...serviceCol,
+          label: listCol.label || serviceCol.label,
+          columns: listCol.columns,
+          table_column: listCol.table_column || serviceCol.columns,
+          table_name: listCol.table_name || serviceCol.table_name,
+          option_list_v2: listCol.option_list_v2 || serviceCol.option_list_v2,
+          option_list_v3: listCol.option_list_v3 || serviceCol.option_list_v3,
+          service_name: this.getOperateServiceNameByTable(
+            listCol.table_name || serviceCol.table_name,
+            operateType
+          ) || serviceCol.service_name,
+        };
+        return pre;
+      }, {});
+    },
+    async mergeMixedTableOperateColsMap(operateType = "update") {
+      const sourceCols = this.flattenSrvCols(this.v2data?.srv_cols || []);
+      if (!sourceCols?.length) {
+        return;
+      }
+      const serviceGroups = sourceCols.reduce((pre, col) => {
+        const serviceName = this.getOperateServiceNameByTable(col.table_name, operateType);
+        if (!serviceName) {
+          return pre;
+        }
+        pre[serviceName] || (pre[serviceName] = []);
+        pre[serviceName].push(col);
+        return pre;
+      }, {});
+
+      const normalService = operateType === "add"
+        ? this.addButton?.service_name
+        : this.updateButton?.service_name;
+      const targetMapName = operateType === "add" ? "addColsMap" : "updateColsMap";
+      const targetColsName = operateType === "add" ? "addCols" : "updateCols";
+      const flagName = operateType === "add" ? "in_add" : "in_update";
+
+      for (const serviceName of Object.keys(serviceGroups)) {
+        if (!serviceName) {
+          continue;
+        }
+        try {
+          let serviceCols = [];
+          if (serviceName === normalService) {
+            serviceCols = this[targetColsName];
+          } else {
+            const res = await getServiceV2(
+              serviceName,
+              operateType,
+              this.srvApp,
+              false,
+              this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
+            );
+            serviceCols = Array.isArray(res?.data?.srv_cols) ? res.data.srv_cols : [];
+          }
+          const aliasMap = this.buildAliasServiceColMap(
+            serviceGroups[serviceName],
+            serviceCols,
+            operateType
+          );
+          Object.keys(aliasMap).forEach((key) => {
+            this.$set(this[targetMapName], key, aliasMap[key]);
+          });
+          const aliasCols = Object.values(aliasMap).filter(
+            (item) => item?.[flagName] === 1 || item?.[flagName] === 2
+          );
+          if (aliasCols.length) {
+            this[targetColsName] = [
+              ...this[targetColsName].filter((item) => !aliasMap[item.columns]),
+              ...aliasCols,
+            ];
+          }
+        } catch (error) {
+          console.error(`merge ${operateType} service cols failed:`, serviceName, error);
+        }
+      }
+    },
     // ========== 权限相关方法（待迁移到 usePermission）==========
     // 迁移进度：已创建 usePermission Composable，以下方法待逐步迁移
     // - isFieldEditable: 字段可编辑性判断
@@ -5021,7 +5126,8 @@ export default {
         if (
           key.indexOf("_") !== 0 &&
           !ignoreKeys.includes(key) &&
-          updateColsMap?.[key]?.in_update !== 0
+          updateColsMap?.[key] &&
+          [1, 2].includes(updateColsMap[key].in_update)
         ) {
           if (oldItem[key] !== item[key]) {
             if (nullVal.includes(item[key]) && nullVal.includes(oldItem[key])) {
@@ -5142,8 +5248,13 @@ export default {
           }
 
           Object.keys(addObj).forEach((key) => {
-            if (ignoreKeys.includes(key) || key.indexOf("_") === 0) {
+            if (
+              ignoreKeys.includes(key) ||
+              key.indexOf("_") === 0 ||
+              ![1, 2].includes(this.addColsMap?.[key]?.in_add)
+            ) {
               delete addObj[key];
+              return;
             }
             if (
               addObj[key] === "" ||
@@ -6447,6 +6558,12 @@ export default {
             return pre;
           }, {});
         }
+
+        // 多表混合列表的字段可能来自多个真实表，不能只依赖当前 edit/add 按钮对应的单个服务。
+        // 这里按列表字段的 table_name/table_column 反查各真实表的 add/update 服务列，
+        // 再映射回列表字段别名 columns，用于后续 buildSrvCols/isFieldEditable/save 统一判断。
+        await this.mergeMixedTableOperateColsMap("update");
+        await this.mergeMixedTableOperateColsMap("add");
 
         if (this.colSrv && !normalService.includes(this.colSrv)) {
           const srv_cols = await this.getColsV2();
