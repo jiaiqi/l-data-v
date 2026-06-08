@@ -24,6 +24,7 @@
 
     <el-popover
       v-else
+      ref="popoverRef"
       v-model="dropdownVisible"
       class="fk-option-picker__popover"
       placement="bottom-start"
@@ -34,6 +35,24 @@
       @hide="handleDropdownHide"
     >
       <div class="fk-option-picker__dropdown" @mousedown.stop>
+        <div
+          class="fk-option-picker__drag-handle"
+          @mousedown="handleDragStart"
+        >
+          <svg
+            class="fk-option-picker__drag-icon"
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+          >
+            <circle cx="5" cy="3" r="1.2" />
+            <circle cx="5" cy="8" r="1.2" />
+            <circle cx="5" cy="13" r="1.2" />
+            <circle cx="11" cy="3" r="1.2" />
+            <circle cx="11" cy="8" r="1.2" />
+            <circle cx="11" cy="13" r="1.2" />
+          </svg>
+          <span class="fk-option-picker__tip">按住此处可拖动弹窗 · 双击列表进行选择</span>
+        </div>
         <el-table
           ref="dropdownTable"
           :data="tableData"
@@ -55,7 +74,6 @@
           />
         </el-table>
         <div class="fk-option-picker__footer">
-          <span class="fk-option-picker__tip">双击列表进行选择</span>
           <el-pagination
             small
             :page-sizes="pageSizes"
@@ -165,6 +183,7 @@ export default {
       searchTimer: null,
       focused: false,
       pendingInputValue: null,
+      dragState: null,
     };
   },
   computed: {
@@ -251,6 +270,7 @@ export default {
     if (this.searchTimer) {
       clearTimeout(this.searchTimer);
     }
+    this.releaseDragListeners();
   },
   methods: {
     formatOption(item) {
@@ -426,7 +446,66 @@ export default {
       this.loadTableData();
     },
     handleDropdownHide() {
+      this.releaseDragListeners();
       this.syncTableLayout();
+    },
+    /**
+     * 获取当前实际可见的 popper 元素。el-popover 默认使用 transform 定位，
+     * 拖拽前需要先把它转换为 left/top 才能持续生效。
+     */
+    getActivePopper() {
+      // 同页可能存在多个 fk-option-picker，需要找到当前显示的那个。
+      const candidates = document.querySelectorAll(".fk-option-picker-popper");
+      for (let i = 0; i < candidates.length; i += 1) {
+        const el = candidates[i];
+        const style = window.getComputedStyle(el);
+        if (style.display !== "none" && style.visibility !== "hidden") {
+          return el;
+        }
+      }
+      return candidates[0] || null;
+    },
+    handleDragStart(event) {
+      if (event.button !== 0) return;
+      const popperEl = this.getActivePopper();
+      if (!popperEl) return;
+      const rect = popperEl.getBoundingClientRect();
+      // 把 el-popover 用 transform 设置的位置固化为 left/top，
+      // 这样后续拖拽更新 left/top 时不会被 popper 内部重置逻辑覆盖。
+      popperEl.style.left = `${rect.left}px`;
+      popperEl.style.top = `${rect.top}px`;
+      popperEl.style.transform = "none";
+      popperEl.style.position = "fixed";
+      this.dragState = {
+        startX: event.clientX,
+        startY: event.clientY,
+        baseLeft: rect.left,
+        baseTop: rect.top,
+        popperEl,
+      };
+      document.addEventListener("mousemove", this.handleDragMove);
+      document.addEventListener("mouseup", this.handleDragEnd);
+      event.preventDefault();
+    },
+    handleDragMove(event) {
+      if (!this.dragState) return;
+      const { startX, startY, baseLeft, baseTop, popperEl } = this.dragState;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      const maxLeft = window.innerWidth - popperEl.offsetWidth - 4;
+      const maxTop = window.innerHeight - popperEl.offsetHeight - 4;
+      const nextLeft = Math.max(4, Math.min(baseLeft + dx, maxLeft));
+      const nextTop = Math.max(4, Math.min(baseTop + dy, maxTop));
+      popperEl.style.left = `${nextLeft}px`;
+      popperEl.style.top = `${nextTop}px`;
+    },
+    handleDragEnd() {
+      this.releaseDragListeners();
+    },
+    releaseDragListeners() {
+      document.removeEventListener("mousemove", this.handleDragMove);
+      document.removeEventListener("mouseup", this.handleDragEnd);
+      this.dragState = null;
     },
     syncTableLayout() {
       this.$nextTick(() => {
@@ -487,6 +566,40 @@ export default {
 
   .el-table__row {
     cursor: pointer;
+  }
+}
+
+.fk-option-picker__drag-handle {
+  // 抵消 .fk-option-picker-popper 的 padding:8px，让标题栏贴近弹窗边缘
+  margin: -8px -8px 8px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, #f5f7fa 0%, #ebeef5 100%);
+  border-bottom: 1px solid #dcdfe6;
+  border-radius: 4px 4px 0 0;
+  cursor: move;
+  user-select: none;
+
+  .fk-option-picker__drag-icon {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    fill: #909399;
+  }
+
+  .fk-option-picker__tip {
+    color: #606266;
+    font-size: 12px;
+  }
+
+  &:hover {
+    background: linear-gradient(180deg, #ebeef5 0%, #dcdfe6 100%);
+  }
+
+  &:active {
+    cursor: grabbing;
   }
 }
 
