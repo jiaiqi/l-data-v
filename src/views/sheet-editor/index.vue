@@ -2080,8 +2080,8 @@ export default {
           columns: listCol.columns,
           table_column: listCol.table_column || serviceCol.columns,
           table_name: listCol.table_name || serviceCol.table_name,
-          option_list_v2: listCol.option_list_v2 || serviceCol.option_list_v2,
-          option_list_v3: listCol.option_list_v3 || serviceCol.option_list_v3,
+          option_list_v2: serviceCol.option_list_v2 || listCol.option_list_v2,
+          option_list_v3: serviceCol.option_list_v3 || listCol.option_list_v3,
           service_name: this.getOperateServiceNameByTable(
             listCol.table_name || serviceCol.table_name,
             operateType
@@ -2812,6 +2812,27 @@ export default {
       this.fieldEditorParams = null;
       this.showFieldEditor = false;
     },
+    buildFieldEditorColumn(row, column) {
+      const baseColumn = column?.__field_info || column || {};
+      const operateColumn = row?.__flag === "add"
+        ? this.addColsMap?.[column?.field]
+        : this.updateColsMap?.[column?.field];
+      const fieldInfo = operateColumn
+        ? {
+          ...baseColumn,
+          ...operateColumn,
+          label: baseColumn.label || operateColumn.label,
+          columns: baseColumn.columns || operateColumn.columns || column?.field,
+          table_column: baseColumn.table_column || operateColumn.table_column,
+          table_name: baseColumn.table_name || operateColumn.table_name,
+          redundant_options: baseColumn.redundant_options || operateColumn.redundant_options,
+        }
+        : { ...baseColumn };
+      return {
+        ...column,
+        __field_info: fieldInfo,
+      };
+    },
     buildFieldEditorParams(row, column, params) {
       if (!row || !column) {
         this.clearFieldEditorParams();
@@ -2828,7 +2849,7 @@ export default {
         oldValue: oldRowData?.[column.field],
         editable,
         row,
-        column,
+        column: this.buildFieldEditorColumn(row, column),
         position,
       };
     },
@@ -4382,7 +4403,7 @@ export default {
                     this.updateColsMap?.[item.columns]?.option_list_v2;
                 } else if (this.addColsMap?.[item.columns]?.option_list_v2) {
                   item.option_list_v2 =
-                    this.updateColsMap?.[item.columns]?.option_list_v2;
+                    this.addColsMap?.[item.columns]?.option_list_v2;
                 } else if (!item.option_list_v2) {
                   item.option_list_v2 = {
                     refed_col: "user_no",
