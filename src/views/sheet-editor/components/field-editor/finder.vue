@@ -21,6 +21,7 @@
     :field="field"
     :row="row"
     :column="column"
+    :columns="columns"
     :value="row[column.columns]"
     :defaultConditionsMap="{}"
     :detailButton="detailButton"
@@ -108,6 +109,10 @@ export default {
       default: () => {
         return {};
       },
+    },
+    columns: {
+      type: Array,
+      default: () => [],
     },
     operateType: {
       type: String,

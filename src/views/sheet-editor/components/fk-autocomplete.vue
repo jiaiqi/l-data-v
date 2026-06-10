@@ -59,6 +59,7 @@
       :app="app"
       :column="column"
       :row="row"
+      :columns="columns"
       :srv-info="srvInfo"
       :value="modelValue"
       :disabled="setDisabled"
@@ -71,6 +72,7 @@
       :app="app"
       :column="column"
       :row="row"
+      :columns="columns"
       :srv-info="srvInfo"
       :input-value="modelValue"
       :disabled="setDisabled"
@@ -92,6 +94,7 @@
         :app="app"
         :column="column"
         :row="row"
+        :columns="columns"
         :srv-info="srvInfo"
         :input-value="modelValue"
         :disabled="setDisabled"
@@ -120,6 +123,7 @@
         :app="app"
         :column="column"
         :row="row"
+        :columns="columns"
         :srv-info="srvInfo"
         :input-value="modelValue"
         :disabled="setDisabled"
@@ -224,6 +228,7 @@
 import { $http } from "../../../common/http.js";
 import { cloneDeep } from "lodash-es";
 import { renderStr } from "../../../common/common";
+import { buildRowDataContext, getRowValue } from "../../../utils/rowData";
 import fkSelect from "./fk-select/fk-select.vue";
 import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
@@ -296,6 +301,10 @@ export default {
       default: "请选择",
     },
     defaultConditionsMap: Object,
+    columns: {
+      type: Array,
+      default: () => [],
+    },
     detailButton: Object,
     defaultOptions: Array,
     uiMode: {
@@ -930,7 +939,7 @@ export default {
       if (!req.serviceName || !appName) {
         return;
       }
-      appName = renderStr(appName, { data: this.row });
+      appName = renderStr(appName, { data: buildRowDataContext(this.row, this.columns) });
 
       let loginUser = JSON.parse(
         sessionStorage.getItem("current_login_user") || "{}"
@@ -944,8 +953,9 @@ export default {
           };
           if (obj.value.indexOf("data.") !== -1) {
             let colName = obj.value.slice(obj.value.indexOf("data.") + 5);
-            if (this.row[colName]) {
-              obj.value = this.row[colName];
+            const rowValue = getRowValue(this.row, colName, this.columns);
+            if (rowValue || rowValue === 0 || rowValue === false) {
+              obj.value = rowValue;
             }
           } else if (obj.value.indexOf("top.user.") !== -1) {
             let colName = obj.value.slice(obj.value.indexOf("top.user.") + 9);

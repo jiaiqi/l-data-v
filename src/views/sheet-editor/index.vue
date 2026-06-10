@@ -159,6 +159,7 @@
         :app="srvApp"
         :listType="listType"
         :keyDispCol="(v2data && v2data.key_disp_col) || ''"
+        :columns="(v2data && v2data.srv_cols) || []"
         :value="currentCellValue"
         :show.sync="showFieldEditor"
         v-bind="fieldEditorParams"
@@ -212,6 +213,7 @@ import { rowButtonClick, customizeOperate } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import { FkUtil } from "./util/fkUtil.js";
 import { ignoreKeys } from "./util/constant";
+import { buildRowDataContext, getRowValue } from "../../utils/rowData";
 import { RecordManager } from "./util/recordManager.js";
 
 // 引入EasyTable组件
@@ -2708,7 +2710,7 @@ export default {
       if (typeof value === "string" && value) {
         if (value.indexOf("data.") !== -1) {
           const colName = value.slice(value.indexOf("data.") + 5);
-          return row[colName];
+          return getRowValue(row, colName, this.v2data?.srv_cols || this.setAllFields || []);
         }
         if (value.indexOf("top.user.") !== -1) {
           const colName = value.slice(value.indexOf("top.user.") + 9);
@@ -2731,7 +2733,7 @@ export default {
           return (this.mainData || {})[value.value_key];
         }
         if (value.value_key) {
-          return row[value.value_key];
+          return getRowValue(row, value.value_key, this.v2data?.srv_cols || this.setAllFields || []);
         }
       }
       return value;
@@ -2773,7 +2775,7 @@ export default {
           optionCfg.srv_app ||
           this.srvApp ||
           sessionStorage.getItem("current_app"),
-          { data: row }
+          { data: buildRowDataContext(row, this.v2data?.srv_cols || this.setAllFields || []) }
         );
         if (!appName) {
           return;

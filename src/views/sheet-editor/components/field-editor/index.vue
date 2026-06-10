@@ -39,6 +39,7 @@
       :app="app"
       :operate-type="operateType"
       :field-info="fieldInfo"
+      :columns="columns"
       :detailButton="detailButton"
       v-model="modelValue"
       @change="onFinderChange"
@@ -270,6 +271,10 @@ const props = defineProps({
   keyDispCol: {
     type: String,
     default: "",
+  },
+  columns: {
+    type: Array,
+    default: () => [],
   },
   position: {
     type: Object,

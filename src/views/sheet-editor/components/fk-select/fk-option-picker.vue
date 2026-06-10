@@ -115,6 +115,10 @@ export default {
       type: Object,
       default: () => ({}),
     },
+    columns: {
+      type: Array,
+      default: () => [],
+    },
     srvInfo: {
       type: Object,
       default: null,
@@ -347,6 +351,7 @@ export default {
         rownumber: this.pageSize,
         mainData: this.$route?.query || {},
         searchCols: this.stringSearchCols,
+        columns: this.columns,
       })
         .then((res) => {
           if (res?.data?.length) {
@@ -505,6 +510,7 @@ export default {
         keyword: queryString,
         mainData: this.$route?.query || {},
         searchCols: this.stringSearchCols,
+        columns: this.columns,
       }).then((res) => {
         const results = res?.data || [];
         this.options = results;

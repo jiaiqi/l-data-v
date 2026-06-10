@@ -17,6 +17,7 @@ import isString from "lodash/isString";
 import isBoolean from "lodash/isBoolean";
 import isUndefined from "lodash/isUndefined";
 import { $axios as $http } from "@/common/http";
+import { buildRowDataContext } from "@/utils/rowData";
 
 let baseURL = window.backendIpAddr;
 
@@ -988,14 +989,14 @@ function init_util() {
     return dayjs(date).add(amount, flag).toDate();
   };
 
-  Vue.prototype.templateToString = function (row, temp) {
-    let datas = row || {};
+  Vue.prototype.templateToString = function (row, temp, columns = []) {
+    let datas = buildRowDataContext(row || {}, columns);
     let template = temp || "";
     let str = "return " + "`" + template + "`"; // 根据配置的模版字符串解析内容
-    let func = new Function("row", str);
-    let srv = func(datas);
+    let func = new Function("row", "data", str);
+    let srv = func(datas, datas);
     // console.log("templateToString",datas,temp,srv)
-    return func(datas);
+    return srv;
   };
 
   Vue.prototype.guid = function () {
