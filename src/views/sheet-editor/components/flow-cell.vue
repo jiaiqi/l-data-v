@@ -57,6 +57,7 @@
         :app="app"
         :column="column"
         :row="row"
+        :columns="columns"
         :srv-info="srvInfo"
         :input-value="pickerValue"
         :disabled="disabled"
@@ -145,6 +146,8 @@ import { ActionButtonGroup } from "./action-button";
 import FkActionDialog from "./fk-select/fk-action-dialog.vue";
 import FkOptionPicker from "./fk-select/fk-option-picker.vue";
 import { hasFkValue } from "../utils/fkOption";
+import { renderStr } from "@/common/common";
+import { resolveRowApp } from "@/utils/rowData";
 
 const DEFAULT_FIELD_MAP = {
   // 后端未配置映射时，按当前 flow 字段约定兜底取值。
@@ -548,10 +551,14 @@ export default {
           rownumber: 1,
         },
       };
-      const appName =
+      const appName = resolveRowApp(
         this.srvInfo?.srv_app ||
         this.app ||
-        sessionStorage.getItem("current_app");
+        sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
       if (!req.serviceName || !appName) {
         return;
       }

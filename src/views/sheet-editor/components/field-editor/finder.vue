@@ -89,6 +89,8 @@ import { isFk, isFkAutoComplete, getFieldType } from "@/utils/sheetUtils.js";
 import { FieldInfo } from "@/common/model/FieldInfo.js";
 import { Field } from "@/common/model/Field.js";
 import { findTableRef } from "../../util/common";
+import { renderStr } from "@/common/common";
+import { resolveRowApp } from "@/utils/rowData";
 import TablePicker from "./table-picker.vue";
 import fkAutocomplete from "../fk-autocomplete.vue";
 import fkSelector from "../fk-selector.vue";
@@ -437,7 +439,8 @@ export default {
       const valColumn = this.optionListFinal.refed_col;
       const labelCol = this.optionListFinal.key_disp_col;
       let results = [];
-      const url = `/${this.srvInfo?.srv_app || this.app}/select/${req.serviceName}`;
+      const app = resolveRowApp(this.srvInfo?.srv_app || this.app, this.row, this.columns, renderStr);
+      const url = `/${app}/select/${req.serviceName}`;
       return this.$http.post(url, req).then((response) => {
         if (response && response.data && response.data.data) {
           let options = response.data.data;

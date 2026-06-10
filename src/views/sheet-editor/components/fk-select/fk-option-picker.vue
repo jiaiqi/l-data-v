@@ -93,6 +93,8 @@
 <script>
 import { cloneDeep } from "lodash-es";
 import { onSelect } from "@/service/api";
+import { renderStr } from "@/common/common";
+import { resolveRowApp } from "@/utils/rowData";
 import {
   buildFkOptionConfig,
   loadFkOptions,
@@ -293,7 +295,12 @@ export default {
         resolve([]);
         return;
       }
-      const app = this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app");
+      const app = resolveRowApp(
+        this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
       const res = await onSelect(
         this.srvInfo.serviceName,
         app,
@@ -319,10 +326,14 @@ export default {
       if (!this.srvInfo?.serviceName) {
         return;
       }
-      const app =
+      const app = resolveRowApp(
         this.srvInfo.srv_app ||
         this.app ||
-        sessionStorage.getItem("current_app");
+        sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
       if (!app) {
         return;
       }

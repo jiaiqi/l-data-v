@@ -67,3 +67,11 @@ export function buildRowDataContext(row = {}, columns = []) {
 
   return data;
 }
+
+
+export function resolveRowApp(appName, row = {}, columns = [], render) {
+  if (appName && typeof appName === "string" && appName.indexOf("${") > -1 && typeof render === "function") {
+    return render(appName, { data: buildRowDataContext(row || {}, columns || []) });
+  }
+  return appName;
+}

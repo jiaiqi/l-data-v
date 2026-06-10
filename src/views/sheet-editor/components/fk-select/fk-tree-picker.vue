@@ -55,6 +55,8 @@
 
 <script>
 import { getFkOptions, onSelect } from "@/service/api";
+import { renderStr } from "@/common/common";
+import { resolveRowApp } from "@/utils/rowData";
 
 export default {
   name: "FkTreePicker",
@@ -70,6 +72,10 @@ export default {
     row: {
       type: Object,
       default: () => ({}),
+    },
+    columns: {
+      type: Array,
+      default: () => [],
     },
     srvInfo: {
       type: Object,
@@ -108,7 +114,7 @@ export default {
   },
   computed: {
     srvApp() {
-      return this.srvInfo?.srv_app || this.app;
+      return resolveRowApp(this.srvInfo?.srv_app || this.app, this.row, this.columns, renderStr);
     },
     currentModel() {
       if (!this.innerValue) {
@@ -247,7 +253,10 @@ export default {
       return getFkOptions(
         { ...this.column, option_list_v2: option },
         this.row,
-        this.app
+        this.app,
+        undefined,
+        undefined,
+        { columns: this.columns }
       ).then((res) => {
         if (res?.data?.length) {
           this.options = res.data.map((item) => this.formatOption(item));

@@ -15,6 +15,7 @@
       :value="value"
       :column="column"
       :row="row"
+      :columns="columns"
       :default-options="defaultOptions"
       :disabled="disabled"
       @input="onInput"
@@ -29,6 +30,7 @@
       :value="value"
       :column="column"
       :row="row"
+      :columns="columns"
       :default-options="defaultOptions"
       :disabled="disabled"
       @input="onInput"
@@ -47,6 +49,7 @@
       :value="value"
       :column="column"
       :row="row"
+      :columns="columns"
       :default-options="defaultOptions"
       :disabled="disabled"
       @input="onInput"
@@ -228,7 +231,7 @@
 import { $http } from "../../../common/http.js";
 import { cloneDeep } from "lodash-es";
 import { renderStr } from "../../../common/common";
-import { buildRowDataContext, getRowValue } from "../../../utils/rowData";
+import { buildRowDataContext, getRowValue, resolveRowApp } from "../../../utils/rowData";
 import fkSelect from "./fk-select/fk-select.vue";
 import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
@@ -651,7 +654,12 @@ export default {
         },
       };
       let appName =
-        this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app");
+        resolveRowApp(
+        this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
       if (!req.serviceName || !appName) {
         return;
       }
@@ -861,10 +869,14 @@ export default {
       }
     },
     async getFkColumns(useType = "selectlist") {
-      const app =
+      const app = resolveRowApp(
         this.srvInfo.srv_app ||
         this.app ||
-        sessionStorage.getItem("current_app");
+        sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
       if (app) {
         this.tableColumns = await loadServiceColumns({
           app,
@@ -939,7 +951,7 @@ export default {
       if (!req.serviceName || !appName) {
         return;
       }
-      appName = renderStr(appName, { data: buildRowDataContext(this.row, this.columns) });
+      appName = resolveRowApp(appName, this.row, this.columns, renderStr);
 
       let loginUser = JSON.parse(
         sessionStorage.getItem("current_login_user") || "{}"
