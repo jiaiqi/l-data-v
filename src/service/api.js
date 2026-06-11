@@ -4,6 +4,7 @@ import { $axios as http } from "../common/http";
 import { useMetaStore } from "../stores/colMeta.js";
 import { cloneDeep } from "lodash-es";
 import { renderStr } from "../common/common";
+import { buildRowDataContext, getRowValue } from "../utils/rowData";
 
 // const metaStore = useMetaStore();
 const colMetaStore = {};
@@ -220,7 +221,7 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber, params =
   const { mainData } = params;
   app = option_list_v2?.srv_app || app || sessionStorage.getItem("current_app");
   if (app && app.indexOf("${") > -1) {
-    app = renderStr(app, { data: row });
+    app = renderStr(app, { data: buildRowDataContext(row, params.columns || col._all_cols || []) });
   }
   if(!app) {
     Message({
@@ -250,8 +251,9 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber, params =
       if (typeof item.value === "string" && item.value) {
         if (item.value.indexOf("data.") !== -1) {
           let colName = item.value.slice(item.value.indexOf("data.") + 5);
-          if (row && row[colName]) {
-            item.value = row[colName];
+          const rowValue = getRowValue(row, colName, params.columns || col._all_cols || []);
+          if (rowValue || rowValue === 0 || rowValue === false) {
+            item.value = rowValue;
           } else {
             item.value = undefined;
             // 容错
@@ -273,7 +275,7 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber, params =
           } else if (item.value.value_type === 'mainData' && item.value.value_key && mainData) {
             item.value = mainData[item.value.value_key]
           } else if (item.value?.value_key && row) {
-            item.value = row[item.value?.value_key];
+            item.value = getRowValue(row, item.value?.value_key, params.columns || col._all_cols || []);
           }
         } else if (
           item.value.indexOf("'") === 0 &&
@@ -285,7 +287,7 @@ const getFkOptions = async (col = {}, row = {}, app, pageNo, rownumber, params =
         if (item.value?.value_type === "constant") {
           item.value = item.value?.value;
         } else if (item.value?.value_key && row) {
-          item.value = row[item.value?.value_key];
+          item.value = getRowValue(row, item.value?.value_key, params.columns || col._all_cols || []);
         }
       }
       if (item.value_exp) {

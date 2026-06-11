@@ -60,6 +60,10 @@
           size="mini"
           border
           :height="tableHeight"
+          :row-key="tableRowKey"
+          :lazy="isTree"
+          :load="loadTreeChildren"
+          :tree-props="treeProps"
           empty-text="暂无数据"
           @row-dblclick="handleTableSelect"
         >
@@ -75,6 +79,7 @@
         </el-table>
         <div class="fk-option-picker__footer">
           <el-pagination
+            v-if="!isTree"
             small
             :page-sizes="pageSizes"
             :page-size="pageSize"
@@ -105,6 +110,9 @@
 
 <script>
 import { cloneDeep } from "lodash-es";
+import { onSelect } from "@/service/api";
+import { renderStr } from "@/common/common";
+import { resolveRowApp } from "@/utils/rowData";
 import {
   buildFkOptionConfig,
   loadFkOptions,
@@ -126,6 +134,10 @@ export default {
     row: {
       type: Object,
       default: () => ({}),
+    },
+    columns: {
+      type: Array,
+      default: () => [],
     },
     srvInfo: {
       type: Object,
@@ -192,6 +204,18 @@ export default {
     },
     refedCol() {
       return this.srvInfo?.refed_col;
+    },
+    isTree() {
+      return Boolean(this.srvInfo?.is_tree && this.srvInfo?.parent_col);
+    },
+    tableRowKey() {
+      return this.refedCol || "value";
+    },
+    treeProps() {
+      return {
+        children: "children",
+        hasChildren: "hasChildren",
+      };
     },
     effectivePlaceholder() {
       if (this.placeholder) {
@@ -276,6 +300,45 @@ export default {
     formatOption(item) {
       return normalizeFkOption(item, this.srvInfo || {});
     },
+    formatTreeRow(item = {}) {
+      return {
+        ...item,
+        hasChildren: item.is_leaf !== "是",
+      };
+    },
+    getTreeNodeValue(row = {}) {
+      return row[this.refedCol] || row.value || row.id;
+    },
+    async loadTreeChildren(row, treeNode, resolve) {
+      const parentValue = this.getTreeNodeValue(row);
+      if (!this.isTree || !parentValue) {
+        resolve([]);
+        return;
+      }
+      const app = resolveRowApp(
+        this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
+      const res = await onSelect(
+        this.srvInfo.serviceName,
+        app,
+        [
+          {
+            colName: this.srvInfo.parent_col,
+            ruleType: "eq",
+            value: parentValue,
+          },
+        ],
+        {
+          rownumber: 100,
+          pageNo: 1,
+        }
+      );
+      const children = (res?.data || []).map((item) => this.formatTreeRow(item));
+      resolve(children);
+    },
     buildOption(queryString = "") {
       return buildFkOptionConfig(this.srvInfo || {}, queryString);
     },
@@ -283,10 +346,14 @@ export default {
       if (!this.srvInfo?.serviceName) {
         return;
       }
-      const app =
+      const app = resolveRowApp(
         this.srvInfo.srv_app ||
         this.app ||
-        sessionStorage.getItem("current_app");
+        sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
       if (!app) {
         return;
       }
@@ -315,12 +382,17 @@ export default {
         rownumber: this.pageSize,
         mainData: this.$route?.query || {},
         searchCols: this.stringSearchCols,
+        columns: this.columns,
       })
         .then((res) => {
           if (res?.data?.length) {
-            this.tableData = res.data;
+            this.tableData = this.isTree
+              ? res.data.map((item) => this.formatTreeRow(item))
+              : res.data;
             this.options = cloneDeep(this.tableData);
-            this.total = res?.page?.total || this.tableData.length;
+            this.total = this.isTree
+              ? this.tableData.length
+              : res?.page?.total || this.tableData.length;
           } else {
             this.tableData = [];
             this.options = [];
@@ -528,6 +600,7 @@ export default {
         keyword: queryString,
         mainData: this.$route?.query || {},
         searchCols: this.stringSearchCols,
+        columns: this.columns,
       }).then((res) => {
         const results = res?.data || [];
         this.options = results;

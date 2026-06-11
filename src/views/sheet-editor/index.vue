@@ -23,6 +23,7 @@
       :child-list-type="childListType"
       :grid-button="gridButton"
       :calc-req-data="calcReqData"
+      :has-editing-cell-change="editingCellHasChange"
       :calc-column-width-req="calcColumnWidthReq"
       :auto-save-timeout="autoSaveTimeout"
       :on-handler="onHandler"
@@ -158,6 +159,7 @@
         :app="srvApp"
         :listType="listType"
         :keyDispCol="(v2data && v2data.key_disp_col) || ''"
+        :columns="(v2data && v2data.srv_cols) || []"
         :value="currentCellValue"
         :show.sync="showFieldEditor"
         v-bind="fieldEditorParams"
@@ -211,6 +213,7 @@ import { rowButtonClick, customizeOperate } from "./util/buttonHandler.js";
 import { copyTextToClipboard } from "@/common/common.js";
 import { FkUtil } from "./util/fkUtil.js";
 import { ignoreKeys } from "./util/constant";
+import { buildRowDataContext, getRowValue } from "../../utils/rowData";
 import { RecordManager } from "./util/recordManager.js";
 
 // 引入EasyTable组件
@@ -262,12 +265,9 @@ export default {
   beforeDestroy() {
     broadcastChannel?.close();
     broadcastChannel = null;
+    clearTimeout(this.editingCellEmitTimer);
     this.removeDocumentEventListener();
     this.stopAutoSave();
-    if (this.emitListDataTimer) {
-      clearTimeout(this.emitListDataTimer);
-      this.emitListDataTimer = null;
-    }
     this.clearColumnsCache();
     this.oldTableData = [];
     this.tableData = [];
@@ -365,7 +365,8 @@ export default {
       showFieldEditor: false,
       autoSaveInterval: null,
       autoSaveTimeout: 0,
-      emitListDataTimer: null,
+      editingCellEmitTimer: null,
+      editingCellHasChange: false,
       showDropMenu: false,
       dLeft: 0,
       dTop: 0,
@@ -785,6 +786,7 @@ export default {
                       }
                     });
                     this.triggerEditCell(targetSelectionRangeIndexes);
+                    this.emitListDataOnChildListChange();
                     return false;
                   }
                 }
@@ -806,6 +808,7 @@ export default {
                   }
                 });
                 this.triggerEditCell(targetSelectionRangeIndexes);
+                this.emitListDataOnChildListChange();
                 return false;
               }
             } else if (sourceSelectionData?.length > 0) {
@@ -835,6 +838,7 @@ export default {
                       targetSelectionRangeIndexes,
                       sourceData
                     );
+                    this.emitListDataOnChildListChange();
                   });
                 }
               }
@@ -1280,6 +1284,10 @@ export default {
           //   }
           // }
           this.recordManager?.push(cloneDeep(this.tableData));
+          if (this.childListType) {
+            // 子表数据更新 通知主表
+            this.emitListData(this.tableData);
+          }
           this.autoSave();
         },
       },
@@ -1307,7 +1315,7 @@ export default {
   },
   watch: {
     tableData: {
-      deep: true,
+      deep: false,
       handler(newValue, oldValue) {
         const currentSelection = this.$refs?.tableRef?.getRangeCellSelection();
         this.calcReqData = this.buildReqParams();
@@ -1315,10 +1323,6 @@ export default {
           currentSelection?.selectionRangeIndexes?.startRowIndex;
         if (typeof startRowIndex === "number" && startRowIndex >= 0) {
           this.triggerEditCell(currentSelection?.selectionRangeIndexes);
-        }
-        if (this.childListType) {
-          // 子表数据变化统一在这里通知主表，覆盖拖拽填充等非单元格 change 事件。
-          this.scheduleEmitListData();
         }
       },
     },
@@ -2045,6 +2049,111 @@ export default {
       this._columnsCache = null;
       this._lastColumnsKey = null;
     },
+    getOperateServiceNameByTable(tableName, operateType = "update") {
+      if (!tableName || !operateType) {
+        return "";
+      }
+      return tableName.replace(/^bx/, "srv").concat(`_${operateType}`);
+    },
+    buildAliasServiceColMap(listCols = [], serviceCols = [], operateType = "update") {
+      if (!Array.isArray(listCols) || !Array.isArray(serviceCols)) {
+        return {};
+      }
+      const serviceColMap = serviceCols.reduce((pre, cur) => {
+        const keys = [cur.columns, cur.table_column].filter(Boolean);
+        keys.forEach((key) => {
+          if (!pre[key]) {
+            pre[key] = cur;
+          }
+        });
+        return pre;
+      }, {});
+
+      return listCols.reduce((pre, listCol) => {
+        const realColumn = listCol.table_column || listCol.columns;
+        const serviceCol = serviceColMap[realColumn] || serviceColMap[listCol.columns];
+        if (!serviceCol) {
+          return pre;
+        }
+        pre[listCol.columns] = {
+          ...listCol,
+          ...serviceCol,
+          label: listCol.label || serviceCol.label,
+          columns: listCol.columns,
+          table_column: listCol.table_column || serviceCol.columns,
+          table_name: listCol.table_name || serviceCol.table_name,
+          option_list_v2: serviceCol.option_list_v2 || listCol.option_list_v2,
+          option_list_v3: serviceCol.option_list_v3 || listCol.option_list_v3,
+          service_name: this.getOperateServiceNameByTable(
+            listCol.table_name || serviceCol.table_name,
+            operateType
+          ) || serviceCol.service_name,
+        };
+        return pre;
+      }, {});
+    },
+    async mergeMixedTableOperateColsMap(operateType = "update") {
+      const sourceCols = this.flattenSrvCols(this.v2data?.srv_cols || []);
+      if (!sourceCols?.length) {
+        return;
+      }
+      const serviceGroups = sourceCols.reduce((pre, col) => {
+        const serviceName = this.getOperateServiceNameByTable(col.table_name, operateType);
+        if (!serviceName) {
+          return pre;
+        }
+        pre[serviceName] || (pre[serviceName] = []);
+        pre[serviceName].push(col);
+        return pre;
+      }, {});
+
+      const normalService = operateType === "add"
+        ? this.addButton?.service_name
+        : this.updateButton?.service_name;
+      const targetMapName = operateType === "add" ? "addColsMap" : "updateColsMap";
+      const targetColsName = operateType === "add" ? "addCols" : "updateCols";
+      const flagName = operateType === "add" ? "in_add" : "in_update";
+
+      for (const serviceName of Object.keys(serviceGroups)) {
+        if (!serviceName) {
+          continue;
+        }
+        try {
+          let serviceCols = [];
+          if (serviceName === normalService) {
+            serviceCols = this[targetColsName];
+          } else {
+            const res = await getServiceV2(
+              serviceName,
+              operateType,
+              this.srvApp,
+              false,
+              this.childListCfg?.foreign_key?.adapt_main_srv || this.mainService
+            );
+            serviceCols = Array.isArray(res?.data?.srv_cols) ? res.data.srv_cols : [];
+          }
+          const aliasMap = this.buildAliasServiceColMap(
+            serviceGroups[serviceName],
+            serviceCols,
+            operateType
+          );
+          Object.keys(aliasMap).forEach((key) => {
+            this.$set(this[targetMapName], key, aliasMap[key]);
+          });
+          const aliasCols = Object.values(aliasMap).filter(
+            (item) => item?.[flagName] === 1 || item?.[flagName] === 2
+          );
+          if (aliasCols.length) {
+            this[targetColsName] = [
+              ...this[targetColsName].filter((item) => !aliasMap[item.columns]),
+              ...aliasCols,
+            ];
+          }
+        } catch (error) {
+          console.error(`merge ${operateType} service cols failed:`, serviceName, error);
+        }
+      }
+    },
     // ========== 权限相关方法（待迁移到 usePermission）==========
     // 迁移进度：已创建 usePermission Composable，以下方法待逐步迁移
     // - isFieldEditable: 字段可编辑性判断
@@ -2601,7 +2710,7 @@ export default {
       if (typeof value === "string" && value) {
         if (value.indexOf("data.") !== -1) {
           const colName = value.slice(value.indexOf("data.") + 5);
-          return row[colName];
+          return getRowValue(row, colName, this.v2data?.srv_cols || this.setAllFields || []);
         }
         if (value.indexOf("top.user.") !== -1) {
           const colName = value.slice(value.indexOf("top.user.") + 9);
@@ -2624,7 +2733,7 @@ export default {
           return (this.mainData || {})[value.value_key];
         }
         if (value.value_key) {
-          return row[value.value_key];
+          return getRowValue(row, value.value_key, this.v2data?.srv_cols || this.setAllFields || []);
         }
       }
       return value;
@@ -2666,7 +2775,7 @@ export default {
           optionCfg.srv_app ||
           this.srvApp ||
           sessionStorage.getItem("current_app"),
-          { data: row }
+          { data: buildRowDataContext(row, this.v2data?.srv_cols || this.setAllFields || []) }
         );
         if (!appName) {
           return;
@@ -2705,6 +2814,27 @@ export default {
       this.fieldEditorParams = null;
       this.showFieldEditor = false;
     },
+    buildFieldEditorColumn(row, column) {
+      const baseColumn = column?.__field_info || column || {};
+      const operateColumn = row?.__flag === "add"
+        ? this.addColsMap?.[column?.field]
+        : this.updateColsMap?.[column?.field];
+      const fieldInfo = operateColumn
+        ? {
+          ...baseColumn,
+          ...operateColumn,
+          label: baseColumn.label || operateColumn.label,
+          columns: baseColumn.columns || operateColumn.columns || column?.field,
+          table_column: baseColumn.table_column || operateColumn.table_column,
+          table_name: baseColumn.table_name || operateColumn.table_name,
+          redundant_options: baseColumn.redundant_options || operateColumn.redundant_options,
+        }
+        : { ...baseColumn };
+      return {
+        ...column,
+        __field_info: fieldInfo,
+      };
+    },
     buildFieldEditorParams(row, column, params) {
       if (!row || !column) {
         this.clearFieldEditorParams();
@@ -2721,7 +2851,7 @@ export default {
         oldValue: oldRowData?.[column.field],
         editable,
         row,
-        column,
+        column: this.buildFieldEditorColumn(row, column),
         position,
       };
     },
@@ -2771,10 +2901,92 @@ export default {
     initDocumentEventListener() {
       this.removeDocumentEventListener();
       document.addEventListener("keydown", this.bindKeydownListener);
+      document.addEventListener("input", this.handleEditingCellInput);
     },
     // 移除document事件监听
     removeDocumentEventListener() {
       document.removeEventListener("keydown", this.bindKeydownListener);
+      document.removeEventListener("input", this.handleEditingCellInput);
+    },
+    handleEditingCellInput(event) {
+      const target = event?.target;
+      if (!target?.classList?.contains("ve-table-edit-input")) {
+        return;
+      }
+      const tableEl = this.$refs?.tableRef?.$el;
+      if (!tableEl || !tableEl.contains(target)) {
+        return;
+      }
+      this.editingCellHasChange = this.hasEditingCellValueChange();
+      clearTimeout(this.editingCellEmitTimer);
+      if (!this.childListType) {
+        return;
+      }
+      this.editingCellEmitTimer = setTimeout(() => {
+        this.emitListDataWithEditingCell();
+      }, 200);
+    },
+    emitListDataWithEditingCell() {
+      const editingCell = this.$refs?.tableRef?.editingCell;
+      const { row, column } = editingCell || {};
+      if (!row || !column?.field) {
+        this.emitListData();
+        return;
+      }
+      this.emitListData({
+        rowKey: row.rowKey,
+        field: column.field,
+        value: row[column.field],
+      });
+    },
+    getEditingCellValueChange() {
+      const editingCell = this.$refs?.tableRef?.editingCell;
+      const { row, column } = editingCell || {};
+      if (!row?.rowKey || !column?.field) {
+        return null;
+      }
+      const rowIndex = this.tableData.findIndex(
+        (item) => item.rowKey === row.rowKey
+      );
+      if (rowIndex < 0) {
+        return null;
+      }
+      const currentRow = this.tableData[rowIndex];
+      const value = row[column.field];
+      if (currentRow[column.field] === value) {
+        return null;
+      }
+      return {
+        rowIndex,
+        row: currentRow,
+        field: column.field,
+        value,
+      };
+    },
+    hasEditingCellValueChange() {
+      return Boolean(this.getEditingCellValueChange());
+    },
+    flushEditingCellValueBeforeSave() {
+      const change = this.getEditingCellValueChange();
+      if (!change) {
+        return false;
+      }
+      const { rowIndex, row, field, value } = change;
+      this.$set(row, field, value);
+      if (row.__flag === "add") {
+        row.__update_col = row.__update_col || {};
+        this.$set(row.__update_col, field, true);
+      } else if (!row.__flag) {
+        const oldRow = this.oldTableData?.find(
+          (item) => item.__id && item.__id === row.__id
+        );
+        if (oldRow && oldRow[field] !== value) {
+          this.$set(row, "__flag", "update");
+        }
+      }
+      this.$set(this.tableData, rowIndex, row);
+      this.editingCellHasChange = false;
+      return true;
     },
     bindKeydownListener(e = {}) {
       // 绑定快捷键
@@ -3300,28 +3512,25 @@ export default {
         broadcastChannel.postMessage(JSON.stringify(msg));
       }
     },
-    scheduleEmitListData() {
-      if (this.emitListDataTimer) {
-        clearTimeout(this.emitListDataTimer);
-      }
-      this.emitListDataTimer = setTimeout(() => {
-        this.emitListDataTimer = null;
+    emitListDataOnChildListChange() {
+      if (this.childListType) {
         this.emitListData();
-      }, 50);
+      }
     },
-    async emitListData() {
+    async emitListData(editingCellValue) {
       await new Promise((resolve) => setTimeout(resolve, 50));
       await this.$nextTick();
 
+      let data = this.getChildListEmitTableData(editingCellValue);
+
       if (this.childListType === "updatechildlist") {
         // 编辑子表要区分已存在行和新增行，避免未编辑的已有行被重复提交。
-        const result = this.buildUpdateChildListEmitData();
+        const result = this.buildUpdateChildListEmitData(data);
         console.warn("emitListData", result);
         this.bcEmit("getData", result);
         return;
       }
 
-      let data = cloneDeep(this.tableData);
       if (this.childListType?.includes("add")) {
         data = data.filter((item) =>
           Object.keys(item).some(
@@ -3356,6 +3565,21 @@ export default {
       ];
       console.warn("emitListData", reuslt);
       this.bcEmit("getData", reuslt);
+    },
+    getChildListEmitTableData(editingCellValue) {
+      const data = cloneDeep(this.tableData);
+      if (!editingCellValue?.rowKey || !editingCellValue?.field) {
+        return data;
+      }
+      const row = data.find((item) => item.rowKey === editingCellValue.rowKey);
+      if (row) {
+        row[editingCellValue.field] = editingCellValue.value;
+        if (row.__flag === "add") {
+          row.__update_col = row.__update_col || {};
+          row.__update_col[editingCellValue.field] = true;
+        }
+      }
+      return data;
     },
     getChildListDependKeys() {
       const foreignKey = this.childListCfg?.foreign_key || {};
@@ -3416,12 +3640,12 @@ export default {
         ? addObj
         : null;
     },
-    buildUpdateChildListEmitData() {
+    buildUpdateChildListEmitData(tableData = this.tableData) {
       const result = [];
       const addDatas = [];
       const dependKeys = this.getChildListDependKeys();
 
-      this.tableData.forEach((row) => {
+      tableData.forEach((row) => {
         const oldItem = this.oldTableData?.find(
           (item) => item.__id && item.__id === row.__id
         );
@@ -4181,7 +4405,7 @@ export default {
                     this.updateColsMap?.[item.columns]?.option_list_v2;
                 } else if (this.addColsMap?.[item.columns]?.option_list_v2) {
                   item.option_list_v2 =
-                    this.updateColsMap?.[item.columns]?.option_list_v2;
+                    this.addColsMap?.[item.columns]?.option_list_v2;
                 } else if (!item.option_list_v2) {
                   item.option_list_v2 = {
                     refed_col: "user_no",
@@ -4734,6 +4958,7 @@ export default {
                     self.tableData = self.tableData.filter(
                       (item, index) => index !== rowIndex
                     );
+                    self.emitListData();
                     // self.tableData = self.tableData.splice(rowIndex,1);
                   },
                 },
@@ -4924,7 +5149,8 @@ export default {
         if (
           key.indexOf("_") !== 0 &&
           !ignoreKeys.includes(key) &&
-          updateColsMap?.[key]?.in_update !== 0
+          updateColsMap?.[key] &&
+          [1, 2].includes(updateColsMap[key].in_update)
         ) {
           if (oldItem[key] !== item[key]) {
             if (nullVal.includes(item[key]) && nullVal.includes(oldItem[key])) {
@@ -5045,8 +5271,13 @@ export default {
           }
 
           Object.keys(addObj).forEach((key) => {
-            if (ignoreKeys.includes(key) || key.indexOf("_") === 0) {
+            if (
+              ignoreKeys.includes(key) ||
+              key.indexOf("_") === 0 ||
+              ![1, 2].includes(this.addColsMap?.[key]?.in_add)
+            ) {
               delete addObj[key];
+              return;
             }
             if (
               addObj[key] === "" ||
@@ -5334,6 +5565,7 @@ export default {
         await this.refreshV2();
       }
       this.stopAutoSave();
+      this.flushEditingCellValueBeforeSave();
 
       const reqData = this.buildReqParams();
       if (!reqData?.length) {
@@ -6349,6 +6581,12 @@ export default {
             return pre;
           }, {});
         }
+
+        // 多表混合列表的字段可能来自多个真实表，不能只依赖当前 edit/add 按钮对应的单个服务。
+        // 这里按列表字段的 table_name/table_column 反查各真实表的 add/update 服务列，
+        // 再映射回列表字段别名 columns，用于后续 buildSrvCols/isFieldEditable/save 统一判断。
+        await this.mergeMixedTableOperateColsMap("update");
+        await this.mergeMixedTableOperateColsMap("add");
 
         if (this.colSrv && !normalService.includes(this.colSrv)) {
           const srv_cols = await this.getColsV2();

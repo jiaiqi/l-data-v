@@ -144,6 +144,7 @@ export async function loadFkOptions({
   rownumber,
   mainData = {},
   searchCols = [],
+  columns = [],
 }) {
   const option = buildFkOptionConfig(
     srvInfo,
@@ -157,7 +158,7 @@ export async function loadFkOptions({
     app,
     pageNo,
     rownumber,
-    { mainData }
+    { mainData, columns }
   );
   return {
     data: Array.isArray(res?.data)

@@ -215,7 +215,7 @@
           size="mini"
           type="primary"
           @click="emit('save-data')"
-          :disabled="!calcReqData || calcReqData.length == 0"
+          :disabled="(!calcReqData || calcReqData.length == 0) && !hasEditingCellChange"
           v-if="!['add', 'addchildlist'].includes(childListType)"
           v-loading="onHandler"
           title="保存（Ctrl+S）"
@@ -380,6 +380,10 @@ const props = defineProps({
   calcReqData: {
     type: Array,
     default: () => [],
+  },
+  hasEditingCellChange: {
+    type: Boolean,
+    default: false,
   },
   calcColumnWidthReq: {
     type: Array,

@@ -36,6 +36,8 @@
 <script>
 import { cloneDeep } from "lodash-es";
 import { getFkOptions } from "@/service/api";
+import { renderStr } from "@/common/common";
+import { getRowValue, resolveRowApp } from "@/utils/rowData";
 
 export default {
   name: "FkOnlyEdit",
@@ -53,6 +55,10 @@ export default {
     },
     column: Object,
     row: Object,
+    columns: {
+      type: Array,
+      default: () => [],
+    },
     defaultOptions: Array,
     disabled: Boolean,
   },
@@ -125,6 +131,15 @@ export default {
     document.removeEventListener("click", this.handleClickOutside);
   },
   methods: {
+    buildSelectUrl(option) {
+      const app = resolveRowApp(
+        option.srv_app || this.app || sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
+      return `/${app}/select/${option.serviceName}`;
+    },
     getOptionListV2() {
       const optionListV3 = this.fieldInfo?.option_list_v3;
       const data = this.row;
@@ -176,7 +191,7 @@ export default {
         };
 
         const res = await this.$http.post(
-          `/${option.srv_app || this.app}/select/${option.serviceName}`,
+          this.buildSelectUrl(option),
           req
         );
 
@@ -293,7 +308,7 @@ export default {
 
       const request = this.$http
         .post(
-          `/${option.srv_app || this.app}/select/${option.serviceName}`,
+          this.buildSelectUrl(option),
           req
         )
         .then((res) => {
@@ -384,8 +399,6 @@ export default {
       );
     },
     buildQueryRequest(option, queryString) {
-      const app =
-        option.srv_app || this.app || sessionStorage.getItem("current_app");
       let req = {
         serviceName: option.serviceName,
         colNames: ["*"],
@@ -431,8 +444,9 @@ export default {
         if (typeof item.value === "string" && item.value) {
           if (item.value.indexOf("data.") !== -1) {
             let colName = item.value.slice(item.value.indexOf("data.") + 5);
-            if (row && row[colName]) {
-              item.value = row[colName];
+            const rowValue = getRowValue(row, colName, this.columns);
+            if (rowValue || rowValue === 0 || rowValue === false) {
+              item.value = rowValue;
             } else {
               item.value = undefined;
               item.ruleType = "like";
@@ -456,7 +470,7 @@ export default {
             ) {
               item.value = (this.$route?.query || {})[item.value.value_key];
             } else if (item.value?.value_key && row) {
-              item.value = row[item.value?.value_key];
+              item.value = getRowValue(row, item.value?.value_key, this.columns);
             }
           } else if (
             item.value.indexOf("'") === 0 &&

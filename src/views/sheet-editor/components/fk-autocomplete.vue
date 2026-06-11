@@ -15,6 +15,7 @@
       :value="value"
       :column="column"
       :row="row"
+      :columns="columns"
       :default-options="defaultOptions"
       :disabled="disabled"
       @input="onInput"
@@ -29,6 +30,7 @@
       :value="value"
       :column="column"
       :row="row"
+      :columns="columns"
       :default-options="defaultOptions"
       :disabled="disabled"
       @input="onInput"
@@ -47,6 +49,7 @@
       :value="value"
       :column="column"
       :row="row"
+      :columns="columns"
       :default-options="defaultOptions"
       :disabled="disabled"
       @input="onInput"
@@ -54,18 +57,37 @@
       @focus="onFocus"
     ></fk-select>
 
-    <fk-tree-picker
+    <!-- <fk-tree-picker
       v-else-if="isTree && !setDisabled"
       :app="app"
       :column="column"
       :row="row"
+      :columns="columns"
       :srv-info="srvInfo"
       :value="modelValue"
       :disabled="setDisabled"
       @focus="onFocus"
       @input="onTreeInput"
       @select="onTreeSelect"
-    ></fk-tree-picker>
+    ></fk-tree-picker> -->
+    <fk-option-picker
+      v-else-if="isTree && !setDisabled"
+      :app="app"
+      :column="column"
+      :row="row"
+      :columns="columns"
+      :srv-info="srvInfo"
+      :input-value="modelValue"
+      :disabled="setDisabled"
+      :ui-mode="pickerUiMode"
+      :allow-free-input="true"
+      :placeholder="pickerPlaceholder"
+      @focus="onFocus"
+      @input-change="onPickerInputChange"
+      @select="onPickerSelect"
+      @clear="onPickerClear"
+      @dropdown-visible-change="onPickerDropdownVisibleChange"
+    />
     <div
       v-else-if="hasActionSrvCfg && !setDisabled"
       class="flex items-center w-full h-full autocomplete-with-action"
@@ -75,6 +97,7 @@
         :app="app"
         :column="column"
         :row="row"
+        :columns="columns"
         :srv-info="srvInfo"
         :input-value="modelValue"
         :disabled="setDisabled"
@@ -103,6 +126,7 @@
         :app="app"
         :column="column"
         :row="row"
+        :columns="columns"
         :srv-info="srvInfo"
         :input-value="modelValue"
         :disabled="setDisabled"
@@ -207,12 +231,12 @@
 import { $http } from "../../../common/http.js";
 import { cloneDeep } from "lodash-es";
 import { renderStr } from "../../../common/common";
+import { buildRowDataContext, getRowValue, resolveRowApp } from "../../../utils/rowData";
 import fkSelect from "./fk-select/fk-select.vue";
 import fkOnlyEdit from "./fk-select/fk-only-edit.vue";
 import fkEditSelect from "./fk-select/fk-edit-select.vue";
 import FkOptionPicker from "./fk-select/fk-option-picker.vue";
 import FkActionDialog from "./fk-select/fk-action-dialog.vue";
-import FkTreePicker from "./fk-select/fk-tree-picker.vue";
 import FkDetailLink from "./fk-select/fk-detail-link.vue";
 import { isFk } from "@/utils/sheetUtils";
 import addIcon from "@/assets/img/add.png";
@@ -233,7 +257,6 @@ export default {
     fkEditSelect,
     FkOptionPicker,
     FkActionDialog,
-    FkTreePicker,
     FkDetailLink,
     ActionButtonGroup,
   },
@@ -281,6 +304,10 @@ export default {
       default: "请选择",
     },
     defaultConditionsMap: Object,
+    columns: {
+      type: Array,
+      default: () => [],
+    },
     detailButton: Object,
     defaultOptions: Array,
     uiMode: {
@@ -627,7 +654,12 @@ export default {
         },
       };
       let appName =
-        this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app");
+        resolveRowApp(
+        this.srvInfo?.srv_app || this.app || sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
       if (!req.serviceName || !appName) {
         return;
       }
@@ -837,10 +869,14 @@ export default {
       }
     },
     async getFkColumns(useType = "selectlist") {
-      const app =
+      const app = resolveRowApp(
         this.srvInfo.srv_app ||
         this.app ||
-        sessionStorage.getItem("current_app");
+        sessionStorage.getItem("current_app"),
+        this.row,
+        this.columns,
+        renderStr
+      );
       if (app) {
         this.tableColumns = await loadServiceColumns({
           app,
@@ -915,7 +951,7 @@ export default {
       if (!req.serviceName || !appName) {
         return;
       }
-      appName = renderStr(appName, { data: this.row });
+      appName = resolveRowApp(appName, this.row, this.columns, renderStr);
 
       let loginUser = JSON.parse(
         sessionStorage.getItem("current_login_user") || "{}"
@@ -929,8 +965,9 @@ export default {
           };
           if (obj.value.indexOf("data.") !== -1) {
             let colName = obj.value.slice(obj.value.indexOf("data.") + 5);
-            if (this.row[colName]) {
-              obj.value = this.row[colName];
+            const rowValue = getRowValue(this.row, colName, this.columns);
+            if (rowValue || rowValue === 0 || rowValue === false) {
+              obj.value = rowValue;
             }
           } else if (obj.value.indexOf("top.user.") !== -1) {
             let colName = obj.value.slice(obj.value.indexOf("top.user.") + 9);
